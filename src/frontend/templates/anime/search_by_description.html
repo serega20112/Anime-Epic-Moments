@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Найти аниме по описанию - AEM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body data-current-user-id="{{ current_user.id if current_user else '' }}">
+    <header class="header">
+        <div class="logo">AEM <span class="logo-icon">👁️‍🗨️</span></div>
+        <form class="search-container global-search-form" action="{{ url_for('anime.search_anime_page') }}" method="get" autocomplete="off">
+            <input type="text" name="title" class="global-search-input" placeholder="Найди аниме по названию, жанру или эмоции…">
+            <button type="submit">🔍</button>
+            <div class="search-autocomplete" hidden></div>
+        </form>
+        <nav class="header-nav">
+            <a href="{{ url_for('index.index') }}">Главная</a>
+            <a href="{{ url_for('highlight.get_public_top_highlights') }}">Хайлайты</a>
+        </nav>
+    </header>
+    <main class="search-page">
+        <section class="search-shell">
+            <aside class="filters-panel">
+                <h1>Поиск аниме по описанию</h1>
+                <p class="filters-subtitle">Опиши атмосферу, сюжет и эмоции, а фильтры помогут сузить выдачу.</p>
+                <form id="description-search-form" class="description-search-form">
+                    <label for="description" class="filter-label">Описание</label>
+                    <textarea id="description" name="description" placeholder="Например: путешествие по подземельям, сильная магия, взросление героя, минимум романтики" required></textarea>
+
+                    <div class="filter-grid">
+                        <div class="filter-control">
+                            <label for="year_from">Год от</label>
+                            <input id="year_from" type="number" name="year_from" min="1917" max="2026" value="1990">
+                        </div>
+                        <div class="filter-control">
+                            <label for="year_to">Год до</label>
+                            <input id="year_to" type="number" name="year_to" min="1917" max="2026" value="2026">
+                        </div>
+                    </div>
+
+                    <div class="filter-grid">
+                        <div class="filter-control">
+                            <label for="rating">Мин. рейтинг: <span id="rating-value">7</span></label>
+                            <input id="rating" type="range" name="rating" min="1" max="10" value="7">
+                        </div>
+                        <div class="filter-control"></div>
+                    </div>
+
+                    <div class="filter-grid">
+                        <div class="filter-control">
+                            <label for="age_rating">Возрастной рейтинг</label>
+                            <select id="age_rating" name="age_rating">
+                                <option value="all">Любой</option>
+                                <option value="13+">13+</option>
+                                <option value="16+">16+</option>
+                                <option value="18+">18+</option>
+                            </select>
+                        </div>
+                        <div class="filter-control">
+                            <label for="sort">Сортировка</label>
+                            <select id="sort" name="sort">
+                                <option value="match">Лучшее совпадение</option>
+                                <option value="rating">По рейтингу</option>
+                                <option value="year">По году</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="search-actions">
+                        <button type="submit" class="btn neon-pink">Найти</button>
+                        <button type="reset" class="btn neon-blue" id="reset-filters">Сбросить</button>
+                    </div>
+                </form>
+            </aside>
+
+            <section class="results-panel">
+                <div class="results-head">
+                    <h2>Результаты</h2>
+                    <p id="results-meta">Опиши аниме и запусти поиск</p>
+                </div>
+                <div id="results" class="results-grid"></div>
+            </section>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/search.js') }}"></script>
+</body>
+</html>

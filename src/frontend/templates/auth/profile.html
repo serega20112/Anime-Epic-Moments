@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль - AEM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="logo">AEM</div>
+        <nav>
+            <a href="{{ url_for('index.index') }}">Главная</a>
+            <a href="{{ url_for('highlight.get_user_highlights', user_id=profile_user.id) }}">Мои хайлайты</a>
+            <a href="{{ url_for('favorite.get_favorites', user_id=profile_user.id) }}">Избранное</a>
+        </nav>
+    </header>
+
+    <main class="profile-page">
+        <section class="profile-card">
+            <h1>Мой профиль</h1>
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <div class="profile-messages">
+                  {% for message in messages %}
+                    <p>{{ message }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+            <form method="post" action="{{ url_for('auth.update_profile') }}" class="profile-form">
+                <label for="username">Никнейм</label>
+                <input id="username" name="username" type="text" value="{{ profile_user.username }}" minlength="3" maxlength="20" required>
+
+                <label for="avatar_url">URL аватара</label>
+                <input id="avatar_url" name="avatar_url" type="url" value="{{ profile_user.avatar_url or '' }}" placeholder="https://...">
+
+                <div class="profile-actions">
+                    <button type="submit" class="btn neon-blue">Сохранить</button>
+                    <button type="submit" form="logoutForm" class="btn neon-pink">Выйти</button>
+                </div>
+            </form>
+            <form id="logoutForm" method="post" action="{{ url_for('auth.logout_user') }}"></form>
+        </section>
+    </main>
+</body>
+</html>

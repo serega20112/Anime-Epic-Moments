@@ -1,0 +1,18 @@
+from typing import List
+from src.backend.domain.recommendation.value_object import RecommendationResult
+from src.backend.services.recommendation_service import RecommendationService
+
+
+class RefreshRecommendationsUseCase:
+    """
+    Use case для обновления рекомендаций пользователя
+    """
+
+    def __init__(self, service: RecommendationService):
+        self.service = service
+
+    def execute(self, user_id: int, limit: int = 5) -> List[RecommendationResult]:
+        """
+        Генерирует новые рекомендации, игнорируя кэш
+        """
+        return self.service.generate(user_id, limit)

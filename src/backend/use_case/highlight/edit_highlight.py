@@ -1,0 +1,45 @@
+from src.backend.repository.highlight_repository import HighlightRepository
+from src.backend.domain.highlight.entity import Highlight
+from src.backend.domain.highlight.policy import HighlightPolicy
+
+
+class EditHighlightUseCase:
+    """
+    Use case для редактирования Highlight
+    """
+
+    def __init__(self, repo: HighlightRepository):
+        self.repo = repo
+
+    def execute(
+        self,
+        highlight_id: int,
+        episode: int | None,
+        start_timestamp: float,
+        end_timestamp: float,
+        description: str,
+        is_spoiler: bool,
+        emotion: str | None = None,
+    ) -> Highlight:
+        """
+        Редактирует существующий хайлайт.
+        Проверяет инварианты времени и запрещённый контент.
+        """
+        highlight = self.repo.get_by_id(highlight_id)
+        if not highlight:
+            raise ValueError("Highlight не найден")
+
+        if not HighlightPolicy.filter_spoiler_content(description):
+            raise ValueError("Описание содержит запрещённый контент")
+
+        highlight.edit(
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            description=description,
+            is_spoiler=is_spoiler,
+        )
+        if episode is not None:
+            highlight.episode = int(episode)
+        highlight.emotion = emotion
+
+        return self.repo.update(highlight)

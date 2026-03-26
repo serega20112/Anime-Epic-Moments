@@ -1,0 +1,7 @@
+Flask==3.0.2
+PyJWT==2.8.0
+requests==2.31.0
+python-dotenv==1.0.1
+SQLAlchemy==2.0.23
+bcrypt==4.1.2
+huggingface_hub==0.33.1

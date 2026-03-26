@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Вход - AEM</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <h1>Вход</h1>
+    <form class="auth-form" action="{{ url_for('auth.login_user') }}" method="POST">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="example@anime.com" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Пароль</label>
+        <input type="password" id="password" name="password" placeholder="••••••" required>
+      </div>
+      <button type="submit" class="btn neon-pink btn-large">Войти</button>
+    </form>
+    <p class="auth-switch"><a href="{{ url_for('auth.password_reset_request_page') }}">Забыли пароль?</a></p>
+    <p class="auth-switch">Нет аккаунта? <a href="{{ url_for('auth.register_page') }}">Регистрация</a></p>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+  <div id="errorModal" class="modal">
+    <div class="modal-content">
+      <button type="button" class="close" onclick="closeErrorModal()">&times;</button>
+      <h2 class="modal-title">Ошибка</h2>
+      <ul class="modal-error-list">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+      <div class="modal-actions">
+        <button type="button" class="btn-modal" onclick="closeErrorModal()">Понятно</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    function openErrorModal() {
+      const modal = document.getElementById('errorModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+    }
+
+    function closeErrorModal() {
+      const modal = document.getElementById('errorModal');
+      if (!modal) return;
+      modal.style.display = 'none';
+    }
+
+    openErrorModal();
+  </script>
+  {% endif %}
+{% endwith %}
+</body>
+</html>

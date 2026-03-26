@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Поиск аниме - AEM</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body data-current-user-id="{{ current_user.id if current_user else '' }}">
+<header class="header">
+    <div class="logo">AEM</div>
+    <form class="search-container global-search-form" action="{{ url_for('anime.search_anime_page') }}" method="get" autocomplete="off">
+        <input type="text" name="title" class="global-search-input" value="{{ initial_title }}" placeholder="Поиск аниме по названию, жанру, эмоции…">
+        <button type="submit">🔍</button>
+        <div class="search-autocomplete" hidden></div>
+    </form>
+</header>
+<main class="anime-search">
+    <section class="results-panel search-page-results">
+        <div class="results-head">
+            <h2>Поиск по названию</h2>
+            <p id="title-results-meta">Введи название или выбери подсказку</p>
+        </div>
+        <div id="title-search-results" class="results-grid"></div>
+        <div id="manual-add-block" class="manual-add-block" hidden>
+            <h3>Ничего не нашли</h3>
+            <p>Можешь добавить аниме вручную, чтобы потом прикреплять к нему хайлайты.</p>
+            <form class="manual-add-form">
+                <input type="text" name="manual_title" placeholder="Название аниме" required>
+                <input type="url" name="manual_cover" placeholder="URL обложки">
+                <input type="url" name="manual_watch" placeholder="Ссылка где смотреть">
+                <textarea name="manual_description" placeholder="Короткое описание"></textarea>
+                <button type="button" id="manual-add-button" class="btn neon-pink">Сохранить локально</button>
+            </form>
+        </div>
+    </section>
+    <div id="manual-anime-modal" class="modal" hidden>
+        <div class="modal-content">
+            <button type="button" class="close" id="manual-anime-close">&times;</button>
+            <h2 class="modal-title">Локальная карточка сохранена</h2>
+            <p class="modal-copy">Теперь это аниме появится в этой выдаче на текущем устройстве.</p>
+        </div>
+    </div>
+</main>
+<script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
+<script src="{{ url_for('static', filename='js/particles.js') }}"></script>
+<script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+</body>
+</html>
