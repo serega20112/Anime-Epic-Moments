@@ -1,7 +1,13 @@
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from src.backend.domain.watch.entity import HighlightContext, Translation, UserAnimeStatus, ViewingSession, WatchSource
+from src.backend.domain.watch.entity import (
+    HighlightContext,
+    Translation,
+    UserAnimeStatus,
+    ViewingSession,
+    WatchSource,
+)
 from src.backend.infrastructure.models.sqlalchemy_models import (
     HighlightContextModel,
     TranslationModel,
@@ -16,7 +22,11 @@ class WatchRepository:
         self.session = session
 
     def get_status(self, user_id: int, anime_id: int) -> Optional[UserAnimeStatus]:
-        row = self.session.query(UserAnimeStatusModel).filter_by(user_id=user_id, anime_id=anime_id).first()
+        row = (
+            self.session.query(UserAnimeStatusModel)
+            .filter_by(user_id=user_id, anime_id=anime_id)
+            .first()
+        )
         if not row:
             return None
         return UserAnimeStatus(
@@ -28,10 +38,14 @@ class WatchRepository:
         )
 
     def upsert_status(self, status: UserAnimeStatus) -> UserAnimeStatus:
-        row = self.session.query(UserAnimeStatusModel).filter_by(
-            user_id=status.user_id,
-            anime_id=status.anime_id,
-        ).first()
+        row = (
+            self.session.query(UserAnimeStatusModel)
+            .filter_by(
+                user_id=status.user_id,
+                anime_id=status.anime_id,
+            )
+            .first()
+        )
         if row:
             row.status = status.status
             row.updated_at = datetime.utcnow()
@@ -52,7 +66,12 @@ class WatchRepository:
         return status
 
     def get_translations(self, anime_id: int) -> List[Translation]:
-        rows = self.session.query(TranslationModel).filter_by(anime_id=anime_id).order_by(TranslationModel.name.asc()).all()
+        rows = (
+            self.session.query(TranslationModel)
+            .filter_by(anime_id=anime_id)
+            .order_by(TranslationModel.name.asc())
+            .all()
+        )
         return [
             Translation(
                 id=row.id,
@@ -66,12 +85,16 @@ class WatchRepository:
         ]
 
     def add_translation(self, translation: Translation) -> Translation:
-        existing = self.session.query(TranslationModel).filter_by(
-            anime_id=translation.anime_id,
-            name=translation.name,
-            translation_type=translation.translation_type,
-            language=translation.language,
-        ).first()
+        existing = (
+            self.session.query(TranslationModel)
+            .filter_by(
+                anime_id=translation.anime_id,
+                name=translation.name,
+                translation_type=translation.translation_type,
+                language=translation.language,
+            )
+            .first()
+        )
         if existing:
             translation.id = existing.id
             translation.created_at = existing.created_at
@@ -89,11 +112,15 @@ class WatchRepository:
         translation.created_at = row.created_at
         return translation
 
-    def get_sources(self, anime_id: int, episode: int | None = None) -> List[WatchSource]:
+    def get_sources(
+        self, anime_id: int, episode: int | None = None
+    ) -> List[WatchSource]:
         query = self.session.query(WatchSourceModel).filter_by(anime_id=anime_id)
         if episode is not None:
             query = query.filter_by(episode=episode)
-        rows = query.order_by(WatchSourceModel.episode.asc(), WatchSourceModel.quality_label.desc()).all()
+        rows = query.order_by(
+            WatchSourceModel.episode.asc(), WatchSourceModel.quality_label.desc()
+        ).all()
         return [
             WatchSource(
                 id=row.id,
@@ -110,15 +137,19 @@ class WatchRepository:
         ]
 
     def add_source(self, source: WatchSource) -> WatchSource:
-        existing = self.session.query(WatchSourceModel).filter_by(
-            anime_id=source.anime_id,
-            episode=source.episode,
-            translation_id=source.translation_id,
-            provider_name=source.provider_name,
-            source_name=source.source_name,
-            stream_url=source.stream_url,
-            quality_label=source.quality_label,
-        ).first()
+        existing = (
+            self.session.query(WatchSourceModel)
+            .filter_by(
+                anime_id=source.anime_id,
+                episode=source.episode,
+                translation_id=source.translation_id,
+                provider_name=source.provider_name,
+                source_name=source.source_name,
+                stream_url=source.stream_url,
+                quality_label=source.quality_label,
+            )
+            .first()
+        )
         if existing:
             source.id = existing.id
             source.created_at = existing.created_at
@@ -139,12 +170,18 @@ class WatchRepository:
         source.created_at = row.created_at
         return source
 
-    def get_session(self, user_id: int, anime_id: int, episode: int) -> Optional[ViewingSession]:
-        row = self.session.query(ViewingSessionModel).filter_by(
-            user_id=user_id,
-            anime_id=anime_id,
-            episode=episode,
-        ).first()
+    def get_session(
+        self, user_id: int, anime_id: int, episode: int
+    ) -> Optional[ViewingSession]:
+        row = (
+            self.session.query(ViewingSessionModel)
+            .filter_by(
+                user_id=user_id,
+                anime_id=anime_id,
+                episode=episode,
+            )
+            .first()
+        )
         if not row:
             return None
         return ViewingSession(
@@ -161,11 +198,15 @@ class WatchRepository:
         )
 
     def upsert_session(self, session: ViewingSession) -> ViewingSession:
-        row = self.session.query(ViewingSessionModel).filter_by(
-            user_id=session.user_id,
-            anime_id=session.anime_id,
-            episode=session.episode,
-        ).first()
+        row = (
+            self.session.query(ViewingSessionModel)
+            .filter_by(
+                user_id=session.user_id,
+                anime_id=session.anime_id,
+                episode=session.episode,
+            )
+            .first()
+        )
         if row:
             row.watch_source_id = session.watch_source_id
             row.position_seconds = session.position_seconds
@@ -207,10 +248,16 @@ class WatchRepository:
         context.created_at = row.created_at
         return context
 
-    def get_highlight_contexts(self, highlight_ids: List[int]) -> List[HighlightContext]:
+    def get_highlight_contexts(
+        self, highlight_ids: List[int]
+    ) -> List[HighlightContext]:
         if not highlight_ids:
             return []
-        rows = self.session.query(HighlightContextModel).filter(HighlightContextModel.highlight_id.in_(highlight_ids)).all()
+        rows = (
+            self.session.query(HighlightContextModel)
+            .filter(HighlightContextModel.highlight_id.in_(highlight_ids))
+            .all()
+        )
         return [
             HighlightContext(
                 id=row.id,

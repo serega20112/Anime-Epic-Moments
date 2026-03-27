@@ -7,9 +7,12 @@ import requests
 
 from src.backend.dependencies.settings import Settings
 from src.backend.domain.watch.value_object import DiscoveredWatchSource
+from src.backend.infrastructure.external.watch_source_provider import (
+    WatchSourceProvider,
+)
 
 
-class KodikClient:
+class KodikClient(WatchSourceProvider):
     """Ищет материалы Kodik и извлекает прямые HLS-ссылки."""
 
     _link_pattern = re.compile(
@@ -24,8 +27,11 @@ class KodikClient:
         self.provider_name = "Kodik"
         self.default_video_info_endpoint = "/ftor"
 
-    def is_configured(self) -> bool:
+    def is_enabled(self) -> bool:
         return bool(self.api_token)
+
+    def is_configured(self) -> bool:
+        return self.is_enabled()
 
     def search_sources(
         self,
@@ -34,7 +40,7 @@ class KodikClient:
         year: int | None = None,
         limit: int = 8,
     ) -> list[DiscoveredWatchSource]:
-        if not self.is_configured():
+        if not self.is_enabled():
             return []
 
         params: dict[str, str | int | bool] = {
@@ -68,15 +74,23 @@ class KodikClient:
         discovered: list[DiscoveredWatchSource] = []
         seen: set[tuple[str, str, str]] = set()
         for material in results:
-            if not self._looks_relevant(material=material, requested_title=title, requested_year=year):
+            if not self._looks_relevant(
+                material=material, requested_title=title, requested_year=year
+            ):
                 continue
-            material_link = self._extract_episode_link(material=material, episode=episode) or material.get("link")
+            material_link = self._extract_episode_link(
+                material=material, episode=episode
+            ) or material.get("link")
             if not material_link:
                 continue
 
             translation = material.get("translation") or {}
-            translation_name = str(translation.get("title") or "Unknown").strip() or "Unknown"
-            translation_type = self._map_translation_type(str(translation.get("type") or "voice").strip())
+            translation_name = (
+                str(translation.get("title") or "Unknown").strip() or "Unknown"
+            )
+            translation_type = self._map_translation_type(
+                str(translation.get("type") or "voice").strip()
+            )
             source_name = str(material.get("id") or material_link).strip()
             quality_map = self._get_video_links(material_link)
             if not quality_map:
@@ -111,7 +125,11 @@ class KodikClient:
         requested_year: int | None,
     ) -> bool:
         material_year = material.get("year")
-        if requested_year and isinstance(material_year, int) and abs(material_year - requested_year) > 1:
+        if (
+            requested_year
+            and isinstance(material_year, int)
+            and abs(material_year - requested_year) > 1
+        ):
             return False
 
         normalized_requested = self._normalize_title(requested_title)
@@ -131,7 +149,8 @@ class KodikClient:
         for candidate in candidates:
             normalized_candidate = self._normalize_title(candidate)
             if normalized_candidate and (
-                normalized_requested in normalized_candidate or normalized_candidate in normalized_requested
+                normalized_requested in normalized_candidate
+                or normalized_candidate in normalized_requested
             ):
                 return True
 
@@ -173,7 +192,11 @@ class KodikClient:
 
         links = self._request_video_links(
             host=parsed["host"],
-            params={key: value for key, value in parsed.items() if key not in {"host", "quality"}},
+            params={
+                key: value
+                for key, value in parsed.items()
+                if key not in {"host", "quality"}
+            },
             endpoint=self.default_video_info_endpoint,
         )
         if not links:
@@ -181,7 +204,11 @@ class KodikClient:
             if actual_endpoint and actual_endpoint != self.default_video_info_endpoint:
                 links = self._request_video_links(
                     host=parsed["host"],
-                    params={key: value for key, value in parsed.items() if key not in {"host", "quality"}},
+                    params={
+                        key: value
+                        for key, value in parsed.items()
+                        if key not in {"host", "quality"}
+                    },
                     endpoint=actual_endpoint,
                 )
         if not isinstance(links, dict):

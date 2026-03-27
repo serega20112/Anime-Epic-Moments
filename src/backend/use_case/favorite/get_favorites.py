@@ -14,12 +14,18 @@ class GetFavoritesUseCase:
         result: List[FavoriteAnimeCard] = []
         for favorite in favorites:
             anime = self.anime_api_client.get_by_id(favorite.anime_id)
-            title = anime.title if anime and anime.title else f"Anime #{favorite.anime_id}"
+            title = (
+                anime.title if anime and anime.title else f"Anime #{favorite.anime_id}"
+            )
             result.append(
                 FavoriteAnimeCard(
                     anime_id=favorite.anime_id,
                     title=title,
-                    description=anime.description if anime and anime.description else "Описание недоступно",
+                    description=(
+                        anime.description
+                        if anime and anime.description
+                        else "Описание недоступно"
+                    ),
                     cover_url=anime.cover_url if anime else None,
                     genres=anime.genres if anime and anime.genres else [],
                     watch_url=f"/watch/{favorite.anime_id}?episode=1",

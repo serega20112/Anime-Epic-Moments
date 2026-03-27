@@ -29,5 +29,7 @@ class HighlightRepository(ABC):
         """Возвращает топ публичных хайлайтов по лайкам"""
 
     @abstractmethod
-    def get_by_anime_episode(self, anime_id: int, episode: int, user_id: int | None = None) -> List[Highlight]:
+    def get_by_anime_episode(
+        self, anime_id: int, episode: int, user_id: int | None = None
+    ) -> List[Highlight]:
         """Возвращает хайлайты по аниме и серии"""

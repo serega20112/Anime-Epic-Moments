@@ -57,7 +57,8 @@ class RecommendationService:
         existing_ids = {str(fav.anime_id) for fav in favorites}
         existing_ids.update({str(hl.anime_id) for hl in highlights})
         candidate_anime = [
-            anime for anime in candidate_anime
+            anime
+            for anime in candidate_anime
             if str(anime.external_id or "") not in existing_ids
         ]
 
@@ -68,7 +69,8 @@ class RecommendationService:
             anime_text = f"{anime.title or ''} {anime.description or ''}".lower()
             genre_overlap = len(set(anime_genres) & set(genre_counter.keys()))
             keyword_overlap = sum(
-                weight for key, weight in keyword_counter.items()
+                weight
+                for key, weight in keyword_counter.items()
                 if len(key) > 3 and key in anime_text
             )
             rating_weight = (anime.rating or 0) / 10

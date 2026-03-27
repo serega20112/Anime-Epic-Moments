@@ -1,44 +1,44 @@
 .profile-page {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    justify-content: center;
-    padding: 120px 1rem 2rem;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  padding: 120px 1rem 2rem;
 }
 
 .profile-card {
-    width: min(560px, 100%);
-    background: rgba(20, 20, 40, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 20px;
-    padding: 1.6rem;
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+  width: min(560px, 100%);
+  background: rgba(20, 20, 40, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 1.6rem;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
 }
 
 .profile-card h1 {
-    margin-top: 0;
+  margin-top: 0;
 }
 
 .profile-form {
-    display: grid;
-    gap: 0.8rem;
+  display: grid;
+  gap: 0.8rem;
 }
 
 .profile-form input {
-    padding: 0.7rem 0.9rem;
-    border-radius: 10px;
-    border: 1px solid #394b68;
-    background: rgba(5, 10, 24, 0.85);
-    color: #fff;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #394b68;
+  background: rgba(5, 10, 24, 0.85);
+  color: #fff;
 }
 
 .profile-actions {
-    display: flex;
-    gap: 0.8rem;
-    margin-top: 0.4rem;
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 0.4rem;
 }
 
 .profile-messages p {
-    margin: 0 0 0.9rem;
-    color: #bae6fd;
+  margin: 0 0 0.9rem;
+  color: #bae6fd;
 }

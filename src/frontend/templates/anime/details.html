@@ -1,35 +1,47 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ anime.title }} - AEM</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-</head>
-<body>
-<header class="header">
-    <div class="logo">AEM</div>
-</header>
-<main class="anime-details">
-    <div class="details-container">
-        <img class="cover" src="{{ anime.cover_url }}" alt="{{ anime.title }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ anime.title }} - AEM</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+  </head>
+  <body>
+    <header class="header">
+      <div class="logo">AEM</div>
+    </header>
+    <main class="anime-details">
+      <div class="details-container">
+        <img
+          class="cover"
+          src="{{ anime.cover_url }}"
+          alt="{{ anime.title }}"
+        />
         <div class="details-info">
-            <h1>{{ anime.title }}</h1>
-            <p class="synopsis">{{ anime.synopsis }}</p>
-            <p class="tags">
-                {% for genre in anime.genres %}
-                <span class="tag">{{ genre }}</span>
-                {% endfor %}
-            </p>
-            <div class="buttons">
-                <button class="btn neon-pink">Добавить в избранное</button>
-                <a class="btn-watch" href="/watch/{{ anime.external_id }}?episode=1">Где смотреть</a>
-            </div>
+          <h1>{{ anime.title }}</h1>
+          <p class="synopsis">{{ anime.synopsis }}</p>
+          <p class="tags">
+            {% for genre in anime.genres %}
+            <span class="tag">{{ genre }}</span>
+            {% endfor %}
+          </p>
+          <div class="buttons">
+            <button class="btn neon-pink">Добавить в избранное</button>
+            <a class="btn-watch" href="/watch/{{ anime.external_id }}?episode=1"
+              >Где смотреть</a
+            >
+          </div>
         </div>
-    </div>
-</main>
-<script src="{{ url_for('static', filename='js/particles.js') }}"></script>
-<script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-</body>
+      </div>
+    </main>
+    <script src="{{ url_for('static', filename='js/particles.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+  </body>
 </html>

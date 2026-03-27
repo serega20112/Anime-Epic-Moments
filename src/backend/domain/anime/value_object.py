@@ -9,7 +9,7 @@ class SearchAnimeByDescriptionResult:
         self,
         items: List[Anime],
         requires_age_confirmation: bool = False,
-        message: str | None = None
+        message: str | None = None,
     ):
         self.items = items
         self.requires_age_confirmation = requires_age_confirmation

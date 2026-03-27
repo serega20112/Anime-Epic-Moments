@@ -25,7 +25,7 @@ class HuggingFaceLLMClient:
         api_key: str | None,
         model: str,
         provider: str | None = None,
-        api_url: str = "https://router.huggingface.co/v1/chat/completions"
+        api_url: str = "https://router.huggingface.co/v1/chat/completions",
     ):
         self.api_key = api_key
         self.model = model
@@ -39,7 +39,7 @@ class HuggingFaceLLMClient:
         year_from: int | None = None,
         year_to: int | None = None,
         min_rating: int | None = None,
-        allow_adult: bool = False
+        allow_adult: bool = False,
     ) -> str:
         """Возвращает краткий англоязычный запрос для AniList по описанию пользователя."""
         query, _, _ = self.build_search_query_with_meta(
@@ -48,7 +48,7 @@ class HuggingFaceLLMClient:
             year_from=year_from,
             year_to=year_to,
             min_rating=min_rating,
-            allow_adult=allow_adult
+            allow_adult=allow_adult,
         )
         return query
 
@@ -59,7 +59,7 @@ class HuggingFaceLLMClient:
         year_from: int | None = None,
         year_to: int | None = None,
         min_rating: int | None = None,
-        allow_adult: bool = False
+        allow_adult: bool = False,
     ) -> tuple[str, str, str | None]:
         """Возвращает запрос и метаданные режима: hf_llm или fallback_*."""
         queries, mode, error = self.build_search_queries_with_meta(
@@ -68,7 +68,7 @@ class HuggingFaceLLMClient:
             year_from=year_from,
             year_to=year_to,
             min_rating=min_rating,
-            allow_adult=allow_adult
+            allow_adult=allow_adult,
         )
         first = queries[0] if queries else ""
         return first, mode, error
@@ -80,14 +80,16 @@ class HuggingFaceLLMClient:
         year_from: int | None = None,
         year_to: int | None = None,
         min_rating: int | None = None,
-        allow_adult: bool = False
+        allow_adult: bool = False,
     ) -> tuple[list[str], str, str | None]:
         """Возвращает несколько вариантов поискового запроса и метаданные режима."""
         base_description = description.strip()
         if not base_description:
             return [], "fallback_empty", None
         if not self.api_key:
-            fallback_query = self._fallback_query(base_description, genre_hint, year_from, year_to, min_rating)
+            fallback_query = self._fallback_query(
+                base_description, genre_hint, year_from, year_to, min_rating
+            )
             return [fallback_query], "fallback_no_token", None
 
         user_payload = self._build_user_payload(
@@ -96,7 +98,7 @@ class HuggingFaceLLMClient:
             year_from=year_from,
             year_to=year_to,
             min_rating=min_rating,
-            allow_adult=allow_adult
+            allow_adult=allow_adult,
         )
         messages = [
             {
@@ -109,32 +111,38 @@ class HuggingFaceLLMClient:
                     "Не возвращай общие фразы типа 'anime with ...'. "
                     "Если allow_adult=false, не подставляй 18+ термины (hentai/ecchi/porn/nsfw). "
                     "Если уверенность низкая, все равно верни 3 наиболее вероятных тайтла."
-                )
+                ),
             },
-            {
-                "role": "user",
-                "content": user_payload
-            }
+            {"role": "user", "content": user_payload},
         ]
 
         try:
             model_route = self._resolve_model_route()
             completion = self._create_completion(
-                model_route=model_route,
-                messages=messages
+                model_route=model_route, messages=messages
             )
             message_content = self._extract_message_content(completion)
             if not message_content:
-                fallback_query = self._fallback_query(base_description, genre_hint, year_from, year_to, min_rating)
+                fallback_query = self._fallback_query(
+                    base_description, genre_hint, year_from, year_to, min_rating
+                )
                 return [fallback_query], "fallback_empty_reply", None
             parsed_queries = self._parse_queries(message_content)
             if parsed_queries:
                 return parsed_queries, "hf_llm_text", None
         except Exception as exc:
-            fallback_query = self._fallback_query(base_description, genre_hint, year_from, year_to, min_rating)
-            return [fallback_query], "fallback_exception", f"{type(exc).__name__}: {exc}"
+            fallback_query = self._fallback_query(
+                base_description, genre_hint, year_from, year_to, min_rating
+            )
+            return (
+                [fallback_query],
+                "fallback_exception",
+                f"{type(exc).__name__}: {exc}",
+            )
 
-        fallback_query = self._fallback_query(base_description, genre_hint, year_from, year_to, min_rating)
+        fallback_query = self._fallback_query(
+            base_description, genre_hint, year_from, year_to, min_rating
+        )
         return [fallback_query], "fallback_invalid_json", None
 
     def _fallback_query(
@@ -143,7 +151,7 @@ class HuggingFaceLLMClient:
         genre_hint: str | None = None,
         year_from: int | None = None,
         year_to: int | None = None,
-        min_rating: int | None = None
+        min_rating: int | None = None,
     ) -> str:
         """Собирает запасной поисковый запрос без использования LLM."""
         parts = [description.strip()]
@@ -158,7 +166,7 @@ class HuggingFaceLLMClient:
         year_from: int | None,
         year_to: int | None,
         min_rating: int | None,
-        allow_adult: bool
+        allow_adult: bool,
     ) -> str:
         """Готовит компактный текстовый payload на русском без JSON-обертки."""
         parts = [
@@ -184,20 +192,17 @@ class HuggingFaceLLMClient:
         """Отправляет запрос в Hugging Face Router и возвращает JSON-ответ."""
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
         payload = {
             "messages": messages,
             "model": model_route,
             "max_tokens": 300,
             "temperature": 0.1,
-            "reasoning_effort": "low"
+            "reasoning_effort": "low",
         }
         response = requests.post(
-            self.api_url,
-            headers=headers,
-            json=payload,
-            timeout=30
+            self.api_url, headers=headers, json=payload, timeout=30
         )
         response.raise_for_status()
         return response.json()

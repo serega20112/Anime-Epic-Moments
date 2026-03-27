@@ -14,7 +14,9 @@ class AnimeApiClient:
         self.anilist_base = "https://graphql.anilist.co"
 
     # ----------------- Jikan -----------------
-    def search_by_title(self, title: str, limit: int = 10, include_adult: bool = False) -> List[Anime]:
+    def search_by_title(
+        self, title: str, limit: int = 10, include_adult: bool = False
+    ) -> List[Anime]:
         """
         Поиск аниме по названию через Jikan.
         """
@@ -25,10 +27,7 @@ class AnimeApiClient:
         params = {"q": sanitized_title, "limit": limit}
         try:
             resp = requests.get(
-                url,
-                params=params,
-                proxies={"http": None, "https": None},
-                timeout=20
+                url, params=params, proxies={"http": None, "https": None}, timeout=20
             )
             resp.raise_for_status()
             data = resp.json().get("data", [])
@@ -61,11 +60,7 @@ class AnimeApiClient:
         """
         url = f"{self.jikan_base}/seasons/{year}/{season}"
         try:
-            resp = requests.get(
-                url,
-                proxies={"http": None, "https": None},
-                timeout=20
-            )
+            resp = requests.get(url, proxies={"http": None, "https": None}, timeout=20)
             resp.raise_for_status()
             data = resp.json().get("data", [])[:limit]
         except (requests.RequestException, ValueError, KeyError, TypeError):
@@ -94,7 +89,7 @@ class AnimeApiClient:
         year_to: int | None = None,
         min_rating: int | None = None,
         include_adult: bool = False,
-        limit: int = 10
+        limit: int = 10,
     ) -> List[Anime]:
         """
         Поиск аниме по описанию через AniList GraphQL.
@@ -124,15 +119,13 @@ class AnimeApiClient:
                 self.anilist_base,
                 json={"query": query, "variables": variables},
                 proxies={"http": None, "https": None},
-                timeout=20
+                timeout=20,
             )
             resp.raise_for_status()
             data = resp.json()["data"]["Page"]["media"]
         except (requests.RequestException, KeyError, TypeError, ValueError):
             return self.search_by_title(
-                title=sanitized_description,
-                limit=limit,
-                include_adult=include_adult
+                title=sanitized_description, limit=limit, include_adult=include_adult
             )
 
         result = []
@@ -141,13 +134,17 @@ class AnimeApiClient:
                 continue
             season_year = item.get("seasonYear")
             average_score = item.get("averageScore")
-            normalized_score = (average_score / 10) if isinstance(average_score, (int, float)) else None
+            normalized_score = (
+                (average_score / 10)
+                if isinstance(average_score, (int, float))
+                else None
+            )
             if not self._passes_filters(
                 season_year=season_year,
                 normalized_score=normalized_score,
                 year_from=year_from,
                 year_to=year_to,
-                min_rating=min_rating
+                min_rating=min_rating,
             ):
                 continue
             result.append(
@@ -169,11 +166,7 @@ class AnimeApiClient:
         """Получает аниме по MAL id через Jikan."""
         url = f"{self.jikan_base}/anime/{anime_id}"
         try:
-            resp = requests.get(
-                url,
-                proxies={"http": None, "https": None},
-                timeout=20
-            )
+            resp = requests.get(url, proxies={"http": None, "https": None}, timeout=20)
             resp.raise_for_status()
             item = resp.json().get("data")
             if not item:
@@ -199,7 +192,7 @@ class AnimeApiClient:
                 url,
                 params={"limit": limit},
                 proxies={"http": None, "https": None},
-                timeout=20
+                timeout=20,
             )
             resp.raise_for_status()
             data = resp.json().get("data", [])
@@ -227,14 +220,16 @@ class AnimeApiClient:
         normalized_score: float | None,
         year_from: int | None,
         year_to: int | None,
-        min_rating: int | None
+        min_rating: int | None,
     ) -> bool:
         """Проверяет, попадает ли аниме под фильтры года и минимального рейтинга."""
         if year_from is not None and (season_year is None or season_year < year_from):
             return False
         if year_to is not None and (season_year is None or season_year > year_to):
             return False
-        if min_rating is not None and (normalized_score is None or normalized_score < min_rating):
+        if min_rating is not None and (
+            normalized_score is None or normalized_score < min_rating
+        ):
             return False
         return True
 

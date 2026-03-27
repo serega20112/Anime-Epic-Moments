@@ -15,7 +15,7 @@ class ResetPasswordUseCase:
         self,
         user_repo: UserRepository,
         jwt_service: JWTService,
-        password_service: PasswordService
+        password_service: PasswordService,
     ):
         self.user_repo = user_repo
         self.jwt_service = jwt_service
@@ -26,11 +26,15 @@ class ResetPasswordUseCase:
         try:
             user_id = self.jwt_service.decode_password_reset_token(token)
         except jwt.PyJWTError as exc:
-            raise InvalidPasswordResetTokenError("Ссылка для сброса пароля недействительна или устарела") from exc
+            raise InvalidPasswordResetTokenError(
+                "Ссылка для сброса пароля недействительна или устарела"
+            ) from exc
 
         user = self.user_repo.get_by_id(user_id)
         if not user:
             raise InvalidPasswordResetTokenError("Пользователь не найден")
 
         password_hash = self.password_service.hash_password(new_password)
-        return self.user_repo.update_password(user_id=user_id, password_hash=password_hash)
+        return self.user_repo.update_password(
+            user_id=user_id, password_hash=password_hash
+        )

@@ -23,7 +23,9 @@ class GetSeasonPopularUseCase:
         else:
             return "fall"
 
-    def execute(self, year: int = None, season: str = None, limit: int = 10) -> List[Anime]:
+    def execute(
+        self, year: int = None, season: str = None, limit: int = 10
+    ) -> List[Anime]:
         """
         Получение популярных аниме
         season: 'winter', 'spring', 'summer', 'fall'

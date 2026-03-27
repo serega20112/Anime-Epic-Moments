@@ -4,7 +4,9 @@ from src.backend.domain.anime.entity import Anime
 from src.backend.domain.anime.policy import AnimeSafetyPolicy
 from src.backend.domain.anime.value_object import SearchAnimeByDescriptionResult
 from src.backend.infrastructure.external.anime_api_client import AnimeApiClient
-from src.backend.infrastructure.external.huggingface_llm_client import HuggingFaceLLMClient
+from src.backend.infrastructure.external.huggingface_llm_client import (
+    HuggingFaceLLMClient,
+)
 
 
 class SearchAnimeByDescriptionUseCase:
@@ -16,7 +18,7 @@ class SearchAnimeByDescriptionUseCase:
         self,
         api_client: AnimeApiClient,
         llm_client: HuggingFaceLLMClient,
-        safety_policy: AnimeSafetyPolicy | None = None
+        safety_policy: AnimeSafetyPolicy | None = None,
     ):
         self.api_client = api_client
         self.llm_client = llm_client
@@ -32,7 +34,7 @@ class SearchAnimeByDescriptionUseCase:
         age_rating: str = "all",
         adult_confirmed: bool = False,
         sort_by: str = "match",
-        limit: int = 10
+        limit: int = 10,
     ) -> SearchAnimeByDescriptionResult:
         """
         Возвращает список объектов Anime, найденных по описанию
@@ -41,39 +43,47 @@ class SearchAnimeByDescriptionUseCase:
         if not base_description:
             return SearchAnimeByDescriptionResult(items=[])
 
-        explicit_adult_intent = self.safety_policy.has_explicit_adult_intent(base_description, genre_hint)
+        explicit_adult_intent = self.safety_policy.has_explicit_adult_intent(
+            base_description, genre_hint
+        )
         if explicit_adult_intent and not adult_confirmed:
             return SearchAnimeByDescriptionResult(
                 items=[],
                 requires_age_confirmation=True,
                 message="Найден запрос с 18+ контентом. Подтвердите, что вам есть 18 лет.",
             )
-        include_adult = adult_confirmed and (age_rating == "18+" or explicit_adult_intent)
+        include_adult = adult_confirmed and (
+            age_rating == "18+" or explicit_adult_intent
+        )
 
-        llm_queries, llm_mode, llm_error = self.llm_client.build_search_queries_with_meta(
-            description=base_description,
-            genre_hint=genre_hint,
-            year_from=year_from,
-            year_to=year_to,
-            min_rating=min_rating,
-            allow_adult=include_adult
+        llm_queries, llm_mode, llm_error = (
+            self.llm_client.build_search_queries_with_meta(
+                description=base_description,
+                genre_hint=genre_hint,
+                year_from=year_from,
+                year_to=year_to,
+                min_rating=min_rating,
+                allow_adult=include_adult,
+            )
         )
         query_preview = " | ".join(llm_queries[:3])
         if llm_error:
-            print(f"[AI_SEARCH] mode={llm_mode} queries='{query_preview}' error='{llm_error}'")
+            print(
+                f"[AI_SEARCH] mode={llm_mode} queries='{query_preview}' error='{llm_error}'"
+            )
         else:
             print(f"[AI_SEARCH] mode={llm_mode} queries='{query_preview}'")
 
         queries = self._build_queries(llm_queries, base_description)
-        title_queries = self._build_title_queries(base_description, llm_queries, genre_hint)
+        title_queries = self._build_title_queries(
+            base_description, llm_queries, genre_hint
+        )
         expanded_limit = max(limit * 2, limit)
 
         results: List[Anime] = []
         for candidate in title_queries:
             batch = self.api_client.search_by_title(
-                title=candidate,
-                include_adult=include_adult,
-                limit=expanded_limit
+                title=candidate, include_adult=include_adult, limit=expanded_limit
             )
             results = self._merge_unique(results, batch)
 
@@ -84,7 +94,7 @@ class SearchAnimeByDescriptionUseCase:
                 year_to=year_to,
                 min_rating=min_rating,
                 include_adult=include_adult,
-                limit=expanded_limit
+                limit=expanded_limit,
             )
             results = self._merge_unique(results, batch)
 
@@ -93,22 +103,28 @@ class SearchAnimeByDescriptionUseCase:
                 batch = self.api_client.search_by_description(
                     description=candidate,
                     include_adult=include_adult,
-                    limit=expanded_limit
+                    limit=expanded_limit,
                 )
                 results = self._merge_unique(results, batch)
 
         if not include_adult:
-            results = [item for item in results if not self.safety_policy.is_probably_nsfw(item)]
+            results = [
+                item
+                for item in results
+                if not self.safety_policy.is_probably_nsfw(item)
+            ]
 
         ordered = self._sort_results(
             items=results,
             sort_by=sort_by,
             description=base_description,
-            genre_hint=genre_hint
+            genre_hint=genre_hint,
         )
         return SearchAnimeByDescriptionResult(items=ordered[:limit])
 
-    def _build_queries(self, optimized_queries: List[str], raw_description: str) -> List[str]:
+    def _build_queries(
+        self, optimized_queries: List[str], raw_description: str
+    ) -> List[str]:
         """Собирает список уникальных запросов: исходный текст пользователя + LLM-варианты."""
         variants: List[str] = []
         seen: set[str] = set()
@@ -121,10 +137,7 @@ class SearchAnimeByDescriptionUseCase:
         return variants
 
     def _build_title_queries(
-        self,
-        raw_description: str,
-        optimized_queries: List[str],
-        genre_hint: str | None
+        self, raw_description: str, optimized_queries: List[str], genre_hint: str | None
     ) -> List[str]:
         """Собирает кандидаты названий для прямого title-поиска."""
         variants: List[str] = []
@@ -152,11 +165,14 @@ class SearchAnimeByDescriptionUseCase:
         """Объединяет списки аниме без дубликатов."""
         merged = list(base)
         seen = {
-            (item.external_id or "").strip().lower() or (item.title or "").strip().lower()
+            (item.external_id or "").strip().lower()
+            or (item.title or "").strip().lower()
             for item in merged
         }
         for item in incoming:
-            key = (item.external_id or "").strip().lower() or (item.title or "").strip().lower()
+            key = (item.external_id or "").strip().lower() or (
+                item.title or ""
+            ).strip().lower()
             if not key or key in seen:
                 continue
             seen.add(key)
@@ -164,11 +180,7 @@ class SearchAnimeByDescriptionUseCase:
         return merged
 
     def _sort_results(
-        self,
-        items: List[Anime],
-        sort_by: str,
-        description: str,
-        genre_hint: str | None
+        self, items: List[Anime], sort_by: str, description: str, genre_hint: str | None
     ) -> List[Anime]:
         """Сортирует выдачу по рейтингу, году или релевантности."""
         if sort_by == "rating":
@@ -176,7 +188,9 @@ class SearchAnimeByDescriptionUseCase:
         if sort_by == "year":
             return sorted(items, key=lambda x: x.year or 0, reverse=True)
         query_tokens = self._tokenize(f"{description} {genre_hint or ''}")
-        return sorted(items, key=lambda x: self._match_score(x, query_tokens), reverse=True)
+        return sorted(
+            items, key=lambda x: self._match_score(x, query_tokens), reverse=True
+        )
 
     def _match_score(self, anime: Anime, query_tokens: List[str]) -> float:
         """Считает простой score релевантности по вхождению токенов в title/description."""

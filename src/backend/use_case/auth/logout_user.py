@@ -2,6 +2,7 @@
 Use case для выхода пользователя (logout)
 """
 
+
 class LogoutUserUseCase:
     """
     Завершает сессию пользователя

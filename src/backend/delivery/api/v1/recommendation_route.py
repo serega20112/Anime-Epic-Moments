@@ -1,7 +1,9 @@
 from flask import Blueprint, request, jsonify
 from src.backend.dependencies.container import container
 
-recommendation_bp = Blueprint("recommendation", __name__, url_prefix="/api/v1/recommendations")
+recommendation_bp = Blueprint(
+    "recommendation", __name__, url_prefix="/api/v1/recommendations"
+)
 
 
 @recommendation_bp.route("/generate/<int:user_id>", methods=["POST"])

@@ -2,19 +2,34 @@ import re
 
 from src.backend.domain.anime.entity import Anime
 from src.backend.domain.watch.entity import Translation, WatchSource
-from src.backend.infrastructure.external.kodik_client import KodikClient
+from src.backend.infrastructure.external.watch_source_provider import (
+    WatchSourceProvider,
+)
 from src.backend.repository.watch_repository import WatchRepository
 
 
 class WatchSourceSyncService:
     """Синхронизирует источники просмотра из внешнего провайдера в локальное хранилище."""
 
-    def __init__(self, watch_repo: WatchRepository, kodik_client: KodikClient):
+    def __init__(
+        self, watch_repo: WatchRepository, providers: list[WatchSourceProvider]
+    ):
         self.watch_repo = watch_repo
-        self.kodik_client = kodik_client
+        self.providers = providers
 
     def is_enabled(self) -> bool:
-        return self.kodik_client.is_configured()
+        return any(provider.is_enabled() for provider in self.providers)
+
+    def get_enabled_provider_names(self) -> list[str]:
+        return [
+            provider.provider_name
+            for provider in self.providers
+            if provider.is_enabled()
+        ]
+
+    def get_provider_label(self) -> str | None:
+        enabled = self.get_enabled_provider_names()
+        return ", ".join(enabled) if enabled else None
 
     def sync_for_anime(
         self,
@@ -24,41 +39,56 @@ class WatchSourceSyncService:
         force: bool = False,
     ) -> list[WatchSource]:
         existing = self.watch_repo.get_sources(anime_id=anime_id, episode=episode)
-        if existing and not force:
-            return existing
         if not anime or not anime.title or not self.is_enabled():
             return existing
 
-        discovered = []
-        for title_variant in self._build_title_variants(anime.title):
-            discovered = self.kodik_client.search_sources(
-                title=title_variant,
-                episode=episode,
-                year=anime.year,
+        existing_provider_names = {
+            str(source.provider_name).strip().lower() for source in existing
+        }
+        providers_to_query = [
+            provider
+            for provider in self.providers
+            if provider.is_enabled()
+            and (
+                force
+                or provider.provider_name.strip().lower() not in existing_provider_names
             )
-            if discovered:
-                break
+        ]
+        if not providers_to_query:
+            return existing
 
-        for item in discovered:
-            translation = self.watch_repo.add_translation(
-                Translation(
-                    anime_id=anime_id,
-                    name=item.translation_name,
-                    translation_type=item.translation_type,
-                    language=item.language,
+        title_variants = self._build_title_variants(anime.title)
+        for provider in providers_to_query:
+            discovered = []
+            for title_variant in title_variants:
+                discovered = provider.search_sources(
+                    title=title_variant,
+                    episode=episode,
+                    year=anime.year,
                 )
-            )
-            self.watch_repo.add_source(
-                WatchSource(
-                    anime_id=anime_id,
-                    episode=item.episode,
-                    translation_id=translation.id or 0,
-                    provider_name=item.provider_name,
-                    source_name=item.source_name,
-                    stream_url=item.stream_url,
-                    quality_label=item.quality_label,
+                if discovered:
+                    break
+
+            for item in discovered:
+                translation = self.watch_repo.add_translation(
+                    Translation(
+                        anime_id=anime_id,
+                        name=item.translation_name,
+                        translation_type=item.translation_type,
+                        language=item.language,
+                    )
                 )
-            )
+                self.watch_repo.add_source(
+                    WatchSource(
+                        anime_id=anime_id,
+                        episode=item.episode,
+                        translation_id=translation.id or 0,
+                        provider_name=item.provider_name,
+                        source_name=item.source_name,
+                        stream_url=item.stream_url,
+                        quality_label=item.quality_label,
+                    )
+                )
 
         return self.watch_repo.get_sources(anime_id=anime_id, episode=episode)
 

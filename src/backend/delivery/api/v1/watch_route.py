@@ -37,22 +37,7 @@ def update_status(anime_id: int):
 
 @watch_bp.route("/<int:anime_id>/sources", methods=["POST"])
 def add_source(anime_id: int):
-    user = getattr(g, "user", None)
-    if not user:
-        return jsonify({"error": "auth_required"}), 401
-    payload = request.get_json(silent=True) or request.form
-    source = container.add_watch_source_use_case().execute(
-        anime_id=anime_id,
-        episode=int(payload.get("episode")),
-        translation_name=str(payload.get("translation_name") or "").strip(),
-        translation_type=str(payload.get("translation_type") or "voice").strip(),
-        provider_name=str(payload.get("provider_name") or "").strip(),
-        source_name=str(payload.get("source_name") or "").strip(),
-        stream_url=str(payload.get("stream_url") or "").strip(),
-        quality_label=str(payload.get("quality_label") or "Auto").strip(),
-        language=str(payload.get("language") or "ru").strip(),
-    )
-    return jsonify({"source_id": source.id}), 201
+    return jsonify({"error": "manual_source_creation_disabled"}), 403
 
 
 @watch_bp.route("/<int:anime_id>/sources/discover", methods=["POST"])
@@ -103,7 +88,11 @@ def create_highlight(anime_id: int):
         end_timestamp=float(payload.get("end_timestamp")),
         description=str(payload.get("description") or "").strip(),
         is_spoiler=bool(payload.get("is_spoiler")),
-        emotion=(str(payload.get("emotion")).strip() if payload.get("emotion") is not None else None),
+        emotion=(
+            str(payload.get("emotion")).strip()
+            if payload.get("emotion") is not None
+            else None
+        ),
         watch_source_id=int(payload.get("watch_source_id")),
         translation_id=int(payload.get("translation_id")),
     )

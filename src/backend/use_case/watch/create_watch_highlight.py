@@ -6,7 +6,11 @@ from src.backend.use_case.highlight.create_highlight import CreateHighlightUseCa
 class CreateWatchHighlightUseCase:
     """Создает хайлайт из плеера и сохраняет его playback context."""
 
-    def __init__(self, create_highlight_use_case: CreateHighlightUseCase, watch_repo: WatchRepository):
+    def __init__(
+        self,
+        create_highlight_use_case: CreateHighlightUseCase,
+        watch_repo: WatchRepository,
+    ):
         self.create_highlight_use_case = create_highlight_use_case
         self.watch_repo = watch_repo
 

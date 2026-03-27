@@ -1,315 +1,504 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% if is_public %}Публичные хайлайты{% else %}Мои хайлайты{% endif %} - AEM</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-</head>
-<body>
-<header class="header">
-    <div class="logo">AEM</div>
-    <form class="search-container global-search-form" action="{{ url_for('anime.search_anime_page') }}" method="get" autocomplete="off">
-        <input type="text" name="title" class="global-search-input" placeholder="Найди аниме по названию, жанру или эмоции…">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {% if is_public %}Публичные хайлайты{% else %}Мои хайлайты{% endif %} -
+      AEM
+    </title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+  </head>
+  <body>
+    <header class="header">
+      <div class="logo">AEM</div>
+      <form
+        class="search-container global-search-form"
+        action="{{ url_for('anime.search_anime_page') }}"
+        method="get"
+        autocomplete="off"
+      >
+        <input
+          type="text"
+          name="title"
+          class="global-search-input"
+          placeholder="Найди аниме по названию, жанру или эмоции…"
+        />
         <button type="submit">🔍</button>
         <div class="search-autocomplete" hidden></div>
-    </form>
-    <nav>
+      </form>
+      <nav>
         <a href="{{ url_for('index.index') }}">Главная</a>
         {% if current_user %}
-          <a href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}">Избранное</a>
-          <a href="{{ url_for('auth.profile_page') }}">Мой профиль</a>
+        <a
+          href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}"
+          >Избранное</a
+        >
+        <a href="{{ url_for('auth.profile_page') }}">Мой профиль</a>
         {% endif %}
-    </nav>
-</header>
+      </nav>
+    </header>
 
-<main class="search-page">
-    <section class="search-shell highlight-dashboard">
+    <main class="search-page">
+      <section class="search-shell highlight-dashboard">
         <aside class="filters-panel">
-            <h1>{% if is_public %}Топ хайлайтов{% else %}Мои хайлайты{% endif %}</h1>
-            <p class="filters-subtitle">
-                {% if is_public %}
-                    Смотри лучшие моменты сообщества и открывай спойлеры только по желанию.
-                {% else %}
-                    Фильтруй свою коллекцию по аниме, эмоциям и дате.
-                {% endif %}
-            </p>
+          <h1>
+            {% if is_public %}Топ хайлайтов{% else %}Мои хайлайты{% endif %}
+          </h1>
+          <p class="filters-subtitle">
+            {% if is_public %} Смотри лучшие моменты сообщества и открывай
+            спойлеры только по желанию. {% else %} Фильтруй свою коллекцию по
+            аниме, эмоциям и дате. {% endif %}
+          </p>
 
-            <form class="description-search-form" method="get">
-                <div class="filter-control">
-                    <label for="anime_id">По аниме</label>
-                    <select id="anime_id" name="anime_id">
-                        <option value="">Все аниме</option>
-                        {% for group in dashboard.anime_groups %}
-                          <option value="{{ group.anime_id }}" {% if dashboard.selected_anime_id == group.anime_id %}selected{% endif %}>
-                              {{ group.anime_title }} ({{ group.count }})
-                          </option>
-                        {% endfor %}
-                    </select>
-                </div>
+          <form class="description-search-form" method="get">
+            <div class="filter-control">
+              <label for="anime_id">По аниме</label>
+              <select id="anime_id" name="anime_id">
+                <option value="">Все аниме</option>
+                {% for group in dashboard.anime_groups %}
+                <option
+                  value="{{ group.anime_id }}"
+                  {%
+                  if
+                  dashboard.selected_anime_id=""
+                  ="group.anime_id"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  {{ group.anime_title }} ({{ group.count }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
 
-                <div class="filter-control">
-                    <label for="emotion">По эмоции</label>
-                    <select id="emotion" name="emotion">
-                        <option value="">Все эмоции</option>
-                        {% for emotion in dashboard.emotions %}
-                          <option value="{{ emotion }}" {% if dashboard.selected_emotion == emotion %}selected{% endif %}>{{ emotion }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+            <div class="filter-control">
+              <label for="emotion">По эмоции</label>
+              <select id="emotion" name="emotion">
+                <option value="">Все эмоции</option>
+                {% for emotion in dashboard.emotions %}
+                <option
+                  value="{{ emotion }}"
+                  {%
+                  if
+                  dashboard.selected_emotion=""
+                  ="emotion"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  {{ emotion }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
 
-                <div class="filter-control">
-                    <label for="date">По дате</label>
-                    <input id="date" type="date" name="date" value="{{ dashboard.selected_date or '' }}">
-                </div>
+            <div class="filter-control">
+              <label for="date">По дате</label>
+              <input
+                id="date"
+                type="date"
+                name="date"
+                value="{{ dashboard.selected_date or '' }}"
+              />
+            </div>
 
-                <div class="filter-control">
-                    <label for="query">Поиск по описанию</label>
-                    <input id="query" type="text" name="query" value="{{ dashboard.selected_query or '' }}" placeholder="Например: мурашки, финальный бой">
-                </div>
+            <div class="filter-control">
+              <label for="query">Поиск по описанию</label>
+              <input
+                id="query"
+                type="text"
+                name="query"
+                value="{{ dashboard.selected_query or '' }}"
+                placeholder="Например: мурашки, финальный бой"
+              />
+            </div>
 
-                <label class="filter-checkbox">
-                    <input type="checkbox" name="include_spoilers" value="1" {% if dashboard.include_spoilers %}checked{% endif %}>
-                    <span>{% if is_public %}Я готов к спойлерам{% else %}Показывать спойлеры{% endif %}</span>
-                </label>
+            <label class="filter-checkbox">
+              <input
+                type="checkbox"
+                name="include_spoilers"
+                value="1"
+                {%
+                if
+                dashboard.include_spoilers
+                %}checked{%
+                endif
+                %}
+              />
+              <span
+                >{% if is_public %}Я готов к спойлерам{% else %}Показывать
+                спойлеры{% endif %}</span
+              >
+            </label>
 
-                <div class="search-actions">
-                    <button type="submit" class="btn neon-pink">Применить</button>
-                    <a href="{{ request.path }}" class="btn neon-blue">Сбросить</a>
-                </div>
-            </form>
+            <div class="search-actions">
+              <button type="submit" class="btn neon-pink">Применить</button>
+              <a href="{{ request.path }}" class="btn neon-blue">Сбросить</a>
+            </div>
+          </form>
 
-            <section class="highlight-sidebar">
-                <h2>Аниме в коллекции</h2>
-                <div class="highlight-group-list">
-                    {% for group in dashboard.anime_groups %}
-                      <a class="highlight-group-link" href="{{ request.path }}?anime_id={{ group.anime_id }}">
-                          <span>{{ group.anime_title }}</span>
-                          <strong>{{ group.count }}</strong>
-                      </a>
-                    {% else %}
-                      <p class="filters-subtitle">Пока нет аниме для группировки.</p>
-                    {% endfor %}
-                </div>
-            </section>
+          <section class="highlight-sidebar">
+            <h2>Аниме в коллекции</h2>
+            <div class="highlight-group-list">
+              {% for group in dashboard.anime_groups %}
+              <a
+                class="highlight-group-link"
+                href="{{ request.path }}?anime_id={{ group.anime_id }}"
+              >
+                <span>{{ group.anime_title }}</span>
+                <strong>{{ group.count }}</strong>
+              </a>
+              {% else %}
+              <p class="filters-subtitle">Пока нет аниме для группировки.</p>
+              {% endfor %}
+            </div>
+          </section>
 
-            <section class="highlight-stats">
-                <h2>Статистика</h2>
-                <div class="stat-card">
-                    <span>Количество хайлайтов</span>
-                    <strong>{{ dashboard.stats.total_highlights }}</strong>
-                </div>
-                <div class="stat-card">
-                    <span>Топ аниме</span>
-                    <strong>{{ dashboard.stats.top_anime_title }}</strong>
-                </div>
-                <div class="stat-card">
-                    <span>Средняя длительность</span>
-                    <strong>{{ dashboard.stats.average_duration_seconds }} сек</strong>
-                </div>
-            </section>
+          <section class="highlight-stats">
+            <h2>Статистика</h2>
+            <div class="stat-card">
+              <span>Количество хайлайтов</span>
+              <strong>{{ dashboard.stats.total_highlights }}</strong>
+            </div>
+            <div class="stat-card">
+              <span>Топ аниме</span>
+              <strong>{{ dashboard.stats.top_anime_title }}</strong>
+            </div>
+            <div class="stat-card">
+              <span>Средняя длительность</span>
+              <strong
+                >{{ dashboard.stats.average_duration_seconds }} сек</strong
+              >
+            </div>
+          </section>
         </aside>
 
         <section class="results-panel">
-            <div class="results-head">
-                <h2>{% if is_public %}Публичная лента{% else %}Моменты{% endif %}</h2>
-                <p id="results-meta">Найдено: {{ dashboard.items|length }}</p>
+          <div class="results-head">
+            <h2>
+              {% if is_public %}Публичная лента{% else %}Моменты{% endif %}
+            </h2>
+            <p id="results-meta">Найдено: {{ dashboard.items|length }}</p>
+          </div>
+
+          {% if not current_user %}
+          <section class="guest-highlight-panel">
+            <div>
+              <h3>Гостевой режим</h3>
+              <p>
+                Залогинься, чтобы не потерять свои локальные хайлайты. Пока они
+                хранятся только на этом устройстве.
+              </p>
             </div>
+            <button
+              type="button"
+              class="btn neon-pink"
+              id="guest-highlight-open"
+            >
+              Добавить локальный хайлайт
+            </button>
+          </section>
+          <section id="guest-highlight-list" class="highlight-feed"></section>
+          {% endif %} {% if dashboard.items|length == 0 %}
+          <section class="empty-state">
+            <h2>Пока пусто</h2>
+            <p>Добавь свой первый хайлайт! Начни с поиска.</p>
+          </section>
+          {% endif %}
 
-            {% if not current_user %}
-              <section class="guest-highlight-panel">
-                  <div>
-                      <h3>Гостевой режим</h3>
-                      <p>Залогинься, чтобы не потерять свои локальные хайлайты. Пока они хранятся только на этом устройстве.</p>
-                  </div>
-                  <button type="button" class="btn neon-pink" id="guest-highlight-open">Добавить локальный хайлайт</button>
-              </section>
-              <section id="guest-highlight-list" class="highlight-feed"></section>
-            {% endif %}
-
-            {% if dashboard.items|length == 0 %}
-              <section class="empty-state">
-                <h2>Пока пусто</h2>
-                <p>Добавь свой первый хайлайт! Начни с поиска.</p>
-              </section>
-            {% endif %}
-
-            <div class="highlight-feed">
-                {% for item in dashboard.items %}
-                  <article class="highlight-entry {% if item.is_spoiler %}spoiler-entry{% endif %}" id="highlight-{{ item.id }}">
-                    <img src="{{ item.anime_cover or '/static/images/no-cover.png' }}" alt="{{ item.anime_title }}" loading="lazy">
-                    <div class="highlight-entry-body">
-                        <div class="highlight-entry-head">
-                            <h3>{{ item.anime_title }}</h3>
-                            <span class="highlight-like-badge">{{ item.likes_count }} лайков</span>
-                        </div>
-                        <p class="highlight-meta-line">Серия {{ item.episode }} • {{ item.start_timestamp }} - {{ item.end_timestamp }} • {{ item.created_at }}</p>
-                        {% if item.emotion %}
-                          <span class="genre-chip">{{ item.emotion }}</span>
-                        {% endif %}
-                        {% if item.is_spoiler and not dashboard.include_spoilers %}
-                          <div class="spoiler-veil">
-                              <p>Спойлер скрыт. Нажми "Показать спойлер", если готов.</p>
-                              <button type="button" class="btn neon-blue reveal-spoiler-button" data-highlight-id="{{ item.id }}">Показать спойлер</button>
-                          </div>
-                        {% endif %}
-                        <p class="highlight-description {% if item.is_spoiler and not dashboard.include_spoilers %}is-hidden{% endif %}" data-highlight-description="{{ item.id }}">{{ item.description }}</p>
-                        <div class="result-actions">
-                            <a class="btn neon-blue btn-watch" href="{{ item.watch_url }}">Смотреть</a>
-                            {% if not is_public %}
-                              <button type="button" class="btn-favorite highlight-edit-button" data-highlight-id="{{ item.id }}" data-episode="{{ item.episode }}" data-start="{{ item.start_timestamp }}" data-end="{{ item.end_timestamp }}" data-description="{{ item.description }}" data-spoiler="{{ 1 if item.is_spoiler else 0 }}" data-emotion="{{ item.emotion or '' }}">Редактировать</button>
-                              <button type="button" class="btn-favorite highlight-delete-button" data-highlight-id="{{ item.id }}">Удалить</button>
-                            {% endif %}
-                            <button type="button" class="btn-favorite highlight-share-button" data-share-url="{{ item.share_url }}">Поделиться</button>
-                        </div>
-                    </div>
-                  </article>
-                {% endfor %}
-            </div>
+          <div class="highlight-feed">
+            {% for item in dashboard.items %}
+            <article
+              class="highlight-entry {% if item.is_spoiler %}spoiler-entry{% endif %}"
+              id="highlight-{{ item.id }}"
+            >
+              <img
+                src="{{ item.anime_cover or '/static/images/no-cover.png' }}"
+                alt="{{ item.anime_title }}"
+                loading="lazy"
+              />
+              <div class="highlight-entry-body">
+                <div class="highlight-entry-head">
+                  <h3>{{ item.anime_title }}</h3>
+                  <span class="highlight-like-badge"
+                    >{{ item.likes_count }} лайков</span
+                  >
+                </div>
+                <p class="highlight-meta-line">
+                  Серия {{ item.episode }} • {{ item.start_timestamp }} - {{
+                  item.end_timestamp }} • {{ item.created_at }}
+                </p>
+                {% if item.emotion %}
+                <span class="genre-chip">{{ item.emotion }}</span>
+                {% endif %} {% if item.is_spoiler and not
+                dashboard.include_spoilers %}
+                <div class="spoiler-veil">
+                  <p>Спойлер скрыт. Нажми "Показать спойлер", если готов.</p>
+                  <button
+                    type="button"
+                    class="btn neon-blue reveal-spoiler-button"
+                    data-highlight-id="{{ item.id }}"
+                  >
+                    Показать спойлер
+                  </button>
+                </div>
+                {% endif %}
+                <p
+                  class="highlight-description {% if item.is_spoiler and not dashboard.include_spoilers %}is-hidden{% endif %}"
+                  data-highlight-description="{{ item.id }}"
+                >
+                  {{ item.description }}
+                </p>
+                <div class="result-actions">
+                  <a class="btn neon-blue btn-watch" href="{{ item.watch_url }}"
+                    >Смотреть</a
+                  >
+                  {% if not is_public %}
+                  <button
+                    type="button"
+                    class="btn-favorite highlight-edit-button"
+                    data-highlight-id="{{ item.id }}"
+                    data-episode="{{ item.episode }}"
+                    data-start="{{ item.start_timestamp }}"
+                    data-end="{{ item.end_timestamp }}"
+                    data-description="{{ item.description }}"
+                    data-spoiler="{{ 1 if item.is_spoiler else 0 }}"
+                    data-emotion="{{ item.emotion or '' }}"
+                  >
+                    Редактировать
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-favorite highlight-delete-button"
+                    data-highlight-id="{{ item.id }}"
+                  >
+                    Удалить
+                  </button>
+                  {% endif %}
+                  <button
+                    type="button"
+                    class="btn-favorite highlight-share-button"
+                    data-share-url="{{ item.share_url }}"
+                  >
+                    Поделиться
+                  </button>
+                </div>
+              </div>
+            </article>
+            {% endfor %}
+          </div>
         </section>
-    </section>
-</main>
+      </section>
+    </main>
 
-{% if not current_user %}
-<div id="guest-highlight-modal" class="modal" hidden>
-    <div class="modal-content">
-        <button type="button" class="close" id="guest-highlight-close">&times;</button>
+    {% if not current_user %}
+    <div id="guest-highlight-modal" class="modal" hidden>
+      <div class="modal-content">
+        <button type="button" class="close" id="guest-highlight-close">
+          &times;
+        </button>
         <h2 class="modal-title">Локальный хайлайт</h2>
         <form id="guest-highlight-form" class="manual-add-form">
-            <input type="text" name="anime_title" placeholder="Название аниме" required>
-            <input type="number" name="anime_id" placeholder="MAL ID, если знаешь">
-            <input type="number" name="episode" placeholder="Серия" min="1" required>
-            <input type="text" name="start_timestamp" placeholder="Начало MM:SS" required>
-            <input type="text" name="end_timestamp" placeholder="Конец MM:SS" required>
-            <input type="text" name="emotion" placeholder="Эмоция">
-            <textarea name="description" placeholder="Почему этот момент важен"></textarea>
-            <label class="filter-checkbox">
-                <input type="checkbox" name="is_spoiler" value="1">
-                <span>Это спойлер</span>
-            </label>
-            <button type="submit" class="btn neon-pink">Сохранить локально</button>
+          <input
+            type="text"
+            name="anime_title"
+            placeholder="Название аниме"
+            required
+          />
+          <input
+            type="number"
+            name="anime_id"
+            placeholder="MAL ID, если знаешь"
+          />
+          <input
+            type="number"
+            name="episode"
+            placeholder="Серия"
+            min="1"
+            required
+          />
+          <input
+            type="text"
+            name="start_timestamp"
+            placeholder="Начало MM:SS"
+            required
+          />
+          <input
+            type="text"
+            name="end_timestamp"
+            placeholder="Конец MM:SS"
+            required
+          />
+          <input type="text" name="emotion" placeholder="Эмоция" />
+          <textarea
+            name="description"
+            placeholder="Почему этот момент важен"
+          ></textarea>
+          <label class="filter-checkbox">
+            <input type="checkbox" name="is_spoiler" value="1" />
+            <span>Это спойлер</span>
+          </label>
+          <button type="submit" class="btn neon-pink">
+            Сохранить локально
+          </button>
         </form>
+      </div>
     </div>
-</div>
-{% endif %}
+    {% endif %}
 
-<script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
-<script>
-(function () {
-    const GUEST_HIGHLIGHTS_KEY = "aem_guest_highlights";
+    <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
+    <script>
+      (function () {
+        const GUEST_HIGHLIGHTS_KEY = "aem_guest_highlights";
 
-    document.querySelectorAll(".reveal-spoiler-button").forEach((button) => {
-        button.addEventListener("click", () => {
-            const id = button.dataset.highlightId;
-            const description = document.querySelector(`[data-highlight-description="${id}"]`);
-            const veil = button.closest(".spoiler-veil");
-            if (description) {
+        document
+          .querySelectorAll(".reveal-spoiler-button")
+          .forEach((button) => {
+            button.addEventListener("click", () => {
+              const id = button.dataset.highlightId;
+              const description = document.querySelector(
+                `[data-highlight-description="${id}"]`,
+              );
+              const veil = button.closest(".spoiler-veil");
+              if (description) {
                 description.classList.remove("is-hidden");
-            }
-            if (veil) {
+              }
+              if (veil) {
                 veil.remove();
-            }
-        });
-    });
+              }
+            });
+          });
 
-    document.querySelectorAll(".highlight-share-button").forEach((button) => {
-        button.addEventListener("click", async () => {
-            const shareUrl = `${window.location.origin}${button.dataset.shareUrl}`;
-            try {
+        document
+          .querySelectorAll(".highlight-share-button")
+          .forEach((button) => {
+            button.addEventListener("click", async () => {
+              const shareUrl = `${window.location.origin}${button.dataset.shareUrl}`;
+              try {
                 await navigator.clipboard.writeText(shareUrl);
                 button.textContent = "Ссылка скопирована";
-            } catch (_error) {
+              } catch (_error) {
                 window.prompt("Скопируй ссылку", shareUrl);
-            }
-        });
-    });
+              }
+            });
+          });
 
-    document.querySelectorAll(".highlight-delete-button").forEach((button) => {
-        button.addEventListener("click", async () => {
-            const highlightId = button.dataset.highlightId;
-            const response = await fetch(`/highlights/${highlightId}`, { method: "DELETE" });
-            if (!response.ok) {
+        document
+          .querySelectorAll(".highlight-delete-button")
+          .forEach((button) => {
+            button.addEventListener("click", async () => {
+              const highlightId = button.dataset.highlightId;
+              const response = await fetch(`/highlights/${highlightId}`, {
+                method: "DELETE",
+              });
+              if (!response.ok) {
                 window.alert("Не удалось удалить хайлайт.");
                 return;
-            }
-            const card = document.getElementById(`highlight-${highlightId}`);
-            if (card) {
+              }
+              const card = document.getElementById(`highlight-${highlightId}`);
+              if (card) {
                 card.remove();
-            }
-        });
-    });
+              }
+            });
+          });
 
-    document.querySelectorAll(".highlight-edit-button").forEach((button) => {
-        button.addEventListener("click", async () => {
-            const highlightId = button.dataset.highlightId;
-            const episode = window.prompt("Серия", button.dataset.episode);
-            if (episode === null) {
+        document
+          .querySelectorAll(".highlight-edit-button")
+          .forEach((button) => {
+            button.addEventListener("click", async () => {
+              const highlightId = button.dataset.highlightId;
+              const episode = window.prompt("Серия", button.dataset.episode);
+              if (episode === null) {
                 return;
-            }
-            const startTimestamp = window.prompt("Начало MM:SS", button.dataset.start);
-            if (startTimestamp === null) {
+              }
+              const startTimestamp = window.prompt(
+                "Начало MM:SS",
+                button.dataset.start,
+              );
+              if (startTimestamp === null) {
                 return;
-            }
-            const endTimestamp = window.prompt("Конец MM:SS", button.dataset.end);
-            if (endTimestamp === null) {
+              }
+              const endTimestamp = window.prompt(
+                "Конец MM:SS",
+                button.dataset.end,
+              );
+              if (endTimestamp === null) {
                 return;
-            }
-            const description = window.prompt("Описание", button.dataset.description);
-            if (description === null) {
+              }
+              const description = window.prompt(
+                "Описание",
+                button.dataset.description,
+              );
+              if (description === null) {
                 return;
-            }
-            const emotion = window.prompt("Эмоция", button.dataset.emotion);
-            if (emotion === null) {
+              }
+              const emotion = window.prompt("Эмоция", button.dataset.emotion);
+              if (emotion === null) {
                 return;
-            }
-            const isSpoiler = window.confirm("Отметить как спойлер?");
+              }
+              const isSpoiler = window.confirm("Отметить как спойлер?");
 
-            const response = await fetch(`/highlights/${highlightId}`, {
+              const response = await fetch(`/highlights/${highlightId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    episode: episode,
-                    start_timestamp: startTimestamp,
-                    end_timestamp: endTimestamp,
-                    description: description,
-                    is_spoiler: isSpoiler,
-                    emotion: emotion
-                })
-            });
+                  episode: episode,
+                  start_timestamp: startTimestamp,
+                  end_timestamp: endTimestamp,
+                  description: description,
+                  is_spoiler: isSpoiler,
+                  emotion: emotion,
+                }),
+              });
 
-            if (!response.ok) {
+              if (!response.ok) {
                 window.alert("Не удалось обновить хайлайт.");
                 return;
-            }
-            window.location.reload();
-        });
-    });
+              }
+              window.location.reload();
+            });
+          });
 
-    const guestList = document.getElementById("guest-highlight-list");
-    const guestModal = document.getElementById("guest-highlight-modal");
-    const guestForm = document.getElementById("guest-highlight-form");
-    const guestOpenButton = document.getElementById("guest-highlight-open");
-    const guestCloseButton = document.getElementById("guest-highlight-close");
+        const guestList = document.getElementById("guest-highlight-list");
+        const guestModal = document.getElementById("guest-highlight-modal");
+        const guestForm = document.getElementById("guest-highlight-form");
+        const guestOpenButton = document.getElementById("guest-highlight-open");
+        const guestCloseButton = document.getElementById(
+          "guest-highlight-close",
+        );
 
-    const readGuestHighlights = () => {
-        try {
-            return JSON.parse(window.localStorage.getItem(GUEST_HIGHLIGHTS_KEY) || "[]");
-        } catch (_error) {
+        const readGuestHighlights = () => {
+          try {
+            return JSON.parse(
+              window.localStorage.getItem(GUEST_HIGHLIGHTS_KEY) || "[]",
+            );
+          } catch (_error) {
             return [];
-        }
-    };
+          }
+        };
 
-    const writeGuestHighlights = (items) => {
-        window.localStorage.setItem(GUEST_HIGHLIGHTS_KEY, JSON.stringify(items));
-    };
+        const writeGuestHighlights = (items) => {
+          window.localStorage.setItem(
+            GUEST_HIGHLIGHTS_KEY,
+            JSON.stringify(items),
+          );
+        };
 
-    const renderGuestHighlights = () => {
-        if (!guestList) {
+        const renderGuestHighlights = () => {
+          if (!guestList) {
             return;
-        }
-        const items = readGuestHighlights();
-        if (!items.length) {
+          }
+          const items = readGuestHighlights();
+          if (!items.length) {
             guestList.innerHTML = `
                 <section class="empty-state">
                     <h2>Локальных хайлайтов пока нет</h2>
@@ -317,9 +506,11 @@
                 </section>
             `;
             return;
-        }
+          }
 
-        guestList.innerHTML = items.map((item, index) => `
+          guestList.innerHTML = items
+            .map(
+              (item, index) => `
             <article class="highlight-entry guest-highlight-entry">
                 <img src="/static/images/no-cover.png" alt="${item.anime_title}">
                 <div class="highlight-entry-body">
@@ -335,60 +526,66 @@
                     </div>
                 </div>
             </article>
-        `).join("");
+        `,
+            )
+            .join("");
 
-        guestList.querySelectorAll(".guest-highlight-delete").forEach((button) => {
-            button.addEventListener("click", () => {
+          guestList
+            .querySelectorAll(".guest-highlight-delete")
+            .forEach((button) => {
+              button.addEventListener("click", () => {
                 const index = Number(button.dataset.index);
                 const items = readGuestHighlights();
                 items.splice(index, 1);
                 writeGuestHighlights(items);
                 renderGuestHighlights();
+              });
             });
+        };
+
+        guestOpenButton?.addEventListener("click", () => {
+          if (!guestModal) {
+            return;
+          }
+          guestModal.hidden = false;
+          guestModal.style.display = "flex";
         });
-    };
 
-    guestOpenButton?.addEventListener("click", () => {
-        if (!guestModal) {
+        guestCloseButton?.addEventListener("click", () => {
+          if (!guestModal) {
             return;
-        }
-        guestModal.hidden = false;
-        guestModal.style.display = "flex";
-    });
+          }
+          guestModal.hidden = true;
+          guestModal.style.display = "none";
+        });
 
-    guestCloseButton?.addEventListener("click", () => {
-        if (!guestModal) {
-            return;
-        }
-        guestModal.hidden = true;
-        guestModal.style.display = "none";
-    });
-
-    guestForm?.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const formData = new FormData(guestForm);
-        const items = readGuestHighlights();
-        items.unshift({
+        guestForm?.addEventListener("submit", (event) => {
+          event.preventDefault();
+          const formData = new FormData(guestForm);
+          const items = readGuestHighlights();
+          items.unshift({
             anime_title: String(formData.get("anime_title") || "").trim(),
             anime_id: String(formData.get("anime_id") || "").trim(),
             episode: String(formData.get("episode") || "").trim(),
-            start_timestamp: String(formData.get("start_timestamp") || "").trim(),
+            start_timestamp: String(
+              formData.get("start_timestamp") || "",
+            ).trim(),
             end_timestamp: String(formData.get("end_timestamp") || "").trim(),
             emotion: String(formData.get("emotion") || "").trim(),
             description: String(formData.get("description") || "").trim(),
             is_spoiler: Boolean(formData.get("is_spoiler")),
-        });
-        writeGuestHighlights(items.slice(0, 50));
-        guestForm.reset();
-        if (guestModal) {
+          });
+          writeGuestHighlights(items.slice(0, 50));
+          guestForm.reset();
+          if (guestModal) {
             guestModal.hidden = true;
             guestModal.style.display = "none";
-        }
-        renderGuestHighlights();
-    });
+          }
+          renderGuestHighlights();
+        });
 
-    renderGuestHighlights();
-}());
-</script>
-</body>
+        renderGuestHighlights();
+      })();
+    </script>
+  </body>
 </html>

@@ -7,7 +7,6 @@ from src.backend.infrastructure.files.database import Base
 from datetime import datetime
 
 
-
 class UserModel(Base):
     __tablename__ = "users"
 

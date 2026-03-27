@@ -1,122 +1,139 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ошибка сервера - AEM</title>
     <style>
-        :root {
-            --bg-a: #0f172a;
-            --bg-b: #1e293b;
-            --accent: #22d3ee;
-            --accent-soft: rgba(34, 211, 238, 0.3);
-            --text: #e2e8f0;
-            --muted: #94a3b8;
+      :root {
+        --bg-a: #0f172a;
+        --bg-b: #1e293b;
+        --accent: #22d3ee;
+        --accent-soft: rgba(34, 211, 238, 0.3);
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: "Inter", sans-serif;
+        background:
+          radial-gradient(circle at 20% 20%, #1d4ed8 0%, transparent 35%),
+          radial-gradient(circle at 80% 0%, #0ea5e9 0%, transparent 40%),
+          linear-gradient(140deg, var(--bg-a), var(--bg-b));
+        color: var(--text);
+        overflow: hidden;
+      }
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: rgba(2, 6, 23, 0.55);
+        padding: 24px;
+      }
+      .modal {
+        width: min(520px, 100%);
+        background: rgba(15, 23, 42, 0.92);
+        border: 1px solid var(--accent-soft);
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: 0 20px 80px rgba(2, 6, 23, 0.7);
+        animation: showModal 260ms ease-out;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(15, 118, 110, 0.18);
+        color: #67e8f9;
+        font-size: 14px;
+        margin-bottom: 14px;
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 28px;
+        line-height: 1.2;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .actions {
+        margin-top: 24px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        border: 0;
+        border-radius: 12px;
+        padding: 11px 16px;
+        font-size: 15px;
+        cursor: pointer;
+        text-decoration: none;
+        transition:
+          transform 150ms ease,
+          opacity 150ms ease;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        opacity: 0.95;
+      }
+      .btn-primary {
+        background: linear-gradient(90deg, #06b6d4, #0ea5e9);
+        color: #022c22;
+        font-weight: 700;
+      }
+      .btn-secondary {
+        background: rgba(148, 163, 184, 0.18);
+        color: var(--text);
+      }
+      @keyframes showModal {
+        from {
+          transform: translateY(8px) scale(0.98);
+          opacity: 0;
         }
-        * {
-            box-sizing: border-box;
+        to {
+          transform: translateY(0) scale(1);
+          opacity: 1;
         }
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: grid;
-            place-items: center;
-            font-family: "Inter", sans-serif;
-            background: radial-gradient(circle at 20% 20%, #1d4ed8 0%, transparent 35%),
-                        radial-gradient(circle at 80% 0%, #0ea5e9 0%, transparent 40%),
-                        linear-gradient(140deg, var(--bg-a), var(--bg-b));
-            color: var(--text);
-            overflow: hidden;
-        }
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            display: grid;
-            place-items: center;
-            background: rgba(2, 6, 23, 0.55);
-            padding: 24px;
-        }
-        .modal {
-            width: min(520px, 100%);
-            background: rgba(15, 23, 42, 0.92);
-            border: 1px solid var(--accent-soft);
-            border-radius: 20px;
-            padding: 28px;
-            box-shadow: 0 20px 80px rgba(2, 6, 23, 0.7);
-            animation: showModal 260ms ease-out;
-        }
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            border-radius: 999px;
-            background: rgba(15, 118, 110, 0.18);
-            color: #67e8f9;
-            font-size: 14px;
-            margin-bottom: 14px;
-        }
-        h1 {
-            margin: 0 0 10px;
-            font-size: 28px;
-            line-height: 1.2;
-        }
-        p {
-            margin: 0;
-            color: var(--muted);
-            line-height: 1.5;
-        }
-        .actions {
-            margin-top: 24px;
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .btn {
-            border: 0;
-            border-radius: 12px;
-            padding: 11px 16px;
-            font-size: 15px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: transform 150ms ease, opacity 150ms ease;
-        }
-        .btn:hover {
-            transform: translateY(-1px);
-            opacity: 0.95;
-        }
-        .btn-primary {
-            background: linear-gradient(90deg, #06b6d4, #0ea5e9);
-            color: #022c22;
-            font-weight: 700;
-        }
-        .btn-secondary {
-            background: rgba(148, 163, 184, 0.18);
-            color: var(--text);
-        }
-        @keyframes showModal {
-            from {
-                transform: translateY(8px) scale(0.98);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0) scale(1);
-                opacity: 1;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="modal-overlay">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="error-title">
-            <div class="badge">Ошибка 500</div>
-            <h1 id="error-title">Что-то пошло не так</h1>
-            <p>Сервер словил внутреннюю ошибку. Попробуйте обновить страницу через пару секунд.</p>
-            <div class="actions">
-                <button type="button" class="btn btn-primary" onclick="window.location.reload()">Обновить страницу</button>
-                <a href="/" class="btn btn-secondary">На главную</a>
-            </div>
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="error-title"
+      >
+        <div class="badge">Ошибка 500</div>
+        <h1 id="error-title">Что-то пошло не так</h1>
+        <p>
+          Сервер словил внутреннюю ошибку. Попробуйте обновить страницу через
+          пару секунд.
+        </p>
+        <div class="actions">
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="window.location.reload()"
+          >
+            Обновить страницу
+          </button>
+          <a href="/" class="btn btn-secondary">На главную</a>
         </div>
+      </div>
     </div>
-</body>
+  </body>
 </html>

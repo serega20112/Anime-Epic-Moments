@@ -23,7 +23,9 @@ def _to_bool(value: str | None) -> bool:
 
 @anime_bp.route("/search", methods=["GET"])
 def search_anime_page():
-    return render_template("anime/search.html", initial_title=request.args.get("title", ""))
+    return render_template(
+        "anime/search.html", initial_title=request.args.get("title", "")
+    )
 
 
 @anime_bp.route("/search/description", methods=["GET"])
@@ -60,7 +62,7 @@ def search_anime_by_description():
         age_rating=age_rating,
         adult_confirmed=adult_confirmed,
         sort_by=sort_by,
-        limit=limit
+        limit=limit,
     )
     return jsonify(result.to_dict())
 
@@ -69,7 +71,9 @@ def search_anime_by_description():
 def autocomplete_anime():
     query = request.args.get("query", "")
     limit = int(request.args.get("limit", 5))
-    suggestions = container.autocomplete_anime_use_case().execute(query=query, limit=limit)
+    suggestions = container.autocomplete_anime_use_case().execute(
+        query=query, limit=limit
+    )
     return jsonify([vars(anime) for anime in suggestions])
 
 
@@ -78,5 +82,7 @@ def get_season_popular():
     year = int(request.args.get("year"))
     season = request.args.get("season")
     limit = int(request.args.get("limit", 10))
-    results = container.get_season_popular_use_case().execute(year=year, season=season, limit=limit)
+    results = container.get_season_popular_use_case().execute(
+        year=year, season=season, limit=limit
+    )
     return jsonify([vars(anime) for anime in results])

@@ -16,7 +16,7 @@ class GetPublicTopHighlightsUseCase(GetUserHighlightsUseCase):
         emotion: str | None = None,
         created_date: str | None = None,
         query: str | None = None,
-        include_spoilers: bool = False
+        include_spoilers: bool = False,
     ):
         """Принимает лимит и фильтры, возвращает публичный дашборд хайлайтов."""
         highlights = self.repo.get_public_top(limit)
@@ -26,5 +26,5 @@ class GetPublicTopHighlightsUseCase(GetUserHighlightsUseCase):
             emotion=emotion,
             created_date=created_date,
             query=query,
-            include_spoilers=include_spoilers
+            include_spoilers=include_spoilers,
         )

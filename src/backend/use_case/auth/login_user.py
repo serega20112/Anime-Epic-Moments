@@ -19,6 +19,8 @@ class LoginUserUseCase:
 
     def execute(self, email: str, password: str) -> User:
         user = self.user_repo.get_by_email(email)
-        if not user or not self.password_service.verify_password(password, user.password_hash):
+        if not user or not self.password_service.verify_password(
+            password, user.password_hash
+        ):
             raise InvalidCredentialsError("Неверный email или пароль")
         return user

@@ -3,6 +3,7 @@ from src.backend.dependencies.container import container
 
 highlight_bp = Blueprint("highlight", __name__, url_prefix="/highlights")
 
+
 @highlight_bp.route("/", methods=["POST"])
 def create_highlight():
     """Создание нового хайлайта"""
@@ -15,9 +16,10 @@ def create_highlight():
         end_timestamp=_to_seconds(data["end_timestamp"]),
         description=data.get("description", ""),
         is_spoiler=_to_bool(str(data.get("is_spoiler")), default=False),
-        emotion=data.get("emotion")
+        emotion=data.get("emotion"),
     )
     return "", 201
+
 
 @highlight_bp.route("/<int:user_id>", methods=["GET"])
 def get_user_highlights(user_id: int):
@@ -28,9 +30,12 @@ def get_user_highlights(user_id: int):
         emotion=request.args.get("emotion") or None,
         created_date=request.args.get("date") or None,
         query=request.args.get("query") or None,
-        include_spoilers=_to_bool(request.args.get("include_spoilers"), default=True)
+        include_spoilers=_to_bool(request.args.get("include_spoilers"), default=True),
     )
-    return render_template("highlight/list.html", dashboard=dashboard, user_id=user_id, is_public=False)
+    return render_template(
+        "highlight/list.html", dashboard=dashboard, user_id=user_id, is_public=False
+    )
+
 
 @highlight_bp.route("/top", methods=["GET"])
 def get_public_top_highlights():
@@ -42,9 +47,12 @@ def get_public_top_highlights():
         emotion=request.args.get("emotion") or None,
         created_date=request.args.get("date") or None,
         query=request.args.get("query") or None,
-        include_spoilers=_to_bool(request.args.get("include_spoilers"), default=False)
+        include_spoilers=_to_bool(request.args.get("include_spoilers"), default=False),
     )
-    return render_template("highlight/list.html", dashboard=dashboard, user_id=None, is_public=True)
+    return render_template(
+        "highlight/list.html", dashboard=dashboard, user_id=None, is_public=True
+    )
+
 
 @highlight_bp.route("/<int:highlight_id>", methods=["PUT"])
 def edit_highlight(highlight_id: int):
@@ -57,9 +65,10 @@ def edit_highlight(highlight_id: int):
         end_timestamp=_to_seconds(data.get("end_timestamp")),
         description=data.get("description") or "",
         is_spoiler=_to_bool(str(data.get("is_spoiler")), default=False),
-        emotion=data.get("emotion")
+        emotion=data.get("emotion"),
     )
     return "", 204
+
 
 @highlight_bp.route("/<int:highlight_id>", methods=["DELETE"])
 def delete_highlight(highlight_id: int):

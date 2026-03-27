@@ -1,19 +1,33 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, make_response, g
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    make_response,
+    g,
+)
 from src.backend.dependencies.container import container
 from src.backend.infrastructure.security.jwt_service import JWTService
 from src.backend.use_case.auth.login_user import InvalidCredentialsError
 from src.backend.use_case.auth.register_user import EmailAlreadyExistsError
 from src.backend.use_case.auth.reset_password import InvalidPasswordResetTokenError
-from src.backend.use_case.auth.update_user_profile import InvalidProfileDataError, UserNotFoundError
+from src.backend.use_case.auth.update_user_profile import (
+    InvalidProfileDataError,
+    UserNotFoundError,
+)
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 jwt_service = JWTService()
 
+
 @auth_bp.route("/login", methods=["GET"])
 def login_page():
     """Рендер страницы входа"""
     return render_template("auth/login.html")
+
 
 @auth_bp.route("/register", methods=["GET"])
 def register_page():
@@ -33,6 +47,7 @@ def password_reset_confirm_page():
     token = request.args.get("token", "")
     return render_template("auth/password_reset_confirm.html", token=token)
 
+
 @auth_bp.route("/login", methods=["POST"])
 def login_user():
     """Обработка входа пользователя"""
@@ -43,11 +58,12 @@ def login_user():
         token = jwt_service.create_token(user.id)
         flash(f"Добро пожаловать, {user.username}!")
         resp = make_response(redirect(url_for("index.index")))
-        resp.set_cookie("access_token", token, httponly=True, max_age=60*60*24)
+        resp.set_cookie("access_token", token, httponly=True, max_age=60 * 60 * 24)
         return resp
     except InvalidCredentialsError as e:
         flash(str(e))
         return redirect(url_for("auth.login_page"))
+
 
 @auth_bp.route("/register", methods=["POST"])
 def register_user():
@@ -65,7 +81,7 @@ def register_user():
         token = jwt_service.create_token(user.id)
         flash(f"Добро пожаловать, {user.username}!")
         resp = make_response(redirect(url_for("index.index")))
-        resp.set_cookie("access_token", token, httponly=True, max_age=60*60*24)
+        resp.set_cookie("access_token", token, httponly=True, max_age=60 * 60 * 24)
         return resp
     except EmailAlreadyExistsError as e:
         flash(str(e))
@@ -78,10 +94,11 @@ def request_password_reset():
     email = request.form.get("email", "").strip()
     try:
         container.request_password_reset_use_case().execute(
-            email=email,
-            base_url=request.url_root.rstrip("/")
+            email=email, base_url=request.url_root.rstrip("/")
         )
-        flash("Если пользователь с таким email существует, мы отправили письмо со ссылкой для сброса пароля.")
+        flash(
+            "Если пользователь с таким email существует, мы отправили письмо со ссылкой для сброса пароля."
+        )
     except RuntimeError as error:
         flash(str(error))
     return redirect(url_for("auth.password_reset_request_page"))
@@ -109,12 +126,14 @@ def confirm_password_reset():
         flash(str(error))
         return redirect(url_for("auth.password_reset_confirm_page", token=token))
 
+
 @auth_bp.route("/logout", methods=["POST"])
 def logout_user():
     """Обработка выхода пользователя"""
     resp = make_response(redirect(url_for("index.index")))
     resp.set_cookie("access_token", "", expires=0)
     return resp
+
 
 @auth_bp.route("/profile", methods=["GET"])
 def profile_page():
@@ -123,6 +142,7 @@ def profile_page():
     if not user:
         return redirect(url_for("auth.login_page"))
     return render_template("auth/profile.html", profile_user=user)
+
 
 @auth_bp.route("/profile", methods=["POST"])
 def update_profile():
@@ -136,9 +156,7 @@ def update_profile():
 
     try:
         container.update_user_profile_use_case().execute(
-            user_id=user.id,
-            username=username,
-            avatar_url=avatar_url
+            user_id=user.id, username=username, avatar_url=avatar_url
         )
         flash("Профиль обновлён")
     except (InvalidProfileDataError, UserNotFoundError) as error:

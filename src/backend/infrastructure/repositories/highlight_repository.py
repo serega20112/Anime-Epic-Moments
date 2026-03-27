@@ -46,7 +46,9 @@ class HighlightRepository:
         return h
 
     def update(self, highlight: Highlight) -> Highlight:
-        db_highlight = self.session.query(HighlightModel).filter_by(id=highlight.id).first()
+        db_highlight = (
+            self.session.query(HighlightModel).filter_by(id=highlight.id).first()
+        )
         if not db_highlight:
             raise ValueError("Highlight не найден")
 
@@ -61,7 +63,9 @@ class HighlightRepository:
         return highlight
 
     def delete(self, highlight_id: int):
-        db_highlight = self.session.query(HighlightModel).filter_by(id=highlight_id).first()
+        db_highlight = (
+            self.session.query(HighlightModel).filter_by(id=highlight_id).first()
+        )
         if db_highlight:
             self.session.delete(db_highlight)
             self.session.commit()
@@ -113,8 +117,12 @@ class HighlightRepository:
 
         return result
 
-    def get_by_anime_episode(self, anime_id: int, episode: int, user_id: int | None = None) -> List[Highlight]:
-        query = self.session.query(HighlightModel).filter_by(anime_id=anime_id, episode=episode)
+    def get_by_anime_episode(
+        self, anime_id: int, episode: int, user_id: int | None = None
+    ) -> List[Highlight]:
+        query = self.session.query(HighlightModel).filter_by(
+            anime_id=anime_id, episode=episode
+        )
         if user_id is not None:
             query = query.filter_by(user_id=user_id)
         rows = query.order_by(HighlightModel.created_at.desc()).all()

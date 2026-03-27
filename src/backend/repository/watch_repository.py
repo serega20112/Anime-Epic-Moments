@@ -1,6 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from src.backend.domain.watch.entity import HighlightContext, Translation, UserAnimeStatus, ViewingSession, WatchSource
+from src.backend.domain.watch.entity import (
+    HighlightContext,
+    Translation,
+    UserAnimeStatus,
+    ViewingSession,
+    WatchSource,
+)
 
 
 class WatchRepository(ABC):
@@ -21,7 +27,9 @@ class WatchRepository(ABC):
         """Создает новую озвучку/сабы."""
 
     @abstractmethod
-    def get_sources(self, anime_id: int, episode: int | None = None) -> List[WatchSource]:
+    def get_sources(
+        self, anime_id: int, episode: int | None = None
+    ) -> List[WatchSource]:
         """Возвращает источники просмотра."""
 
     @abstractmethod
@@ -29,7 +37,9 @@ class WatchRepository(ABC):
         """Создает источник просмотра."""
 
     @abstractmethod
-    def get_session(self, user_id: int, anime_id: int, episode: int) -> Optional[ViewingSession]:
+    def get_session(
+        self, user_id: int, anime_id: int, episode: int
+    ) -> Optional[ViewingSession]:
         """Возвращает последнюю сессию просмотра."""
 
     @abstractmethod
@@ -41,5 +51,7 @@ class WatchRepository(ABC):
         """Сохраняет связь хайлайта с источником и озвучкой."""
 
     @abstractmethod
-    def get_highlight_contexts(self, highlight_ids: List[int]) -> List[HighlightContext]:
+    def get_highlight_contexts(
+        self, highlight_ids: List[int]
+    ) -> List[HighlightContext]:
         """Возвращает контексты для набора хайлайтов."""

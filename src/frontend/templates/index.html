@@ -20,12 +20,25 @@
         <div class="logo">AEM <span class="logo-icon">👁️‍🗨️</span></div>
         <div class="auth-buttons">
           {% if not current_user %}
-            <a href="{{ url_for('auth.register_page') }}" class="btn neon-pink btn-auth">Регистрация</a>
-            <a href="{{ url_for('auth.login_page') }}" class="btn neon-blue btn-auth">Вход</a>
+          <a
+            href="{{ url_for('auth.register_page') }}"
+            class="btn neon-pink btn-auth"
+            >Регистрация</a
+          >
+          <a
+            href="{{ url_for('auth.login_page') }}"
+            class="btn neon-blue btn-auth"
+            >Вход</a
+          >
           {% endif %}
         </div>
       </div>
-      <form class="search-container global-search-form" action="{{ url_for('anime.search_anime_page') }}" method="get" autocomplete="off">
+      <form
+        class="search-container global-search-form"
+        action="{{ url_for('anime.search_anime_page') }}"
+        method="get"
+        autocomplete="off"
+      >
         <input
           type="text"
           name="title"
@@ -38,20 +51,44 @@
       <nav class="header-nav">
         <div class="nav-buttons">
           {% if current_user %}
-            <a href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}" class="btn neon-blue">Мои хайлайты</a>
-            <a href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}" class="btn neon-pink">Избранное</a>
-            <a href="{{ url_for('highlight.get_public_top_highlights') }}" class="btn neon-blue">Топ хайлайты</a>
-            <a href="{{ url_for('anime.search_by_description_page') }}" class="btn neon-pink">Поиск по описанию</a>
-            <div class="avatar-dropdown">
-              <img src="{{ current_user.avatar_url or '/static/images/default-avatar.png' }}" alt="Avatar" class="avatar">
-              <div class="dropdown-menu">
-                <a href="{{ url_for('auth.profile_page') }}">Мой профиль</a>
-                <a href="#">Тема</a>
-                <form action="{{ url_for('auth.logout_user') }}" method="post" style="display:inline;">
-                  <button type="submit" class="btn logout-btn">Выход</button>
-                </form>
-              </div>
+          <a
+            href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}"
+            class="btn neon-blue"
+            >Мои хайлайты</a
+          >
+          <a
+            href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}"
+            class="btn neon-pink"
+            >Избранное</a
+          >
+          <a
+            href="{{ url_for('highlight.get_public_top_highlights') }}"
+            class="btn neon-blue"
+            >Топ хайлайты</a
+          >
+          <a
+            href="{{ url_for('anime.search_by_description_page') }}"
+            class="btn neon-pink"
+            >Поиск по описанию</a
+          >
+          <div class="avatar-dropdown">
+            <img
+              src="{{ current_user.avatar_url or '/static/images/default-avatar.png' }}"
+              alt="Avatar"
+              class="avatar"
+            />
+            <div class="dropdown-menu">
+              <a href="{{ url_for('auth.profile_page') }}">Мой профиль</a>
+              <a href="#">Тема</a>
+              <form
+                action="{{ url_for('auth.logout_user') }}"
+                method="post"
+                style="display: inline"
+              >
+                <button type="submit" class="btn logout-btn">Выход</button>
+              </form>
             </div>
+          </div>
           {% endif %}
         </div>
       </nav>
@@ -61,93 +98,121 @@
         <h1>Сохрани момент, который тронул душу</h1>
         <p>Твои эпичные сцены. Твои эмоции. Твоё аниме.</p>
         <div class="hero-buttons">
-          <a href="{{ url_for('anime.search_by_description_page') }}" class="btn neon-pink btn-large">Найти аниме по описанию</a>
-          <a href="{{ url_for('highlight.get_public_top_highlights') }}" class="btn neon-blue btn-large">Хайлайты</a>
+          <a
+            href="{{ url_for('anime.search_by_description_page') }}"
+            class="btn neon-pink btn-large"
+            >Найти аниме по описанию</a
+          >
+          <a
+            href="{{ url_for('highlight.get_public_top_highlights') }}"
+            class="btn neon-blue btn-large"
+            >Хайлайты</a
+          >
         </div>
       </section>
       {% if current_user %}
-        <div class="recommendations">
-          <h2>Рекомендации для тебя</h2>
-          <div class="rec-grid">
-            {% for rec in recommendations %}
-              <div class="rec-card">
-                <img src="{{ rec.image_url or '/static/images/no-cover.png' }}" alt="{{ rec.title }}">
-                <h3>{{ rec.title }}</h3>
-                <p>{{ rec.description }}</p>
-                <button class="btn-favorite recommendation-favorite-button" data-anime-id="{{ rec.anime_id }}">Добавить в избранное</button>
-                <a class="btn-watch" href="{{ rec.watch_url }}">Где смотреть</a>
-              </div>
-            {% endfor %}
+      <div class="recommendations">
+        <h2>Рекомендации для тебя</h2>
+        <div class="rec-grid">
+          {% for rec in recommendations %}
+          <div class="rec-card">
+            <img
+              src="{{ rec.image_url or '/static/images/no-cover.png' }}"
+              alt="{{ rec.title }}"
+            />
+            <h3>{{ rec.title }}</h3>
+            <p>{{ rec.description }}</p>
+            <button
+              class="btn-favorite recommendation-favorite-button"
+              data-anime-id="{{ rec.anime_id }}"
+            >
+              Добавить в избранное
+            </button>
+            <a class="btn-watch" href="{{ rec.watch_url }}">Где смотреть</a>
           </div>
+          {% endfor %}
         </div>
+      </div>
       {% endif %}
       <section class="popular-section">
         <h2>Популярные аниме сезона</h2>
         <div class="carousel">
           {% for anime in popular_anime %}
-            <div class="anime-card">
-              <img src="{{ anime.cover_url if anime.cover_url else '/static/images/no-cover.png' }}" alt="{{ anime.title }}">
-              <h3>{{ anime.title }}</h3>
-              <a class="btn-watch" href="/watch/{{ anime.external_id }}?episode=1">Где смотреть</a>
-            </div>
+          <div class="anime-card">
+            <img
+              src="{{ anime.cover_url if anime.cover_url else '/static/images/no-cover.png' }}"
+              alt="{{ anime.title }}"
+            />
+            <h3>{{ anime.title }}</h3>
+            <a class="btn-watch" href="/watch/{{ anime.external_id }}?episode=1"
+              >Где смотреть</a
+            >
+          </div>
           {% endfor %}
         </div>
       </section>
       {% if not current_user %}
-        <div class="guest-warning">
-          <p>Залогинься, чтобы сохранить хайлайты и получить рекомендации!</p>
-        </div>
+      <div class="guest-warning">
+        <p>Залогинься, чтобы сохранить хайлайты и получить рекомендации!</p>
+      </div>
       {% endif %}
     </main>
     <script src="{{ url_for('static', filename='js/particles.js') }}"></script>
     <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
     <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
     <script>
-      document.querySelectorAll('.recommendation-favorite-button').forEach((button) => {
-        button.addEventListener('click', async () => {
-          const userId = '{{ current_user.id if current_user else "" }}';
-          if (!userId) {
-            window.location.href = '/auth/login';
-            return;
-          }
-          const response = await fetch('/favorites/', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({user_id: userId, anime_id: button.dataset.animeId})
+      document
+        .querySelectorAll(".recommendation-favorite-button")
+        .forEach((button) => {
+          button.addEventListener("click", async () => {
+            const userId = '{{ current_user.id if current_user else "" }}';
+            if (!userId) {
+              window.location.href = "/auth/login";
+              return;
+            }
+            const response = await fetch("/favorites/", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                user_id: userId,
+                anime_id: button.dataset.animeId,
+              }),
+            });
+            if (!response.ok) {
+              window.alert("Не удалось добавить аниме в избранное.");
+              return;
+            }
+            button.textContent = "В избранном";
+            button.classList.add("is-added");
           });
-          if (!response.ok) {
-            window.alert('Не удалось добавить аниме в избранное.');
-            return;
-          }
-          button.textContent = 'В избранном';
-          button.classList.add('is-added');
         });
-      });
     </script>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-      <div id="welcomeModal" class="modal" style="display:flex;">
-        <div class="modal-content">
-          <button type="button" class="close" onclick="closeWelcomeModal()">&times;</button>
-          <h2 class="modal-title">Уведомление</h2>
-          <ul class="modal-error-list">
-            {% for message in messages %}
-              <li>{{ message }}</li>
-            {% endfor %}
-          </ul>
-          <div class="modal-actions">
-            <button type="button" class="btn-modal" onclick="closeWelcomeModal()">Понятно</button>
-          </div>
+    {% with messages = get_flashed_messages() %} {% if messages %}
+    <div id="welcomeModal" class="modal" style="display: flex">
+      <div class="modal-content">
+        <button type="button" class="close" onclick="closeWelcomeModal()">
+          &times;
+        </button>
+        <h2 class="modal-title">Уведомление</h2>
+        <ul class="modal-error-list">
+          {% for message in messages %}
+          <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+        <div class="modal-actions">
+          <button type="button" class="btn-modal" onclick="closeWelcomeModal()">
+            Понятно
+          </button>
         </div>
       </div>
-      <script>
-        function closeWelcomeModal() {
-          const modal = document.getElementById('welcomeModal');
-          if (!modal) return;
-          modal.style.display = 'none';
-        }
-      </script>
-      {% endif %}
-    {% endwith %}
+    </div>
+    <script>
+      function closeWelcomeModal() {
+        const modal = document.getElementById("welcomeModal");
+        if (!modal) return;
+        modal.style.display = "none";
+      }
+    </script>
+    {% endif %} {% endwith %}
   </body>
 </html>

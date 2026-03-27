@@ -11,11 +11,16 @@ from src.backend.delivery.api.v1.watch_route import watch_bp
 from src.backend.infrastructure.security.jwt_service import JWTService
 from src.backend.infrastructure.files.database import init_db
 
+
 def create_app():
     """Создаёт Flask приложение, подключает роуты"""
-    app = Flask(__name__, static_folder="../frontend/static", template_folder="../frontend/templates")
+    app = Flask(
+        __name__,
+        static_folder="../frontend/static",
+        template_folder="../frontend/templates",
+    )
     app.config["SECRET_KEY"] = Settings.secret_key
-    
+
     # Инициализируем БД и создаём таблицы
     init_db()
 
@@ -29,6 +34,7 @@ def create_app():
             try:
                 user_id = jwt_service.decode_token(token)
                 from src.backend.dependencies.container import container
+
                 user = container.user_repository.get_by_id(user_id)
                 g.user = user
             except:
@@ -44,7 +50,9 @@ def create_app():
     @app.errorhandler(500)
     def handle_internal_error(_error):
         """Возвращает аккуратный ответ на внутренние ошибки сервера."""
-        wants_json = request.is_json or request.accept_mimetypes.best == "application/json"
+        wants_json = (
+            request.is_json or request.accept_mimetypes.best == "application/json"
+        )
         if wants_json:
             return jsonify({"error": "internal_server_error"}), 500
         return render_template("errors/500_modal.html"), 500

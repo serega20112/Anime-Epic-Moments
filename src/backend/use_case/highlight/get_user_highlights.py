@@ -1,5 +1,10 @@
 from collections import Counter
-from src.backend.domain.highlight.value_object import HighlightAnimeGroup, HighlightCard, HighlightDashboard, HighlightStats
+from src.backend.domain.highlight.value_object import (
+    HighlightAnimeGroup,
+    HighlightCard,
+    HighlightDashboard,
+    HighlightStats,
+)
 from src.backend.infrastructure.external.anime_api_client import AnimeApiClient
 from src.backend.repository.highlight_repository import HighlightRepository
 
@@ -18,7 +23,7 @@ class GetUserHighlightsUseCase:
         emotion: str | None = None,
         created_date: str | None = None,
         query: str | None = None,
-        include_spoilers: bool = True
+        include_spoilers: bool = True,
     ) -> HighlightDashboard:
         """Принимает user_id и фильтры, возвращает карточки, группы и статистику."""
         highlights = self.repo.get_by_user(user_id)
@@ -28,7 +33,7 @@ class GetUserHighlightsUseCase:
             emotion=emotion,
             created_date=created_date,
             query=query,
-            include_spoilers=include_spoilers
+            include_spoilers=include_spoilers,
         )
 
     def _build_dashboard(
@@ -38,7 +43,7 @@ class GetUserHighlightsUseCase:
         emotion: str | None,
         created_date: str | None,
         query: str | None,
-        include_spoilers: bool
+        include_spoilers: bool,
     ) -> HighlightDashboard:
         anime_cache: dict[int, tuple[str, str | None]] = {}
 
@@ -58,7 +63,10 @@ class GetUserHighlightsUseCase:
                 continue
             if emotion and (highlight.emotion or "") != emotion:
                 continue
-            if created_date and highlight.created_at.strftime("%Y-%m-%d") != created_date:
+            if (
+                created_date
+                and highlight.created_at.strftime("%Y-%m-%d") != created_date
+            ):
                 continue
             if not include_spoilers and highlight.is_spoiler:
                 continue
@@ -100,7 +108,9 @@ class GetUserHighlightsUseCase:
             )
 
         groups = [
-            HighlightAnimeGroup(anime_id=item[0][0], anime_title=item[0][1], count=item[1])
+            HighlightAnimeGroup(
+                anime_id=item[0][0], anime_title=item[0][1], count=item[1]
+            )
             for item in counter.most_common()
         ]
         top_anime_title = groups[0].anime_title if groups else "Нет данных"
