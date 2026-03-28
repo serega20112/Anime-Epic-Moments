@@ -33,6 +33,17 @@ services:
       timeout: 5s
       retries: 10
 
+  redis_commander:
+    image: rediscommander/redis-commander:latest
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "${REDIS_COMMANDER_PORT:-8081}:8081"
+
   app:
     build:
       context: ..

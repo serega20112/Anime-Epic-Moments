@@ -4,7 +4,7 @@
 
 Deployment-артефакты живут в `build/`. В этой директории находятся контейнеризация, compose-оркестрация, Alembic runtime и entrypoint, который используется контейнером приложения.
 
-Система может запускаться локально через Python-интерпретатор или в Docker вместе с контейнерами PostgreSQL и Redis.
+Система может запускаться локально через Python-интерпретатор или в Docker вместе с контейнерами PostgreSQL, Redis и Redis GUI.
 
 ## Как это работает
 
@@ -16,12 +16,15 @@ flowchart LR
     App[Flask через Gunicorn]
     DB[(PostgreSQL)]
     Redis[(Redis)]
+    RedisGUI[Redis GUI]
     Providers[Внешние аниме- и watch-провайдеры]
 
     Client --> App
+    Client --> RedisGUI
     App --> DB
     App --> Redis
     App --> Providers
+    RedisGUI --> Redis
 ```
 
 Последовательность старта в Docker:
@@ -31,6 +34,7 @@ sequenceDiagram
     participant C as docker compose
     participant P as postgres container
     participant R as redis container
+    participant UI as redis commander
     participant A as app container
     participant M as alembic
     participant G as gunicorn
@@ -39,6 +43,7 @@ sequenceDiagram
     P-->>C: healthcheck ok
     C->>R: старт redis
     R-->>C: healthcheck ok
+    C->>UI: старт redis GUI
     C->>A: старт app container
     A->>M: alembic upgrade head
     M-->>A: схема актуальна
@@ -47,7 +52,7 @@ sequenceDiagram
 
 Ключевые build-файлы:
 
-- `build/docker-compose.yml`: локальная оркестрация PostgreSQL, Redis и app-контейнера
+- `build/docker-compose.yml`: локальная оркестрация PostgreSQL, Redis, Redis GUI и app-контейнера
 - `build/Dockerfile`: Python-образ, установка зависимостей, копирование исходников и регистрация entrypoint
 - `build/scripts/entrypoint.sh`: bootstrap со стартом миграций перед web-процессом
 - `build/alembic/alembic.ini`: активная конфигурация Alembic
@@ -66,12 +71,19 @@ python -m src.main
 docker compose -f build/docker-compose.yml up --build
 ```
 
+Redis GUI в браузере:
+
+```text
+http://localhost:8081
+```
+
 Ключевые переменные окружения:
 
 - `DATABASE_URL`
 - `REDIS_ENABLED`
 - `REDIS_REQUIRED`
 - `REDIS_URL`
+- `REDIS_COMMANDER_PORT`
 - `POSTGRES_DB`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`

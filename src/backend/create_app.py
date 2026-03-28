@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import jwt
 from flask import Flask, current_app, g, request, render_template, jsonify
 
 from src.backend.delivery.api.v1.index_route import index_bp
@@ -35,6 +36,10 @@ def create_app():
     @app.before_request
     def load_user():
         """Загружает пользователя из access_token в g."""
+        if _is_static_request():
+            g.user = None
+            return
+
         if _is_cross_origin_write_request():
             current_app.logger.warning(
                 "cross_origin_write_blocked path=%s origin=%s referer=%s",
@@ -51,14 +56,30 @@ def create_app():
 
                 token_blocklist = getattr(container, "token_blocklist", None)
                 if token_blocklist is not None and token_blocklist.is_revoked(token):
-                    current_app.logger.info("revoked_access_token_used")
+                    current_app.logger.info(
+                        "revoked_access_token_used path=%s",
+                        request.path,
+                    )
+                    g.clear_access_token_cookie = True
                     g.user = None
                     return
                 user_id = jwt_service.decode_token(token)
                 user = container.user_repository.get_by_id(user_id)
                 g.user = user
+            except jwt.InvalidTokenError as error:
+                current_app.logger.info(
+                    "access_token_rejected reason=%s path=%s",
+                    error.__class__.__name__,
+                    request.path,
+                )
+                g.clear_access_token_cookie = True
+                g.user = None
             except Exception:
-                current_app.logger.warning("access_token_decode_failed", exc_info=True)
+                current_app.logger.warning(
+                    "access_token_decode_failed path=%s",
+                    request.path,
+                    exc_info=True,
+                )
                 g.user = None
         else:
             g.user = None
@@ -92,6 +113,8 @@ def create_app():
     @app.after_request
     def apply_security_headers(response):
         """Добавляет базовые security headers к каждому ответу."""
+        if getattr(g, "clear_access_token_cookie", False):
+            _clear_cookie(response, "access_token")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "same-origin")
@@ -128,3 +151,19 @@ def _is_cross_origin_write_request() -> bool:
         return False
     expected_base = Settings.app_base_url.rstrip("/")
     return not str(source).startswith(expected_base)
+
+
+def _is_static_request() -> bool:
+    return request.endpoint == "static" or request.path.startswith("/static/")
+
+
+def _clear_cookie(response, cookie_name: str):
+    cookie_kwargs = {
+        "httponly": True,
+        "secure": Settings.cookie_secure,
+        "samesite": Settings.cookie_samesite,
+        "path": "/",
+    }
+    if Settings.cookie_domain:
+        cookie_kwargs["domain"] = Settings.cookie_domain
+    response.set_cookie(cookie_name, "", expires=0, **cookie_kwargs)

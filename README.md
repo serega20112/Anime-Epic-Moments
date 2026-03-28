@@ -45,7 +45,13 @@ python -m src.main
 docker compose -f build/docker-compose.yml up --build
 ```
 
-`docker compose` поднимает `app`, `postgres` и `redis`.
+`docker compose` поднимает `app`, `postgres`, `redis` и Redis GUI.
+
+Redis GUI после старта доступен в браузере:
+
+```text
+http://localhost:8081
+```
 
 ## Миграции базы данных
 
