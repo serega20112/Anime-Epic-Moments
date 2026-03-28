@@ -8,6 +8,7 @@ from src.backend.dependencies.settings import Settings
 from src.backend.delivery.api.v1.auth_route import auth_bp
 from src.backend.delivery.api.v1.highlight_route import highlight_bp
 from src.backend.delivery.api.v1.favorite_route import favorite_bp
+from src.backend.delivery.api.v1.collection_route import collection_bp
 from src.backend.delivery.api.v1.anime_route import anime_bp
 from src.backend.delivery.api.v1.recommendation_route import recommendation_bp
 from src.backend.delivery.api.v1.watch_route import watch_bp
@@ -135,6 +136,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(highlight_bp)
     app.register_blueprint(favorite_bp)
+    app.register_blueprint(collection_bp)
     app.register_blueprint(anime_bp)
     app.register_blueprint(watch_bp)
     app.register_blueprint(recommendation_bp)

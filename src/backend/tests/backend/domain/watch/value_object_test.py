@@ -4,6 +4,8 @@ from dataclasses import asdict
 
 from src.backend.domain.watch.value_object import (
     DiscoveredWatchSource,
+    ViewingHeatmapPoint,
+    WatchedAnimeStat,
     WatchHighlightCard,
     WatchPageData,
     WatchSourceCard,
@@ -67,6 +69,13 @@ def test_watch_value_objects_store_page_payload():
         quality_label="1080",
         stream_url="https://example.com/stream.m3u8",
     )
+    watched_stat = WatchedAnimeStat(
+        anime_id=7,
+        watched_seconds=3200.0,
+        sessions_count=2,
+        last_watched_at="2026-03-28",
+    )
+    heatmap_point = ViewingHeatmapPoint(date="2026-03-28", interactions=4)
 
     payload = asdict(page)
 
@@ -76,3 +85,5 @@ def test_watch_value_objects_store_page_payload():
     assert payload["highlights"][0]["category"] == "бой"
     assert payload["sources"][0]["translation_name"] == "AniLibria"
     assert discovered.provider_name == "Kodik"
+    assert watched_stat.sessions_count == 2
+    assert heatmap_point.interactions == 4

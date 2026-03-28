@@ -49,6 +49,10 @@ def init_db():
     Инициализирует базу данных, создавая все таблицы
     """
     from src.backend.infrastructure.models.sqlalchemy_models import (
+        AnimeCollectionItemModel,
+        AnimeCollectionModel,
+        AnimeDiscussionCommentModel,
+        AnimeDiscussionLikeModel,
         FavoriteModel,
         HighlightCommentModel,
         HighlightContextModel,

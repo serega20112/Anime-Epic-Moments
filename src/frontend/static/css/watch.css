@@ -201,12 +201,23 @@ html[data-theme="light"] .watch-page::before {
   padding: 1.5rem;
 }
 
+.watch-player-status {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
 .watch-external-panel[hidden],
+.watch-player-status[hidden],
 .watch-embed-frame[hidden] {
   display: none !important;
 }
 
-.watch-external-card {
+.watch-external-card,
+.watch-player-status-card {
   width: min(560px, 100%);
   padding: 1.3rem;
   border-radius: 24px;
@@ -220,12 +231,14 @@ html[data-theme="light"] .watch-page::before {
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.watch-external-card h2 {
+.watch-external-card h2,
+.watch-player-status-card h2 {
   margin: 0.8rem 0 0.45rem;
   color: #fff;
 }
 
-.watch-external-card p {
+.watch-external-card p,
+.watch-player-status-card p {
   margin: 0 0 1rem;
   color: var(--watch-muted);
   line-height: 1.55;

@@ -86,3 +86,232 @@
 .profile-messages p {
   color: var(--accent);
 }
+
+.smart-profile-panel,
+.profile-mood-card,
+.profile-insight-card,
+.profile-achievement-card {
+  background: var(--page-surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+}
+
+.smart-profile-panel {
+  padding: 1rem;
+}
+
+.profile-mood-card {
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.profile-mood-card strong,
+.profile-insight-card h3,
+.profile-achievement-card h3 {
+  color: var(--text-primary);
+}
+
+.profile-mood-card p,
+.profile-insight-card p,
+.profile-achievement-card p {
+  margin: 0.4rem 0 0;
+  color: var(--text-secondary);
+}
+
+.profile-tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.profile-tag,
+.profile-inline-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--page-surface-strong);
+  color: var(--text-primary);
+  font-size: 0.86rem;
+}
+
+.profile-smart-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.profile-insight-card {
+  padding: 1rem;
+}
+
+.profile-insight-label {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-achievement-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.profile-achievement-card {
+  display: flex;
+  gap: 0.9rem;
+  padding: 1rem;
+  align-items: flex-start;
+}
+
+.profile-achievement-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  background: var(--page-surface-strong);
+  border: 1px solid var(--border-color);
+}
+
+.profile-achievement-common {
+  box-shadow: inset 0 0 0 1px rgba(132, 145, 170, 0.15);
+}
+
+.profile-achievement-rare {
+  box-shadow: inset 0 0 0 1px rgba(72, 138, 255, 0.26);
+}
+
+.profile-achievement-epic {
+  box-shadow: inset 0 0 0 1px rgba(255, 110, 185, 0.25);
+}
+
+.profile-achievement-legendary {
+  box-shadow: inset 0 0 0 1px rgba(255, 194, 71, 0.28);
+}
+
+.profile-top-anime-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.profile-top-anime-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: var(--page-surface-strong);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.profile-top-anime-item strong {
+  color: var(--accent);
+}
+
+.profile-heatmap {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(18px, 1fr));
+  gap: 0.45rem;
+}
+
+.profile-heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: var(--page-surface-strong);
+  border: 1px solid var(--border-color);
+}
+
+.profile-heatmap-level-1 {
+  background: rgba(81, 184, 255, 0.22);
+}
+
+.profile-heatmap-level-2 {
+  background: rgba(81, 184, 255, 0.38);
+}
+
+.profile-heatmap-level-3 {
+  background: rgba(81, 184, 255, 0.58);
+}
+
+.profile-heatmap-level-4 {
+  background: rgba(81, 184, 255, 0.8);
+}
+
+.profile-ai-panel,
+.profile-ai-card {
+  background: var(--page-surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+}
+
+.profile-ai-panel {
+  padding: 1rem;
+}
+
+.profile-ai-form {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.profile-ai-form label {
+  color: var(--text-primary);
+}
+
+.profile-ai-form-row {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: 1fr auto;
+}
+
+.profile-ai-form input {
+  min-width: 0;
+  padding: 0.8rem 0.9rem;
+  border-radius: 14px;
+  border: 1px solid var(--input-border);
+  background: var(--input-background);
+  color: var(--text-primary);
+}
+
+.profile-ai-results {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.profile-ai-card {
+  padding: 1rem;
+}
+
+.profile-ai-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.profile-ai-card-head h3 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.profile-ai-card-head span {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .profile-ai-form-row {
+    grid-template-columns: 1fr;
+  }
+}

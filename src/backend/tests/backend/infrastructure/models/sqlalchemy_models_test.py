@@ -3,6 +3,10 @@ from __future__ import annotations
 import pytest
 
 from src.backend.infrastructure.models.sqlalchemy_models import (
+    AnimeCollectionItemModel,
+    AnimeCollectionModel,
+    AnimeDiscussionCommentModel,
+    AnimeDiscussionLikeModel,
     FavoriteModel,
     HighlightCommentModel,
     HighlightContextModel,
@@ -64,6 +68,31 @@ from src.backend.infrastructure.models.sqlalchemy_models import (
                 "genres_json",
                 "added_at",
             },
+        ),
+        (
+            AnimeCollectionModel,
+            {"id", "user_id", "title", "description", "is_public", "created_at"},
+        ),
+        (
+            AnimeCollectionItemModel,
+            {
+                "id",
+                "collection_id",
+                "anime_id",
+                "title",
+                "description",
+                "cover_url",
+                "genres_json",
+                "added_at",
+            },
+        ),
+        (
+            AnimeDiscussionCommentModel,
+            {"id", "anime_id", "user_id", "content", "created_at"},
+        ),
+        (
+            AnimeDiscussionLikeModel,
+            {"id", "comment_id", "user_id", "created_at"},
         ),
         (
             UserAnimeStatusModel,

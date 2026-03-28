@@ -3,7 +3,16 @@ from __future__ import annotations
 from dataclasses import asdict
 
 from src.backend.domain.highlight.value_object import HighlightActivityItem, HighlightCard, HighlightProfileSummary
-from src.backend.domain.user.value_object import PendingEmailVerification, ProfileOverview
+from src.backend.domain.user.value_object import (
+    AchievementBadge,
+    GenreAffinity,
+    PendingEmailVerification,
+    ProfileMoodInsight,
+    ProfileOverview,
+    SmartProfile,
+    TopAnimeEntry,
+    ViewingHeatmapCell,
+)
 
 
 def test_profile_overview_value_object_stores_profile_sections():
@@ -52,6 +61,36 @@ def test_profile_overview_value_object_stores_profile_sections():
                 created_at="2026-03-28 12:00",
             )
         ],
+        smart_profile=SmartProfile(
+            favorite_genres=[GenreAffinity(name="Comedy", count=3)],
+            dominant_mood=ProfileMoodInsight(
+                label="Уютный режим",
+                description="Ты любишь теплые тайтлы.",
+                emoji="✨",
+            ),
+            average_rating=8.7,
+            hours_watched=14.5,
+            top_anime=[
+                TopAnimeEntry(
+                    anime_id=7,
+                    title="Gintama",
+                    cover_url=None,
+                    rating=8.9,
+                    weight=12.4,
+                )
+            ],
+            heatmap=[ViewingHeatmapCell(date="2026-03-28", interactions=3)],
+            achievements=[
+                AchievementBadge(
+                    code="moment_hunter",
+                    title="Охотник за моментами",
+                    description="Делаешь хайлайты регулярно.",
+                    icon="🎬",
+                    rarity="epic",
+                )
+            ],
+            ai_taste_summary="Тебя тянет к теплой комедии и длинным марафонам.",
+        ),
     )
 
     payload = asdict(overview)
@@ -59,6 +98,8 @@ def test_profile_overview_value_object_stores_profile_sections():
     assert payload["summary"]["saved_count"] == 6
     assert payload["popular_highlights"][0]["likes_count"] == 5
     assert payload["recent_activity"][0]["actor_username"] == "viewer"
+    assert payload["smart_profile"]["favorite_genres"][0]["name"] == "Comedy"
+    assert payload["smart_profile"]["achievements"][0]["rarity"] == "epic"
 
 
 def test_pending_email_verification_value_object_stores_registration_payload():

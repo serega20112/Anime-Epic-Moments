@@ -48,6 +48,7 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         "EmailVerificationStore",
         "RateLimiter",
         "TokenBlocklist",
+        "CollectionRepository",
         "UserRepository",
         "HighlightRepository",
         "FavoriteRepository",
@@ -65,6 +66,11 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         "RequestPasswordResetUseCase",
         "ResetPasswordUseCase",
         "VerifyEmailUseCase",
+        "CreateCollectionUseCase",
+        "AddCollectionItemUseCase",
+        "RemoveCollectionItemUseCase",
+        "GetUserCollectionsUseCase",
+        "GetSharedCollectionUseCase",
         "CreateHighlightUseCase",
         "DeleteHighlightUseCase",
         "EditHighlightUseCase",
@@ -88,10 +94,14 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         "AutocompleteAnimeUseCase",
         "GetSeasonPopularUseCase",
         "GenerateRecommendationsUseCase",
+        "AskAiRecommendationsUseCase",
         "RefreshRecommendationsUseCase",
         "CreateWatchHighlightUseCase",
+        "AddAnimeCommentUseCase",
+        "GetAnimeDiscussionUseCase",
         "GetWatchPageUseCase",
         "SaveViewingSessionUseCase",
+        "SetAnimeCommentLikeUseCase",
         "SyncWatchSourcesUseCase",
         "UpsertUserAnimeStatusUseCase",
         "HuggingFaceLLMClient",
@@ -107,6 +117,7 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         "required": False,
     }
     assert built.user_repository.args == (session,)
+    assert built.collection_repository.args == (session,)
     assert built.highlight_repository.args == (session,)
     assert built.favorite_repository.args == (session,)
     assert built.watch_repository.args == (session,)
@@ -140,19 +151,35 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         built.highlight_repository,
         built.anime_api_client,
     )
+    assert built.create_collection_use_case().args == (built.collection_repository,)
+    assert built.add_collection_item_use_case().args == (built.collection_repository,)
+    assert built.remove_collection_item_use_case().args == (built.collection_repository,)
+    assert built.get_user_collections_use_case().args == (built.collection_repository,)
+    assert built.get_shared_collection_use_case().args == (built.collection_repository,)
     assert built.get_profile_overview_use_case().args == (
         built.user_repository,
         built.highlight_repository,
         built.anime_api_client,
+        built.favorite_repository,
+        built.watch_repository,
+        built.hf_llm_client,
     )
     assert built.get_liked_highlights_use_case().args == (
         built.highlight_repository,
         built.anime_api_client,
     )
+    assert built.ask_ai_recommendations_use_case().args == (
+        built.favorite_repository,
+        built.anime_api_client,
+        built.hf_llm_client,
+    )
     assert built.get_shared_highlight_use_case().args == (
         built.highlight_repository,
         built.anime_api_client,
     )
+    assert built.add_anime_comment_use_case().args == (built.watch_repository,)
+    assert built.get_anime_discussion_use_case().args == (built.watch_repository,)
+    assert built.set_anime_comment_like_use_case().args == (built.watch_repository,)
     assert built.get_highlight_feed_use_case().args == (
         built.highlight_repository,
         built.anime_api_client,
@@ -197,6 +224,7 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
         "EmailVerificationStore",
         "RateLimiter",
         "TokenBlocklist",
+        "CollectionRepository",
         "UserRepository",
         "HighlightRepository",
         "FavoriteRepository",
@@ -214,6 +242,11 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
         "RequestPasswordResetUseCase",
         "ResetPasswordUseCase",
         "VerifyEmailUseCase",
+        "CreateCollectionUseCase",
+        "AddCollectionItemUseCase",
+        "RemoveCollectionItemUseCase",
+        "GetUserCollectionsUseCase",
+        "GetSharedCollectionUseCase",
         "CreateHighlightUseCase",
         "DeleteHighlightUseCase",
         "EditHighlightUseCase",
@@ -237,10 +270,14 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
         "AutocompleteAnimeUseCase",
         "GetSeasonPopularUseCase",
         "GenerateRecommendationsUseCase",
+        "AskAiRecommendationsUseCase",
         "RefreshRecommendationsUseCase",
         "CreateWatchHighlightUseCase",
+        "AddAnimeCommentUseCase",
+        "GetAnimeDiscussionUseCase",
         "GetWatchPageUseCase",
         "SaveViewingSessionUseCase",
+        "SetAnimeCommentLikeUseCase",
         "SyncWatchSourcesUseCase",
         "UpsertUserAnimeStatusUseCase",
         "HuggingFaceLLMClient",

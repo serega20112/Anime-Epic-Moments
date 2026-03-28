@@ -205,6 +205,20 @@ def test_profile_page_requires_authenticated_user(
                     liked_highlights=[],
                     saved_highlights=[],
                     recent_activity=[],
+                    smart_profile=SimpleNamespace(
+                        favorite_genres=[],
+                        dominant_mood=SimpleNamespace(
+                            label="Смешанный вкус",
+                            description="desc",
+                            emoji="🎭",
+                        ),
+                        average_rating=None,
+                        hours_watched=0.0,
+                        top_anime=[],
+                        heatmap=[],
+                        achievements=[],
+                        ai_taste_summary="summary",
+                    ),
                 )
             )
         ),

@@ -95,6 +95,55 @@ class FavoriteModel(Base):
     added_at = Column(DateTime, default=datetime.utcnow)
 
 
+class AnimeCollectionModel(Base):
+    __tablename__ = "anime_collections"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String(80), nullable=False)
+    description = Column(String(400), nullable=True)
+    is_public = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AnimeCollectionItemModel(Base):
+    __tablename__ = "anime_collection_items"
+    __table_args__ = (
+        UniqueConstraint("collection_id", "anime_id", name="uq_collection_anime"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    collection_id = Column(Integer, ForeignKey("anime_collections.id"), nullable=False)
+    anime_id = Column(Integer, nullable=False)
+    title = Column(String(120), nullable=False)
+    description = Column(String, nullable=True)
+    cover_url = Column(String, nullable=True)
+    genres_json = Column(String, nullable=True)
+    added_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AnimeDiscussionCommentModel(Base):
+    __tablename__ = "anime_discussion_comments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    anime_id = Column(Integer, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    content = Column(String(600), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AnimeDiscussionLikeModel(Base):
+    __tablename__ = "anime_discussion_likes"
+    __table_args__ = (
+        UniqueConstraint("comment_id", "user_id", name="uq_anime_discussion_like"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    comment_id = Column(Integer, ForeignKey("anime_discussion_comments.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class UserAnimeStatusModel(Base):
     __tablename__ = "user_anime_statuses"
 

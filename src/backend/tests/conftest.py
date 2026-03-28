@@ -78,6 +78,8 @@ def flask_app_factory():
         _register_placeholder("/highlights/liked", "highlight.get_liked_highlights")
         _register_placeholder("/highlights/notifications", "highlight.get_highlight_notifications")
         _register_placeholder("/favorites/<int:user_id>", "favorite.get_favorites")
+        _register_placeholder("/collections", "collection.collections_page")
+        _register_placeholder("/collections/share/<int:collection_id>", "collection.shared_collection_page")
         _register_placeholder("/auth/profile", "auth.profile_page")
         _register_placeholder("/auth/login", "auth.login_page")
         _register_placeholder("/auth/register", "auth.register_page")

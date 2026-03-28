@@ -28,6 +28,9 @@ from src.backend.infrastructure.files.database import get_session
 from src.backend.infrastructure.repositories.favorite_repository import (
     FavoriteRepository,
 )
+from src.backend.infrastructure.repositories.collection_repository import (
+    CollectionRepository,
+)
 from src.backend.infrastructure.repositories.highlight_repository import (
     HighlightRepository,
 )
@@ -62,6 +65,17 @@ from src.backend.use_case.auth.request_password_reset import RequestPasswordRese
 from src.backend.use_case.auth.reset_password import ResetPasswordUseCase
 from src.backend.use_case.auth.update_user_profile import UpdateUserProfileUseCase
 from src.backend.use_case.auth.verify_email import VerifyEmailUseCase
+from src.backend.use_case.collection.add_collection_item import AddCollectionItemUseCase
+from src.backend.use_case.collection.create_collection import CreateCollectionUseCase
+from src.backend.use_case.collection.get_shared_collection import (
+    GetSharedCollectionUseCase,
+)
+from src.backend.use_case.collection.get_user_collections import (
+    GetUserCollectionsUseCase,
+)
+from src.backend.use_case.collection.remove_collection_item import (
+    RemoveCollectionItemUseCase,
+)
 from src.backend.use_case.favorite.add_favorite import AddFavoriteUseCase
 from src.backend.use_case.favorite.get_favorites import GetFavoritesUseCase
 from src.backend.use_case.favorite.remove_favorite import RemoveFavoriteUseCase
@@ -97,14 +111,22 @@ from src.backend.use_case.highlight.set_saved_highlight import SetSavedHighlight
 from src.backend.use_case.recommendation.generate_recommendations import (
     GenerateRecommendationsUseCase,
 )
+from src.backend.use_case.recommendation.ask_ai_recommendations import (
+    AskAiRecommendationsUseCase,
+)
 from src.backend.use_case.recommendation.refresh_recommendations import (
     RefreshRecommendationsUseCase,
 )
 from src.backend.use_case.watch.create_watch_highlight import (
     CreateWatchHighlightUseCase,
 )
+from src.backend.use_case.watch.add_anime_comment import AddAnimeCommentUseCase
+from src.backend.use_case.watch.get_anime_discussion import GetAnimeDiscussionUseCase
 from src.backend.use_case.watch.get_watch_page import GetWatchPageUseCase
 from src.backend.use_case.watch.save_viewing_session import SaveViewingSessionUseCase
+from src.backend.use_case.watch.set_anime_comment_like import (
+    SetAnimeCommentLikeUseCase,
+)
 from src.backend.use_case.watch.sync_watch_sources import SyncWatchSourcesUseCase
 from src.backend.use_case.watch.upsert_user_anime_status import (
     UpsertUserAnimeStatusUseCase,
@@ -172,6 +194,10 @@ class Container:
     @cached_property
     def favorite_repository(self):
         return FavoriteRepository(self.db_session)
+
+    @cached_property
+    def collection_repository(self):
+        return CollectionRepository(self.db_session)
 
     @cached_property
     def watch_repository(self):
@@ -274,6 +300,9 @@ class Container:
             self.user_repository,
             self.highlight_repository,
             self.anime_api_client,
+            self.favorite_repository,
+            self.watch_repository,
+            self.hf_llm_client,
         )
 
     def request_password_reset_use_case(self):
@@ -391,6 +420,21 @@ class Container:
             self.anime_api_client,
         )
 
+    def create_collection_use_case(self):
+        return CreateCollectionUseCase(self.collection_repository)
+
+    def add_collection_item_use_case(self):
+        return AddCollectionItemUseCase(self.collection_repository)
+
+    def remove_collection_item_use_case(self):
+        return RemoveCollectionItemUseCase(self.collection_repository)
+
+    def get_user_collections_use_case(self):
+        return GetUserCollectionsUseCase(self.collection_repository)
+
+    def get_shared_collection_use_case(self):
+        return GetSharedCollectionUseCase(self.collection_repository)
+
     def search_anime_use_case(self):
         return SearchAnimeUseCase(self.anime_api_client)
 
@@ -408,6 +452,13 @@ class Container:
 
     def generate_recommendations_use_case(self):
         return GenerateRecommendationsUseCase(self.recommendation_service)
+
+    def ask_ai_recommendations_use_case(self):
+        return AskAiRecommendationsUseCase(
+            self.favorite_repository,
+            self.anime_api_client,
+            self.hf_llm_client,
+        )
 
     def refresh_recommendations_use_case(self):
         return RefreshRecommendationsUseCase(self.recommendation_service)
@@ -431,6 +482,15 @@ class Container:
 
     def save_viewing_session_use_case(self):
         return SaveViewingSessionUseCase(self.watch_repository)
+
+    def add_anime_comment_use_case(self):
+        return AddAnimeCommentUseCase(self.watch_repository)
+
+    def get_anime_discussion_use_case(self):
+        return GetAnimeDiscussionUseCase(self.watch_repository)
+
+    def set_anime_comment_like_use_case(self):
+        return SetAnimeCommentLikeUseCase(self.watch_repository)
 
     def create_watch_highlight_use_case(self):
         return CreateWatchHighlightUseCase(

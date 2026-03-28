@@ -58,6 +58,15 @@
             id="watch-player-shell"
           >
             <div class="watch-player-noise"></div>
+            <div class="watch-player-status" id="watch-player-status" hidden>
+              <div class="watch-player-status-card">
+                <span class="watch-kicker">Плеер</span>
+                <h2 id="watch-player-status-title">Источник недоступен</h2>
+                <p id="watch-player-status-text">
+                  Не удалось подготовить поток для этой серии.
+                </p>
+              </div>
+            </div>
             {% if watch.sources|length > 0 %}
             <video
               id="watch-video"
@@ -474,6 +483,73 @@
               {% endfor %}
             </div>
           </section>
+
+          <section class="watch-highlight-list">
+            <div class="results-head">
+              <h2>Обсуждение аниме</h2>
+              <div class="result-actions">
+                <a
+                  class="btn {% if discussion.selected_sort == 'popular' %}neon-blue{% else %}neon-pink{% endif %}"
+                  href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode, discussion_sort='popular') }}"
+                >
+                  Популярные
+                </a>
+                <a
+                  class="btn {% if discussion.selected_sort == 'recent' %}neon-blue{% else %}neon-pink{% endif %}"
+                  href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode, discussion_sort='recent') }}"
+                >
+                  Новые
+                </a>
+              </div>
+            </div>
+            {% if current_user %}
+            <form
+              class="manual-add-form"
+              method="post"
+              action="{{ url_for('watch.add_anime_comment', anime_id=watch.anime_id) }}"
+            >
+              <input type="hidden" name="episode" value="{{ watch.episode }}" />
+              <input type="hidden" name="discussion_sort" value="{{ discussion.selected_sort }}" />
+              <textarea
+                name="content"
+                placeholder="Напиши, что думаешь об этом тайтле, сцене или вайбе"
+                required
+                maxlength="600"
+              ></textarea>
+              <button type="submit" class="btn neon-blue">Отправить в обсуждение</button>
+            </form>
+            {% endif %}
+            <div class="watch-mini-feed">
+              {% for comment in discussion.items %}
+              <article class="watch-highlight-item">
+                <div class="watch-highlight-head">
+                  <h3>{{ comment.username }}</h3>
+                  <span class="genre-chip">{{ comment.created_at }}</span>
+                </div>
+                <p>{{ comment.content }}</p>
+                <div class="result-actions">
+                  {% if current_user %}
+                  <button
+                    type="button"
+                    class="btn {% if comment.is_liked %}neon-blue{% else %}neon-pink{% endif %} anime-comment-like-button"
+                    data-comment-id="{{ comment.id }}"
+                    data-liked="{{ '1' if comment.is_liked else '0' }}"
+                  >
+                    👍 <span>{{ comment.likes_count }}</span>
+                  </button>
+                  {% else %}
+                  <span class="highlight-like-badge">👍 {{ comment.likes_count }}</span>
+                  {% endif %}
+                </div>
+              </article>
+              {% else %}
+              <section class="empty-state">
+                <h2>Пока тихо</h2>
+                <p>Стань первым, кто оставит комментарий по этому аниме.</p>
+              </section>
+              {% endfor %}
+            </div>
+          </section>
         </aside>
       </section>
     </main>
@@ -497,10 +573,10 @@
           isAuthenticated: {{ 'true' if current_user else 'false' }}
       };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="{{ url_for('static', filename='js/vendor/hls.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
     <script src="{{ url_for('static', filename='js/watch_player.js') }}"></script>
-      <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
   </body>
 </html>
 

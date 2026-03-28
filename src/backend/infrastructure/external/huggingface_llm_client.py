@@ -155,6 +155,44 @@ class HuggingFaceLLMClient:
         )
         return [fallback_query], "fallback_invalid_json", None
 
+    def describe_taste_profile(
+        self,
+        profile_data: dict[str, object],
+        fallback: str,
+    ) -> str:
+        """Возвращает краткое русскоязычное описание вкуса пользователя."""
+        if not self.api_key:
+            return fallback
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Ты аналитик вкусов аниме. "
+                    "Верни одну короткую фразу на русском, без списков и без приветствий. "
+                    "Не выдумывай фактов вне переданных данных."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    "Сформулируй короткий вывод о вкусе пользователя на основе данных:\n"
+                    f"{profile_data}"
+                ),
+            },
+        ]
+        try:
+            completion = self._create_completion(
+                model_route=self._resolve_model_route(),
+                messages=messages,
+            )
+            content = self._extract_message_content(completion)
+            if not content:
+                return fallback
+            normalized = " ".join(str(content).split())
+            return normalized[:300] if normalized else fallback
+        except Exception:
+            return fallback
+
     def _fallback_query(
         self,
         description: str,

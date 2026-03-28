@@ -19,6 +19,7 @@
         <a href="{{ url_for('highlight.get_user_highlights', user_id=profile_user.id) }}">Мои хайлайты</a>
         <a href="{{ url_for('highlight.get_liked_highlights') }}">Мои лайки</a>
         <a href="{{ url_for('highlight.get_saved_highlights') }}">Сохраненные</a>
+        <a href="{{ url_for('collection.collections_page') }}">Коллекции</a>
         <a href="{{ url_for('highlight.get_highlight_notifications') }}">Уведомления</a>
       </nav>
     </header>
@@ -53,6 +54,37 @@
             <div class="stat-card">
               <span>Сохраненные</span>
               <strong>{{ profile_overview.summary.saved_count }}</strong>
+            </div>
+            <div class="stat-card">
+              <span>Часы просмотра</span>
+              <strong>{{ profile_overview.smart_profile.hours_watched }}</strong>
+            </div>
+            <div class="stat-card">
+              <span>Средний рейтинг</span>
+              <strong>{{ profile_overview.smart_profile.average_rating or '—' }}</strong>
+            </div>
+            <div class="stat-card">
+              <span>Главный вайб</span>
+              <strong>{{ profile_overview.smart_profile.dominant_mood.label }}</strong>
+            </div>
+          </section>
+
+          <section class="highlight-sidebar smart-profile-panel">
+            <h2>Вкус профиля</h2>
+            <p class="filters-subtitle">
+              {{ profile_overview.smart_profile.ai_taste_summary }}
+            </p>
+            <div class="profile-mood-card">
+              <strong>
+                {{ profile_overview.smart_profile.dominant_mood.emoji }}
+                {{ profile_overview.smart_profile.dominant_mood.label }}
+              </strong>
+              <p>{{ profile_overview.smart_profile.dominant_mood.description }}</p>
+            </div>
+            <div class="profile-tag-cloud">
+              {% for genre in profile_overview.smart_profile.favorite_genres %}
+              <span class="profile-tag">{{ genre.name }} · {{ genre.count }}</span>
+              {% endfor %}
             </div>
           </section>
 
@@ -104,6 +136,113 @@
         </aside>
 
         <section class="results-panel">
+          <section class="feed-section-block">
+            <div class="results-head">
+              <h2>Умный профиль</h2>
+            </div>
+            <div class="profile-smart-grid">
+              <article class="profile-insight-card">
+                <span class="profile-insight-label">Автоопределение вкуса</span>
+                <h3>{{ profile_overview.smart_profile.dominant_mood.label }}</h3>
+                <p>{{ profile_overview.smart_profile.dominant_mood.description }}</p>
+              </article>
+              <article class="profile-insight-card">
+                <span class="profile-insight-label">Любимые жанры</span>
+                <h3>
+                  {% if profile_overview.smart_profile.favorite_genres %}
+                  {{ profile_overview.smart_profile.favorite_genres[0].name }}
+                  {% else %}
+                  Пока без лидера
+                  {% endif %}
+                </h3>
+                <p>
+                  {% if profile_overview.smart_profile.favorite_genres %}
+                  {% for genre in profile_overview.smart_profile.favorite_genres[:3] %}
+                  <span class="profile-inline-pill">{{ genre.name }}</span>
+                  {% endfor %}
+                  {% else %}
+                  Нужно еще немного активности, чтобы профиль собрал жанровую картину.
+                  {% endif %}
+                </p>
+              </article>
+              <article class="profile-insight-card">
+                <span class="profile-insight-label">Наблюдение</span>
+                <h3>Портрет вкуса</h3>
+                <p>{{ profile_overview.smart_profile.ai_taste_summary }}</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="feed-section-block">
+            <div class="results-head">
+              <h2>AI-рекомендатель</h2>
+            </div>
+            <section class="profile-ai-panel" data-ai-recommendations data-user-id="{{ profile_user.id }}">
+              <form class="profile-ai-form">
+                <label for="profile-ai-query">Опиши, что хочешь посмотреть</label>
+                <div class="profile-ai-form-row">
+                  <input
+                    id="profile-ai-query"
+                    name="query"
+                    type="text"
+                    placeholder="Что-то как Naruto, но темнее и быстрее по темпу"
+                    required
+                  />
+                  <button type="submit" class="btn neon-pink">Спросить AI</button>
+                </div>
+              </form>
+              <div class="profile-ai-results"></div>
+            </section>
+          </section>
+
+          <section class="feed-section-block">
+            <div class="results-head">
+              <h2>Достижения</h2>
+            </div>
+            <div class="profile-achievement-grid">
+              {% for badge in profile_overview.smart_profile.achievements %}
+              <article class="profile-achievement-card profile-achievement-{{ badge.rarity }}">
+                <span class="profile-achievement-icon">{{ badge.icon }}</span>
+                <div>
+                  <h3>{{ badge.title }}</h3>
+                  <p>{{ badge.description }}</p>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+          </section>
+
+          <section class="feed-section-block">
+            <div class="results-head">
+              <h2>Топ аниме и heatmap</h2>
+            </div>
+            <div class="profile-smart-grid">
+              <article class="profile-insight-card">
+                <span class="profile-insight-label">Топ по активности</span>
+                <div class="profile-top-anime-list">
+                  {% for item in profile_overview.smart_profile.top_anime %}
+                  <a class="profile-top-anime-item" href="{{ url_for('watch.watch_page', anime_id=item.anime_id) }}">
+                    <span>{{ loop.index }}. {{ item.title }}</span>
+                    <strong>{{ item.weight }}</strong>
+                  </a>
+                  {% endfor %}
+                </div>
+              </article>
+              <article class="profile-insight-card">
+                <span class="profile-insight-label">Heatmap просмотров</span>
+                <div class="profile-heatmap">
+                  {% for cell in profile_overview.smart_profile.heatmap %}
+                  <span
+                    class="profile-heatmap-cell profile-heatmap-level-{{ 4 if cell.interactions >= 4 else cell.interactions }}"
+                    title="{{ cell.date }} · {{ cell.interactions }}"
+                  ></span>
+                  {% endfor %}
+                </div>
+                <p class="filters-subtitle">Каждая ячейка показывает активность просмотра по дням.</p>
+              </article>
+            </div>
+          </section>
+
           {% for title, items, link in [
             ('Недавние хайлайты', profile_overview.recent_highlights, url_for('highlight.get_user_highlights', user_id=profile_user.id)),
             ('Лучшие хайлайты', profile_overview.popular_highlights, url_for('highlight.get_user_highlights', user_id=profile_user.id, sort='popular')),
@@ -180,7 +319,8 @@
     </main>
 
     <script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
-      <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/profile_ai.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
   </body>
 </html>
 

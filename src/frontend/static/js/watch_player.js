@@ -6,6 +6,9 @@
 
   const playerShell = document.getElementById("watch-player-shell");
   const playerOverlay = document.getElementById("watch-player-overlay");
+  const playerStatus = document.getElementById("watch-player-status");
+  const playerStatusTitle = document.getElementById("watch-player-status-title");
+  const playerStatusText = document.getElementById("watch-player-status-text");
   const video = document.getElementById("watch-video");
   const embedFrame = document.getElementById("watch-embed-frame");
   const externalPanel = document.getElementById("watch-external-panel");
@@ -71,13 +74,41 @@
     return Number(text) || 0;
   };
 
+  const buildProxyUrl = (streamUrl) =>
+    `/watch/proxy?url=${encodeURIComponent(String(streamUrl || "").trim())}`;
+
   const getSelectedSource = () =>
     allSources.find(
       (item) => Number(item.source_id) === Number(config.selectedSourceId),
     ) || null;
 
+  const canUseNativeHls = () =>
+    Boolean(
+      video &&
+        (video.canPlayType("application/vnd.apple.mpegurl") ||
+          video.canPlayType("application/x-mpegURL")),
+    );
+
   const isStreamSource = (source) =>
     !source || String(source.source_type || "stream") === "stream";
+
+  const hidePlayerStatus = () => {
+    if (playerStatus) {
+      playerStatus.hidden = true;
+    }
+  };
+
+  const showPlayerStatus = (title, text) => {
+    if (playerStatusTitle) {
+      playerStatusTitle.textContent = title;
+    }
+    if (playerStatusText) {
+      playerStatusText.textContent = text;
+    }
+    if (playerStatus) {
+      playerStatus.hidden = false;
+    }
+  };
 
   const getSourcesByTranslation = (translationId) =>
     allSources
@@ -312,6 +343,7 @@
   const setEmbedSource = (source) => {
     clearStreamSource();
     clearExternalSource();
+    hidePlayerStatus();
     if (!embedFrame) {
       return;
     }
@@ -323,6 +355,7 @@
   const setExternalSource = (source) => {
     clearStreamSource();
     clearEmbedSource();
+    hidePlayerStatus();
     if (externalPanel) {
       externalPanel.hidden = false;
     }
@@ -344,6 +377,7 @@
     }
     clearEmbedSource();
     clearExternalSource();
+    hidePlayerStatus();
     video.hidden = false;
     const currentTime = video.currentTime || config.lastPositionSeconds || 0;
     if (hlsInstance) {
@@ -358,17 +392,42 @@
       updateTimeline();
     };
 
-    const streamUrl = source.stream_url;
+    const streamUrl = String(source.stream_url || "").trim();
+    if (!streamUrl) {
+      showPlayerStatus(
+        "Источник не найден",
+        "У этой серии нет валидной ссылки на поток. Попробуй другую озвучку или обнови источники.",
+      );
+      updateInteractionState(null);
+      return;
+    }
     const isHlsStream = /\.m3u8($|\?)/i.test(streamUrl);
+    const proxiedStreamUrl = buildProxyUrl(streamUrl);
     if (isHlsStream && window.Hls && window.Hls.isSupported()) {
       hlsInstance = new window.Hls();
-      hlsInstance.loadSource(streamUrl);
+      hlsInstance.on(window.Hls.Events.ERROR, (_event, data) => {
+        if (!data || !data.fatal) {
+          return;
+        }
+        showPlayerStatus(
+          "Поток не открылся",
+          "Серия не загрузилась через HLS. Попробуй другой источник или обнови список источников.",
+        );
+      });
+      hlsInstance.loadSource(proxiedStreamUrl);
       hlsInstance.attachMedia(video);
       video.addEventListener("loadedmetadata", onLoadedMetadata, {
         once: true,
       });
+    } else if (isHlsStream && !canUseNativeHls()) {
+      showPlayerStatus(
+        "HLS не поддерживается",
+        "Браузер не смог включить поток этой серии. Локальный HLS-движок не загрузился или источник недоступен.",
+      );
+      updateInteractionState(null);
+      return;
     } else {
-      video.src = streamUrl;
+      video.src = proxiedStreamUrl;
       video.load();
       video.addEventListener("loadedmetadata", onLoadedMetadata, {
         once: true,
@@ -685,6 +744,7 @@
   });
 
   video?.addEventListener("play", () => {
+    hidePlayerStatus();
     setPlayerVisualState();
     showControls();
   });
@@ -701,6 +761,13 @@
   video?.addEventListener("timeupdate", updateTimeline);
   video?.addEventListener("durationchange", updateTimeline);
   video?.addEventListener("loadedmetadata", updateTimeline);
+  video?.addEventListener("loadedmetadata", hidePlayerStatus);
+  video?.addEventListener("error", () => {
+    showPlayerStatus(
+      "Видео не загрузилось",
+      "Плеер не смог открыть поток. Попробуй сменить качество, озвучку или обновить источники.",
+    );
+  });
 
   document.addEventListener("keydown", (event) => {
     const target = event.target;
@@ -780,4 +847,32 @@
     playerShell.classList.add("is-paused");
     playerShell.classList.remove("is-controls-hidden");
   }
+})();
+
+(function () {
+  const buttons = document.querySelectorAll(".anime-comment-like-button");
+  if (!buttons.length) {
+    return;
+  }
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      const commentId = button.getAttribute("data-comment-id");
+      const liked = button.getAttribute("data-liked") === "1";
+      const response = await fetch(`/watch/discussion/comments/${commentId}/likes`, {
+        method: liked ? "DELETE" : "POST",
+      });
+      if (!response.ok) {
+        return;
+      }
+      const payload = await response.json();
+      button.setAttribute("data-liked", payload.is_liked ? "1" : "0");
+      button.classList.toggle("neon-blue", Boolean(payload.is_liked));
+      button.classList.toggle("neon-pink", !payload.is_liked);
+      const counter = button.querySelector("span");
+      if (counter) {
+        counter.textContent = String(payload.likes_count || 0);
+      }
+    });
+  });
 })();

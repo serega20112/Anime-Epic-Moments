@@ -204,3 +204,93 @@ def test_watch_repository_adds_and_reads_highlight_contexts(db_session):
     assert len(loaded) == 1
     assert loaded[0].title == "best clip"
     assert watch_repo.get_highlight_contexts([]) == []
+
+
+def test_watch_repository_returns_watched_anime_stats_and_heatmap(db_session):
+    """Проверяем, что WatchRepository агрегирует просмотр по аниме и по дням активности."""
+    user = UserRepository(db_session).add(
+        User(email="stats@example.com", username="stats-user", password_hash="hash")
+    )
+    repo = WatchRepository(db_session)
+    translation = repo.add_translation(
+        Translation(anime_id=7, name="AniLibria", translation_type="voice")
+    )
+    source = repo.add_source(
+        WatchSource(
+            anime_id=7,
+            episode=1,
+            translation_id=translation.id,
+            provider_name="Kodik",
+            source_name="s1",
+            stream_url="https://example.com/1.m3u8",
+            quality_label="1080",
+        )
+    )
+    second_source = repo.add_source(
+        WatchSource(
+            anime_id=8,
+            episode=1,
+            translation_id=translation.id,
+            provider_name="Kodik",
+            source_name="s2",
+            stream_url="https://example.com/2.m3u8",
+            quality_label="720",
+        )
+    )
+    repo.upsert_session(
+        ViewingSession(
+            user_id=user.id,
+            anime_id=7,
+            episode=1,
+            watch_source_id=source.id,
+            position_seconds=1800.0,
+            volume=1.0,
+            quality_label="1080",
+            is_paused=False,
+        )
+    )
+    repo.upsert_session(
+        ViewingSession(
+            user_id=user.id,
+            anime_id=8,
+            episode=1,
+            watch_source_id=second_source.id,
+            position_seconds=900.0,
+            volume=1.0,
+            quality_label="720",
+            is_paused=True,
+        )
+    )
+
+    watched_stats = repo.get_watched_anime_stats(user.id)
+    heatmap = repo.get_viewing_heatmap(user.id, days=7)
+
+    assert [item.anime_id for item in watched_stats] == [7, 8]
+    assert watched_stats[0].watched_seconds == 1800.0
+    assert watched_stats[1].sessions_count == 1
+    assert len(heatmap) == 1
+    assert heatmap[0].interactions == 2
+
+
+def test_watch_repository_adds_sorts_and_likes_anime_discussion_comments(db_session):
+    """Проверяем, что WatchRepository ведет обсуждение аниме, сортирует комментарии и считает лайки."""
+    user_repo = UserRepository(db_session)
+    author = user_repo.add(
+        User(email="discussion@example.com", username="author", password_hash="hash")
+    )
+    viewer = user_repo.add(
+        User(email="discussion-2@example.com", username="viewer", password_hash="hash")
+    )
+    repo = WatchRepository(db_session)
+    first = repo.add_anime_comment(anime_id=7, user_id=author.id, content="Первый коммент")
+    second = repo.add_anime_comment(anime_id=7, user_id=viewer.id, content="Второй коммент")
+
+    repo.set_anime_comment_like(comment_id=second.id, user_id=author.id, liked=True)
+    popular = repo.get_anime_comments(anime_id=7, sort_by="popular", viewer_user_id=author.id)
+    recent = repo.get_anime_comments(anime_id=7, sort_by="recent", viewer_user_id=author.id)
+
+    assert popular[0].id == second.id
+    assert popular[0].likes_count == 1
+    assert popular[0].is_liked is True
+    assert recent[0].id == second.id
+    assert recent[1].id == first.id

@@ -44,6 +44,20 @@ class WatchHighlightCard:
 
 
 @dataclass
+class WatchedAnimeStat:
+    anime_id: int
+    watched_seconds: float
+    sessions_count: int
+    last_watched_at: str
+
+
+@dataclass
+class ViewingHeatmapPoint:
+    date: str
+    interactions: int
+
+
+@dataclass
 class WatchPageData:
     anime_id: int
     anime_title: str

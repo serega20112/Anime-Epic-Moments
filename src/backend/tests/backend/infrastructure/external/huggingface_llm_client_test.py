@@ -77,3 +77,34 @@ def test_huggingface_llm_client_falls_back_when_completion_raises(monkeypatch):
     assert queries == ["school comedy"]
     assert mode == "fallback_exception"
     assert "RuntimeError" in error
+
+
+def test_huggingface_llm_client_returns_fallback_taste_summary_without_api_key():
+    """Проверяем, что описание вкуса возвращает fallback без API key."""
+    client = HuggingFaceLLMClient(api_key=None, model="model", provider="provider")
+
+    result = client.describe_taste_profile(
+        profile_data={"mood": "Боевой драйв"},
+        fallback="fallback summary",
+    )
+
+    assert result == "fallback summary"
+
+
+def test_huggingface_llm_client_builds_taste_summary_from_completion(monkeypatch):
+    """Проверяем, что описание вкуса берется из completion, если модель ответила валидным текстом."""
+    client = HuggingFaceLLMClient(api_key="token", model="model", provider="provider")
+    monkeypatch.setattr(
+        client,
+        "_create_completion",
+        lambda model_route, messages: {
+            "choices": [{"message": {"content": "Ты любишь экшен с сильным темпом."}}]
+        },
+    )
+
+    result = client.describe_taste_profile(
+        profile_data={"mood": "Боевой драйв"},
+        fallback="fallback summary",
+    )
+
+    assert result == "Ты любишь экшен с сильным темпом."

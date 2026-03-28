@@ -7,6 +7,11 @@ from src.backend.domain.watch.entity import (
     ViewingSession,
     WatchSource,
 )
+from src.backend.domain.watch.value_object import (
+    ViewingHeatmapPoint,
+    WatchedAnimeStat,
+)
+from src.backend.domain.anime.value_object import AnimeDiscussionComment
 
 
 class WatchRepository(ABC):
@@ -55,3 +60,47 @@ class WatchRepository(ABC):
         self, highlight_ids: List[int]
     ) -> List[HighlightContext]:
         """Возвращает контексты для набора хайлайтов."""
+
+    @abstractmethod
+    def get_watched_anime_stats(
+        self,
+        user_id: int,
+        limit: int | None = None,
+    ) -> List[WatchedAnimeStat]:
+        """Возвращает агрегированную статистику просмотра по аниме."""
+
+    @abstractmethod
+    def get_viewing_heatmap(
+        self,
+        user_id: int,
+        days: int = 35,
+    ) -> List[ViewingHeatmapPoint]:
+        """Возвращает тепловую карту активности просмотра по дням."""
+
+    @abstractmethod
+    def add_anime_comment(
+        self,
+        anime_id: int,
+        user_id: int,
+        content: str,
+    ) -> AnimeDiscussionComment:
+        """Добавляет комментарий в обсуждение аниме."""
+
+    @abstractmethod
+    def get_anime_comments(
+        self,
+        anime_id: int,
+        sort_by: str = "popular",
+        viewer_user_id: int | None = None,
+        limit: int = 20,
+    ) -> List[AnimeDiscussionComment]:
+        """Возвращает комментарии обсуждения аниме."""
+
+    @abstractmethod
+    def set_anime_comment_like(
+        self,
+        comment_id: int,
+        user_id: int,
+        liked: bool,
+    ) -> AnimeDiscussionComment:
+        """Ставит или снимает лайк с комментария в обсуждении аниме."""

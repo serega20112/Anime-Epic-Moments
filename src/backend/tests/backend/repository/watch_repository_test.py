@@ -18,6 +18,11 @@ def test_watch_repository_is_abstract_and_declares_expected_methods():
         "upsert_session",
         "add_highlight_context",
         "get_highlight_contexts",
+        "get_watched_anime_stats",
+        "get_viewing_heatmap",
+        "add_anime_comment",
+        "get_anime_comments",
+        "set_anime_comment_like",
     }
 
     with pytest.raises(TypeError):
