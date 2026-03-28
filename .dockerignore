@@ -1,0 +1,12 @@
+.git
+.idea
+.pytest_cache
+node_modules
+tmp_wheels
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+anime_epic_moments.db
+tests

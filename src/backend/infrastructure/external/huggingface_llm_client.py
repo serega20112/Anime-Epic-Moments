@@ -31,6 +31,8 @@ class HuggingFaceLLMClient:
         self.model = model
         self.provider = provider
         self.api_url = api_url
+        self.session = requests.Session()
+        self.session.trust_env = False
 
     def build_search_query(
         self,
@@ -39,6 +41,7 @@ class HuggingFaceLLMClient:
         year_from: int | None = None,
         year_to: int | None = None,
         min_rating: int | None = None,
+        age_rating: str = "all",
         allow_adult: bool = False,
     ) -> str:
         """Возвращает краткий англоязычный запрос для AniList по описанию пользователя."""
@@ -48,6 +51,7 @@ class HuggingFaceLLMClient:
             year_from=year_from,
             year_to=year_to,
             min_rating=min_rating,
+            age_rating=age_rating,
             allow_adult=allow_adult,
         )
         return query
@@ -59,6 +63,7 @@ class HuggingFaceLLMClient:
         year_from: int | None = None,
         year_to: int | None = None,
         min_rating: int | None = None,
+        age_rating: str = "all",
         allow_adult: bool = False,
     ) -> tuple[str, str, str | None]:
         """Возвращает запрос и метаданные режима: hf_llm или fallback_*."""
@@ -68,6 +73,7 @@ class HuggingFaceLLMClient:
             year_from=year_from,
             year_to=year_to,
             min_rating=min_rating,
+            age_rating=age_rating,
             allow_adult=allow_adult,
         )
         first = queries[0] if queries else ""
@@ -80,6 +86,7 @@ class HuggingFaceLLMClient:
         year_from: int | None = None,
         year_to: int | None = None,
         min_rating: int | None = None,
+        age_rating: str = "all",
         allow_adult: bool = False,
     ) -> tuple[list[str], str, str | None]:
         """Возвращает несколько вариантов поискового запроса и метаданные режима."""
@@ -98,6 +105,7 @@ class HuggingFaceLLMClient:
             year_from=year_from,
             year_to=year_to,
             min_rating=min_rating,
+            age_rating=age_rating,
             allow_adult=allow_adult,
         )
         messages = [
@@ -109,7 +117,9 @@ class HuggingFaceLLMClient:
                     "Только названия, без объяснений, без нумерации, без JSON. "
                     "Не перефразируй описание и не придумывай детали сюжета. "
                     "Не возвращай общие фразы типа 'anime with ...'. "
-                    "Если allow_adult=false, не подставляй 18+ термины (hentai/ecchi/porn/nsfw). "
+                    "Соблюдай возрастной рейтинг пользователя (age_rating) строго. "
+                    "Если allow_adult=false, не подставляй 18+ термины (hentai/ecchi/porn/nsfw) "
+                    "и не предлагай тайтлы, которые выглядят как 18+ контент. "
                     "Если уверенность низкая, все равно верни 3 наиболее вероятных тайтла."
                 ),
             },
@@ -166,6 +176,7 @@ class HuggingFaceLLMClient:
         year_from: int | None,
         year_to: int | None,
         min_rating: int | None,
+        age_rating: str,
         allow_adult: bool,
     ) -> str:
         """Готовит компактный текстовый payload на русском без JSON-обертки."""
@@ -175,6 +186,7 @@ class HuggingFaceLLMClient:
             f"year_from: {year_from if year_from is not None else '-'}",
             f"year_to: {year_to if year_to is not None else '-'}",
             f"min_rating: {min_rating if min_rating is not None else '-'}",
+            f"age_rating: {str(age_rating or 'all').strip()}",
             f"allow_adult: {str(allow_adult).lower()}",
         ]
         return "\n".join(parts)
@@ -201,7 +213,7 @@ class HuggingFaceLLMClient:
             "temperature": 0.1,
             "reasoning_effort": "low",
         }
-        response = requests.post(
+        response = self.session.post(
             self.api_url, headers=headers, json=payload, timeout=30
         )
         response.raise_for_status()
@@ -233,7 +245,7 @@ class HuggingFaceLLMClient:
             line = raw_line.strip().strip("-*• ").strip()
             if not line:
                 continue
-            if ". " in line and line[:2].isdigit():
+            if re.match(r"^\d+\.\s+", line):
                 line = line.split(". ", 1)[1].strip()
             normalized_line = " ".join(line.split())
             if not self._looks_like_title_candidate(normalized_line):

@@ -2,7 +2,10 @@
 DI контейнер приложения
 """
 
+from functools import cached_property
+
 from src.backend.infrastructure.files.database import get_session
+from src.backend.infrastructure.cache.recommendation_cache import RecommendationCache
 from src.backend.infrastructure.repositories.user_repository import UserRepository
 from src.backend.infrastructure.repositories.highlight_repository import (
     HighlightRepository,
@@ -39,7 +42,6 @@ from src.backend.use_case.recommendation.generate_recommendations import (
 from src.backend.use_case.recommendation.refresh_recommendations import (
     RefreshRecommendationsUseCase,
 )
-from src.backend.use_case.watch.add_watch_source import AddWatchSourceUseCase
 from src.backend.use_case.watch.create_watch_highlight import (
     CreateWatchHighlightUseCase,
 )
@@ -56,10 +58,12 @@ from src.backend.infrastructure.external.anime_api_client import AnimeApiClient
 from src.backend.infrastructure.external.huggingface_llm_client import (
     HuggingFaceLLMClient,
 )
+from src.backend.infrastructure.external.justwatch_client import JustWatchClient
 from src.backend.infrastructure.external.kodik_client import KodikClient
 from src.backend.infrastructure.external.password_reset_mailer import (
     PasswordResetMailer,
 )
+from src.backend.infrastructure.external.youtube_client import YouTubeClient
 from src.backend.infrastructure.security.password_service import PasswordService
 from src.backend.infrastructure.security.jwt_service import JWTService
 from src.backend.dependencies.settings import Settings
@@ -70,128 +74,225 @@ class Container:
     Dependency Injection контейнер
     """
 
-    def __init__(self):
-        self.db_session = get_session()
-        self.anime_api_client = AnimeApiClient()
-        self.kodik_client = KodikClient()
-        self.anilibria_client = AniLibriaClient()
-        self.hf_llm_client = HuggingFaceLLMClient(
+    @cached_property
+    def db_session(self):
+        return get_session()
+
+    @cached_property
+    def anime_api_client(self):
+        return AnimeApiClient()
+
+    @cached_property
+    def kodik_client(self):
+        return KodikClient()
+
+    @cached_property
+    def anilibria_client(self):
+        return AniLibriaClient()
+
+    @cached_property
+    def youtube_client(self):
+        return YouTubeClient()
+
+    @cached_property
+    def justwatch_client(self):
+        return JustWatchClient()
+
+    @cached_property
+    def hf_llm_client(self):
+        if not Settings.hf_token:
+            print(
+                "! HF_TOKEN не задан: поиск по описанию работает в fallback-режиме без LLM"
+            )
+        return HuggingFaceLLMClient(
             api_key=Settings.hf_token,
             model=Settings.hf_model,
             provider=Settings.hf_provider,
             api_url=Settings.hf_api_url,
         )
-        if not Settings.hf_token:
-            print(
-                "! HF_TOKEN не задан: поиск по описанию работает в fallback-режиме без LLM"
-            )
 
-        self.user_repository = UserRepository(self.db_session)
-        self.highlight_repository = HighlightRepository(self.db_session)
-        self.favorite_repository = FavoriteRepository(self.db_session)
-        self.watch_repository = WatchRepository(self.db_session)
+    @cached_property
+    def user_repository(self):
+        return UserRepository(self.db_session)
 
-        # Recommendation service для генерации рекомендаций
-        self.recommendation_service = RecommendationService(
+    @cached_property
+    def highlight_repository(self):
+        return HighlightRepository(self.db_session)
+
+    @cached_property
+    def favorite_repository(self):
+        return FavoriteRepository(self.db_session)
+
+    @cached_property
+    def watch_repository(self):
+        return WatchRepository(self.db_session)
+
+    @cached_property
+    def recommendation_cache(self):
+        return RecommendationCache()
+
+    @cached_property
+    def recommendation_service(self):
+        return RecommendationService(
             self.favorite_repository,
             self.highlight_repository,
             self.anime_api_client,
+            self.recommendation_cache,
         )
-        self.watch_source_sync_service = WatchSourceSyncService(
+
+    @cached_property
+    def watch_source_sync_service(self):
+        return WatchSourceSyncService(
             self.watch_repository,
             [
                 self.kodik_client,
                 self.anilibria_client,
+                self.youtube_client,
+                self.justwatch_client,
             ],
         )
 
-        self.password_service = PasswordService()
-        self.jwt_service = JWTService()
-        self.password_reset_mailer = PasswordResetMailer()
+    @cached_property
+    def password_service(self):
+        return PasswordService()
 
-        self.register_user_use_case = lambda: RegisterUserUseCase(
+    @cached_property
+    def jwt_service(self):
+        return JWTService()
+
+    @cached_property
+    def password_reset_mailer(self):
+        return PasswordResetMailer()
+
+    def register_user_use_case(self):
+        return RegisterUserUseCase(
             self.user_repository, self.password_service
         )
-        self.login_user_use_case = lambda: LoginUserUseCase(
+
+    def login_user_use_case(self):
+        return LoginUserUseCase(
             self.user_repository, self.password_service
         )
-        self.logout_user_use_case = lambda: LogoutUserUseCase(self.user_repository)
-        self.update_user_profile_use_case = lambda: UpdateUserProfileUseCase(
+
+    def logout_user_use_case(self):
+        return LogoutUserUseCase(self.user_repository)
+
+    def update_user_profile_use_case(self):
+        return UpdateUserProfileUseCase(
             self.user_repository
         )
-        self.request_password_reset_use_case = lambda: RequestPasswordResetUseCase(
+
+    def request_password_reset_use_case(self):
+        return RequestPasswordResetUseCase(
             self.user_repository, self.jwt_service, self.password_reset_mailer
         )
-        self.reset_password_use_case = lambda: ResetPasswordUseCase(
+
+    def reset_password_use_case(self):
+        return ResetPasswordUseCase(
             self.user_repository, self.jwt_service, self.password_service
         )
 
-        self.create_highlight_use_case = lambda: CreateHighlightUseCase(
-            self.highlight_repository
+    def create_highlight_use_case(self):
+        return CreateHighlightUseCase(
+            self.highlight_repository,
+            self.recommendation_service,
         )
-        self.delete_highlight_use_case = lambda: DeleteHighlightUseCase(
-            self.highlight_repository
+
+    def delete_highlight_use_case(self):
+        return DeleteHighlightUseCase(
+            self.highlight_repository,
+            self.recommendation_service,
         )
-        self.edit_highlight_use_case = lambda: EditHighlightUseCase(
-            self.highlight_repository
+
+    def edit_highlight_use_case(self):
+        return EditHighlightUseCase(
+            self.highlight_repository,
+            self.recommendation_service,
         )
-        self.get_user_highlights_use_case = lambda: GetUserHighlightsUseCase(
-            self.highlight_repository, self.anime_api_client
-        )
-        self.get_public_top_highlights_use_case = lambda: GetPublicTopHighlightsUseCase(
+
+    def get_user_highlights_use_case(self):
+        return GetUserHighlightsUseCase(
             self.highlight_repository, self.anime_api_client
         )
 
-        self.add_favorite_use_case = lambda: AddFavoriteUseCase(
-            self.favorite_repository
+    def get_public_top_highlights_use_case(self):
+        return GetPublicTopHighlightsUseCase(
+            self.highlight_repository, self.anime_api_client
         )
-        self.remove_favorite_use_case = lambda: RemoveFavoriteUseCase(
-            self.favorite_repository
+
+    def add_favorite_use_case(self):
+        return AddFavoriteUseCase(
+            self.favorite_repository,
+            self.recommendation_service,
         )
-        self.get_favorites_use_case = lambda: GetFavoritesUseCase(
+
+    def remove_favorite_use_case(self):
+        return RemoveFavoriteUseCase(
+            self.favorite_repository,
+            self.recommendation_service,
+        )
+
+    def get_favorites_use_case(self):
+        return GetFavoritesUseCase(
             self.favorite_repository, self.anime_api_client
         )
 
-        self.search_anime_use_case = lambda: SearchAnimeUseCase(self.anime_api_client)
-        self.search_anime_by_description_use_case = (
-            lambda: SearchAnimeByDescriptionUseCase(
-                self.anime_api_client, self.hf_llm_client
-            )
+    def search_anime_use_case(self):
+        return SearchAnimeUseCase(self.anime_api_client)
+
+    def search_anime_by_description_use_case(self):
+        return SearchAnimeByDescriptionUseCase(
+            self.anime_api_client, self.hf_llm_client
         )
-        self.autocomplete_anime_use_case = lambda: AutocompleteAnimeUseCase(
-            self.anime_api_client
-        )
-        self.get_season_popular_use_case = lambda: GetSeasonPopularUseCase(
+
+    def autocomplete_anime_use_case(self):
+        return AutocompleteAnimeUseCase(
             self.anime_api_client
         )
 
-        self.generate_recommendations_use_case = lambda: GenerateRecommendationsUseCase(
+    def get_season_popular_use_case(self):
+        return GetSeasonPopularUseCase(
+            self.anime_api_client
+        )
+
+    def generate_recommendations_use_case(self):
+        return GenerateRecommendationsUseCase(
             self.recommendation_service
         )
-        self.refresh_recommendations_use_case = lambda: RefreshRecommendationsUseCase(
+
+    def refresh_recommendations_use_case(self):
+        return RefreshRecommendationsUseCase(
             self.recommendation_service
         )
-        self.get_watch_page_use_case = lambda: GetWatchPageUseCase(
+
+    def get_watch_page_use_case(self):
+        return GetWatchPageUseCase(
             self.watch_repository,
             self.highlight_repository,
             self.anime_api_client,
             self.watch_source_sync_service,
         )
-        self.sync_watch_sources_use_case = lambda: SyncWatchSourcesUseCase(
+
+    def sync_watch_sources_use_case(self):
+        return SyncWatchSourcesUseCase(
             self.anime_api_client,
             self.watch_source_sync_service,
         )
-        self.upsert_user_anime_status_use_case = lambda: UpsertUserAnimeStatusUseCase(
+
+    def upsert_user_anime_status_use_case(self):
+        return UpsertUserAnimeStatusUseCase(
             self.watch_repository
         )
-        self.add_watch_source_use_case = lambda: AddWatchSourceUseCase(
+
+    def save_viewing_session_use_case(self):
+        return SaveViewingSessionUseCase(
             self.watch_repository
         )
-        self.save_viewing_session_use_case = lambda: SaveViewingSessionUseCase(
-            self.watch_repository
-        )
-        self.create_watch_highlight_use_case = lambda: CreateWatchHighlightUseCase(
-            CreateHighlightUseCase(self.highlight_repository), self.watch_repository
+
+    def create_watch_highlight_use_case(self):
+        return CreateWatchHighlightUseCase(
+            self.create_highlight_use_case(),
+            self.watch_repository,
         )
 
 

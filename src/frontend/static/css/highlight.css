@@ -69,6 +69,32 @@
   padding: 0;
 }
 
+.favorite-grid .anime-card {
+  display: grid;
+  gap: 0.8rem;
+  background: rgba(6, 12, 24, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 0.8rem;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.favorite-grid .info h2 {
+  margin: 0 0 0.35rem;
+}
+
+.favorite-grid .info p {
+  color: #cbd5e1;
+}
+
+.favorite-recommendations {
+  margin-top: 1.2rem;
+}
+
+.favorite-recommendations .results-head {
+  align-items: center;
+}
+
 .btn-heart {
   width: 44px;
   height: 44px;

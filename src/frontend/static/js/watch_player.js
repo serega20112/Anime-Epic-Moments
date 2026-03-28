@@ -7,6 +7,11 @@
   const playerShell = document.getElementById("watch-player-shell");
   const playerOverlay = document.getElementById("watch-player-overlay");
   const video = document.getElementById("watch-video");
+  const embedFrame = document.getElementById("watch-embed-frame");
+  const externalPanel = document.getElementById("watch-external-panel");
+  const externalTitle = document.getElementById("watch-external-title");
+  const externalMeta = document.getElementById("watch-external-meta");
+  const externalLink = document.getElementById("watch-external-link");
   const heroPlayToggle = document.getElementById("hero-play-toggle");
   const playToggle = document.getElementById("play-toggle");
   const muteToggle = document.getElementById("mute-toggle");
@@ -21,7 +26,6 @@
   const highlightEndButton = document.getElementById("highlight-end");
   const highlightForm = document.getElementById("watch-highlight-form");
   const episodeForm = document.getElementById("episode-form");
-  const addSourceForm = document.getElementById("add-source-form");
   const discoverSourcesButton = document.getElementById(
     "discover-sources-button",
   );
@@ -67,27 +71,63 @@
     return Number(text) || 0;
   };
 
+  const getSelectedSource = () =>
+    allSources.find(
+      (item) => Number(item.source_id) === Number(config.selectedSourceId),
+    ) || null;
+
+  const isStreamSource = (source) =>
+    !source || String(source.source_type || "stream") === "stream";
+
   const getSourcesByTranslation = (translationId) =>
     allSources
       .filter((item) => String(item.translation_id) === String(translationId))
-      .sort(
-        (left, right) =>
-          getQualityRank(right.quality_label) -
-          getQualityRank(left.quality_label),
-      );
+      .sort((left, right) => {
+        const qualityDiff =
+          getQualityRank(right.quality_label) - getQualityRank(left.quality_label);
+        if (qualityDiff !== 0) {
+          return qualityDiff;
+        }
+        const typePriority = {
+          stream: 0,
+          embed: 1,
+          external: 2,
+        };
+        return (
+          (typePriority[left.source_type || "stream"] ?? 3) -
+          (typePriority[right.source_type || "stream"] ?? 3)
+        );
+      });
 
   const setPlayerVisualState = () => {
-    if (!playerShell || !video) {
+    const selectedSource = getSelectedSource();
+    const streamMode = isStreamSource(selectedSource);
+    if (!playerShell) {
       return;
     }
-    playerShell.classList.toggle("is-playing", !video.paused);
-    playerShell.classList.toggle("is-paused", video.paused);
+    playerShell.classList.toggle(
+      "is-playing",
+      Boolean(streamMode && video && !video.paused),
+    );
+    playerShell.classList.toggle(
+      "is-paused",
+      !streamMode || !video || video.paused,
+    );
+    playerShell.classList.toggle(
+      "is-non-stream-source",
+      Boolean(selectedSource && !streamMode),
+    );
     if (playToggle) {
-      playToggle.textContent = video.paused ? "▶" : "II";
-      playToggle.setAttribute("aria-label", video.paused ? "Play" : "Pause");
+      playToggle.textContent =
+        streamMode && video && !video.paused ? "II" : "▶";
+      playToggle.setAttribute(
+        "aria-label",
+        streamMode && video && !video.paused ? "Pause" : "Play",
+      );
     }
     if (muteToggle) {
-      muteToggle.textContent = video.muted || video.volume === 0 ? "🔇" : "🔊";
+      muteToggle.textContent =
+        streamMode && video && !(video.muted || video.volume === 0) ? "🔊" : "🔇";
     }
   };
 
@@ -99,7 +139,7 @@
     if (hideControlsTimer) {
       window.clearTimeout(hideControlsTimer);
     }
-    if (video && !video.paused) {
+    if (video && !video.paused && isStreamSource(getSelectedSource())) {
       hideControlsTimer = window.setTimeout(() => {
         playerShell.classList.add("is-controls-hidden");
       }, 2600);
@@ -107,7 +147,7 @@
   };
 
   const seekTo = (value) => {
-    if (!video) {
+    if (!video || !isStreamSource(getSelectedSource())) {
       return;
     }
     const nextTime = Math.max(
@@ -119,7 +159,18 @@
   };
 
   const updateTimeline = () => {
-    if (!video) {
+    if (!video || !isStreamSource(getSelectedSource())) {
+      if (timelineRange) {
+        timelineRange.max = "100";
+        timelineRange.value = "0";
+        updateTimelineProgressBar(0);
+      }
+      if (currentTimeLabel) {
+        currentTimeLabel.textContent = "00:00";
+      }
+      if (durationTimeLabel) {
+        durationTimeLabel.textContent = "00:00";
+      }
       return;
     }
     const duration = Number(video.duration || 0);
@@ -128,6 +179,7 @@
       if (!isScrubbing) {
         timelineRange.value = String(video.currentTime || 0);
       }
+      updateTimelineProgressBar(duration);
     }
     if (currentTimeLabel) {
       currentTimeLabel.textContent = formatClock(video.currentTime || 0);
@@ -137,28 +189,72 @@
     }
   };
 
-  const saveSession = async () => {
-    if (!config.isAuthenticated || !video || !config.selectedSourceId) {
+  const updateTimelineProgressBar = (durationOverride) => {
+    if (!timelineRange) {
       return;
     }
+    const duration =
+      Number(durationOverride ?? timelineRange.max ?? 0) ||
+      Number(video?.duration || 0);
+    const current = Number(timelineRange.value || 0);
+    const ratio =
+      duration > 0 ? Math.max(0, Math.min(current / duration, 1)) : 0;
+    timelineRange.style.setProperty("--timeline-progress", `${ratio * 100}%`);
+  };
+
+  const updateVolumeProgressBar = () => {
+    if (!volumeRange || !video) {
+      return;
+    }
+    const value = video.muted ? 0 : Number(video.volume || 0);
+    const ratio = Math.max(0, Math.min(value, 1));
+    volumeRange.style.setProperty("--volume-progress", `${ratio * 100}%`);
+  };
+
+  const updateInteractionState = (source) => {
+    const streamMode = isStreamSource(source);
+    [playToggle, muteToggle, timelineRange, volumeRange].forEach((item) => {
+      if (item) {
+        item.disabled = !streamMode;
+      }
+    });
+    [highlightStartButton, highlightEndButton].forEach((item) => {
+      if (item) {
+        item.disabled = !streamMode;
+      }
+    });
+    if (heroPlayToggle) {
+      heroPlayToggle.disabled = !streamMode;
+    }
+    setPlayerVisualState();
+    updateTimeline();
+  };
+
+  const saveSession = async () => {
+    const selectedSource = getSelectedSource();
+    if (!config.isAuthenticated || !selectedSource) {
+      return;
+    }
+    const streamMode = isStreamSource(selectedSource);
     await fetch(`/watch/${config.animeId}/session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         episode: config.episode,
-        watch_source_id: config.selectedSourceId,
-        position_seconds: video.currentTime || 0,
-        volume: video.muted ? 0 : video.volume,
+        watch_source_id: selectedSource.source_id,
+        position_seconds: streamMode && video ? video.currentTime || 0 : 0,
+        volume:
+          streamMode && video ? (video.muted ? 0 : video.volume) : config.savedVolume,
         quality_label: qualitySelect
           ? qualitySelect.selectedOptions[0]?.textContent || "Auto"
           : "Auto",
-        is_paused: video.paused,
+        is_paused: streamMode && video ? video.paused : true,
       }),
     });
   };
 
   const togglePlayback = async () => {
-    if (!video) {
+    if (!video || !isStreamSource(getSelectedSource())) {
       return;
     }
     if (video.paused) {
@@ -181,23 +277,74 @@
     await playerShell.requestFullscreen?.().catch(() => null);
   };
 
-  const setVideoSource = (sourceId) => {
+  const clearStreamSource = () => {
     if (!video) {
       return;
     }
-    const source = allSources.find(
-      (item) => Number(item.source_id) === Number(sourceId),
-    );
-    if (!source) {
-      if (hlsInstance) {
-        hlsInstance.destroy();
-        hlsInstance = null;
-      }
-      video.removeAttribute("src");
-      video.load();
+    if (hlsInstance) {
+      hlsInstance.destroy();
+      hlsInstance = null;
+    }
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+    video.hidden = true;
+  };
+
+  const clearEmbedSource = () => {
+    if (!embedFrame) {
       return;
     }
+    embedFrame.src = "about:blank";
+    embedFrame.hidden = true;
+  };
 
+  const clearExternalSource = () => {
+    if (!externalPanel) {
+      return;
+    }
+    externalPanel.hidden = true;
+    if (externalLink) {
+      externalLink.href = "#";
+    }
+  };
+
+  const setEmbedSource = (source) => {
+    clearStreamSource();
+    clearExternalSource();
+    if (!embedFrame) {
+      return;
+    }
+    embedFrame.src = source.stream_url;
+    embedFrame.hidden = false;
+    updateInteractionState(source);
+  };
+
+  const setExternalSource = (source) => {
+    clearStreamSource();
+    clearEmbedSource();
+    if (externalPanel) {
+      externalPanel.hidden = false;
+    }
+    if (externalTitle) {
+      externalTitle.textContent = source.translation_name || source.source_name;
+    }
+    if (externalMeta) {
+      externalMeta.textContent = `${source.source_name} • ${source.quality_label} • ${source.provider_name}`;
+    }
+    if (externalLink) {
+      externalLink.href = source.stream_url;
+    }
+    updateInteractionState(source);
+  };
+
+  const setStreamSource = (source) => {
+    if (!video) {
+      return;
+    }
+    clearEmbedSource();
+    clearExternalSource();
+    video.hidden = false;
     const currentTime = video.currentTime || config.lastPositionSeconds || 0;
     if (hlsInstance) {
       hlsInstance.destroy();
@@ -228,7 +375,43 @@
       });
     }
 
-    setPlayerVisualState();
+    updateInteractionState(source);
+  };
+
+  const setActiveSource = (sourceId) => {
+    const source = allSources.find(
+      (item) => Number(item.source_id) === Number(sourceId),
+    );
+    if (!source) {
+      clearStreamSource();
+      clearEmbedSource();
+      clearExternalSource();
+      updateInteractionState(null);
+      return;
+    }
+
+    config.selectedSourceId = source.source_id;
+    config.selectedTranslationId = source.translation_id;
+
+    if (String(source.source_type || "stream") === "embed") {
+      setEmbedSource(source);
+      return;
+    }
+    if (String(source.source_type || "stream") === "external") {
+      setExternalSource(source);
+      return;
+    }
+    setStreamSource(source);
+  };
+
+  const formatQualityOption = (item) => {
+    if (String(item.source_type || "stream") === "embed") {
+      return `${item.quality_label} • ${item.provider_name} • embed`;
+    }
+    if (String(item.source_type || "stream") === "external") {
+      return `${item.quality_label} • ${item.provider_name} • open`;
+    }
+    return `${item.quality_label} • ${item.provider_name}`;
   };
 
   const syncQualityOptions = () => {
@@ -241,7 +424,7 @@
       .map(
         (item) => `
             <option value="${item.source_id}" ${Number(item.source_id) === Number(config.selectedSourceId) ? "selected" : ""}>
-                ${item.quality_label} • ${item.provider_name}
+                ${formatQualityOption(item)}
             </option>
         `,
       )
@@ -249,15 +432,17 @@
 
     if (!items.length) {
       qualitySelect.innerHTML = "<option value=''>Нет источников</option>";
+      setActiveSource(null);
       return;
     }
 
     const preferred =
       items.find((item) => item.quality_label === config.savedQualityLabel) ||
+      items.find((item) => Number(item.source_id) === Number(config.selectedSourceId)) ||
       items[0];
     qualitySelect.value = String(preferred.source_id);
     config.selectedSourceId = preferred.source_id;
-    setVideoSource(preferred.source_id);
+    setActiveSource(preferred.source_id);
   };
 
   const renderTranslationOptions = () => {
@@ -290,7 +475,7 @@
   fullscreenToggle?.addEventListener("click", toggleFullscreen);
 
   muteToggle?.addEventListener("click", () => {
-    if (!video) {
+    if (!video || !isStreamSource(getSelectedSource())) {
       return;
     }
     if (video.muted || video.volume === 0) {
@@ -299,18 +484,20 @@
     } else {
       video.muted = true;
     }
+    updateVolumeProgressBar();
     setPlayerVisualState();
     saveSession();
     showControls();
   });
 
   volumeRange?.addEventListener("input", () => {
-    if (!video) {
+    if (!video || !isStreamSource(getSelectedSource())) {
       return;
     }
     const nextVolume = Number(volumeRange.value);
     video.muted = nextVolume === 0;
     video.volume = nextVolume;
+    updateVolumeProgressBar();
     setPlayerVisualState();
     saveSession();
   });
@@ -318,32 +505,42 @@
   translationSelect?.addEventListener("change", () => {
     config.selectedTranslationId = Number(translationSelect.value);
     syncQualityOptions();
+    saveSession();
     showControls();
   });
 
   qualitySelect?.addEventListener("change", () => {
     config.selectedSourceId = Number(qualitySelect.value);
-    setVideoSource(config.selectedSourceId);
+    setActiveSource(config.selectedSourceId);
     saveSession();
     showControls();
   });
 
   timelineRange?.addEventListener("input", () => {
+    if (!isStreamSource(getSelectedSource())) {
+      return;
+    }
     isScrubbing = true;
     if (currentTimeLabel) {
       currentTimeLabel.textContent = formatClock(timelineRange.value);
     }
+    updateTimelineProgressBar();
     showControls();
   });
 
   timelineRange?.addEventListener("change", () => {
+    if (!isStreamSource(getSelectedSource())) {
+      return;
+    }
     isScrubbing = false;
     seekTo(timelineRange.value);
+    updateTimelineProgressBar();
     saveSession();
   });
 
   highlightStartButton?.addEventListener("click", () => {
-    if (!video || !highlightForm) {
+    if (!video || !highlightForm || !isStreamSource(getSelectedSource())) {
+      window.alert("Для этого источника таймкоды недоступны.");
       return;
     }
     highlightStart = video.currentTime || 0;
@@ -352,7 +549,8 @@
   });
 
   highlightEndButton?.addEventListener("click", () => {
-    if (!video || !highlightForm) {
+    if (!video || !highlightForm || !isStreamSource(getSelectedSource())) {
+      window.alert("Для этого источника таймкоды недоступны.");
       return;
     }
     highlightForm.elements.end_timestamp.value = formatClock(
@@ -365,6 +563,10 @@
     event.preventDefault();
     if (!config.isAuthenticated) {
       window.location.href = "/auth/login";
+      return;
+    }
+    if (!isStreamSource(getSelectedSource())) {
+      window.alert("Для embed и внешних источников сохранение таймкодов недоступно.");
       return;
     }
     const formData = new FormData(highlightForm);
@@ -435,20 +637,6 @@
     );
   });
 
-  addSourceForm?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const formData = new FormData(addSourceForm);
-    const response = await fetch(`/watch/${config.animeId}/sources`, {
-      method: "POST",
-      body: formData,
-    });
-    if (!response.ok) {
-      window.alert("Не удалось сохранить источник.");
-      return;
-    }
-    window.location.reload();
-  });
-
   document.querySelectorAll(".status-pill").forEach((button) => {
     button.addEventListener("click", async () => {
       const response = await fetch(`/watch/${config.animeId}/status`, {
@@ -480,7 +668,7 @@
   playerShell?.addEventListener("focusin", showControls);
   playerShell?.addEventListener("touchstart", showControls, { passive: true });
   playerShell?.addEventListener("mouseleave", () => {
-    if (!video || video.paused) {
+    if (!video || video.paused || !isStreamSource(getSelectedSource())) {
       return;
     }
     playerShell.classList.add("is-controls-hidden");
@@ -488,7 +676,7 @@
   playerShell?.addEventListener("dblclick", (event) => {
     if (
       event.target instanceof HTMLElement &&
-      event.target.closest("button, input, select, textarea, form")
+      event.target.closest("button, input, select, textarea, form, a")
     ) {
       return;
     }
@@ -521,7 +709,7 @@
     ) {
       return;
     }
-    if (!video) {
+    if (!video || !isStreamSource(getSelectedSource())) {
       return;
     }
     if (event.code === "Space") {
@@ -555,6 +743,7 @@
   if (video) {
     video.volume = Number(config.savedVolume || 1);
     video.muted = video.volume === 0;
+    updateVolumeProgressBar();
     window.setInterval(saveSession, 15000);
     setPlayerVisualState();
   }
@@ -576,6 +765,9 @@
     video.addEventListener(
       "loadedmetadata",
       () => {
+        if (!isStreamSource(getSelectedSource())) {
+          return;
+        }
         video.currentTime = config.lastPositionSeconds;
         updateTimeline();
       },

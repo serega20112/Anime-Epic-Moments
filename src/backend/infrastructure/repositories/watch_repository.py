@@ -131,6 +131,7 @@ class WatchRepository:
                 source_name=row.source_name,
                 stream_url=row.stream_url,
                 quality_label=row.quality_label,
+                source_type=row.source_type or "stream",
                 created_at=row.created_at,
             )
             for row in rows
@@ -147,6 +148,7 @@ class WatchRepository:
                 source_name=source.source_name,
                 stream_url=source.stream_url,
                 quality_label=source.quality_label,
+                source_type=source.source_type,
             )
             .first()
         )
@@ -163,6 +165,7 @@ class WatchRepository:
             source_name=source.source_name,
             stream_url=source.stream_url,
             quality_label=source.quality_label,
+            source_type=source.source_type,
         )
         self.session.add(row)
         self.session.commit()

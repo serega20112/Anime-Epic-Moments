@@ -46,15 +46,19 @@ class SearchAnimeByDescriptionUseCase:
         explicit_adult_intent = self.safety_policy.has_explicit_adult_intent(
             base_description, genre_hint
         )
+        if explicit_adult_intent and age_rating != "18+":
+            return SearchAnimeByDescriptionResult(
+                items=[],
+                requires_age_confirmation=False,
+                message="Запрос выглядит как 18+ контент, но выбран возрастной рейтинг ниже 18+. Поставьте 18+ чтобы искать такой контент.",
+            )
         if explicit_adult_intent and not adult_confirmed:
             return SearchAnimeByDescriptionResult(
                 items=[],
                 requires_age_confirmation=True,
                 message="Найден запрос с 18+ контентом. Подтвердите, что вам есть 18 лет.",
             )
-        include_adult = adult_confirmed and (
-            age_rating == "18+" or explicit_adult_intent
-        )
+        include_adult = bool(adult_confirmed) and age_rating == "18+"
 
         llm_queries, llm_mode, llm_error = (
             self.llm_client.build_search_queries_with_meta(
@@ -63,6 +67,7 @@ class SearchAnimeByDescriptionUseCase:
                 year_from=year_from,
                 year_to=year_to,
                 min_rating=min_rating,
+                age_rating=age_rating,
                 allow_adult=include_adult,
             )
         )
@@ -119,6 +124,7 @@ class SearchAnimeByDescriptionUseCase:
             sort_by=sort_by,
             description=base_description,
             genre_hint=genre_hint,
+            llm_title_hints=title_queries,
         )
         return SearchAnimeByDescriptionResult(items=ordered[:limit])
 
@@ -180,7 +186,12 @@ class SearchAnimeByDescriptionUseCase:
         return merged
 
     def _sort_results(
-        self, items: List[Anime], sort_by: str, description: str, genre_hint: str | None
+        self,
+        items: List[Anime],
+        sort_by: str,
+        description: str,
+        genre_hint: str | None,
+        llm_title_hints: List[str],
     ) -> List[Anime]:
         """Сортирует выдачу по рейтингу, году или релевантности."""
         if sort_by == "rating":
@@ -188,14 +199,21 @@ class SearchAnimeByDescriptionUseCase:
         if sort_by == "year":
             return sorted(items, key=lambda x: x.year or 0, reverse=True)
         query_tokens = self._tokenize(f"{description} {genre_hint or ''}")
+        normalized_hints = [self._normalize(hint) for hint in llm_title_hints]
         return sorted(
-            items, key=lambda x: self._match_score(x, query_tokens), reverse=True
+            items,
+            key=lambda x: self._match_score(x, query_tokens, normalized_hints),
+            reverse=True,
         )
 
-    def _match_score(self, anime: Anime, query_tokens: List[str]) -> float:
-        """Считает простой score релевантности по вхождению токенов в title/description."""
-        if not query_tokens:
-            return anime.rating or 0
+    def _match_score(
+        self, anime: Anime, query_tokens: List[str], normalized_hints: List[str]
+    ) -> float:
+        """Считает score релевантности: токены описания + совпадения с LLM-подсказками."""
+        base_rating = float(anime.rating or 0)
+        if not query_tokens and not normalized_hints:
+            return base_rating
+
         title = self._normalize(anime.title or "")
         genres = " ".join(anime.genres or [])
         synopsis = re.sub(r"<[^>]+>", " ", anime.description or "")
@@ -207,7 +225,17 @@ class SearchAnimeByDescriptionUseCase:
                 score += 3.0
             elif token in haystack:
                 score += 1.0
-        return score + float(anime.rating or 0) * 0.1
+
+        # Бонус за совпадение с LLM-подсказками названия
+        for hint in normalized_hints:
+            if not hint or not title:
+                continue
+            if title == hint:
+                score += 20.0
+            elif hint in title or title in hint:
+                score += 10.0
+
+        return score + base_rating * 0.1
 
     def _tokenize(self, value: str) -> List[str]:
         """Извлекает поисковые токены из русского/английского текста."""

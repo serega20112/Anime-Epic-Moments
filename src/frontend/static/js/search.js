@@ -34,7 +34,6 @@
     if (!items.length) {
       results.innerHTML = `
                 <p>Ничего не найдено. Попробуйте уточнить описание или ослабить фильтры.</p>
-                <a class="btn neon-pink" href="/anime/search">Добавь вручную</a>
             `;
       return;
     }

@@ -45,20 +45,29 @@ class GetUserHighlightsUseCase:
         query: str | None,
         include_spoilers: bool,
     ) -> HighlightDashboard:
-        anime_cache: dict[int, tuple[str, str | None]] = {}
+        anime_cache: dict[int, tuple[str, str | None, int]] = {}
 
-        def anime_meta(value: int) -> tuple[str, str | None]:
+        def anime_meta(value: int) -> tuple[str, str | None, int]:
             if value not in anime_cache:
                 anime = self.anime_api_client.get_by_id(value)
+                watch_id = value
+                if anime and anime.external_id:
+                    try:
+                        resolved_watch_id = int(str(anime.external_id).strip())
+                        if resolved_watch_id > 0:
+                            watch_id = resolved_watch_id
+                    except (TypeError, ValueError):
+                        watch_id = value
                 anime_cache[value] = (
                     anime.title if anime and anime.title else f"Anime #{value}",
                     anime.cover_url if anime else None,
+                    watch_id,
                 )
             return anime_cache[value]
 
         filtered = []
         for highlight in highlights:
-            title, _cover = anime_meta(highlight.anime_id)
+            title, _cover, _watch_id = anime_meta(highlight.anime_id)
             if anime_id is not None and highlight.anime_id != anime_id:
                 continue
             if emotion and (highlight.emotion or "") != emotion:
@@ -81,7 +90,7 @@ class GetUserHighlightsUseCase:
         total_duration = 0.0
 
         for highlight in filtered:
-            title, cover = anime_meta(highlight.anime_id)
+            title, cover, watch_id = anime_meta(highlight.anime_id)
             duration = max(highlight.end_timestamp - highlight.start_timestamp, 0.0)
             counter[(highlight.anime_id, title)] += 1
             if highlight.emotion:
@@ -102,7 +111,7 @@ class GetUserHighlightsUseCase:
                     emotion=highlight.emotion,
                     created_at=highlight.created_at.strftime("%Y-%m-%d"),
                     likes_count=highlight.likes_count,
-                    watch_url=f"/watch/{highlight.anime_id}?episode={highlight.episode}",
+                    watch_url=f"/watch/{watch_id}?episode={highlight.episode}",
                     share_url=f"/highlights?highlight_id={highlight.id}",
                 )
             )

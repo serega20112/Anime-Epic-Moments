@@ -26,6 +26,8 @@ class KodikClient(WatchSourceProvider):
         self.api_url = Settings.kodik_api_url.rstrip("/")
         self.provider_name = "Kodik"
         self.default_video_info_endpoint = "/ftor"
+        self.session = requests.Session()
+        self.session.trust_env = False
 
     def is_enabled(self) -> bool:
         return bool(self.api_token)
@@ -38,8 +40,9 @@ class KodikClient(WatchSourceProvider):
         title: str,
         episode: int,
         year: int | None = None,
-        limit: int = 8,
+        limit: int = 24,
     ) -> list[DiscoveredWatchSource]:
+        """Ищет источники эпизода через Kodik и возвращает доступные качества."""
         if not self.is_enabled():
             return []
 
@@ -59,10 +62,9 @@ class KodikClient(WatchSourceProvider):
             params["year"] = year
 
         try:
-            response = requests.get(
+            response = self.session.get(
                 f"{self.api_url}/search",
                 params=params,
-                proxies={"http": None, "https": None},
                 timeout=25,
             )
             response.raise_for_status()
@@ -246,9 +248,8 @@ class KodikClient(WatchSourceProvider):
     ) -> dict[str, list[dict[str, str]]] | None:
         video_info_url = f"https://{host}{endpoint}?{urlencode(params)}"
         try:
-            response = requests.get(
+            response = self.session.get(
                 video_info_url,
-                proxies={"http": None, "https": None},
                 timeout=25,
             )
             response.raise_for_status()
@@ -273,9 +274,8 @@ class KodikClient(WatchSourceProvider):
 
     def _get_actual_video_info_endpoint(self, normalized_link: str) -> str | None:
         try:
-            player_page = requests.get(
+            player_page = self.session.get(
                 normalized_link,
-                proxies={"http": None, "https": None},
                 timeout=25,
             )
             player_page.raise_for_status()
@@ -293,9 +293,8 @@ class KodikClient(WatchSourceProvider):
 
         chunk_url = urljoin(normalized_link, player_chunk_match.group("link"))
         try:
-            chunk_response = requests.get(
+            chunk_response = self.session.get(
                 chunk_url,
-                proxies={"http": None, "https": None},
                 timeout=25,
             )
             chunk_response.raise_for_status()

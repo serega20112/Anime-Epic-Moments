@@ -15,4 +15,4 @@ class RefreshRecommendationsUseCase:
         """
         Генерирует новые рекомендации, игнорируя кэш
         """
-        return self.service.generate(user_id, limit)
+        return self.service.generate(user_id, limit, force_refresh=True)

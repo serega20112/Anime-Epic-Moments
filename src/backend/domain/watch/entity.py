@@ -46,6 +46,7 @@ class WatchSource:
         source_name: str,
         stream_url: str,
         quality_label: str,
+        source_type: str = "stream",
         id: Optional[int] = None,
         created_at: Optional[datetime] = None,
     ):
@@ -57,6 +58,7 @@ class WatchSource:
         self.source_name = source_name
         self.stream_url = stream_url
         self.quality_label = quality_label
+        self.source_type = source_type
         self.created_at = created_at or datetime.utcnow()
 
 

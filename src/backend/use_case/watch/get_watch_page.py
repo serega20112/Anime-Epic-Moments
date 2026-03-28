@@ -45,6 +45,7 @@ class GetWatchPageUseCase:
         sources = sorted(
             sources,
             key=lambda item: (
+                self._source_type_priority(item.source_type),
                 get_translation_priority(
                     translations[item.translation_id].name
                     if item.translation_id in translations
@@ -89,6 +90,7 @@ class GetWatchPageUseCase:
                 source_name=item.source_name,
                 quality_label=item.quality_label,
                 stream_url=item.stream_url,
+                source_type=item.source_type,
             )
             for item in sources
         ]
@@ -180,7 +182,17 @@ class GetWatchPageUseCase:
         return f"{minutes:02d}:{sec:02d}"
 
     def _quality_rank(self, value: str | None) -> int:
+        """Преобразует строку качества в числовой ранг для сортировки."""
         digits = "".join(
             character for character in str(value or "") if character.isdigit()
         )
         return int(digits) if digits else 0
+
+    def _source_type_priority(self, value: str | None) -> int:
+        """Возвращает приоритет типа источника для выбора дефолтного варианта."""
+        priorities = {
+            "stream": 0,
+            "embed": 1,
+            "external": 2,
+        }
+        return priorities.get(str(value or "").strip().lower(), 3)

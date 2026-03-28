@@ -40,6 +40,10 @@ class FavoriteModel(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     anime_id = Column(Integer, nullable=False)
+    title = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    cover_url = Column(String, nullable=True)
+    genres_json = Column(String, nullable=True)
     added_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -75,6 +79,7 @@ class WatchSourceModel(Base):
     source_name = Column(String, nullable=False)
     stream_url = Column(String, nullable=False)
     quality_label = Column(String, nullable=False)
+    source_type = Column(String, nullable=False, default="stream")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

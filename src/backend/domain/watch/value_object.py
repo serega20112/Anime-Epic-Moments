@@ -11,6 +11,7 @@ class DiscoveredWatchSource:
     source_name: str
     quality_label: str
     stream_url: str
+    source_type: str = "stream"
     language: str = "ru"
 
 
@@ -24,6 +25,7 @@ class WatchSourceCard:
     source_name: str
     quality_label: str
     stream_url: str
+    source_type: str
 
 
 @dataclass

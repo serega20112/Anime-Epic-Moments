@@ -1,0 +1,48 @@
+name: anime-epic-moments
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-anime_epic_moments}
+      POSTGRES_USER: ${POSTGRES_USER:-anime_epic_moments}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-anime_epic_moments}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-anime_epic_moments} -d ${POSTGRES_DB:-anime_epic_moments}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: ..
+      dockerfile: build/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:-anime_epic_moments}:${POSTGRES_PASSWORD:-anime_epic_moments}@postgres:5432/${POSTGRES_DB:-anime_epic_moments}
+      DATABASE_AUTO_INIT: "0"
+      FLASK_HOST: 0.0.0.0
+      FLASK_PORT: 5000
+      RUN_DB_MIGRATIONS: ${RUN_DB_MIGRATIONS:-1}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
+    ports:
+      - "${APP_PORT:-5000}:5000"
+
+volumes:
+  postgres_data:

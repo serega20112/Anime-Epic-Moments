@@ -1,0 +1,206 @@
+from __future__ import annotations
+
+from src.backend.domain.highlight.entity import Highlight
+from src.backend.domain.user.entity import User
+from src.backend.domain.watch.entity import (
+    HighlightContext,
+    Translation,
+    UserAnimeStatus,
+    ViewingSession,
+    WatchSource,
+)
+from src.backend.infrastructure.repositories.highlight_repository import HighlightRepository
+from src.backend.infrastructure.repositories.user_repository import UserRepository
+from src.backend.infrastructure.repositories.watch_repository import WatchRepository
+
+
+def test_watch_repository_upserts_and_reads_status(db_session):
+    """Проверяем, что WatchRepository создает и обновляет статус просмотра пользователя."""
+    user = UserRepository(db_session).add(
+        User(email="watch-status@example.com", username="status-user", password_hash="hash")
+    )
+    repo = WatchRepository(db_session)
+
+    created = repo.upsert_status(
+        UserAnimeStatus(user_id=user.id, anime_id=7, status="watching")
+    )
+    updated = repo.upsert_status(
+        UserAnimeStatus(user_id=user.id, anime_id=7, status="completed")
+    )
+    loaded = repo.get_status(user.id, 7)
+
+    assert created.id is not None
+    assert updated.id == created.id
+    assert loaded is not None
+    assert loaded.status == "completed"
+
+
+def test_watch_repository_deduplicates_and_sorts_translations(db_session):
+    """Проверяем, что WatchRepository не дублирует одинаковые переводы и сортирует их по имени."""
+    repo = WatchRepository(db_session)
+    first = repo.add_translation(
+        Translation(anime_id=7, name="Zet", translation_type="voice")
+    )
+    second = repo.add_translation(
+        Translation(anime_id=7, name="AniLibria", translation_type="voice")
+    )
+    duplicate = repo.add_translation(
+        Translation(anime_id=7, name="AniLibria", translation_type="voice")
+    )
+
+    items = repo.get_translations(7)
+
+    assert duplicate.id == second.id
+    assert [item.name for item in items] == ["AniLibria", "Zet"]
+    assert first.id is not None
+
+
+def test_watch_repository_deduplicates_sources_and_filters_by_episode(db_session):
+    """Проверяем, что WatchRepository не дублирует одинаковые источники и умеет фильтровать по эпизоду."""
+    repo = WatchRepository(db_session)
+    translation = repo.add_translation(
+        Translation(anime_id=7, name="AniLibria", translation_type="voice")
+    )
+    source = repo.add_source(
+        WatchSource(
+            anime_id=7,
+            episode=2,
+            translation_id=translation.id,
+            provider_name="Kodik",
+            source_name="s1",
+            stream_url="https://example.com/1.m3u8",
+            quality_label="1080",
+        )
+    )
+    duplicate = repo.add_source(
+        WatchSource(
+            anime_id=7,
+            episode=2,
+            translation_id=translation.id,
+            provider_name="Kodik",
+            source_name="s1",
+            stream_url="https://example.com/1.m3u8",
+            quality_label="1080",
+        )
+    )
+    repo.add_source(
+        WatchSource(
+            anime_id=7,
+            episode=3,
+            translation_id=translation.id,
+            provider_name="Kodik",
+            source_name="s2",
+            stream_url="https://example.com/2.m3u8",
+            quality_label="720",
+        )
+    )
+
+    episode_sources = repo.get_sources(anime_id=7, episode=2)
+    all_sources = repo.get_sources(anime_id=7)
+
+    assert duplicate.id == source.id
+    assert [item.episode for item in episode_sources] == [2]
+    assert [item.episode for item in all_sources] == [2, 3]
+
+
+def test_watch_repository_upserts_and_reads_viewing_session(db_session):
+    """Проверяем, что WatchRepository создает и обновляет viewing session пользователя."""
+    user = UserRepository(db_session).add(
+        User(email="session@example.com", username="session-user", password_hash="hash")
+    )
+    repo = WatchRepository(db_session)
+    translation = repo.add_translation(
+        Translation(anime_id=7, name="AniLibria", translation_type="voice")
+    )
+    source = repo.add_source(
+        WatchSource(
+            anime_id=7,
+            episode=2,
+            translation_id=translation.id,
+            provider_name="Kodik",
+            source_name="s1",
+            stream_url="https://example.com/1.m3u8",
+            quality_label="1080",
+        )
+    )
+
+    created = repo.upsert_session(
+        ViewingSession(
+            user_id=user.id,
+            anime_id=7,
+            episode=2,
+            watch_source_id=source.id,
+            position_seconds=15.5,
+            volume=0.5,
+            quality_label="1080",
+            is_paused=False,
+        )
+    )
+    updated = repo.upsert_session(
+        ViewingSession(
+            user_id=user.id,
+            anime_id=7,
+            episode=2,
+            watch_source_id=source.id,
+            position_seconds=22.0,
+            volume=0.8,
+            quality_label="720",
+            is_paused=True,
+        )
+    )
+    loaded = repo.get_session(user.id, 7, 2)
+
+    assert created.id is not None
+    assert updated.id == created.id
+    assert loaded is not None
+    assert loaded.position_seconds == 22.0
+    assert loaded.volume == 0.8
+    assert loaded.quality_label == "720"
+    assert loaded.is_paused is True
+
+
+def test_watch_repository_adds_and_reads_highlight_contexts(db_session):
+    """Проверяем, что WatchRepository сохраняет playback context для набора хайлайтов."""
+    user_repo = UserRepository(db_session)
+    user = user_repo.add(
+        User(email="context@example.com", username="context-user", password_hash="hash")
+    )
+    watch_repo = WatchRepository(db_session)
+    translation = watch_repo.add_translation(
+        Translation(anime_id=7, name="AniLibria", translation_type="voice")
+    )
+    source = watch_repo.add_source(
+        WatchSource(
+            anime_id=7,
+            episode=2,
+            translation_id=translation.id,
+            provider_name="Kodik",
+            source_name="s1",
+            stream_url="https://example.com/1.m3u8",
+            quality_label="1080",
+        )
+    )
+    highlight = HighlightRepository(db_session).add(
+        Highlight(
+            user_id=user.id,
+            anime_id=7,
+            episode=2,
+            start_timestamp=1.0,
+            end_timestamp=2.0,
+        )
+    )
+
+    context = watch_repo.add_highlight_context(
+        HighlightContext(
+            highlight_id=highlight.id,
+            watch_source_id=source.id,
+            translation_id=translation.id,
+            title="best clip",
+        )
+    )
+    loaded = watch_repo.get_highlight_contexts([highlight.id, 999])
+
+    assert context.id is not None
+    assert len(loaded) == 1
+    assert loaded[0].title == "best clip"
+    assert watch_repo.get_highlight_contexts([]) == []

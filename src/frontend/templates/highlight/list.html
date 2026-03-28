@@ -66,13 +66,7 @@
                 {% for group in dashboard.anime_groups %}
                 <option
                   value="{{ group.anime_id }}"
-                  {%
-                  if
-                  dashboard.selected_anime_id=""
-                  ="group.anime_id"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if dashboard.selected_anime_id == group.anime_id %}selected{% endif %}
                 >
                   {{ group.anime_title }} ({{ group.count }})
                 </option>
@@ -87,13 +81,7 @@
                 {% for emotion in dashboard.emotions %}
                 <option
                   value="{{ emotion }}"
-                  {%
-                  if
-                  dashboard.selected_emotion=""
-                  ="emotion"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if dashboard.selected_emotion == emotion %}selected{% endif %}
                 >
                   {{ emotion }}
                 </option>

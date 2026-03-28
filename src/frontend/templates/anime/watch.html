@@ -70,6 +70,33 @@
               endif
               %}
             ></video>
+            <iframe
+              id="watch-embed-frame"
+              class="watch-embed-frame"
+              title="Embedded watch player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen
+              hidden
+            ></iframe>
+            <div class="watch-external-panel" id="watch-external-panel" hidden>
+              <div class="watch-external-card">
+                <span class="watch-kicker">External Source</span>
+                <h2 id="watch-external-title">Источник готов</h2>
+                <p id="watch-external-meta">
+                  Этот вариант открывается у внешнего провайдера.
+                </p>
+                <a
+                  id="watch-external-link"
+                  class="btn neon-pink"
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Открыть источник
+                </a>
+              </div>
+            </div>
             <div
               class="watch-player-overlay is-visible"
               id="watch-player-overlay"
@@ -166,20 +193,14 @@
                     </form>
 
                     <label for="translation-select" class="sr-only"
-                      >Озвучка / сабы</label
+                      >Источник / озвучка</label
                     >
                     <select id="translation-select" class="player-select">
-                      <option value="">Выбери озвучку</option>
+                      <option value="">Выбери источник</option>
                       {% for source in watch.sources %}
                       <option
                         value="{{ source.translation_id }}"
-                        {%
-                        if
-                        watch.selected_translation_id=""
-                        ="source.translation_id"
-                        %}selected{%
-                        endif
-                        %}
+                        {% if watch.selected_translation_id == source.translation_id %}selected{% endif %}
                       >
                         {{ source.translation_name }}
                       </option>
@@ -207,8 +228,9 @@
               <h2>Источники пока не найдены</h2>
               {% if watch.can_discover_sources %}
               <p>
-                Подтянем озвучки и плееры из {{ watch.discovery_provider_name }}
-                по названию тайтла и номеру эпизода.
+                Подтянем озвучки, плееры и внешние источники из {{
+                watch.discovery_provider_name }} по названию тайтла и номеру
+                эпизода.
               </p>
               <button
                 type="button"
@@ -285,57 +307,6 @@
             </button>
             {% endfor %}
           </div>
-          {% endif %} {% if current_user %}
-          <details class="source-admin">
-            <summary>Резервное добавление источника</summary>
-            <form id="add-source-form" class="manual-add-form">
-              <input
-                type="number"
-                name="episode"
-                min="1"
-                value="{{ watch.episode }}"
-                required
-              />
-              <input
-                type="text"
-                name="translation_name"
-                placeholder="Название озвучки или сабов"
-                required
-              />
-              <select name="translation_type">
-                <option value="voice">Озвучка</option>
-                <option value="sub">Сабы</option>
-                <option value="raw">Оригинал</option>
-              </select>
-              <input
-                type="text"
-                name="provider_name"
-                placeholder="Источник / провайдер"
-                required
-              />
-              <input
-                type="text"
-                name="source_name"
-                placeholder="Например: main / backup"
-                required
-              />
-              <input
-                type="url"
-                name="stream_url"
-                placeholder="Прямая ссылка на mp4/m3u8"
-                required
-              />
-              <input
-                type="text"
-                name="quality_label"
-                placeholder="1080p"
-                required
-              />
-              <button type="submit" class="btn neon-pink">
-                Сохранить источник
-              </button>
-            </form>
-          </details>
           {% endif %}
         </section>
 
@@ -482,7 +453,7 @@
     <script id="watch-sources-json" type="application/json">
       [
       {% for source in watch.sources %}
-      {"source_id": {{ source.source_id }}, "translation_id": {{ source.translation_id }}, "translation_name": {{ source.translation_name|tojson }}, "episode": {{ source.episode }}, "provider_name": {{ source.provider_name|tojson }}, "source_name": {{ source.source_name|tojson }}, "quality_label": {{ source.quality_label|tojson }}, "stream_url": {{ source.stream_url|tojson }}}{% if not loop.last %},{% endif %}
+      {"source_id": {{ source.source_id }}, "translation_id": {{ source.translation_id }}, "translation_name": {{ source.translation_name|tojson }}, "episode": {{ source.episode }}, "provider_name": {{ source.provider_name|tojson }}, "source_name": {{ source.source_name|tojson }}, "quality_label": {{ source.quality_label|tojson }}, "stream_url": {{ source.stream_url|tojson }}, "source_type": {{ source.source_type|tojson }}}{% if not loop.last %},{% endif %}
       {% endfor %}
       ]
     </script>

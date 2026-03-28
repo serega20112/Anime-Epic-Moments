@@ -19,7 +19,9 @@ class AddWatchSourceUseCase:
         stream_url: str,
         quality_label: str,
         language: str = "ru",
+        source_type: str = "stream",
     ) -> WatchSource:
+        """Создает озвучку и источник просмотра для аниме."""
         translation = self.watch_repo.add_translation(
             Translation(
                 anime_id=anime_id,
@@ -37,5 +39,6 @@ class AddWatchSourceUseCase:
                 source_name=source_name,
                 stream_url=stream_url,
                 quality_label=quality_label,
+                source_type=source_type,
             )
         )

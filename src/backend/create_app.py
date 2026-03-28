@@ -21,8 +21,8 @@ def create_app():
     )
     app.config["SECRET_KEY"] = Settings.secret_key
 
-    # Инициализируем БД и создаём таблицы
-    init_db()
+    if Settings.database_auto_init:
+        init_db()
 
     jwt_service = JWTService()
 

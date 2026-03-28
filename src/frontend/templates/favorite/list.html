@@ -131,6 +131,10 @@
                 <button
                   class="btn-favorite recommendation-favorite-button"
                   data-anime-id="{{ rec.anime_id }}"
+                  data-title="{{ rec.title }}"
+                  data-description="{{ rec.description }}"
+                  data-cover-url="{{ rec.image_url or '' }}"
+                  data-genres='{{ rec.genres|tojson|forceescape }}'
                 >
                   В избранное
                 </button>
@@ -176,7 +180,14 @@
               const response = await fetch('/favorites/', {
                   method: 'POST',
                   headers: {'Content-Type':'application/json'},
-                  body: JSON.stringify({user_id: {{ user_id }}, anime_id: button.dataset.animeId})
+                  body: JSON.stringify({
+                      user_id: {{ user_id }},
+                      anime_id: button.dataset.animeId,
+                      title: button.dataset.title || '',
+                      description: button.dataset.description || '',
+                      cover_url: button.dataset.coverUrl || '',
+                      genres: JSON.parse(button.dataset.genres || '[]')
+                  })
               });
               if (!response.ok) {
                   window.alert('Не удалось добавить рекомендацию в избранное.');
