@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from flask import Flask, g, request, render_template, jsonify
 
 from src.backend.delivery.api.v1.index_route import index_bp
@@ -11,13 +13,16 @@ from src.backend.delivery.api.v1.watch_route import watch_bp
 from src.backend.infrastructure.security.jwt_service import JWTService
 from src.backend.infrastructure.files.database import init_db
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+FRONTEND_ROOT = PROJECT_ROOT / "src" / "frontend"
+
 
 def create_app():
     """Создаёт Flask приложение, подключает роуты"""
     app = Flask(
         __name__,
-        static_folder="../frontend/static",
-        template_folder="../frontend/templates",
+        static_folder=str(FRONTEND_ROOT / "static"),
+        template_folder=str(FRONTEND_ROOT / "templates"),
     )
     app.config["SECRET_KEY"] = Settings.secret_key
 
