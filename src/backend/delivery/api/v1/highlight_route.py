@@ -1,19 +1,33 @@
-from flask import Blueprint, request, render_template
+from flask import Blueprint, request, render_template, jsonify
 from src.backend.dependencies.container import container
+from src.backend.infrastructure.security.flask_protection import client_ip, rate_limit
 
 highlight_bp = Blueprint("highlight", __name__, url_prefix="/highlights")
 
 
 @highlight_bp.route("/", methods=["POST"])
+@rate_limit(
+    container_getter=lambda: container,
+    scope="highlight_create",
+    limit=20,
+    window_seconds=60,
+    key_builder=lambda: f"{client_ip()}::{request.values.get('user_id') or 'guest'}",
+)
 def create_highlight():
     """Создание нового хайлайта"""
     data = request.get_json(silent=True) or request.form
+    anime_id = _to_int(data.get("anime_id"))
+    episode = _to_int(data.get("episode"))
+    start_timestamp = _safe_to_seconds(data.get("start_timestamp"))
+    end_timestamp = _safe_to_seconds(data.get("end_timestamp"))
+    if anime_id is None or episode is None or start_timestamp is None or end_timestamp is None:
+        return jsonify({"error": "invalid_payload"}), 400
     container.create_highlight_use_case().execute(
         user_id=_to_int(data.get("user_id")),
-        anime_id=int(data["anime_id"]),
-        episode=int(data["episode"]),
-        start_timestamp=_to_seconds(data["start_timestamp"]),
-        end_timestamp=_to_seconds(data["end_timestamp"]),
+        anime_id=anime_id,
+        episode=episode,
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
         description=data.get("description", ""),
         is_spoiler=_to_bool(str(data.get("is_spoiler")), default=False),
         emotion=data.get("emotion"),
@@ -40,7 +54,7 @@ def get_user_highlights(user_id: int):
 @highlight_bp.route("/top", methods=["GET"])
 def get_public_top_highlights():
     """Рендер страницы с топовыми публичными хайлайтами"""
-    limit = int(request.args.get("limit", 20))
+    limit = max(min(_to_int(request.args.get("limit")) or 20, 50), 1)
     dashboard = container.get_public_top_highlights_use_case().execute(
         limit=limit,
         anime_id=_to_int(request.args.get("anime_id")),
@@ -100,3 +114,10 @@ def _to_seconds(value) -> float:
         minutes, seconds = text.split(":", 1)
         return float(int(minutes) * 60 + int(seconds))
     return float(text)
+
+
+def _safe_to_seconds(value) -> float | None:
+    try:
+        return _to_seconds(value)
+    except (TypeError, ValueError):
+        return None

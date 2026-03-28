@@ -2,7 +2,7 @@
 
 Anime Epic Moments — это Flask-приложение для поиска аниме, просмотра, сохранения избранного, создания хайлайтов и персональных рекомендаций на основе действий пользователя.
 
-Проект организован как DDD-ориентированный backend с тонким delivery-слоем, явными use case, PostgreSQL, Alembic и серверным frontend-слоем в `src/frontend`.
+Проект организован как DDD-ориентированный backend с тонким delivery-слоем, явными use case, PostgreSQL, Redis, Alembic и серверным frontend-слоем в `src/frontend`.
 
 ## Быстрый старт
 
@@ -45,6 +45,8 @@ python -m src.main
 docker compose -f build/docker-compose.yml up --build
 ```
 
+`docker compose` поднимает `app`, `postgres` и `redis`.
+
 ## Миграции базы данных
 
 Создать новую миграцию:
@@ -70,7 +72,7 @@ python -m pytest src/backend/tests -q
 ## Структура проекта
 
 ```text
-build/                      Docker, Alembic, runtime-скрипты и entrypoint
+build/                      Docker, Alembic, PostgreSQL/Redis runtime-скрипты и entrypoint
 docs/                       Навигационная документация по проекту
 src/main.py                 Локальная точка входа приложения
 src/backend/                Backend-слои: delivery, use_case, domain, infrastructure
@@ -121,3 +123,4 @@ src/frontend/               Шаблоны, статические файлы и
 - Domain-объекты описывают продуктовые сущности, а не наборы словарей.
 - Infrastructure-слой содержит все побочные эффекты: БД, внешние API, кэш и auth-хелперы.
 - Build- и deployment-артефакты вынесены в `build/`, чтобы код приложения и окружение не были перемешаны.
+- Redis используется для кэшей, rate limiting и blacklist-а JWT, но при локальной деградации приложение умеет откатываться на in-memory fallback.

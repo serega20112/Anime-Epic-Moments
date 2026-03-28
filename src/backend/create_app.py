@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from flask import Flask, g, request, render_template, jsonify
+from flask import Flask, current_app, g, request, render_template, jsonify
 
 from src.backend.delivery.api.v1.index_route import index_bp
 from src.backend.dependencies.settings import Settings
@@ -25,6 +25,7 @@ def create_app():
         template_folder=str(FRONTEND_ROOT / "templates"),
     )
     app.config["SECRET_KEY"] = Settings.secret_key
+    app.config["MAX_CONTENT_LENGTH"] = Settings.max_request_bytes
 
     if Settings.database_auto_init:
         init_db()
@@ -34,15 +35,30 @@ def create_app():
     @app.before_request
     def load_user():
         """Загружает пользователя из access_token в g."""
+        if _is_cross_origin_write_request():
+            current_app.logger.warning(
+                "cross_origin_write_blocked path=%s origin=%s referer=%s",
+                request.path,
+                request.headers.get("Origin"),
+                request.headers.get("Referer"),
+            )
+            return jsonify({"error": "forbidden_origin"}), 403
+
         token = request.cookies.get("access_token")
         if token:
             try:
-                user_id = jwt_service.decode_token(token)
                 from src.backend.dependencies.container import container
 
+                token_blocklist = getattr(container, "token_blocklist", None)
+                if token_blocklist is not None and token_blocklist.is_revoked(token):
+                    current_app.logger.info("revoked_access_token_used")
+                    g.user = None
+                    return
+                user_id = jwt_service.decode_token(token)
                 user = container.user_repository.get_by_id(user_id)
                 g.user = user
-            except:
+            except Exception:
+                current_app.logger.warning("access_token_decode_failed", exc_info=True)
                 g.user = None
         else:
             g.user = None
@@ -62,6 +78,37 @@ def create_app():
             return jsonify({"error": "internal_server_error"}), 500
         return render_template("errors/500_modal.html"), 500
 
+    @app.errorhandler(413)
+    def handle_request_too_large(_error):
+        """Возвращает аккуратный ответ на слишком большой payload."""
+        current_app.logger.warning("request_too_large path=%s", request.path)
+        wants_json = (
+            request.is_json or request.accept_mimetypes.best == "application/json"
+        )
+        if wants_json:
+            return jsonify({"error": "request_too_large"}), 413
+        return "Payload too large", 413
+
+    @app.after_request
+    def apply_security_headers(response):
+        """Добавляет базовые security headers к каждому ответу."""
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "same-origin")
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; "
+            "img-src 'self' data: https:; "
+            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "connect-src 'self' https:; "
+            "font-src 'self' data: https:; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'",
+        )
+        return response
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(highlight_bp)
     app.register_blueprint(favorite_bp)
@@ -71,3 +118,13 @@ def create_app():
     app.register_blueprint(index_bp)
 
     return app
+
+
+def _is_cross_origin_write_request() -> bool:
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return False
+    source = request.headers.get("Origin") or request.headers.get("Referer")
+    if not source:
+        return False
+    expected_base = Settings.app_base_url.rstrip("/")
+    return not str(source).startswith(expected_base)

@@ -27,11 +27,15 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
             hf_model="model",
             hf_provider="provider",
             hf_api_url="https://hf.example/api",
+            redis_url="redis://redis:6379/0",
+            redis_required=False,
         ),
     )
 
     for name in (
         "AnimeApiClient",
+        "HighlightDashboardCache",
+        "KeyValueStore",
         "KodikClient",
         "AniLibriaClient",
         "YouTubeClient",
@@ -39,6 +43,8 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         "PasswordResetMailer",
         "PasswordService",
         "JWTService",
+        "RateLimiter",
+        "TokenBlocklist",
         "UserRepository",
         "HighlightRepository",
         "FavoriteRepository",
@@ -78,6 +84,11 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
     built = container_module.Container()
 
     assert built.db_session is session
+    assert built.key_value_store.kwargs == {
+        "redis_url": "redis://redis:6379/0",
+        "namespace": "anime_epic_moments",
+        "required": False,
+    }
     assert built.user_repository.args == (session,)
     assert built.highlight_repository.args == (session,)
     assert built.favorite_repository.args == (session,)
@@ -87,6 +98,8 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         built.highlight_repository,
         built.anime_api_client,
     )
+    assert built.recommendation_cache.kwargs == {"store": built.key_value_store}
+    assert built.highlight_dashboard_cache.kwargs == {"store": built.key_value_store}
     assert built.watch_source_sync_service.args[0] is built.watch_repository
     assert built.search_anime_use_case().args == (built.anime_api_client,)
     assert built.get_favorites_use_case().args == (
@@ -111,11 +124,15 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
             hf_model="model",
             hf_provider="provider",
             hf_api_url="https://hf.example/api",
+            redis_url="redis://redis:6379/0",
+            redis_required=False,
         ),
     )
 
     for name in (
         "AnimeApiClient",
+        "HighlightDashboardCache",
+        "KeyValueStore",
         "KodikClient",
         "AniLibriaClient",
         "YouTubeClient",
@@ -123,6 +140,8 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
         "PasswordResetMailer",
         "PasswordService",
         "JWTService",
+        "RateLimiter",
+        "TokenBlocklist",
         "UserRepository",
         "HighlightRepository",
         "FavoriteRepository",
@@ -168,5 +187,6 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
     assert first.args[0].args == (
         built.highlight_repository,
         built.recommendation_service,
+        built.highlight_dashboard_cache,
     )
     assert first.args[1] is built.watch_repository

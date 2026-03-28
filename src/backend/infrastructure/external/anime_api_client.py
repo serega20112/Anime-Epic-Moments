@@ -2,7 +2,9 @@ from typing import Any, List
 
 import requests
 from src.backend.domain.anime.entity import Anime
-from src.backend.infrastructure.cache.ttl_cache import TTLCache
+from src.backend.infrastructure.cache.key_value_store import KeyValueStore
+
+_CACHE_MISS = object()
 
 
 class AnimeApiClient:
@@ -11,34 +13,12 @@ class AnimeApiClient:
     Возвращает объекты домена Anime.
     """
 
-    def __init__(self):
+    def __init__(self, store: KeyValueStore | None = None):
         self.jikan_base = "https://api.jikan.moe/v4"
         self.anilist_base = "https://graphql.anilist.co"
         self.session = requests.Session()
         self.session.trust_env = False
-        self._title_search_cache = TTLCache[tuple[str, str, int, bool], list[Anime]](
-            ttl_seconds=300,
-            max_entries=256,
-        )
-        self._description_search_cache = TTLCache[
-            tuple[str, str, int | None, int | None, int | None, bool, int],
-            list[Anime],
-        ](
-            ttl_seconds=300,
-            max_entries=256,
-        )
-        self._anime_cache = TTLCache[int, Anime | None](
-            ttl_seconds=1800,
-            max_entries=1024,
-        )
-        self._season_cache = TTLCache[tuple[int, str, int], list[Anime]](
-            ttl_seconds=900,
-            max_entries=64,
-        )
-        self._top_cache = TTLCache[int, list[Anime]](
-            ttl_seconds=900,
-            max_entries=32,
-        )
+        self.store = store or KeyValueStore(redis_url=None, namespace="anime_api")
 
     # ----------------- Jikan -----------------
     def search_by_title(
@@ -50,14 +30,15 @@ class AnimeApiClient:
         sanitized_title = self._sanitize_query(title)
         if not sanitized_title:
             return []
-        cache_key = (
+        cache_key = self._cache_key(
             "search_by_title",
             sanitized_title.lower(),
             int(limit),
-            bool(include_adult),
+            int(bool(include_adult)),
         )
-        if self._title_search_cache.contains(cache_key):
-            return list(self._title_search_cache.get(cache_key) or [])
+        cached = self._get_cached(cache_key)
+        if cached is not _CACHE_MISS:
+            return list(cached)
         url = f"{self.jikan_base}/anime"
         params = {"q": sanitized_title, "limit": limit}
         try:
@@ -65,14 +46,14 @@ class AnimeApiClient:
             resp.raise_for_status()
             data = resp.json().get("data", [])
         except (requests.RequestException, ValueError, KeyError, TypeError):
-            return list(self._title_search_cache.set(cache_key, []))
+            return list(self._set_cached(cache_key, [], ttl_seconds=300))
 
         result = []
         for item in data:
             if self._is_nsfw_jikan(item) and not include_adult:
                 continue
             result.append(self._build_anime_from_jikan_item(item))
-        return list(self._title_search_cache.set(cache_key, result))
+        return list(self._set_cached(cache_key, result, ttl_seconds=300))
 
     def get_season_popular(
         self, year: int, season: str, limit: int = 10
@@ -81,21 +62,27 @@ class AnimeApiClient:
         Получение популярных аниме сезона через Jikan.
         season: winter, spring, summer, fall
         """
-        cache_key = (int(year), str(season).strip().lower(), int(limit))
-        if self._season_cache.contains(cache_key):
-            return list(self._season_cache.get(cache_key) or [])
+        cache_key = self._cache_key(
+            "season_popular",
+            int(year),
+            str(season).strip().lower(),
+            int(limit),
+        )
+        cached = self._get_cached(cache_key)
+        if cached is not _CACHE_MISS:
+            return list(cached)
         url = f"{self.jikan_base}/seasons/{year}/{season}"
         try:
             resp = self.session.get(url, timeout=20)
             resp.raise_for_status()
             data = resp.json().get("data", [])[:limit]
         except (requests.RequestException, ValueError, KeyError, TypeError):
-            return list(self._season_cache.set(cache_key, []))
+            return list(self._set_cached(cache_key, [], ttl_seconds=900))
 
         result = []
         for item in data:
             result.append(self._build_anime_from_jikan_item(item))
-        return list(self._season_cache.set(cache_key, result))
+        return list(self._set_cached(cache_key, result, ttl_seconds=900))
 
     # ----------------- AniList GraphQL -----------------
     def search_by_description(
@@ -130,17 +117,18 @@ class AnimeApiClient:
         sanitized_description = self._sanitize_query(description)
         if not sanitized_description:
             return []
-        cache_key = (
+        cache_key = self._cache_key(
             "search_by_description",
             sanitized_description.lower(),
-            year_from,
-            year_to,
-            min_rating,
-            bool(include_adult),
+            year_from if year_from is not None else "",
+            year_to if year_to is not None else "",
+            min_rating if min_rating is not None else "",
+            int(bool(include_adult)),
             int(limit),
         )
-        if self._description_search_cache.contains(cache_key):
-            return list(self._description_search_cache.get(cache_key) or [])
+        cached = self._get_cached(cache_key)
+        if cached is not _CACHE_MISS:
+            return list(cached)
         variables: dict[str, object] = {
             "search": sanitized_description,
             "perPage": limit,
@@ -158,7 +146,7 @@ class AnimeApiClient:
             fallback = self.search_by_title(
                 title=sanitized_description, limit=limit, include_adult=include_adult
             )
-            return list(self._description_search_cache.set(cache_key, fallback))
+            return list(self._set_cached(cache_key, fallback, ttl_seconds=300))
 
         result = []
         for item in data:
@@ -187,37 +175,45 @@ class AnimeApiClient:
             )
             if len(result) >= limit:
                 break
-        return list(self._description_search_cache.set(cache_key, result))
+        return list(self._set_cached(cache_key, result, ttl_seconds=300))
 
     def get_by_id(self, anime_id: int) -> Anime | None:
         """Получает аниме по id с приоритетом MAL/Jikan и fallback на AniList."""
         anime_id = int(anime_id)
-        if self._anime_cache.contains(anime_id):
-            return self._anime_cache.get(anime_id)
+        cache_key = self._cache_key("anime", anime_id)
+        cached = self._get_cached(cache_key)
+        if cached is not _CACHE_MISS:
+            return cached
         url = f"{self.jikan_base}/anime/{anime_id}"
         try:
             resp = self.session.get(url, timeout=20)
             resp.raise_for_status()
             item = resp.json().get("data")
             if not item:
-                return self._anime_cache.set(anime_id, self._get_by_anilist_id(anime_id))
+                return self._set_cached(
+                    cache_key, self._get_by_anilist_id(anime_id), ttl_seconds=1800
+                )
         except requests.HTTPError as error:
             status_code = error.response.status_code if error.response else None
             if status_code == 404:
-                return self._anime_cache.set(
-                    anime_id, self._get_by_anilist_id(anime_id)
+                return self._set_cached(
+                    cache_key, self._get_by_anilist_id(anime_id), ttl_seconds=1800
                 )
             anime = self._get_by_mal_id_via_anilist(anime_id)
-            return self._anime_cache.set(
-                anime_id, anime or self._get_by_anilist_id(anime_id)
+            return self._set_cached(
+                cache_key, anime or self._get_by_anilist_id(anime_id), ttl_seconds=1800
             )
         except (requests.RequestException, ValueError, KeyError, TypeError):
             anime = self._get_by_mal_id_via_anilist(anime_id)
-            return self._anime_cache.set(
-                anime_id, anime or self._get_by_anilist_id(anime_id)
+            return self._set_cached(
+                cache_key, anime or self._get_by_anilist_id(anime_id), ttl_seconds=1800
             )
 
-        return self._anime_cache.set(anime_id, self._build_anime_from_jikan_item(item))
+        return self._set_cached(
+            cache_key,
+            self._build_anime_from_jikan_item(item),
+            ttl_seconds=1800,
+        )
 
     def _get_by_mal_id_via_anilist(self, anime_id: int) -> Anime | None:
         return self._get_by_anilist_media(
@@ -228,21 +224,22 @@ class AnimeApiClient:
 
     def get_top_anime(self, limit: int = 25) -> List[Anime]:
         """Получает список популярных аниме через Jikan top."""
-        cache_key = int(limit)
-        if self._top_cache.contains(cache_key):
-            return list(self._top_cache.get(cache_key) or [])
+        cache_key = self._cache_key("top", int(limit))
+        cached = self._get_cached(cache_key)
+        if cached is not _CACHE_MISS:
+            return list(cached)
         url = f"{self.jikan_base}/top/anime"
         try:
             resp = self.session.get(url, params={"limit": limit}, timeout=20)
             resp.raise_for_status()
             data = resp.json().get("data", [])
         except (requests.RequestException, ValueError, KeyError, TypeError):
-            return list(self._top_cache.set(cache_key, []))
+            return list(self._set_cached(cache_key, [], ttl_seconds=900))
 
         result = []
         for item in data:
             result.append(self._build_anime_from_jikan_item(item))
-        return list(self._top_cache.set(cache_key, result))
+        return list(self._set_cached(cache_key, result, ttl_seconds=900))
 
     def _get_by_anilist_id(self, anime_id: int) -> Anime | None:
         """Best-effort fallback для старых записей, сохраненных с AniList id."""
@@ -388,3 +385,18 @@ class AnimeApiClient:
             return True
         genres = item.get("genres", []) or []
         return any(str(genre).strip().lower() == "hentai" for genre in genres)
+
+    def _cache_key(self, *parts: object) -> str:
+        return ":".join(str(part) for part in parts)
+
+    def _get_cached(self, key: str):
+        if self.store is None:
+            return _CACHE_MISS
+        if not self.store.contains(key):
+            return _CACHE_MISS
+        return self.store.get(key)
+
+    def _set_cached(self, key: str, value, ttl_seconds: int):
+        if self.store is None:
+            return value
+        return self.store.set(key, value, ttl_seconds=ttl_seconds)

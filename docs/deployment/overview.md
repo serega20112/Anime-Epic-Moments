@@ -4,7 +4,7 @@
 
 Deployment-артефакты живут в `build/`. В этой директории находятся контейнеризация, compose-оркестрация, Alembic runtime и entrypoint, который используется контейнером приложения.
 
-Система может запускаться локально через Python-интерпретатор или в Docker вместе с контейнером PostgreSQL.
+Система может запускаться локально через Python-интерпретатор или в Docker вместе с контейнерами PostgreSQL и Redis.
 
 ## Как это работает
 
@@ -15,10 +15,12 @@ flowchart LR
     Client[Браузер]
     App[Flask через Gunicorn]
     DB[(PostgreSQL)]
+    Redis[(Redis)]
     Providers[Внешние аниме- и watch-провайдеры]
 
     Client --> App
     App --> DB
+    App --> Redis
     App --> Providers
 ```
 
@@ -28,12 +30,15 @@ flowchart LR
 sequenceDiagram
     participant C as docker compose
     participant P as postgres container
+    participant R as redis container
     participant A as app container
     participant M as alembic
     participant G as gunicorn
 
     C->>P: старт postgres
     P-->>C: healthcheck ok
+    C->>R: старт redis
+    R-->>C: healthcheck ok
     C->>A: старт app container
     A->>M: alembic upgrade head
     M-->>A: схема актуальна
@@ -42,7 +47,7 @@ sequenceDiagram
 
 Ключевые build-файлы:
 
-- `build/docker-compose.yml`: локальная оркестрация PostgreSQL и app-контейнера
+- `build/docker-compose.yml`: локальная оркестрация PostgreSQL, Redis и app-контейнера
 - `build/Dockerfile`: Python-образ, установка зависимостей, копирование исходников и регистрация entrypoint
 - `build/scripts/entrypoint.sh`: bootstrap со стартом миграций перед web-процессом
 - `build/alembic/alembic.ini`: активная конфигурация Alembic
@@ -64,6 +69,9 @@ docker compose -f build/docker-compose.yml up --build
 Ключевые переменные окружения:
 
 - `DATABASE_URL`
+- `REDIS_ENABLED`
+- `REDIS_REQUIRED`
+- `REDIS_URL`
 - `POSTGRES_DB`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
@@ -82,6 +90,7 @@ docker compose -f build/docker-compose.yml up --build
 - В контейнерах используется Gunicorn, а не debug-сервер Flask.
 - Миграции выполняются до старта web-процесса, чтобы не жить с schema drift.
 - PostgreSQL используется как единственная runtime-база, что убирает класс проблем, связанных с SQLite-only поведением.
+- Redis берет на себя кэши, rate limiting и JWT blocklist, а при локальной деградации код умеет откатываться на in-memory fallback.
 
 ## Где в коде
 

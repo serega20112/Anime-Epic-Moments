@@ -37,7 +37,16 @@ def test_login_user_sets_cookie_and_redirects(flask_app_factory, monkeypatch, us
         "container",
         SimpleNamespace(login_user_use_case=lambda: login_use_case),
     )
-    monkeypatch.setattr(auth_route_module.jwt_service, "create_token", lambda user_id: f"token-{user_id}")
+    monkeypatch.setattr(
+        auth_route_module.jwt_service,
+        "create_access_token",
+        lambda user_id: f"access-{user_id}",
+    )
+    monkeypatch.setattr(
+        auth_route_module.jwt_service,
+        "create_refresh_token",
+        lambda user_id: f"refresh-{user_id}",
+    )
     app = flask_app_factory(auth_bp, index_bp)
 
     response = app.test_client().post(
@@ -47,7 +56,9 @@ def test_login_user_sets_cookie_and_redirects(flask_app_factory, monkeypatch, us
 
     assert response.status_code == 302
     assert response.headers["Location"].endswith("/")
-    assert "access_token=token-9" in response.headers.get("Set-Cookie", "")
+    set_cookie_header = "\n".join(response.headers.getlist("Set-Cookie"))
+    assert "access_token=access-9" in set_cookie_header
+    assert "refresh_token=refresh-9" in set_cookie_header
 
 
 def test_login_user_redirects_back_on_invalid_credentials(flask_app_factory, monkeypatch):
@@ -86,3 +97,38 @@ def test_profile_page_requires_authenticated_user(
     response = app.test_client().get("/auth/profile")
 
     assert response.status_code == expected_status
+
+
+def test_refresh_session_rotates_tokens(flask_app_factory, monkeypatch):
+    """Проверяем, что /auth/refresh перевыпускает access и refresh token по валидному refresh cookie."""
+    monkeypatch.setattr(
+        auth_route_module,
+        "container",
+        SimpleNamespace(token_blocklist=SimpleNamespace(is_revoked=lambda token: False, revoke=lambda token, ttl: None)),
+    )
+    monkeypatch.setattr(auth_route_module.jwt_service, "decode_refresh_token", lambda token: 11)
+    monkeypatch.setattr(
+        auth_route_module.jwt_service,
+        "get_token_ttl_seconds",
+        lambda token, expected_type=None: 120,
+    )
+    monkeypatch.setattr(
+        auth_route_module.jwt_service,
+        "create_access_token",
+        lambda user_id: f"access-{user_id}",
+    )
+    monkeypatch.setattr(
+        auth_route_module.jwt_service,
+        "create_refresh_token",
+        lambda user_id: f"refresh-{user_id}",
+    )
+    app = flask_app_factory(auth_bp, index_bp)
+    client = app.test_client()
+    client.set_cookie("refresh_token", "refresh-old")
+
+    response = client.post("/auth/refresh")
+
+    assert response.status_code == 200
+    set_cookie_header = "\n".join(response.headers.getlist("Set-Cookie"))
+    assert "access_token=access-11" in set_cookie_header
+    assert "refresh_token=refresh-11" in set_cookie_header

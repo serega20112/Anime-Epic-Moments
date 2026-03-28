@@ -22,6 +22,17 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   app:
     build:
       context: ..
@@ -30,11 +41,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - ../.env
     environment:
       POSTGRES_HOST: postgres
       DATABASE_URL: postgresql://${POSTGRES_USER:-anime_epic_moments}:${POSTGRES_PASSWORD:-anime_epic_moments}@postgres:5432/${POSTGRES_DB:-anime_epic_moments}
+      REDIS_ENABLED: ${REDIS_ENABLED:-1}
+      REDIS_REQUIRED: ${REDIS_REQUIRED:-0}
+      REDIS_URL: redis://redis:6379/0
       DATABASE_AUTO_INIT: "0"
       FLASK_HOST: 0.0.0.0
       FLASK_PORT: 5000

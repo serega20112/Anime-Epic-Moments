@@ -23,6 +23,13 @@ def test_settings_use_expected_defaults(monkeypatch):
             "YOUTUBE_ALLOWED_CHANNEL_IDS",
             "FLASK_PORT",
             "FLASK_DEBUG",
+            "REDIS_ENABLED",
+            "REDIS_URL",
+            "COOKIE_SECURE",
+            "COOKIE_SAMESITE",
+            "MAX_REQUEST_BYTES",
+            "ACCESS_TOKEN_EXPIRE_MINUTES",
+            "REFRESH_TOKEN_EXPIRE_DAYS",
             "SMTP_USE_TLS",
         ):
             patch.delenv(name, raising=False)
@@ -33,10 +40,17 @@ def test_settings_use_expected_defaults(monkeypatch):
             "postgresql+psycopg://anime_epic_moments:anime_epic_moments@localhost:5432/anime_epic_moments"
         )
         assert settings_module.Settings.database_auto_init is False
+        assert settings_module.Settings.redis_enabled is True
+        assert settings_module.Settings.redis_url == "redis://localhost:6379/0"
         assert settings_module.Settings.hf_provider == "fireworks-ai"
         assert settings_module.Settings.youtube_allowed_channel_ids == []
         assert settings_module.Settings.flask_port == 5000
         assert settings_module.Settings.flask_debug is False
+        assert settings_module.Settings.max_request_bytes == 1048576
+        assert settings_module.Settings.cookie_secure is False
+        assert settings_module.Settings.cookie_samesite == "Lax"
+        assert settings_module.Settings.access_token_expire_minutes == 30
+        assert settings_module.Settings.refresh_token_expire_days == 30
         assert settings_module.Settings.smtp_use_tls is True
 
     importlib.reload(settings_module)
@@ -52,6 +66,12 @@ def test_settings_parse_env_values(monkeypatch):
         patch.setenv("YOUTUBE_ALLOWED_CHANNEL_IDS", " channel-1 , channel-2 ")
         patch.setenv("FLASK_PORT", "7001")
         patch.setenv("FLASK_DEBUG", "1")
+        patch.setenv("REDIS_URL", "redis://redis:6379/1")
+        patch.setenv("COOKIE_SECURE", "1")
+        patch.setenv("COOKIE_SAMESITE", "Strict")
+        patch.setenv("MAX_REQUEST_BYTES", "2048")
+        patch.setenv("ACCESS_TOKEN_EXPIRE_MINUTES", "45")
+        patch.setenv("REFRESH_TOKEN_EXPIRE_DAYS", "15")
         patch.setenv("SMTP_USE_TLS", "0")
         patch.setenv("DATABASE_AUTO_INIT", "0")
         importlib.reload(settings_module)
@@ -63,6 +83,12 @@ def test_settings_parse_env_values(monkeypatch):
         assert settings_module.Settings.youtube_allowed_channel_ids == ["channel-1", "channel-2"]
         assert settings_module.Settings.flask_port == 7001
         assert settings_module.Settings.flask_debug is True
+        assert settings_module.Settings.redis_url == "redis://redis:6379/1"
+        assert settings_module.Settings.cookie_secure is True
+        assert settings_module.Settings.cookie_samesite == "Strict"
+        assert settings_module.Settings.max_request_bytes == 2048
+        assert settings_module.Settings.access_token_expire_minutes == 45
+        assert settings_module.Settings.refresh_token_expire_days == 15
         assert settings_module.Settings.smtp_use_tls is False
 
     importlib.reload(settings_module)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from src.backend.domain.recommendation.value_object import RecommendationResult
+from src.backend.infrastructure.cache.key_value_store import KeyValueStore
 from src.backend.infrastructure.cache.recommendation_cache import RecommendationCache
 
 
@@ -28,7 +29,7 @@ def recommendation_factory():
 @pytest.mark.parametrize("limit", [3, 5])
 def test_recommendation_cache_returns_saved_items(limit, recommendation_factory):
     """Проверяем, что кэш возвращает рекомендации по user_id и limit."""
-    cache = RecommendationCache(ttl_seconds=60, max_entries=16)
+    cache = RecommendationCache(store=KeyValueStore(namespace="test"), ttl_seconds=60)
     expected = [recommendation_factory(index) for index in range(1, limit + 1)]
 
     cache.set(user_id=10, limit=limit, value=expected)
@@ -38,7 +39,7 @@ def test_recommendation_cache_returns_saved_items(limit, recommendation_factory)
 
 def test_recommendation_cache_invalidates_only_target_user(recommendation_factory):
     """Проверяем, что invalidate_user очищает ключи только конкретного пользователя."""
-    cache = RecommendationCache(ttl_seconds=60, max_entries=16)
+    cache = RecommendationCache(store=KeyValueStore(namespace="test"), ttl_seconds=60)
     cache.set(user_id=1, limit=5, value=[recommendation_factory(1)])
     cache.set(user_id=2, limit=5, value=[recommendation_factory(2)])
 
@@ -52,7 +53,7 @@ def test_recommendation_cache_invalidates_only_target_user(recommendation_factor
 
 def test_recommendation_cache_clear_drops_everything(recommendation_factory):
     """Проверяем, что clear очищает все сохраненные рекомендации."""
-    cache = RecommendationCache(ttl_seconds=60, max_entries=16)
+    cache = RecommendationCache(store=KeyValueStore(namespace="test"), ttl_seconds=60)
     cache.set(user_id=1, limit=5, value=[recommendation_factory(1)])
     cache.set(user_id=2, limit=5, value=[recommendation_factory(2)])
 

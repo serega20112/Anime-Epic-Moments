@@ -6,6 +6,10 @@ from functools import cached_property
 
 from src.backend.infrastructure.files.database import get_session
 from src.backend.infrastructure.cache.recommendation_cache import RecommendationCache
+from src.backend.infrastructure.cache.highlight_dashboard_cache import (
+    HighlightDashboardCache,
+)
+from src.backend.infrastructure.cache.key_value_store import KeyValueStore
 from src.backend.infrastructure.repositories.user_repository import UserRepository
 from src.backend.infrastructure.repositories.highlight_repository import (
     HighlightRepository,
@@ -66,6 +70,8 @@ from src.backend.infrastructure.external.password_reset_mailer import (
 from src.backend.infrastructure.external.youtube_client import YouTubeClient
 from src.backend.infrastructure.security.password_service import PasswordService
 from src.backend.infrastructure.security.jwt_service import JWTService
+from src.backend.infrastructure.security.rate_limiter import RateLimiter
+from src.backend.infrastructure.security.token_blocklist import TokenBlocklist
 from src.backend.dependencies.settings import Settings
 
 
@@ -79,8 +85,16 @@ class Container:
         return get_session()
 
     @cached_property
+    def key_value_store(self):
+        return KeyValueStore(
+            redis_url=Settings.redis_url,
+            namespace="anime_epic_moments",
+            required=Settings.redis_required,
+        )
+
+    @cached_property
     def anime_api_client(self):
-        return AnimeApiClient()
+        return AnimeApiClient(store=self.key_value_store)
 
     @cached_property
     def kodik_client(self):
@@ -129,7 +143,11 @@ class Container:
 
     @cached_property
     def recommendation_cache(self):
-        return RecommendationCache()
+        return RecommendationCache(store=self.key_value_store)
+
+    @cached_property
+    def highlight_dashboard_cache(self):
+        return HighlightDashboardCache(store=self.key_value_store)
 
     @cached_property
     def recommendation_service(self):
@@ -159,6 +177,14 @@ class Container:
     @cached_property
     def jwt_service(self):
         return JWTService()
+
+    @cached_property
+    def token_blocklist(self):
+        return TokenBlocklist(self.key_value_store)
+
+    @cached_property
+    def rate_limiter(self):
+        return RateLimiter(self.key_value_store)
 
     @cached_property
     def password_reset_mailer(self):
@@ -196,18 +222,21 @@ class Container:
         return CreateHighlightUseCase(
             self.highlight_repository,
             self.recommendation_service,
+            self.highlight_dashboard_cache,
         )
 
     def delete_highlight_use_case(self):
         return DeleteHighlightUseCase(
             self.highlight_repository,
             self.recommendation_service,
+            self.highlight_dashboard_cache,
         )
 
     def edit_highlight_use_case(self):
         return EditHighlightUseCase(
             self.highlight_repository,
             self.recommendation_service,
+            self.highlight_dashboard_cache,
         )
 
     def get_user_highlights_use_case(self):
@@ -217,7 +246,9 @@ class Container:
 
     def get_public_top_highlights_use_case(self):
         return GetPublicTopHighlightsUseCase(
-            self.highlight_repository, self.anime_api_client
+            self.highlight_repository,
+            self.anime_api_client,
+            self.highlight_dashboard_cache,
         )
 
     def add_favorite_use_case(self):

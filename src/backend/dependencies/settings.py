@@ -39,6 +39,13 @@ class Settings:
     secret_key: str = os.getenv("SECRET_KEY", "epic-anime-secret-key-123")
     database_url: str = DEFAULT_DATABASE_URL
     database_auto_init: bool = DEFAULT_DATABASE_AUTO_INIT == "1"
+    redis_enabled: bool = os.getenv("REDIS_ENABLED", "1") == "1"
+    redis_required: bool = os.getenv("REDIS_REQUIRED", "0") == "1"
+    redis_url: str | None = (
+        os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        if redis_enabled
+        else None
+    )
     hf_token: str | None = os.getenv("HF_TOKEN")
     hf_provider: str | None = os.getenv("HF_PROVIDER", "fireworks-ai")
     hf_model: str = os.getenv("HF_MODEL", "openai/gpt-oss-120b")
@@ -67,7 +74,17 @@ class Settings:
     flask_host: str = os.getenv("FLASK_HOST", "0.0.0.0")
     flask_port: int = int(os.getenv("FLASK_PORT", "5000"))
     flask_debug: bool = os.getenv("FLASK_DEBUG", "0") == "1"
+    max_request_bytes: int = int(os.getenv("MAX_REQUEST_BYTES", "1048576"))
     app_base_url: str = os.getenv("APP_BASE_URL", "http://127.0.0.1:5000")
+    cookie_secure: bool = os.getenv("COOKIE_SECURE", "0") == "1"
+    cookie_samesite: str = os.getenv("COOKIE_SAMESITE", "Lax")
+    cookie_domain: str | None = os.getenv("COOKIE_DOMAIN") or None
+    access_token_expire_minutes: int = int(
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+    )
+    refresh_token_expire_days: int = int(
+        os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30")
+    )
     smtp_host: str | None = os.getenv("SMTP_HOST")
     smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
     smtp_username: str | None = os.getenv("SMTP_USERNAME")
