@@ -31,6 +31,7 @@ def test_settings_use_expected_defaults(monkeypatch):
             "ACCESS_TOKEN_EXPIRE_MINUTES",
             "REFRESH_TOKEN_EXPIRE_DAYS",
             "SMTP_USE_TLS",
+            "EMAIL_VERIFICATION_EXPIRE_MINUTES",
         ):
             patch.delenv(name, raising=False)
         importlib.reload(settings_module)
@@ -52,6 +53,7 @@ def test_settings_use_expected_defaults(monkeypatch):
         assert settings_module.Settings.access_token_expire_minutes == 30
         assert settings_module.Settings.refresh_token_expire_days == 30
         assert settings_module.Settings.smtp_use_tls is True
+        assert settings_module.Settings.email_verification_expire_minutes == 10
 
     importlib.reload(settings_module)
 
@@ -73,6 +75,7 @@ def test_settings_parse_env_values(monkeypatch):
         patch.setenv("ACCESS_TOKEN_EXPIRE_MINUTES", "45")
         patch.setenv("REFRESH_TOKEN_EXPIRE_DAYS", "15")
         patch.setenv("SMTP_USE_TLS", "0")
+        patch.setenv("EMAIL_VERIFICATION_EXPIRE_MINUTES", "20")
         patch.setenv("DATABASE_AUTO_INIT", "0")
         importlib.reload(settings_module)
 
@@ -90,6 +93,7 @@ def test_settings_parse_env_values(monkeypatch):
         assert settings_module.Settings.access_token_expire_minutes == 45
         assert settings_module.Settings.refresh_token_expire_days == 15
         assert settings_module.Settings.smtp_use_tls is False
+        assert settings_module.Settings.email_verification_expire_minutes == 20
 
     importlib.reload(settings_module)
 

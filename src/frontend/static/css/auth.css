@@ -81,3 +81,36 @@
   color: #00f0ff;
   text-decoration: underline;
 }
+
+.auth-page {
+  background: var(--page-background);
+}
+
+.auth-card {
+  background: var(--page-surface-strong);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+}
+
+.auth-card h1 {
+  background: none;
+  -webkit-text-fill-color: initial;
+  color: var(--text-primary);
+}
+
+.form-group label,
+.auth-switch {
+  color: var(--text-muted);
+}
+
+.form-group input {
+  border: 1px solid var(--input-border);
+  background: var(--input-background);
+  color: var(--text-primary);
+}
+
+#password-strength,
+.auth-switch a {
+  color: var(--accent);
+}

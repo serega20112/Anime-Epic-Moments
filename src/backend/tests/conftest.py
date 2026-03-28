@@ -29,6 +29,7 @@ def anime_factory():
             "year": 2024,
             "rating": 8.4,
             "cover_url": "https://example.com/cover.jpg",
+            "episode_count": 12,
         }
         payload.update(overrides)
         return Anime(**payload)
@@ -72,6 +73,10 @@ def flask_app_factory():
         _register_placeholder("/anime/search/description", "anime.search_by_description_page")
         _register_placeholder("/highlights/<int:user_id>", "highlight.get_user_highlights")
         _register_placeholder("/highlights/top", "highlight.get_public_top_highlights")
+        _register_placeholder("/highlights/feed", "highlight.get_highlight_feed")
+        _register_placeholder("/highlights/saved", "highlight.get_saved_highlights")
+        _register_placeholder("/highlights/liked", "highlight.get_liked_highlights")
+        _register_placeholder("/highlights/notifications", "highlight.get_highlight_notifications")
         _register_placeholder("/favorites/<int:user_id>", "favorite.get_favorites")
         _register_placeholder("/auth/profile", "auth.profile_page")
         _register_placeholder("/auth/login", "auth.login_page")

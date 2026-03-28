@@ -4,7 +4,7 @@ from src.backend.use_case.highlight.create_highlight import CreateHighlightUseCa
 
 
 class CreateWatchHighlightUseCase:
-    """Создает хайлайт из плеера и сохраняет его playback context."""
+    """Создает хайлайт из плеера и сохраняет playback context."""
 
     def __init__(
         self,
@@ -20,6 +20,7 @@ class CreateWatchHighlightUseCase:
         anime_id: int,
         episode: int,
         title: str,
+        category: str | None,
         start_timestamp: float,
         end_timestamp: float,
         description: str,
@@ -34,6 +35,8 @@ class CreateWatchHighlightUseCase:
             episode=episode,
             start_timestamp=start_timestamp,
             end_timestamp=end_timestamp,
+            title=title,
+            category=category,
             description=description,
             is_spoiler=is_spoiler,
             emotion=emotion,

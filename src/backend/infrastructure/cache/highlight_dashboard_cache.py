@@ -21,6 +21,8 @@ class HighlightDashboardCache:
         limit: int,
         anime_id: int | None,
         emotion: str | None,
+        category: str | None,
+        sort_by: str,
         created_date: str | None,
         query: str | None,
         include_spoilers: bool,
@@ -30,6 +32,8 @@ class HighlightDashboardCache:
                 limit=limit,
                 anime_id=anime_id,
                 emotion=emotion,
+                category=category,
+                sort_by=sort_by,
                 created_date=created_date,
                 query=query,
                 include_spoilers=include_spoilers,
@@ -41,6 +45,8 @@ class HighlightDashboardCache:
         limit: int,
         anime_id: int | None,
         emotion: str | None,
+        category: str | None,
+        sort_by: str,
         created_date: str | None,
         query: str | None,
         include_spoilers: bool,
@@ -51,6 +57,8 @@ class HighlightDashboardCache:
                 limit=limit,
                 anime_id=anime_id,
                 emotion=emotion,
+                category=category,
+                sort_by=sort_by,
                 created_date=created_date,
                 query=query,
                 include_spoilers=include_spoilers,
@@ -67,11 +75,13 @@ class HighlightDashboardCache:
         limit: int,
         anime_id: int | None,
         emotion: str | None,
+        category: str | None,
+        sort_by: str,
         created_date: str | None,
         query: str | None,
         include_spoilers: bool,
     ) -> str:
         return (
             f"{self.prefix}:{int(limit)}:{anime_id}:{emotion or ''}:"
-            f"{created_date or ''}:{query or ''}:{int(include_spoilers)}"
+            f"{category or ''}:{sort_by}:{created_date or ''}:{query or ''}:{int(include_spoilers)}"
         )

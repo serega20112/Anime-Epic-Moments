@@ -103,6 +103,7 @@ class AnimeApiClient:
             media(search: $search, type: ANIME, isAdult: $isAdult) {
               id
               idMal
+              episodes
               title { romaji english native }
               description
               genres
@@ -260,6 +261,7 @@ class AnimeApiClient:
           media: PLACEHOLDER_MEDIA_EXPRESSION {
             id
             idMal
+            episodes
             title { romaji english native }
             description
             genres
@@ -327,6 +329,7 @@ class AnimeApiClient:
             year=item.get("year"),
             rating=item.get("score"),
             cover_url=item.get("images", {}).get("jpg", {}).get("image_url"),
+            episode_count=self._normalize_episode_count(item.get("episodes")),
         )
 
     def _build_anime_from_anilist_item(
@@ -355,6 +358,7 @@ class AnimeApiClient:
             year=item.get("seasonYear"),
             rating=normalized_score,
             cover_url=item.get("coverImage", {}).get("large"),
+            episode_count=self._normalize_episode_count(item.get("episodes")),
         )
 
     def _pick_anilist_title(self, title_data: dict[str, Any]) -> str:
@@ -372,6 +376,15 @@ class AnimeApiClient:
         except (TypeError, ValueError):
             return ""
         return str(numeric_value) if numeric_value > 0 else ""
+
+    def _normalize_episode_count(self, value: Any) -> int | None:
+        if isinstance(value, bool) or value is None:
+            return None
+        try:
+            numeric_value = int(value)
+        except (TypeError, ValueError):
+            return None
+        return numeric_value if numeric_value > 0 else None
 
     def _is_nsfw_jikan(self, item: dict) -> bool:
         """Определяет NSFW по rating строке Jikan."""

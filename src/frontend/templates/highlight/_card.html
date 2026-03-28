@@ -1,0 +1,130 @@
+<article
+  class="highlight-entry {% if item.is_spoiler %}spoiler-entry{% endif %}"
+  id="highlight-{{ item.id }}"
+>
+  <img
+    src="{{ item.anime_cover or '/static/images/no-cover.png' }}"
+    alt="{{ item.anime_title }}"
+    loading="lazy"
+  />
+  <div class="highlight-entry-body">
+    <div class="highlight-entry-head">
+      <div>
+        <h3>{{ item.title }}</h3>
+        <p class="highlight-meta-line">{{ item.anime_title }} • Серия {{ item.episode }}</p>
+      </div>
+      <span class="highlight-like-badge" data-highlight-likes-badge="{{ item.id }}">
+        {{ item.likes_count }} лайков
+      </span>
+    </div>
+    <p class="highlight-meta-line">
+      {{ item.start_timestamp }} - {{ item.end_timestamp }} • {{ item.created_at }} • {{ item.views_count }} просмотров
+    </p>
+    <div class="result-genres">
+      {% if item.category %}
+      <span class="genre-chip">{{ item.category }}</span>
+      {% endif %}
+      {% if item.emotion %}
+      <span class="genre-chip">{{ item.emotion }}</span>
+      {% endif %}
+      <span class="genre-chip" data-highlight-comments-badge="{{ item.id }}">{{ item.comments_count }} комментариев</span>
+    </div>
+    {% if item.is_spoiler and not include_spoilers %}
+    <div class="spoiler-veil">
+      <p>Спойлер скрыт. Нажми "Показать спойлер", если готов.</p>
+      <button
+        type="button"
+        class="btn neon-blue reveal-spoiler-button"
+        data-highlight-id="{{ item.id }}"
+      >
+        Показать спойлер
+      </button>
+    </div>
+    {% endif %}
+    <p
+      class="highlight-description {% if item.is_spoiler and not include_spoilers %}is-hidden{% endif %}"
+      data-highlight-description="{{ item.id }}"
+    >
+      {{ item.description or 'Без описания' }}
+    </p>
+    <div class="result-actions">
+      <a class="btn neon-blue btn-watch" href="{{ item.watch_url }}">Смотреть</a>
+      {% if current_user %}
+      <button
+        type="button"
+        class="btn-favorite highlight-like-button"
+        data-highlight-id="{{ item.id }}"
+        data-liked="{{ 1 if item.is_liked else 0 }}"
+      >
+        {{ 'Убрать лайк' if item.is_liked else 'Лайк' }}
+      </button>
+      <button
+        type="button"
+        class="btn-favorite highlight-save-button"
+        data-highlight-id="{{ item.id }}"
+        data-saved="{{ 1 if item.is_saved else 0 }}"
+      >
+        {{ 'Убрать из сохраненных' if item.is_saved else 'Сохранить' }}
+      </button>
+      {% endif %}
+      <button
+        type="button"
+        class="btn-favorite highlight-comments-toggle"
+        data-highlight-id="{{ item.id }}"
+      >
+        Комментарии
+      </button>
+      <button
+        type="button"
+        class="btn-favorite highlight-likers-button"
+        data-highlight-id="{{ item.id }}"
+      >
+        Кто лайкнул
+      </button>
+      <button
+        type="button"
+        class="btn-favorite highlight-share-button"
+        data-share-url="{{ item.share_url }}"
+      >
+        Поделиться
+      </button>
+      {% if not is_public and view_mode == 'user' %}
+      <button
+        type="button"
+        class="btn-favorite highlight-edit-button"
+        data-highlight-id="{{ item.id }}"
+        data-title="{{ item.title }}"
+        data-category="{{ item.category or '' }}"
+        data-episode="{{ item.episode }}"
+        data-start="{{ item.start_timestamp }}"
+        data-end="{{ item.end_timestamp }}"
+        data-description="{{ item.description }}"
+        data-spoiler="{{ 1 if item.is_spoiler else 0 }}"
+        data-emotion="{{ item.emotion or '' }}"
+      >
+        Редактировать
+      </button>
+      <button
+        type="button"
+        class="btn-favorite highlight-delete-button"
+        data-highlight-id="{{ item.id }}"
+      >
+        Удалить
+      </button>
+      {% endif %}
+    </div>
+    <section
+      class="highlight-comments-panel"
+      data-comments-panel="{{ item.id }}"
+      hidden
+    >
+      <div class="highlight-comments-list" data-comments-list="{{ item.id }}"></div>
+      {% if current_user %}
+      <form class="manual-add-form highlight-comment-form" data-highlight-id="{{ item.id }}">
+        <textarea name="content" placeholder="Оставь комментарий" required></textarea>
+        <button type="submit" class="btn neon-pink">Отправить</button>
+      </form>
+      {% endif %}
+    </section>
+  </div>
+</article>

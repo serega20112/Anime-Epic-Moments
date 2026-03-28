@@ -34,6 +34,7 @@ def test_search_by_title_uses_cache_for_repeated_queries(include_adult):
                         "title": "Fullmetal Alchemist: Brotherhood",
                         "synopsis": "desc",
                         "genres": [{"name": "Action"}],
+                        "episodes": 64,
                         "year": 2009,
                         "score": 9.1,
                         "images": {"jpg": {"image_url": "cover"}},
@@ -49,6 +50,7 @@ def test_search_by_title_uses_cache_for_repeated_queries(include_adult):
 
     assert client.session.get.call_count == 1
     assert [item.title for item in first] == [item.title for item in second]
+    assert first[0].episode_count == 64
 
 
 def test_get_by_id_caches_fallback_result(anime_factory):

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Подтверждение почты - AEM</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+  </head>
+  <body>
+    <div class="auth-page">
+      <div class="auth-card">
+        <h1>Подтверждение почты</h1>
+        <p class="auth-switch">
+          Мы отправили код на <strong>{{ email or "указанный email" }}</strong>.
+        </p>
+        <form
+          class="auth-form"
+          action="{{ url_for('auth.verify_email') }}"
+          method="POST"
+        >
+          <input type="hidden" name="email" value="{{ email }}" />
+          <div class="form-group">
+            <label for="code">Код подтверждения</label>
+            <input
+              type="text"
+              id="code"
+              name="code"
+              placeholder="123456"
+              inputmode="numeric"
+              pattern="\d{6}"
+              maxlength="6"
+              required
+              autofocus
+            />
+          </div>
+          <button type="submit" class="btn neon-pink btn-large">
+            Подтвердить почту
+          </button>
+        </form>
+        <form
+          class="auth-form"
+          action="{{ url_for('auth.resend_verification_email') }}"
+          method="POST"
+        >
+          <input type="hidden" name="email" value="{{ email }}" />
+          <button type="submit" class="btn btn-large">Отправить код заново</button>
+        </form>
+        <p class="auth-switch">
+          Ошибся в адресе? <a href="{{ url_for('auth.register_page') }}">Вернуться к регистрации</a>
+        </p>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages() %} {% if messages %}
+    <div id="errorModal" class="modal">
+      <div class="modal-content">
+        <button type="button" class="close" onclick="closeErrorModal()">
+          &times;
+        </button>
+        <h2 class="modal-title">Уведомление</h2>
+        <ul class="modal-error-list">
+          {% for message in messages %}
+          <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+        <div class="modal-actions">
+          <button type="button" class="btn-modal" onclick="closeErrorModal()">
+            Понятно
+          </button>
+        </div>
+      </div>
+    </div>
+    <script>
+      function openErrorModal() {
+        const modal = document.getElementById("errorModal");
+        if (!modal) return;
+        modal.style.display = "flex";
+      }
+
+      function closeErrorModal() {
+        const modal = document.getElementById("errorModal");
+        if (!modal) return;
+        modal.style.display = "none";
+      }
+
+      openErrorModal();
+    </script>
+    {% endif %} {% endwith %}
+    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+  </body>
+</html>

@@ -29,20 +29,17 @@ class CreateHighlightUseCase:
         episode: int,
         start_timestamp: float,
         end_timestamp: float,
+        title: str = "",
+        category: str | None = None,
         description: str = "",
         is_spoiler: bool = False,
         emotion: str | None = None,
         highlights_this_hour: int = 0,
     ) -> Highlight:
-        """
-        Создаёт новый Highlight с проверкой инвариантов и правил.
-        Для гостей проверяется лимит добавлений в час.
-        Запрещённый контент блокируется.
-        """
         if not HighlightPolicy.can_add_highlight(user_id, highlights_this_hour):
             raise PermissionError("Превышен лимит добавления хайлайтов для гостя")
 
-        if not HighlightPolicy.filter_spoiler_content(description):
+        if not HighlightPolicy.filter_spoiler_content(f"{title} {description}"):
             raise ValueError("Описание содержит запрещённый контент")
 
         highlight = Highlight(
@@ -51,6 +48,8 @@ class CreateHighlightUseCase:
             episode=episode,
             start_timestamp=start_timestamp,
             end_timestamp=end_timestamp,
+            title=title or f"Момент {episode} серии",
+            category=category,
             description=description,
             is_spoiler=is_spoiler,
             emotion=emotion,

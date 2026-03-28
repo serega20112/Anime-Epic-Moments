@@ -19,6 +19,8 @@ def test_watch_page_renders_with_watch_data(flask_app_factory, monkeypatch, user
         anime_rating=8.0,
         genres=[],
         episode=1,
+        episode_total=12,
+        episode_options=[1, 2, 3],
         selected_source_id=None,
         selected_translation_id=None,
         sources=[],

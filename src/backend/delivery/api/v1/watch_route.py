@@ -1,4 +1,5 @@
 from flask import Blueprint, g, jsonify, redirect, render_template, request, url_for
+
 from src.backend.dependencies.container import container
 from src.backend.infrastructure.security.flask_protection import client_ip, rate_limit
 
@@ -116,10 +117,15 @@ def create_highlight(anime_id: int):
         anime_id=anime_id,
         episode=episode,
         title=str(payload.get("title") or "").strip(),
+        category=(
+            str(payload.get("category")).strip()
+            if payload.get("category") is not None
+            else None
+        ),
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
         description=str(payload.get("description") or "").strip(),
-        is_spoiler=bool(payload.get("is_spoiler")),
+        is_spoiler=_to_bool(payload.get("is_spoiler")),
         emotion=(
             str(payload.get("emotion")).strip()
             if payload.get("emotion") is not None
@@ -151,3 +157,9 @@ def _safe_float(value) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _to_bool(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}

@@ -26,6 +26,8 @@ def test_watch_value_objects_store_page_payload():
     highlight = WatchHighlightCard(
         id=9,
         title="best scene",
+        category="бой",
+        likes_count=8,
         description="moment",
         start_timestamp="00:10",
         end_timestamp="00:20",
@@ -43,6 +45,8 @@ def test_watch_value_objects_store_page_payload():
         anime_rating=8.9,
         genres=["Comedy"],
         episode=3,
+        episode_total=24,
+        episode_options=[1, 2, 3],
         selected_source_id=1,
         selected_translation_id=2,
         sources=[source],
@@ -67,5 +71,8 @@ def test_watch_value_objects_store_page_payload():
     payload = asdict(page)
 
     assert payload["anime_title"] == "Gintama"
+    assert payload["episode_total"] == 24
+    assert payload["episode_options"] == [1, 2, 3]
+    assert payload["highlights"][0]["category"] == "бой"
     assert payload["sources"][0]["translation_name"] == "AniLibria"
     assert discovered.provider_name == "Kodik"

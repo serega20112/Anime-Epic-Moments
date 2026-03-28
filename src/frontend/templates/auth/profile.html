@@ -8,75 +8,179 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/styles.css') }}"
-    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
   </head>
   <body>
     <header class="header">
       <div class="logo">AEM</div>
       <nav>
         <a href="{{ url_for('index.index') }}">Главная</a>
-        <a
-          href="{{ url_for('highlight.get_user_highlights', user_id=profile_user.id) }}"
-          >Мои хайлайты</a
-        >
-        <a
-          href="{{ url_for('favorite.get_favorites', user_id=profile_user.id) }}"
-          >Избранное</a
-        >
+        <a href="{{ url_for('highlight.get_highlight_feed') }}">Фид</a>
+        <a href="{{ url_for('highlight.get_user_highlights', user_id=profile_user.id) }}">Мои хайлайты</a>
+        <a href="{{ url_for('highlight.get_liked_highlights') }}">Мои лайки</a>
+        <a href="{{ url_for('highlight.get_saved_highlights') }}">Сохраненные</a>
+        <a href="{{ url_for('highlight.get_highlight_notifications') }}">Уведомления</a>
       </nav>
     </header>
 
-    <main class="profile-page">
-      <section class="profile-card">
-        <h1>Мой профиль</h1>
-        {% with messages = get_flashed_messages() %} {% if messages %}
-        <div class="profile-messages">
-          {% for message in messages %}
-          <p>{{ message }}</p>
-          {% endfor %}
-        </div>
-        {% endif %} {% endwith %}
-        <form
-          method="post"
-          action="{{ url_for('auth.update_profile') }}"
-          class="profile-form"
-        >
-          <label for="username">Никнейм</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            value="{{ profile_user.username }}"
-            minlength="3"
-            maxlength="20"
-            required
-          />
+    <main class="search-page profile-page">
+      <section class="search-shell highlight-dashboard">
+        <aside class="filters-panel">
+          <h1>Мой профиль</h1>
+          <p class="filters-subtitle">
+            Один экран для профиля, статистики, твоих лучших моментов и отклика аудитории.
+          </p>
 
-          <label for="avatar_url">URL аватара</label>
-          <input
-            id="avatar_url"
-            name="avatar_url"
-            type="url"
-            value="{{ profile_user.avatar_url or '' }}"
-            placeholder="https://..."
-          />
+          <section class="profile-card">
+            {% if profile_overview.avatar_url %}
+            <img src="{{ profile_overview.avatar_url }}" alt="{{ profile_overview.username }}" class="profile-avatar" />
+            {% endif %}
+            <h2>{{ profile_overview.username }}</h2>
+            <p class="filters-subtitle">{{ profile_overview.email }}</p>
+            <p class="filters-subtitle">В проекте с {{ profile_overview.created_at }}</p>
+          </section>
 
-          <div class="profile-actions">
-            <button type="submit" class="btn neon-blue">Сохранить</button>
-            <button type="submit" form="logoutForm" class="btn neon-pink">
-              Выйти
-            </button>
+          <section class="highlight-stats">
+            <h2>Мини-профиль</h2>
+            <div class="stat-card">
+              <span>Мои хайлайты</span>
+              <strong>{{ profile_overview.summary.highlight_count }}</strong>
+            </div>
+            <div class="stat-card">
+              <span>Мои лайки</span>
+              <strong>{{ profile_overview.summary.like_count }}</strong>
+            </div>
+            <div class="stat-card">
+              <span>Сохраненные</span>
+              <strong>{{ profile_overview.summary.saved_count }}</strong>
+            </div>
+          </section>
+
+          <section class="highlight-sidebar">
+            <h2>Быстрые действия</h2>
+            <div class="highlight-group-list">
+              <a class="highlight-group-link" href="{{ url_for('highlight.get_user_highlights', user_id=profile_user.id, sort='popular') }}">
+                <span>Мои лучшие моменты</span>
+                <strong>Открыть</strong>
+              </a>
+              <a class="highlight-group-link" href="{{ url_for('highlight.get_liked_highlights', sort='popular') }}">
+                <span>Лайкнутые по популярности</span>
+                <strong>Открыть</strong>
+              </a>
+              <a class="highlight-group-link" href="{{ url_for('highlight.get_saved_highlights', sort='popular') }}">
+                <span>Сохраненные по ценности</span>
+                <strong>Открыть</strong>
+              </a>
+              <a class="highlight-group-link" href="{{ url_for('highlight.get_highlight_notifications') }}">
+                <span>Отклик аудитории</span>
+                <strong>{{ profile_overview.recent_activity|length }}</strong>
+              </a>
+            </div>
+          </section>
+
+          {% with messages = get_flashed_messages() %}
+          {% if messages %}
+          <div class="profile-messages">
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
           </div>
-        </form>
-        <form
-          id="logoutForm"
-          method="post"
-          action="{{ url_for('auth.logout_user') }}"
-        ></form>
+          {% endif %}
+          {% endwith %}
+
+          <form method="post" action="{{ url_for('auth.update_profile') }}" class="profile-form">
+            <label for="username">Никнейм</label>
+            <input id="username" name="username" type="text" value="{{ profile_user.username }}" minlength="3" maxlength="20" required />
+
+            <label for="avatar_url">URL аватара</label>
+            <input id="avatar_url" name="avatar_url" type="url" value="{{ profile_user.avatar_url or '' }}" placeholder="https://..." />
+
+            <div class="profile-actions">
+              <button type="submit" class="btn neon-blue">Сохранить</button>
+              <button type="submit" form="logoutForm" class="btn neon-pink">Выйти</button>
+            </div>
+          </form>
+          <form id="logoutForm" method="post" action="{{ url_for('auth.logout_user') }}"></form>
+        </aside>
+
+        <section class="results-panel">
+          {% for title, items, link in [
+            ('Недавние хайлайты', profile_overview.recent_highlights, url_for('highlight.get_user_highlights', user_id=profile_user.id)),
+            ('Лучшие хайлайты', profile_overview.popular_highlights, url_for('highlight.get_user_highlights', user_id=profile_user.id, sort='popular')),
+            ('Мои лайки', profile_overview.liked_highlights, url_for('highlight.get_liked_highlights')),
+            ('Мои сохраненные', profile_overview.saved_highlights, url_for('highlight.get_saved_highlights'))
+          ] %}
+          <section class="feed-section-block">
+            <div class="results-head">
+              <h2>{{ title }}</h2>
+              <a class="btn neon-blue" href="{{ link }}">Открыть все</a>
+            </div>
+            {% if items %}
+            <div class="highlight-feed">
+              {% set include_spoilers = true %}
+              {% set is_public = false %}
+              {% if title == 'Мои лайки' %}
+                {% set view_mode = 'liked' %}
+              {% elif title == 'Мои сохраненные' %}
+                {% set view_mode = 'saved' %}
+              {% else %}
+                {% set view_mode = 'user' %}
+              {% endif %}
+              {% for item in items %}
+                {% include 'highlight/_card.html' %}
+              {% endfor %}
+            </div>
+            {% else %}
+            <section class="empty-state">
+              <h2>Пока пусто</h2>
+              <p>Здесь появится контент, когда ты начнешь активно взаимодействовать с хайлайтами.</p>
+            </section>
+            {% endif %}
+          </section>
+          {% endfor %}
+
+          <section class="feed-section-block">
+            <div class="results-head">
+              <h2>Социальный отклик</h2>
+              <a class="btn neon-blue" href="{{ url_for('highlight.get_highlight_notifications') }}">Все уведомления</a>
+            </div>
+            {% if profile_overview.recent_activity %}
+            <div class="highlight-feed">
+              {% for item in profile_overview.recent_activity %}
+              <article class="highlight-entry">
+                <div class="highlight-entry-body">
+                  <div class="highlight-entry-head">
+                    <h3>{{ item.highlight_title }}</h3>
+                    <span class="highlight-like-badge">{{ item.created_at }}</span>
+                  </div>
+                  <p class="highlight-meta-line">
+                    {{ item.actor_username }}
+                    {% if item.action == 'comment' %}
+                    оставил комментарий
+                    {% else %}
+                    поставил лайк
+                    {% endif %}
+                  </p>
+                  <div class="result-actions">
+                    <a class="btn neon-blue btn-watch" href="{{ url_for('highlight.get_shared_highlight', highlight_id=item.highlight_id) }}">Открыть хайлайт</a>
+                  </div>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+            {% else %}
+            <section class="empty-state">
+              <h2>Пока нет отклика</h2>
+              <p>Когда кто-то увидит, лайкнет или прокомментирует твои моменты, это появится здесь.</p>
+            </section>
+            {% endif %}
+          </section>
+        </section>
       </section>
     </main>
+
+    <script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
+      <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
   </body>
 </html>
+

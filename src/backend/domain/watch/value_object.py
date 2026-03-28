@@ -32,6 +32,8 @@ class WatchSourceCard:
 class WatchHighlightCard:
     id: int
     title: str
+    category: str | None
+    likes_count: int
     description: str
     start_timestamp: str
     end_timestamp: str
@@ -51,6 +53,8 @@ class WatchPageData:
     anime_rating: float | None
     genres: List[str]
     episode: int
+    episode_total: int | None
+    episode_options: List[int]
     selected_source_id: Optional[int]
     selected_translation_id: Optional[int]
     sources: List[WatchSourceCard]

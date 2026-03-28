@@ -4,8 +4,11 @@ import pytest
 
 from src.backend.infrastructure.models.sqlalchemy_models import (
     FavoriteModel,
+    HighlightCommentModel,
     HighlightContextModel,
+    HighlightLikeModel,
     HighlightModel,
+    SavedHighlightModel,
     TranslationModel,
     UserAnimeStatusModel,
     UserModel,
@@ -27,12 +30,27 @@ from src.backend.infrastructure.models.sqlalchemy_models import (
                 "episode",
                 "start_timestamp",
                 "end_timestamp",
+                "title",
+                "category",
                 "description",
                 "is_spoiler",
                 "created_at",
                 "likes_count",
+                "views_count",
                 "emotion",
             },
+        ),
+        (
+            HighlightLikeModel,
+            {"id", "highlight_id", "user_id", "created_at"},
+        ),
+        (
+            HighlightCommentModel,
+            {"id", "highlight_id", "user_id", "content", "created_at"},
+        ),
+        (
+            SavedHighlightModel,
+            {"id", "highlight_id", "user_id", "saved_at"},
         ),
         (
             FavoriteModel,

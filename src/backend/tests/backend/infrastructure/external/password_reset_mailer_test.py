@@ -79,3 +79,28 @@ def test_password_reset_mailer_sends_message_with_tls_and_login(monkeypatch):
     assert smtp_instance.logged_in == ("mailer", "secret")
     assert smtp_instance.message["To"] == "user@example.com"
     assert "http://example.com/reset?token=abc" in smtp_instance.message.get_content()
+
+
+def test_password_reset_mailer_wraps_network_errors(monkeypatch):
+    """Проверяем, что PasswordResetMailer превращает сетевой сбой SMTP в RuntimeError."""
+    monkeypatch.setattr(
+        mailer_module.smtplib,
+        "SMTP",
+        lambda *args, **kwargs: (_ for _ in ()).throw(TimeoutError("timeout")),
+    )
+    monkeypatch.setattr(
+        mailer_module,
+        "Settings",
+        SimpleNamespace(
+            smtp_host="smtp.example.com",
+            smtp_port=587,
+            smtp_username="mailer",
+            smtp_password="secret",
+            smtp_from_email="noreply@example.com",
+            smtp_use_tls=True,
+            password_reset_expire_minutes=30,
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="Не удалось отправить письмо для сброса пароля"):
+        PasswordResetMailer().send_reset_email("user@example.com", "http://example.com/reset")

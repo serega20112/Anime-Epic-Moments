@@ -19,10 +19,17 @@ from src.backend.infrastructure.security.flask_protection import (
 from src.backend.infrastructure.security.jwt_service import JWTService
 from src.backend.use_case.auth.login_user import InvalidCredentialsError
 from src.backend.use_case.auth.register_user import EmailAlreadyExistsError
+from src.backend.use_case.auth.resend_email_verification import (
+    PendingEmailVerificationNotFoundError,
+)
 from src.backend.use_case.auth.reset_password import InvalidPasswordResetTokenError
 from src.backend.use_case.auth.update_user_profile import (
     InvalidProfileDataError,
     UserNotFoundError,
+)
+from src.backend.use_case.auth.verify_email import (
+    EmailVerificationExpiredError,
+    InvalidEmailVerificationCodeError,
 )
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -31,6 +38,8 @@ jwt_service = JWTService()
 LOGIN_ATTEMPTS_LIMIT = 5
 REGISTER_ATTEMPTS_LIMIT = 3
 PASSWORD_RESET_ATTEMPTS_LIMIT = 3
+VERIFY_EMAIL_ATTEMPTS_LIMIT = 10
+VERIFY_EMAIL_RESEND_LIMIT = 3
 AUTH_WINDOW_SECONDS = 300
 
 
@@ -50,6 +59,15 @@ def register_page():
 def password_reset_request_page():
     """Рендер страницы запроса сброса пароля."""
     return render_template("auth/password_reset_request.html")
+
+
+@auth_bp.route("/verify-email", methods=["GET"])
+def verify_email_page():
+    """Рендер страницы подтверждения email кодом."""
+    return render_template(
+        "auth/verify_email.html",
+        email=_normalize_email(request.args.get("email")),
+    )
 
 
 @auth_bp.route("/password-reset/confirm", methods=["GET"])
@@ -108,6 +126,7 @@ def register_user():
     email = _normalize_email(request.form.get("email"))
     password = request.form.get("password")
     username = str(request.form.get("username") or "").strip()
+    theme = _normalize_theme(request.form.get("theme"))
     if not email or len(email) > 254:
         flash("Некорректный email")
         return redirect(url_for("auth.register_page"))
@@ -118,21 +137,82 @@ def register_user():
         flash("Некорректный username")
         return redirect(url_for("auth.register_page"))
     try:
-        user = container.register_user_use_case().execute(
-            email=email, password=password, username=username
+        container.request_email_verification_use_case().execute(
+            email=email,
+            password=password,
+            username=username,
+            theme=theme,
         )
-        current_app.logger.info(
-            "register_success user_id=%s ip=%s",
-            user.id,
-            client_ip(),
-        )
+        current_app.logger.info("register_verification_requested email=%s ip=%s", email, client_ip())
+        flash("Мы отправили код подтверждения на почту. Введи его, чтобы завершить регистрацию.")
+        return redirect(url_for("auth.verify_email_page", email=email))
+    except EmailAlreadyExistsError as e:
+        flash(str(e))
+        return redirect(url_for("auth.register_page"))
+    except RuntimeError as error:
+        flash(str(error))
+        return redirect(url_for("auth.register_page"))
+
+
+@auth_bp.route("/verify-email", methods=["POST"])
+@rate_limit(
+    container_getter=lambda: container,
+    scope="auth_verify_email",
+    limit=VERIFY_EMAIL_ATTEMPTS_LIMIT,
+    window_seconds=AUTH_WINDOW_SECONDS,
+    key_builder=lambda: _auth_attempt_subject(request.form.get("email")),
+    response_mode="redirect",
+    redirect_endpoint="auth.verify_email_page",
+)
+def verify_email():
+    """Подтверждает email кодом и завершает регистрацию пользователя."""
+    email = _normalize_email(request.form.get("email"))
+    code = _normalize_verification_code(request.form.get("code"))
+    if not email or len(email) > 254:
+        flash("Некорректный email")
+        return redirect(url_for("auth.verify_email_page", email=email))
+    if len(code) != 6:
+        flash("Код подтверждения должен содержать 6 цифр")
+        return redirect(url_for("auth.verify_email_page", email=email))
+    try:
+        user = container.verify_email_use_case().execute(email=email, code=code)
+        current_app.logger.info("email_verified user_id=%s ip=%s", user.id, client_ip())
         flash(f"Добро пожаловать, {user.username}!")
         resp = make_response(redirect(url_for("index.index")))
         _set_auth_cookies(resp, user.id)
         return resp
-    except EmailAlreadyExistsError as e:
-        flash(str(e))
-        return redirect(url_for("auth.register_page"))
+    except (
+        InvalidEmailVerificationCodeError,
+        EmailVerificationExpiredError,
+        EmailAlreadyExistsError,
+    ) as error:
+        flash(str(error))
+        return redirect(url_for("auth.verify_email_page", email=email))
+
+
+@auth_bp.route("/verify-email/resend", methods=["POST"])
+@rate_limit(
+    container_getter=lambda: container,
+    scope="auth_verify_email_resend",
+    limit=VERIFY_EMAIL_RESEND_LIMIT,
+    window_seconds=AUTH_WINDOW_SECONDS,
+    key_builder=lambda: _auth_attempt_subject(request.form.get("email")),
+    response_mode="redirect",
+    redirect_endpoint="auth.verify_email_page",
+)
+def resend_verification_email():
+    """Повторно отправляет код подтверждения для ожидающей регистрации."""
+    email = _normalize_email(request.form.get("email"))
+    if not email or len(email) > 254:
+        flash("Некорректный email")
+        return redirect(url_for("auth.verify_email_page", email=email))
+    try:
+        container.resend_email_verification_use_case().execute(email=email)
+        flash("Новый код подтверждения отправлен.")
+        return redirect(url_for("auth.verify_email_page", email=email))
+    except (PendingEmailVerificationNotFoundError, RuntimeError) as error:
+        flash(str(error))
+        return redirect(url_for("auth.verify_email_page", email=email))
 
 
 @auth_bp.route("/password-reset", methods=["POST"])
@@ -234,7 +314,12 @@ def profile_page():
     user = getattr(g, "user", None)
     if not user:
         return redirect(url_for("auth.login_page"))
-    return render_template("auth/profile.html", profile_user=user)
+    overview = container.get_profile_overview_use_case().execute(user.id)
+    return render_template(
+        "auth/profile.html",
+        profile_user=user,
+        profile_overview=overview,
+    )
 
 
 @auth_bp.route("/profile", methods=["POST"])
@@ -265,6 +350,15 @@ def _normalize_email(value: str | None) -> str:
 def _auth_attempt_subject(email: str | None) -> str:
     normalized_email = _normalize_email(email) or "anonymous"
     return f"{client_ip()}::{normalized_email}"
+
+
+def _normalize_verification_code(value: str | None) -> str:
+    return "".join(character for character in str(value or "") if character.isdigit())
+
+
+def _normalize_theme(value: str | None) -> str:
+    normalized = str(value or "").strip().lower()
+    return normalized if normalized in {"neon", "dark", "light"} else "neon"
 
 
 def _set_auth_cookies(response, user_id: int):

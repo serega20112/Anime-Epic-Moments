@@ -104,6 +104,9 @@ def test_get_watch_page_builds_sorted_sources_and_highlight_cards(anime_factory)
     assert [item.source_id for item in page.sources] == [1, 2, 3]
     assert page.selected_source_id == 1
     assert page.selected_translation_id == 1
+    assert page.episode_total == 12
+    assert page.episode_options[:3] == [1, 2, 3]
+    assert page.episode_options[-1] == 12
     assert page.current_status == "watching"
     assert page.last_position_seconds == 75.0
     assert page.saved_volume == 0.6
@@ -137,6 +140,8 @@ def test_get_watch_page_uses_fallbacks_when_anime_and_sources_are_missing():
 
     assert page.anime_title == "Anime #999"
     assert page.anime_description == "Описание недоступно"
+    assert page.episode_total == 1
+    assert page.episode_options == [1]
     assert page.selected_source_id is None
     assert page.sources == []
     assert page.highlights == []

@@ -9,7 +9,12 @@
   container.appendChild(canvas);
 
   const particles = [];
-  const particleCount = 42;
+  const particleCount = 28;
+
+  const readParticleColor = () =>
+    getComputedStyle(document.documentElement)
+      .getPropertyValue("--particle-color")
+      .trim() || "rgba(148, 163, 184, 0.16)";
 
   const resize = () => {
     canvas.width = window.innerWidth;
@@ -19,28 +24,28 @@
   const spawnParticle = () => ({
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
-    r: 1 + Math.random() * 2.8,
-    vx: (Math.random() - 0.5) * 0.35,
-    vy: (Math.random() - 0.5) * 0.35,
+    r: 1 + Math.random() * 2.2,
+    vx: (Math.random() - 0.5) * 0.18,
+    vy: (Math.random() - 0.5) * 0.18,
   });
 
   const draw = () => {
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = "rgba(56, 189, 248, 0.75)";
+    context.fillStyle = readParticleColor();
 
-    particles.forEach((p) => {
-      p.x += p.vx;
-      p.y += p.vy;
+    particles.forEach((particle) => {
+      particle.x += particle.vx;
+      particle.y += particle.vy;
 
-      if (p.x < 0 || p.x > canvas.width) {
-        p.vx *= -1;
+      if (particle.x < 0 || particle.x > canvas.width) {
+        particle.vx *= -1;
       }
-      if (p.y < 0 || p.y > canvas.height) {
-        p.vy *= -1;
+      if (particle.y < 0 || particle.y > canvas.height) {
+        particle.vy *= -1;
       }
 
       context.beginPath();
-      context.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      context.arc(particle.x, particle.y, particle.r, 0, Math.PI * 2);
       context.fill();
     });
 
@@ -50,7 +55,7 @@
   resize();
   window.addEventListener("resize", resize);
 
-  for (let i = 0; i < particleCount; i += 1) {
+  for (let index = 0; index < particleCount; index += 1) {
     particles.push(spawnParticle());
   }
 

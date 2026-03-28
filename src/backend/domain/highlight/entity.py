@@ -18,6 +18,8 @@ class Highlight:
         episode: int,
         start_timestamp: float,
         end_timestamp: float,
+        title: str = "",
+        category: str | None = None,
         description: str = "",
         is_spoiler: bool = False,
         emotion: Optional[str] = None,
@@ -29,10 +31,13 @@ class Highlight:
         self.episode = episode
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
+        self.title = str(title or "").strip()
+        self.category = self._normalize_optional_text(category)
         self.description = description
         self.is_spoiler = is_spoiler
-        self.emotion = emotion
+        self.emotion = self._normalize_optional_text(emotion)
         self.likes_count = 0
+        self.views_count = 0
         self.created_at = created_at or datetime.utcnow()
 
         self._validate_times()
@@ -47,13 +52,19 @@ class Highlight:
         self,
         start_timestamp: float,
         end_timestamp: float,
+        title: str,
+        category: str | None,
         description: str,
         is_spoiler: bool,
+        emotion: str | None = None,
     ):
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
+        self.title = str(title or "").strip()
+        self.category = self._normalize_optional_text(category)
         self.description = description
         self.is_spoiler = is_spoiler
+        self.emotion = self._normalize_optional_text(emotion)
         self._validate_times()
 
     def add_like(self):
@@ -62,3 +73,10 @@ class Highlight:
     def remove_like(self):
         if self.likes_count > 0:
             self.likes_count -= 1
+
+    def add_view(self):
+        self.views_count += 1
+
+    def _normalize_optional_text(self, value: str | None) -> str | None:
+        text = str(value or "").strip()
+        return text or None

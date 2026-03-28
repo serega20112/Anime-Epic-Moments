@@ -122,3 +122,25 @@
     gap: 1rem;
   }
 }
+
+html[data-theme="dark"] .hero-block,
+html[data-theme="light"] .hero-block,
+html[data-theme="dark"] .anime-card,
+html[data-theme="light"] .anime-card {
+  background: var(--page-surface);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+}
+
+html[data-theme="dark"] .hero-block h1,
+html[data-theme="light"] .hero-block h1 {
+  background: none;
+  -webkit-text-fill-color: initial;
+  color: var(--text-primary);
+  text-shadow: none;
+}
+
+html[data-theme="dark"] .hero-block p,
+html[data-theme="light"] .hero-block p {
+  color: var(--text-muted);
+}

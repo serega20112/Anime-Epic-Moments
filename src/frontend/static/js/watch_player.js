@@ -590,6 +590,7 @@
       body: JSON.stringify({
         episode: config.episode,
         title: String(formData.get("title") || "").trim(),
+        category: String(formData.get("category") || "").trim(),
         start_timestamp: startTimestamp,
         end_timestamp: endTimestamp,
         description: String(formData.get("description") || "").trim(),

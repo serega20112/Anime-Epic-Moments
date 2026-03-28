@@ -42,3 +42,47 @@
   margin: 0 0 0.9rem;
   color: #bae6fd;
 }
+
+.profile-page {
+  padding-top: 128px;
+}
+
+.profile-card {
+  width: 100%;
+  background: var(--page-surface-strong);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-card h2,
+.profile-form label {
+  color: var(--text-primary);
+}
+
+.profile-avatar {
+  width: 112px;
+  height: 112px;
+  border-radius: 24px;
+  object-fit: cover;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-color);
+  background: var(--page-surface-soft);
+}
+
+.profile-form input {
+  border: 1px solid var(--input-border);
+  background: var(--input-background);
+  color: var(--text-primary);
+}
+
+.profile-actions {
+  flex-wrap: wrap;
+}
+
+.profile-actions .btn {
+  flex: 1 1 160px;
+}
+
+.profile-messages p {
+  color: var(--accent);
+}

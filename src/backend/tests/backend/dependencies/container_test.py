@@ -16,7 +16,7 @@ def _stub_class(name):
 
 
 def test_container_wires_repositories_services_and_use_cases(monkeypatch):
-    """Проверяем, что Container связывает репозитории, сервисы и use case с ожидаемыми зависимостями."""
+    """Проверяем, что Container связывает репозитории, сервисы и расширенный highlight-слой с ожидаемыми зависимостями."""
     session = object()
     monkeypatch.setattr(container_module, "get_session", lambda: session)
     monkeypatch.setattr(
@@ -29,6 +29,7 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
             hf_api_url="https://hf.example/api",
             redis_url="redis://redis:6379/0",
             redis_required=False,
+            email_verification_expire_minutes=10,
         ),
     )
 
@@ -41,8 +42,10 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         "YouTubeClient",
         "JustWatchClient",
         "PasswordResetMailer",
+        "EmailVerificationMailer",
         "PasswordService",
         "JWTService",
+        "EmailVerificationStore",
         "RateLimiter",
         "TokenBlocklist",
         "UserRepository",
@@ -56,13 +59,27 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         "LoginUserUseCase",
         "LogoutUserUseCase",
         "UpdateUserProfileUseCase",
+        "GetProfileOverviewUseCase",
+        "RequestEmailVerificationUseCase",
+        "ResendEmailVerificationUseCase",
         "RequestPasswordResetUseCase",
         "ResetPasswordUseCase",
+        "VerifyEmailUseCase",
         "CreateHighlightUseCase",
         "DeleteHighlightUseCase",
         "EditHighlightUseCase",
         "GetUserHighlightsUseCase",
         "GetPublicTopHighlightsUseCase",
+        "GetSavedHighlightsUseCase",
+        "GetLikedHighlightsUseCase",
+        "GetSharedHighlightUseCase",
+        "GetHighlightFeedUseCase",
+        "GetHighlightNotificationsUseCase",
+        "SetHighlightLikeUseCase",
+        "AddHighlightCommentUseCase",
+        "GetHighlightCommentsUseCase",
+        "GetHighlightLikersUseCase",
+        "SetSavedHighlightUseCase",
         "AddFavoriteUseCase",
         "RemoveFavoriteUseCase",
         "GetFavoritesUseCase",
@@ -100,16 +117,51 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
     )
     assert built.recommendation_cache.kwargs == {"store": built.key_value_store}
     assert built.highlight_dashboard_cache.kwargs == {"store": built.key_value_store}
+    assert built.email_verification_store.kwargs == {
+        "store": built.key_value_store,
+        "ttl_seconds": 600,
+    }
     assert built.watch_source_sync_service.args[0] is built.watch_repository
-    assert built.search_anime_use_case().args == (built.anime_api_client,)
-    assert built.get_favorites_use_case().args == (
+    assert built.request_email_verification_use_case().args == (
+        built.user_repository,
+        built.password_service,
+        built.email_verification_store,
+        built.email_verification_mailer,
+    )
+    assert built.resend_email_verification_use_case().args == (
+        built.email_verification_store,
+        built.email_verification_mailer,
+    )
+    assert built.verify_email_use_case().args == (
+        built.user_repository,
+        built.email_verification_store,
+    )
+    assert built.get_saved_highlights_use_case().args == (
+        built.highlight_repository,
+        built.anime_api_client,
+    )
+    assert built.get_profile_overview_use_case().args == (
+        built.user_repository,
+        built.highlight_repository,
+        built.anime_api_client,
+    )
+    assert built.get_liked_highlights_use_case().args == (
+        built.highlight_repository,
+        built.anime_api_client,
+    )
+    assert built.get_shared_highlight_use_case().args == (
+        built.highlight_repository,
+        built.anime_api_client,
+    )
+    assert built.get_highlight_feed_use_case().args == (
+        built.highlight_repository,
+        built.anime_api_client,
         built.favorite_repository,
-        built.anime_api_client,
     )
-    assert built.sync_watch_sources_use_case().args == (
-        built.anime_api_client,
-        built.watch_source_sync_service,
+    assert built.get_highlight_notifications_use_case().args == (
+        built.highlight_repository,
     )
+
 
 
 def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch):
@@ -126,6 +178,7 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
             hf_api_url="https://hf.example/api",
             redis_url="redis://redis:6379/0",
             redis_required=False,
+            email_verification_expire_minutes=10,
         ),
     )
 
@@ -138,8 +191,10 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
         "YouTubeClient",
         "JustWatchClient",
         "PasswordResetMailer",
+        "EmailVerificationMailer",
         "PasswordService",
         "JWTService",
+        "EmailVerificationStore",
         "RateLimiter",
         "TokenBlocklist",
         "UserRepository",
@@ -153,13 +208,27 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
         "LoginUserUseCase",
         "LogoutUserUseCase",
         "UpdateUserProfileUseCase",
+        "GetProfileOverviewUseCase",
+        "RequestEmailVerificationUseCase",
+        "ResendEmailVerificationUseCase",
         "RequestPasswordResetUseCase",
         "ResetPasswordUseCase",
+        "VerifyEmailUseCase",
         "CreateHighlightUseCase",
         "DeleteHighlightUseCase",
         "EditHighlightUseCase",
         "GetUserHighlightsUseCase",
         "GetPublicTopHighlightsUseCase",
+        "GetSavedHighlightsUseCase",
+        "GetLikedHighlightsUseCase",
+        "GetSharedHighlightUseCase",
+        "GetHighlightFeedUseCase",
+        "GetHighlightNotificationsUseCase",
+        "SetHighlightLikeUseCase",
+        "AddHighlightCommentUseCase",
+        "GetHighlightCommentsUseCase",
+        "GetHighlightLikersUseCase",
+        "SetSavedHighlightUseCase",
         "AddFavoriteUseCase",
         "RemoveFavoriteUseCase",
         "GetFavoritesUseCase",

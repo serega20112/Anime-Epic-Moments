@@ -1,9 +1,9 @@
-from src.backend.repository.highlight_repository import HighlightRepository
 from src.backend.domain.highlight.entity import Highlight
 from src.backend.domain.highlight.policy import HighlightPolicy
 from src.backend.infrastructure.cache.highlight_dashboard_cache import (
     HighlightDashboardCache,
 )
+from src.backend.repository.highlight_repository import HighlightRepository
 from src.backend.services.recommendation_service import RecommendationService
 
 
@@ -28,30 +28,30 @@ class EditHighlightUseCase:
         episode: int | None,
         start_timestamp: float,
         end_timestamp: float,
+        title: str,
+        category: str | None,
         description: str,
         is_spoiler: bool,
         emotion: str | None = None,
     ) -> Highlight:
-        """
-        Редактирует существующий хайлайт.
-        Проверяет инварианты времени и запрещённый контент.
-        """
         highlight = self.repo.get_by_id(highlight_id)
         if not highlight:
             raise ValueError("Highlight не найден")
 
-        if not HighlightPolicy.filter_spoiler_content(description):
+        if not HighlightPolicy.filter_spoiler_content(f"{title} {description}"):
             raise ValueError("Описание содержит запрещённый контент")
 
         highlight.edit(
             start_timestamp=start_timestamp,
             end_timestamp=end_timestamp,
+            title=title or highlight.title or f"Момент {highlight.episode} серии",
+            category=category,
             description=description,
             is_spoiler=is_spoiler,
+            emotion=emotion,
         )
         if episode is not None:
             highlight.episode = int(episode)
-        highlight.emotion = emotion
 
         result = self.repo.update(highlight)
         if self.recommendation_service and highlight.user_id is not None:

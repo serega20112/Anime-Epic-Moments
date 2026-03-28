@@ -91,6 +91,9 @@ class Settings:
     smtp_password: str | None = os.getenv("SMTP_PASSWORD")
     smtp_from_email: str | None = os.getenv("SMTP_FROM_EMAIL")
     smtp_use_tls: bool = os.getenv("SMTP_USE_TLS", "1") == "1"
+    email_verification_expire_minutes: int = int(
+        os.getenv("EMAIL_VERIFICATION_EXPIRE_MINUTES", "10")
+    )
     password_reset_expire_minutes: int = int(
         os.getenv("PASSWORD_RESET_EXPIRE_MINUTES", "30")
     )

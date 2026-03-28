@@ -4,66 +4,59 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.backend.domain.highlight.entity import Highlight
 from src.backend.use_case.highlight.edit_highlight import EditHighlightUseCase
 
 
 def test_edit_highlight_use_case_updates_highlight_and_invalidates_cache():
-    """Проверяем, что edit_highlight обновляет запись и сбрасывает рекомендации пользователя."""
-    repo = Mock()
+    """Проверяем, что edit_highlight обновляет title и category и инвалидирует зависимые кэши."""
+    highlight = Mock(user_id=7)
+    repo = Mock(get_by_id=Mock(return_value=highlight), update=Mock(return_value=highlight))
     recommendation_service = Mock()
-    highlight = Highlight(
-        user_id=3,
-        anime_id=18,
-        episode=1,
-        start_timestamp=5.0,
-        end_timestamp=10.0,
-        description="before",
-        is_spoiler=False,
-    )
-    highlight.id = 44
-    repo.get_by_id.return_value = highlight
-    repo.update.side_effect = lambda item: item
-    use_case = EditHighlightUseCase(repo, recommendation_service)
+    dashboard_cache = Mock()
+    use_case = EditHighlightUseCase(repo, recommendation_service, dashboard_cache)
 
     result = use_case.execute(
-        highlight_id=44,
-        episode=2,
-        start_timestamp=15.0,
-        end_timestamp=25.0,
-        description="after",
+        highlight_id=1,
+        episode=3,
+        start_timestamp=10.0,
+        end_timestamp=20.0,
+        title="new title",
+        category="бой",
+        description="new desc",
         is_spoiler=True,
-        emotion="shock",
+        emotion="hype",
     )
 
-    assert result.episode == 2
-    assert result.description == "after"
-    assert result.is_spoiler is True
-    recommendation_service.invalidate_user.assert_called_once_with(3)
+    highlight.edit.assert_called_once_with(
+        start_timestamp=10.0,
+        end_timestamp=20.0,
+        title="new title",
+        category="бой",
+        description="new desc",
+        is_spoiler=True,
+        emotion="hype",
+    )
+    assert highlight.episode == 3
+    repo.update.assert_called_once_with(highlight)
+    recommendation_service.invalidate_user.assert_called_once_with(7)
+    dashboard_cache.invalidate_public.assert_called_once()
+    assert result is highlight
 
 
 @pytest.mark.parametrize("description", ["мат", "спам"])
 def test_edit_highlight_use_case_rejects_blocked_description(description):
-    """Проверяем, что edit_highlight блокирует запрещенное описание до обновления записи."""
-    repo = Mock()
-    repo.get_by_id.return_value = Highlight(
-        user_id=1,
-        anime_id=18,
-        episode=1,
-        start_timestamp=5.0,
-        end_timestamp=10.0,
-        description="before",
-    )
-    use_case = EditHighlightUseCase(repo, Mock())
+    """Проверяем, что edit_highlight не пропускает запрещенный контент в title/description."""
+    repo = Mock(get_by_id=Mock(return_value=Mock()))
+    use_case = EditHighlightUseCase(repo, Mock(), Mock())
 
     with pytest.raises(ValueError):
         use_case.execute(
             highlight_id=1,
             episode=1,
-            start_timestamp=5.0,
-            end_timestamp=10.0,
+            start_timestamp=10.0,
+            end_timestamp=20.0,
+            title="blocked",
+            category="драма",
             description=description,
             is_spoiler=False,
         )
-
-    repo.update.assert_not_called()

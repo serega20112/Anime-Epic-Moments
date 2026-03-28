@@ -21,9 +21,14 @@ class PasswordResetMailer:
             f"Ссылка действует {Settings.password_reset_expire_minutes} минут."
         )
 
-        with smtplib.SMTP(Settings.smtp_host, Settings.smtp_port, timeout=30) as smtp:
-            if Settings.smtp_use_tls:
-                smtp.starttls()
-            if Settings.smtp_username and Settings.smtp_password:
-                smtp.login(Settings.smtp_username, Settings.smtp_password)
-            smtp.send_message(message)
+        try:
+            with smtplib.SMTP(Settings.smtp_host, Settings.smtp_port, timeout=30) as smtp:
+                if Settings.smtp_use_tls:
+                    smtp.starttls()
+                if Settings.smtp_username and Settings.smtp_password:
+                    smtp.login(Settings.smtp_username, Settings.smtp_password)
+                smtp.send_message(message)
+        except (OSError, smtplib.SMTPException) as error:
+            raise RuntimeError(
+                "Не удалось отправить письмо для сброса пароля. Проверь SMTP-настройки и сетевой доступ."
+            ) from error

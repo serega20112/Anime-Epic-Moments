@@ -2,9 +2,20 @@
 SQLAlchemy модели для приложения
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, ForeignKey
-from src.backend.infrastructure.files.database import Base
 from datetime import datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
+
+from src.backend.infrastructure.files.database import Base
 
 
 class UserModel(Base):
@@ -27,11 +38,48 @@ class HighlightModel(Base):
     episode = Column(Integer, nullable=False)
     start_timestamp = Column(Float, nullable=False)
     end_timestamp = Column(Float, nullable=False)
+    title = Column(String(120), nullable=False, default="")
+    category = Column(String(40), nullable=True)
     description = Column(String, nullable=True)
     is_spoiler = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     likes_count = Column(Integer, default=0)
+    views_count = Column(Integer, default=0)
     emotion = Column(String, nullable=True)
+
+
+class HighlightLikeModel(Base):
+    __tablename__ = "highlight_likes"
+    __table_args__ = (
+        UniqueConstraint("highlight_id", "user_id", name="uq_highlight_like"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    highlight_id = Column(Integer, ForeignKey("highlights.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class HighlightCommentModel(Base):
+    __tablename__ = "highlight_comments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    highlight_id = Column(Integer, ForeignKey("highlights.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    content = Column(String(600), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SavedHighlightModel(Base):
+    __tablename__ = "saved_highlights"
+    __table_args__ = (
+        UniqueConstraint("highlight_id", "user_id", name="uq_saved_highlight"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    highlight_id = Column(Integer, ForeignKey("highlights.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    saved_at = Column(DateTime, default=datetime.utcnow)
 
 
 class FavoriteModel(Base):

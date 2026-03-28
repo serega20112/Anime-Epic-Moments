@@ -4,9 +4,9 @@ from src.backend.domain.watch.value_object import (
     WatchPageData,
     WatchSourceCard,
 )
+from src.backend.infrastructure.external.anime_api_client import AnimeApiClient
 from src.backend.repository.highlight_repository import HighlightRepository
 from src.backend.repository.watch_repository import WatchRepository
-from src.backend.infrastructure.external.anime_api_client import AnimeApiClient
 from src.backend.services.watch_source_sync_service import WatchSourceSyncService
 
 
@@ -98,7 +98,6 @@ class GetWatchPageUseCase:
         episode_highlights = self.highlight_repo.get_by_anime_episode(
             anime_id=anime_id,
             episode=episode,
-            user_id=user_id,
         )
         highlight_contexts = {
             item.highlight_id: item
@@ -131,10 +130,16 @@ class GetWatchPageUseCase:
                 WatchHighlightCard(
                     id=item.id or 0,
                     title=(
-                        context.title
-                        if context and context.title
-                        else f"{anime.title if anime else 'Anime'} - серия {item.episode}"
+                        item.title
+                        if item.title
+                        else (
+                            context.title
+                            if context and context.title
+                            else f"{anime.title if anime else 'Anime'} - серия {item.episode}"
+                        )
                     ),
+                    category=item.category,
+                    likes_count=item.likes_count,
                     description=item.description or "",
                     start_timestamp=self._format_timestamp(item.start_timestamp),
                     end_timestamp=self._format_timestamp(item.end_timestamp),
@@ -144,6 +149,12 @@ class GetWatchPageUseCase:
                     provider_name=provider_name,
                 )
             )
+
+        episode_total = self._resolve_episode_total(
+            anime=anime,
+            sources=source_cards,
+            episode=episode,
+        )
 
         return WatchPageData(
             anime_id=anime_id,
@@ -158,6 +169,11 @@ class GetWatchPageUseCase:
             anime_rating=anime.rating if anime else None,
             genres=anime.genres if anime and anime.genres else [],
             episode=episode,
+            episode_total=episode_total,
+            episode_options=self._build_episode_options(
+                total=episode_total,
+                current_episode=episode,
+            ),
             selected_source_id=active_source.id if active_source else None,
             selected_translation_id=(
                 active_source.translation_id if active_source else None
@@ -196,3 +212,29 @@ class GetWatchPageUseCase:
             "external": 2,
         }
         return priorities.get(str(value or "").strip().lower(), 3)
+
+    def _resolve_episode_total(self, anime, sources, episode: int) -> int | None:
+        """Определяет диапазон эпизодов для episode dropdown."""
+        candidates = [max(int(episode), 1)]
+        if anime and getattr(anime, "episode_count", None):
+            candidates.append(int(anime.episode_count))
+        candidates.extend(
+            int(item.episode)
+            for item in sources
+            if getattr(item, "episode", None)
+        )
+        episode_total = max(candidates) if candidates else 1
+        return episode_total if episode_total > 0 else None
+
+    def _build_episode_options(
+        self,
+        total: int | None,
+        current_episode: int,
+    ) -> list[int]:
+        """Строит список эпизодов для select, если размер диапазона разумный."""
+        if total is None:
+            return []
+        capped_total = max(int(total), int(current_episode), 1)
+        if capped_total > 500:
+            return []
+        return list(range(1, capped_total + 1))

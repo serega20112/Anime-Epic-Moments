@@ -4,7 +4,8 @@
 
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker
+
 from src.backend.dependencies.settings import Settings
 
 Base = declarative_base()
@@ -47,11 +48,13 @@ def init_db():
     """
     Инициализирует базу данных, создавая все таблицы
     """
-    # Импортируем модели, чтобы они зарегистрировались в Base
     from src.backend.infrastructure.models.sqlalchemy_models import (
         FavoriteModel,
+        HighlightCommentModel,
         HighlightContextModel,
+        HighlightLikeModel,
         HighlightModel,
+        SavedHighlightModel,
         TranslationModel,
         UserAnimeStatusModel,
         UserModel,
@@ -63,6 +66,7 @@ def init_db():
     Base.metadata.create_all(bind=db_engine)
     _ensure_watch_source_columns(db_engine)
     _ensure_favorite_columns(db_engine)
+    _ensure_highlight_columns(db_engine)
     print("✓ Таблицы успешно созданы или уже существуют")
 
 
@@ -104,6 +108,28 @@ def _ensure_favorite_columns(db_engine: Engine | None = None):
         "description": "ALTER TABLE favorites ADD COLUMN description VARCHAR",
         "cover_url": "ALTER TABLE favorites ADD COLUMN cover_url VARCHAR",
         "genres_json": "ALTER TABLE favorites ADD COLUMN genres_json VARCHAR",
+    }
+    statements = [
+        ddl for column_name, ddl in missing_columns.items() if column_name not in existing_columns
+    ]
+    if not statements:
+        return
+    with db_engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
+def _ensure_highlight_columns(db_engine: Engine | None = None):
+    """Добавляет недостающие поля в highlights для новых карточек и шеринга."""
+    db_engine = db_engine or get_engine()
+    inspector = inspect(db_engine)
+    if "highlights" not in inspector.get_table_names():
+        return
+    existing_columns = {column["name"] for column in inspector.get_columns("highlights")}
+    missing_columns = {
+        "title": "ALTER TABLE highlights ADD COLUMN title VARCHAR NOT NULL DEFAULT ''",
+        "category": "ALTER TABLE highlights ADD COLUMN category VARCHAR",
+        "views_count": "ALTER TABLE highlights ADD COLUMN views_count INTEGER NOT NULL DEFAULT 0",
     }
     statements = [
         ddl for column_name, ddl in missing_columns.items() if column_name not in existing_columns

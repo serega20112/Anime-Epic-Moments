@@ -108,12 +108,18 @@ def test_init_db_creates_tables_and_runs_compatibility_steps(monkeypatch):
         "_ensure_favorite_columns",
         lambda engine: calls.append(("favorite", engine)),
     )
+    monkeypatch.setattr(
+        database_module,
+        "_ensure_highlight_columns",
+        lambda engine: calls.append(("highlight", engine)),
+    )
 
     database_module.init_db()
 
     assert calls[0] == ("create_all", fake_engine)
     assert ("watch", fake_engine) in calls
     assert ("favorite", fake_engine) in calls
+    assert ("highlight", fake_engine) in calls
 
 
 def test_ensure_watch_source_columns_adds_missing_source_type(monkeypatch):
@@ -152,4 +158,24 @@ def test_ensure_favorite_columns_adds_all_missing_snapshot_columns(monkeypatch):
         "ALTER TABLE favorites ADD COLUMN description VARCHAR",
         "ALTER TABLE favorites ADD COLUMN cover_url VARCHAR",
         "ALTER TABLE favorites ADD COLUMN genres_json VARCHAR",
+    ]
+
+
+def test_ensure_highlight_columns_adds_all_missing_social_columns(monkeypatch):
+    """Проверяем, что helper добавляет недостающие поля хайлайта для social-сценария."""
+    statements = []
+    fake_engine = _FakeEngine(statements)
+    fake_inspector = _FakeInspector(
+        ["highlights"],
+        {"highlights": ["id", "user_id", "anime_id", "episode"]},
+    )
+    monkeypatch.setattr(database_module, "engine", fake_engine)
+    monkeypatch.setattr(database_module, "inspect", lambda engine: fake_inspector)
+
+    database_module._ensure_highlight_columns()
+
+    assert statements == [
+        "ALTER TABLE highlights ADD COLUMN title VARCHAR NOT NULL DEFAULT ''",
+        "ALTER TABLE highlights ADD COLUMN category VARCHAR",
+        "ALTER TABLE highlights ADD COLUMN views_count INTEGER NOT NULL DEFAULT 0",
     ]

@@ -7,7 +7,7 @@ from src.backend.use_case.watch.create_watch_highlight import CreateWatchHighlig
 
 
 def test_create_watch_highlight_creates_highlight_and_context():
-    """Проверяем, что CreateWatchHighlightUseCase создает хайлайт и сохраняет playback context."""
+    """Проверяем, что CreateWatchHighlightUseCase создает хайлайт с category и сохраняет playback context."""
     create_highlight_use_case = Mock()
     create_highlight_use_case.execute.return_value = SimpleNamespace(id=33)
     watch_repo = Mock()
@@ -18,6 +18,7 @@ def test_create_watch_highlight_creates_highlight_and_context():
         anime_id=7,
         episode=2,
         title="best scene",
+        category="бой",
         start_timestamp=10.0,
         end_timestamp=20.0,
         description="great",

@@ -42,6 +42,8 @@
           href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}"
           >Мои хайлайты</a
         >
+        <a href="{{ url_for('highlight.get_highlight_feed') }}">Фид</a>
+        <a href="{{ url_for('highlight.get_liked_highlights') }}">Мои лайки</a>
         {% endif %}
       </nav>
     </header>
@@ -106,7 +108,7 @@
                   <span class="watch-kicker">Anime Epic Moments Player</span>
                   <h1>{{ watch.anime_title }}</h1>
                   <p>
-                    Эпизод {{ watch.episode }} {% if watch.anime_year %} • {{
+                    Эпизод {{ watch.episode }}{% if watch.episode_total and watch.episode_total > watch.episode %}/{{ watch.episode_total }}{% endif %} {% if watch.anime_year %} • {{
                     watch.anime_year }}{% endif %} {% if watch.anime_rating %} •
                     ★ {{ '%.1f'|format(watch.anime_rating) }}{% endif %}
                   </p>
@@ -183,6 +185,15 @@
                       method="get"
                     >
                       <label for="episode-select" class="sr-only">Эпизод</label>
+                      {% if watch.episode_options %}
+                      <select id="episode-select" name="episode" class="player-select">
+                        {% for episode_number in watch.episode_options %}
+                        <option value="{{ episode_number }}" {% if watch.episode == episode_number %}selected{% endif %}>
+                          Серия {{ episode_number }}
+                        </option>
+                        {% endfor %}
+                      </select>
+                      {% else %}
                       <input
                         type="number"
                         id="episode-select"
@@ -190,6 +201,7 @@
                         min="1"
                         value="{{ watch.episode }}"
                       />
+                      {% endif %}
                     </form>
 
                     <label for="translation-select" class="sr-only"
@@ -335,7 +347,9 @@
                 {% endif %}
                 <div class="watch-meta-stat">
                   <span>Эпизод</span>
-                  <strong>{{ watch.episode }}</strong>
+                  <strong>
+                    {{ watch.episode }}{% if watch.episode_total and watch.episode_total > watch.episode %}/{{ watch.episode_total }}{% endif %}
+                  </strong>
                 </div>
                 {% if watch.current_status %}
                 <div class="watch-meta-stat">
@@ -379,6 +393,15 @@
                 placeholder="Название хайлайта"
                 required
               />
+              <select name="category">
+                <option value="">Категория</option>
+                <option value="бой">Бой</option>
+                <option value="драма">Драма</option>
+                <option value="романтика">Романтика</option>
+                <option value="комедия">Комедия</option>
+                <option value="твист">Твист</option>
+                <option value="мотивация">Мотивация</option>
+              </select>
               <input
                 type="text"
                 name="start_timestamp"
@@ -424,6 +447,9 @@
               <article class="watch-highlight-item">
                 <div class="watch-highlight-head">
                   <h3>{{ highlight.title }}</h3>
+                  {% if highlight.category %}
+                  <span class="genre-chip">{{ highlight.category }}</span>
+                  {% endif %}
                   {% if highlight.emotion %}
                   <span class="genre-chip">{{ highlight.emotion }}</span>
                   {% endif %}
@@ -433,6 +459,8 @@
                   }}
                 </p>
                 <p>{{ highlight.description }}</p>
+                <small>{{ highlight.likes_count }} лайков</small>
+                <br />
                 <small
                   >{{ highlight.translation_name or 'Без озвучки' }} • {{
                   highlight.provider_name or 'Без источника' }}</small
@@ -472,5 +500,7 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
     <script src="{{ url_for('static', filename='js/watch_player.js') }}"></script>
+      <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
   </body>
 </html>
+

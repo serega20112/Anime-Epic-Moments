@@ -20,6 +20,8 @@ def _dashboard() -> HighlightDashboard:
                 anime_id=2,
                 anime_title="Title",
                 anime_cover=None,
+                title="Best scene",
+                category="бой",
                 episode=1,
                 start_timestamp="00:10",
                 end_timestamp="00:20",
@@ -29,12 +31,17 @@ def _dashboard() -> HighlightDashboard:
                 emotion="hype",
                 created_at="2026-03-28",
                 likes_count=0,
+                views_count=4,
+                comments_count=1,
+                is_liked=False,
+                is_saved=False,
                 watch_url="/watch/2?episode=1",
-                share_url="/highlights?highlight_id=1",
+                share_url="/highlights/share/1",
             )
         ],
         anime_groups=[HighlightAnimeGroup(anime_id=2, anime_title="Title", count=1)],
         emotions=["hype"],
+        categories=["бой"],
         stats=HighlightStats(
             total_highlights=1,
             top_anime_title="Title",
@@ -42,6 +49,8 @@ def _dashboard() -> HighlightDashboard:
         ),
         selected_anime_id=None,
         selected_emotion=None,
+        selected_category=None,
+        selected_sort="recent",
         selected_date=None,
         selected_query=None,
         include_spoilers=False,
@@ -57,6 +66,8 @@ def test_highlight_dashboard_cache_returns_saved_public_dashboard():
         limit=10,
         anime_id=None,
         emotion=None,
+        category=None,
+        sort_by="popular",
         created_date=None,
         query=None,
         include_spoilers=False,
@@ -68,6 +79,8 @@ def test_highlight_dashboard_cache_returns_saved_public_dashboard():
             limit=10,
             anime_id=None,
             emotion=None,
+            category=None,
+            sort_by="popular",
             created_date=None,
             query=None,
             include_spoilers=False,
@@ -83,6 +96,8 @@ def test_highlight_dashboard_cache_invalidates_public_dashboards():
         limit=10,
         anime_id=None,
         emotion=None,
+        category=None,
+        sort_by="recent",
         created_date=None,
         query=None,
         include_spoilers=False,
@@ -96,9 +111,70 @@ def test_highlight_dashboard_cache_invalidates_public_dashboards():
             limit=10,
             anime_id=None,
             emotion=None,
+            category=None,
+            sort_by="recent",
             created_date=None,
             query=None,
             include_spoilers=False,
         )
         is None
+    )
+
+
+def test_highlight_dashboard_cache_separates_popular_and_recent_dashboards():
+    """Проверяем, что HighlightDashboardCache не смешивает ключи popular и recent для одного набора фильтров."""
+    cache = HighlightDashboardCache(store=KeyValueStore(redis_url=None, namespace="test"))
+    popular = _dashboard()
+    recent = _dashboard()
+    popular.selected_sort = "popular"
+    recent.selected_sort = "recent"
+
+    cache.set_public(
+        limit=10,
+        anime_id=None,
+        emotion=None,
+        category=None,
+        sort_by="popular",
+        created_date=None,
+        query=None,
+        include_spoilers=False,
+        value=popular,
+    )
+    cache.set_public(
+        limit=10,
+        anime_id=None,
+        emotion=None,
+        category=None,
+        sort_by="recent",
+        created_date=None,
+        query=None,
+        include_spoilers=False,
+        value=recent,
+    )
+
+    assert (
+        cache.get_public(
+            limit=10,
+            anime_id=None,
+            emotion=None,
+            category=None,
+            sort_by="popular",
+            created_date=None,
+            query=None,
+            include_spoilers=False,
+        ).selected_sort
+        == "popular"
+    )
+    assert (
+        cache.get_public(
+            limit=10,
+            anime_id=None,
+            emotion=None,
+            category=None,
+            sort_by="recent",
+            created_date=None,
+            query=None,
+            include_spoilers=False,
+        ).selected_sort
+        == "recent"
     )

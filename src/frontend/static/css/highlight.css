@@ -303,3 +303,93 @@
     align-items: stretch;
   }
 }
+
+.empty-state,
+.highlight-card,
+.favorite-grid .anime-card,
+.highlight-group-link,
+.stat-card,
+.highlight-entry,
+.guest-highlight-panel {
+  background: var(--page-surface);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.favorite-grid .info p,
+.highlight-description,
+.guest-highlight-panel p {
+  color: var(--text-secondary);
+}
+
+.btn-heart,
+.btn-edit,
+.btn-delete,
+.btn-spoiler {
+  background: var(--button-subtle-bg);
+  border: 1px solid var(--button-subtle-border);
+  color: var(--button-subtle-color);
+}
+
+.btn-heart.liked {
+  background: var(--success-soft);
+  box-shadow: none;
+  color: var(--text-primary);
+}
+
+.btn-delete {
+  border-color: var(--danger-border);
+}
+
+.btn-spoiler {
+  background: var(--accent-soft);
+  border-color: var(--border-strong);
+}
+
+.highlight-group-link,
+.stat-card,
+.highlight-entry {
+  color: var(--text-primary);
+}
+
+.highlight-group-link strong,
+.highlight-like-badge {
+  color: var(--accent);
+}
+
+.stat-card span,
+.highlight-meta-line {
+  color: var(--text-muted);
+}
+
+.highlight-entry {
+  grid-template-columns: minmax(132px, 164px) minmax(0, 1fr);
+}
+
+.highlight-entry img {
+  height: 220px;
+  background: var(--page-surface-soft);
+}
+
+.highlight-entry-head {
+  align-items: flex-start;
+}
+
+.spoiler-veil {
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+}
+
+.filter-checkbox {
+  color: var(--text-secondary);
+}
+
+.guest-highlight-panel {
+  background: var(--page-surface-soft);
+}
+
+@media (max-width: 900px) {
+  .highlight-entry img {
+    height: 280px;
+  }
+}
