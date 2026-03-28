@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ collection.collection.title }} - коллекция AEM</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="logo">AEM</div>
+      <nav>
+        <a href="{{ url_for('index.index') }}">Главная</a>
+      </nav>
+    </header>
+
+    <main class="search-page profile-page">
+      <section class="search-shell highlight-dashboard">
+        <section class="results-panel">
+          <section class="feed-section-block">
+            <div class="results-head">
+              <div>
+                <h1>{{ collection.collection.title }}</h1>
+                <p class="filters-subtitle">{{ collection.collection.description }}</p>
+              </div>
+            </div>
+            <p class="filters-subtitle">
+              {{ collection.collection.items_count }} аниме · создана {{ collection.collection.created_at }}
+            </p>
+            <div class="highlight-feed">
+              {% for item in collection.items %}
+              <article class="highlight-entry">
+                <div class="highlight-entry-body">
+                  <div class="highlight-entry-head">
+                    <h3>{{ item.title }}</h3>
+                    <span class="highlight-like-badge">{{ item.genres|join(', ') }}</span>
+                  </div>
+                  <p class="highlight-meta-line">{{ item.description }}</p>
+                  <div class="result-actions">
+                    <a class="btn neon-blue btn-watch" href="{{ item.watch_url }}">Открыть</a>
+                  </div>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+  </body>
+</html>
