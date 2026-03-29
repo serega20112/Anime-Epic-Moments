@@ -55,17 +55,20 @@ def watch_page(anime_id: int):
     return render_template("anime/watch.html", watch=data, discussion=discussion)
 
 
-@watch_bp.route("/proxy", methods=["GET"])
+@watch_bp.route("/proxy", methods=["GET", "HEAD"])
 def proxy_stream():
     upstream_url = str(request.args.get("url") or "").strip()
     if not _is_allowed_media_url(upstream_url):
         abort(403)
+    request_headers = {"User-Agent": _browser_user_agent()}
+    if request.headers.get("Range"):
+        request_headers["Range"] = request.headers["Range"]
     try:
         upstream_response = _proxy_media_session.get(
             upstream_url,
             timeout=30,
             stream=True,
-            headers={"User-Agent": _browser_user_agent()},
+            headers=request_headers,
         )
         upstream_response.raise_for_status()
     except requests.RequestException:
@@ -73,6 +76,7 @@ def proxy_stream():
         return jsonify({"error": "stream_unavailable"}), 502
 
     content_type = str(upstream_response.headers.get("Content-Type") or "").lower()
+    upstream_status = int(getattr(upstream_response, "status_code", 200) or 200)
     if _is_hls_manifest(upstream_url=upstream_url, content_type=content_type):
         manifest_text = upstream_response.text
         upstream_response.close()
@@ -83,6 +87,7 @@ def proxy_stream():
         return Response(
             proxied_manifest,
             content_type="application/vnd.apple.mpegurl",
+            status=upstream_status,
         )
 
     response_headers = {}
@@ -92,6 +97,8 @@ def proxy_stream():
         response_headers["Content-Length"] = upstream_response.headers["Content-Length"]
     if upstream_response.headers.get("Accept-Ranges"):
         response_headers["Accept-Ranges"] = upstream_response.headers["Accept-Ranges"]
+    if upstream_response.headers.get("Content-Range"):
+        response_headers["Content-Range"] = upstream_response.headers["Content-Range"]
 
     def generate():
         try:
@@ -104,6 +111,7 @@ def proxy_stream():
     return Response(
         stream_with_context(generate()),
         headers=response_headers,
+        status=upstream_status,
     )
 
 

@@ -76,6 +76,11 @@ class Settings:
     flask_debug: bool = os.getenv("FLASK_DEBUG", "0") == "1"
     max_request_bytes: int = int(os.getenv("MAX_REQUEST_BYTES", "1048576"))
     app_base_url: str = os.getenv("APP_BASE_URL", "http://127.0.0.1:5000")
+    app_allowed_origins: list[str] = [
+        item.strip()
+        for item in os.getenv("APP_ALLOWED_ORIGINS", "").split(",")
+        if item.strip()
+    ]
     cookie_secure: bool = os.getenv("COOKIE_SECURE", "0") == "1"
     cookie_samesite: str = os.getenv("COOKIE_SAMESITE", "Lax")
     cookie_domain: str | None = os.getenv("COOKIE_DOMAIN") or None

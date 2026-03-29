@@ -22,9 +22,17 @@
 .profile-form {
   display: grid;
   gap: 0.8rem;
+  min-width: 0;
 }
 
-.profile-form input {
+.profile-form input,
+.profile-form select,
+.profile-form textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 0.7rem 0.9rem;
   border-radius: 10px;
   border: 1px solid #394b68;
@@ -69,7 +77,9 @@
   background: var(--page-surface-soft);
 }
 
-.profile-form input {
+.profile-form input,
+.profile-form select,
+.profile-form textarea {
   border: 1px solid var(--input-border);
   background: var(--input-background);
   color: var(--text-primary);
@@ -275,7 +285,11 @@
 }
 
 .profile-ai-form input {
+  display: block;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
   padding: 0.8rem 0.9rem;
   border-radius: 14px;
   border: 1px solid var(--input-border);

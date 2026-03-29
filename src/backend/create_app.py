@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.parse import urlparse
 
 import jwt
 from flask import Flask, current_app, g, request, render_template, jsonify
@@ -122,10 +123,14 @@ def create_app():
         response.headers.setdefault(
             "Content-Security-Policy",
             "default-src 'self'; "
-            "img-src 'self' data: https:; "
-            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https: blob:; "
+            "style-src 'self' 'unsafe-inline' https:; "
+            "style-src-elem 'self' 'unsafe-inline' https:; "
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
             "connect-src 'self' https:; "
+            "media-src 'self' https: blob:; "
+            "worker-src 'self' blob:; "
+            "frame-src 'self' https:; "
             "font-src 'self' data: https:; "
             "frame-ancestors 'none'; "
             "base-uri 'self'; "
@@ -148,11 +153,40 @@ def create_app():
 def _is_cross_origin_write_request() -> bool:
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return False
-    source = request.headers.get("Origin") or request.headers.get("Referer")
+    source = _extract_request_origin()
     if not source:
         return False
-    expected_base = Settings.app_base_url.rstrip("/")
-    return not str(source).startswith(expected_base)
+    return source not in _get_allowed_origins()
+
+
+def _extract_request_origin() -> str | None:
+    source = request.headers.get("Origin") or request.headers.get("Referer")
+    if not source:
+        return None
+    parsed = urlparse(str(source).strip())
+    if not parsed.scheme or not parsed.netloc:
+        return None
+    return f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
+
+
+def _normalize_origin(value: str | None) -> str | None:
+    parsed = urlparse(str(value or "").strip())
+    if not parsed.scheme or not parsed.netloc:
+        return None
+    return f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
+
+
+def _get_allowed_origins() -> set[str]:
+    allowed = {
+        origin
+        for origin in (
+            _normalize_origin(request.host_url),
+            _normalize_origin(Settings.app_base_url),
+            *(_normalize_origin(item) for item in Settings.app_allowed_origins),
+        )
+        if origin
+    }
+    return allowed
 
 
 def _is_static_request() -> bool:

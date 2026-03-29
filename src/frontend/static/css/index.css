@@ -80,6 +80,46 @@
   padding: 0 1.2rem 2rem;
 }
 
+.recommendations,
+.popular-section {
+  width: min(100%, 1400px);
+  margin: 0 auto;
+  padding: 0 1.2rem;
+}
+
+.index-results-grid {
+  margin-top: 1.2rem;
+}
+
+.index-result-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  text-align: left;
+}
+
+.index-result-card .result-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.index-result-card p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  min-height: calc(1.45em * 5);
+}
+
+.index-result-card .result-meta {
+  margin-top: auto;
+}
+
+.index-result-card .result-actions {
+  margin-top: 0.85rem;
+}
+
 .anime-card {
   width: 280px;
   background: rgba(16, 18, 36, 0.7);
@@ -107,6 +147,11 @@
   .hero-block {
     padding: 1.2rem 0.5rem;
     max-width: 98vw;
+  }
+
+  .recommendations,
+  .popular-section {
+    padding: 0 0.6rem;
   }
 
   .hero-block h1 {

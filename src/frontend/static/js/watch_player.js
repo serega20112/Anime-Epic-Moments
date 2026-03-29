@@ -99,6 +99,7 @@
   };
 
   const showPlayerStatus = (title, text) => {
+    console.warn("[WATCH_PLAYER]", title, text);
     if (playerStatusTitle) {
       playerStatusTitle.textContent = title;
     }
@@ -406,12 +407,16 @@
     if (isHlsStream && window.Hls && window.Hls.isSupported()) {
       hlsInstance = new window.Hls();
       hlsInstance.on(window.Hls.Events.ERROR, (_event, data) => {
+        console.error("[WATCH_PLAYER_HLS_ERROR]", data);
         if (!data || !data.fatal) {
           return;
         }
+        const reason = [data.type, data.details].filter(Boolean).join(": ");
         showPlayerStatus(
           "Поток не открылся",
-          "Серия не загрузилась через HLS. Попробуй другой источник или обнови список источников.",
+          reason
+            ? `HLS ошибка: ${reason}. Попробуй другой источник или обнови список источников.`
+            : "Серия не загрузилась через HLS. Попробуй другой источник или обнови список источников.",
         );
       });
       hlsInstance.loadSource(proxiedStreamUrl);
@@ -763,9 +768,17 @@
   video?.addEventListener("loadedmetadata", updateTimeline);
   video?.addEventListener("loadedmetadata", hidePlayerStatus);
   video?.addEventListener("error", () => {
+    const mediaErrorCode = Number(video?.error?.code || 0);
+    const mediaReasonMap = {
+      1: "Загрузка видео была прервана.",
+      2: "Сетевая ошибка при загрузке потока.",
+      3: "Ошибка декодирования потока.",
+      4: "Браузер не поддерживает формат потока.",
+    };
     showPlayerStatus(
       "Видео не загрузилось",
-      "Плеер не смог открыть поток. Попробуй сменить качество, озвучку или обновить источники.",
+      mediaReasonMap[mediaErrorCode] ||
+        "Плеер не смог открыть поток. Попробуй сменить качество, озвучку или обновить источники.",
     );
   });
 

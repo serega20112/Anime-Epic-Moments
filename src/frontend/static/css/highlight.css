@@ -214,6 +214,7 @@
 
 .highlight-entry-body {
   min-width: 0;
+  overflow: hidden;
 }
 
 .highlight-entry-head {
@@ -224,9 +225,14 @@
   margin-bottom: 0.5rem;
 }
 
+.highlight-entry-head > div {
+  min-width: 0;
+}
+
 .highlight-entry-head h3 {
   margin: 0;
   font-size: 1.15rem;
+  overflow-wrap: anywhere;
 }
 
 .highlight-like-badge {
@@ -238,11 +244,13 @@
   margin: 0 0 0.65rem;
   color: #93c5fd;
   font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 
 .highlight-description {
   color: #dbeafe;
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .highlight-description.is-hidden {
@@ -373,6 +381,23 @@
 
 .highlight-entry-head {
   align-items: flex-start;
+}
+
+.highlight-entry .result-actions {
+  min-width: 0;
+  width: 100%;
+}
+
+.highlight-entry .result-actions .btn,
+.highlight-entry .result-actions .btn-watch,
+.highlight-entry .result-actions .btn-favorite {
+  min-width: 0;
+}
+
+.highlight-comments-panel,
+.highlight-comments-list,
+.highlight-comment-form {
+  min-width: 0;
 }
 
 .spoiler-veil {

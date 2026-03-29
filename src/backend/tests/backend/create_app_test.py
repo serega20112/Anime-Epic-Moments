@@ -112,10 +112,14 @@ def test_create_app_adds_security_headers(monkeypatch):
     app = create_app_module.create_app()
 
     response = app.test_client().get("/")
+    csp = response.headers["Content-Security-Policy"]
 
     assert response.headers["X-Frame-Options"] == "DENY"
     assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert "Content-Security-Policy" in response.headers
+    assert "media-src 'self' https: blob:" in csp
+    assert "worker-src 'self' blob:" in csp
+    assert "frame-src 'self' https:" in csp
 
 
 def test_create_app_clears_invalid_access_cookie_without_traceback(monkeypatch, caplog):
@@ -170,3 +174,63 @@ def test_create_app_skips_access_token_processing_for_static_requests(monkeypatc
 
     assert response.status_code in {200, 304}
     assert decode_calls == []
+
+
+def test_create_app_allows_write_requests_from_current_host_origin(monkeypatch):
+    """Проверяем, что POST с origin текущего host не блокируется даже без совпадения с APP_BASE_URL."""
+    monkeypatch.setattr(create_app_module, "init_db", lambda: None)
+    monkeypatch.setattr(create_app_module.Settings, "database_auto_init", False)
+    monkeypatch.setattr(
+        create_app_module.Settings,
+        "app_base_url",
+        "http://127.0.0.1:5000",
+    )
+    monkeypatch.setattr(
+        create_app_module.Settings,
+        "app_allowed_origins",
+        [],
+    )
+    app = create_app_module.create_app()
+
+    @app.route("/_post-ok", methods=["POST"])
+    def _post_ok():
+        return "ok"
+
+    response = app.test_client().post(
+        "/_post-ok",
+        base_url="http://192.168.0.111:5000",
+        headers={"Origin": "http://192.168.0.111:5000"},
+    )
+
+    assert response.status_code == 200
+    assert response.get_data(as_text=True) == "ok"
+
+
+def test_create_app_blocks_write_requests_from_foreign_origin(monkeypatch):
+    """Проверяем, что POST с чужого origin остается заблокированным."""
+    monkeypatch.setattr(create_app_module, "init_db", lambda: None)
+    monkeypatch.setattr(create_app_module.Settings, "database_auto_init", False)
+    monkeypatch.setattr(
+        create_app_module.Settings,
+        "app_base_url",
+        "http://127.0.0.1:5000",
+    )
+    monkeypatch.setattr(
+        create_app_module.Settings,
+        "app_allowed_origins",
+        [],
+    )
+    app = create_app_module.create_app()
+
+    @app.route("/_post-forbidden", methods=["POST"])
+    def _post_forbidden():
+        return "ok"
+
+    response = app.test_client().post(
+        "/_post-forbidden",
+        base_url="http://192.168.0.111:5000",
+        headers={"Origin": "http://evil.example.com"},
+    )
+
+    assert response.status_code == 403
+    assert response.get_json() == {"error": "forbidden_origin"}

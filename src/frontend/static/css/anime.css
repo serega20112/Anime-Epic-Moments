@@ -40,6 +40,10 @@
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
 }
 
+.search-autocomplete[hidden] {
+  display: none !important;
+}
+
 .autocomplete-item {
   display: grid;
   grid-template-columns: 52px 1fr;
@@ -367,8 +371,12 @@
 .search-shell {
   width: min(100%, 1400px);
   margin: 0 auto;
-  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
   align-items: start;
+}
+
+.search-shell > * {
+  min-width: 0;
 }
 
 .filters-panel,
@@ -383,6 +391,18 @@
 
 .filters-panel,
 .results-panel {
+  min-width: 0;
+}
+
+.filters-panel {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.description-search-form,
+.filter-control,
+.search-actions {
   min-width: 0;
 }
 
@@ -405,8 +425,14 @@
 .filter-control select,
 .filter-control input[type="text"],
 .filter-control input[type="number"],
+.filter-control input[type="date"],
 .manual-add-form input,
 .manual-add-form textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   border: 1px solid var(--input-border);
   background: var(--input-background);
   color: var(--text-primary);
@@ -458,6 +484,20 @@
 .result-actions {
   flex-wrap: wrap;
   align-items: stretch;
+}
+
+.search-actions {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.search-actions .btn,
+.search-actions .btn-watch,
+.search-actions .btn-favorite,
+.search-actions a,
+.search-actions button {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .result-actions .btn,
