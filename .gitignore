@@ -25,3 +25,5 @@ htmlcov/
 build/alembic/alembic/
 build/alembic/versions/*.py
 build/alembic/versions/__pycache__/
+build/load/results/
+build/load/users.csv
