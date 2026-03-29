@@ -2,6 +2,7 @@ from src.backend.infrastructure.cache.highlight_dashboard_cache import (
     HighlightDashboardCache,
 )
 from src.backend.infrastructure.external.anime_api_client import AnimeApiClient
+from src.backend.infrastructure.repositories.user_repository import UserRepository
 from src.backend.repository.highlight_repository import HighlightRepository
 from src.backend.use_case.highlight.get_user_highlights import GetUserHighlightsUseCase
 
@@ -14,8 +15,9 @@ class GetPublicTopHighlightsUseCase(GetUserHighlightsUseCase):
         repo: HighlightRepository,
         anime_api_client: AnimeApiClient,
         highlight_dashboard_cache: HighlightDashboardCache | None = None,
+        user_repo: UserRepository | None = None,
     ):
-        super().__init__(repo, anime_api_client)
+        super().__init__(repo, anime_api_client, user_repo=user_repo)
         self.highlight_dashboard_cache = highlight_dashboard_cache
 
     def execute(

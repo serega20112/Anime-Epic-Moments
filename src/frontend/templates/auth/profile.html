@@ -70,6 +70,14 @@
               <span>Главный вайб</span>
               <strong>{{ profile_overview.smart_profile.dominant_mood.label }}</strong>
             </div>
+            <div class="stat-card">
+              <span>Подписчики</span>
+              <strong>{{ profile_overview.followers_count }}</strong>
+            </div>
+            <div class="stat-card">
+              <span>Подписки</span>
+              <strong>{{ profile_overview.following_count }}</strong>
+            </div>
           </section>
 
           <section class="highlight-sidebar smart-profile-panel">
@@ -104,6 +112,14 @@
               </a>
               <a class="highlight-group-link" href="{{ url_for('highlight.get_saved_highlights', sort='popular') }}">
                 <span>Сохраненные по ценности</span>
+                <strong>Открыть</strong>
+              </a>
+              <a class="highlight-group-link" href="{{ url_for('highlight.get_following_highlights') }}">
+                <span>Лента подписок</span>
+                <strong>{{ profile_overview.following_count }}</strong>
+              </a>
+              <a class="highlight-group-link" href="{{ url_for('user.public_profile_page', user_id=profile_user.id) }}">
+                <span>Публичный профиль</span>
                 <strong>Открыть</strong>
               </a>
               <a class="highlight-group-link" href="{{ url_for('highlight.get_highlight_notifications') }}">

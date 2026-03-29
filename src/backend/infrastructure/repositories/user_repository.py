@@ -1,7 +1,10 @@
-from sqlalchemy.orm import Session
-from src.backend.infrastructure.models.sqlalchemy_models import UserModel
-from src.backend.domain.user.entity import User
 from typing import Optional
+
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from src.backend.domain.user.entity import User
+from src.backend.infrastructure.models.sqlalchemy_models import UserFollowModel, UserModel
 
 
 class UserRepository:
@@ -25,27 +28,23 @@ class UserRepository:
         db_user = self.session.query(UserModel).filter_by(id=user_id).first()
         if not db_user:
             return None
-        return User(
-            id=db_user.id,
-            email=db_user.email,
-            username=db_user.username,
-            password_hash=db_user.password_hash,
-            avatar_url=db_user.avatar_url,
-            created_at=db_user.created_at,
-        )
+        return self._to_entity(db_user)
 
     def get_by_email(self, email: str) -> Optional[User]:
         db_user = self.session.query(UserModel).filter_by(email=email).first()
         if not db_user:
             return None
-        return User(
-            id=db_user.id,
-            email=db_user.email,
-            username=db_user.username,
-            password_hash=db_user.password_hash,
-            avatar_url=db_user.avatar_url,
-            created_at=db_user.created_at,
+        return self._to_entity(db_user)
+
+    def get_by_ids(self, user_ids: list[int]) -> list[User]:
+        if not user_ids:
+            return []
+        rows = (
+            self.session.query(UserModel)
+            .filter(UserModel.id.in_(user_ids))
+            .all()
         )
+        return [self._to_entity(row) for row in rows]
 
     def update(self, user: User) -> User:
         """Обновляет username и avatar_url пользователя."""
@@ -64,6 +63,111 @@ class UserRepository:
             raise ValueError("Пользователь для обновления не найден")
         db_user.password_hash = password_hash
         self.session.commit()
+        return self._to_entity(db_user)
+
+    def follow(self, follower_user_id: int, followed_user_id: int) -> bool:
+        if follower_user_id == followed_user_id:
+            raise ValueError("Нельзя подписаться на самого себя")
+        existing = (
+            self.session.query(UserFollowModel)
+            .filter_by(
+                follower_user_id=follower_user_id,
+                followed_user_id=followed_user_id,
+            )
+            .first()
+        )
+        if existing is None:
+            self.session.add(
+                UserFollowModel(
+                    follower_user_id=follower_user_id,
+                    followed_user_id=followed_user_id,
+                )
+            )
+            self.session.commit()
+        return True
+
+    def unfollow(self, follower_user_id: int, followed_user_id: int) -> bool:
+        if follower_user_id == followed_user_id:
+            raise ValueError("Нельзя отписаться от самого себя")
+        existing = (
+            self.session.query(UserFollowModel)
+            .filter_by(
+                follower_user_id=follower_user_id,
+                followed_user_id=followed_user_id,
+            )
+            .first()
+        )
+        if existing is not None:
+            self.session.delete(existing)
+            self.session.commit()
+        return False
+
+    def is_following(self, follower_user_id: int, followed_user_id: int) -> bool:
+        if follower_user_id == followed_user_id:
+            return False
+        return (
+            self.session.query(UserFollowModel.id)
+            .filter_by(
+                follower_user_id=follower_user_id,
+                followed_user_id=followed_user_id,
+            )
+            .first()
+            is not None
+        )
+
+    def get_follow_stats(self, user_id: int) -> tuple[int, int]:
+        followers_count = (
+            self.session.query(func.count(UserFollowModel.id))
+            .filter(UserFollowModel.followed_user_id == user_id)
+            .scalar()
+            or 0
+        )
+        following_count = (
+            self.session.query(func.count(UserFollowModel.id))
+            .filter(UserFollowModel.follower_user_id == user_id)
+            .scalar()
+            or 0
+        )
+        return int(followers_count), int(following_count)
+
+    def get_followed_user_ids(self, follower_user_id: int) -> list[int]:
+        rows = (
+            self.session.query(UserFollowModel.followed_user_id)
+            .filter(UserFollowModel.follower_user_id == follower_user_id)
+            .order_by(UserFollowModel.created_at.desc())
+            .all()
+        )
+        return [int(value) for (value,) in rows]
+
+    def get_followed_users(self, follower_user_id: int, limit: int = 12) -> list[User]:
+        rows = (
+            self.session.query(UserModel)
+            .join(
+                UserFollowModel,
+                UserFollowModel.followed_user_id == UserModel.id,
+            )
+            .filter(UserFollowModel.follower_user_id == follower_user_id)
+            .order_by(UserFollowModel.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [self._to_entity(row) for row in rows]
+
+    def get_followers(self, followed_user_id: int, limit: int = 12) -> list[User]:
+        rows = (
+            self.session.query(UserModel)
+            .join(
+                UserFollowModel,
+                UserFollowModel.follower_user_id == UserModel.id,
+            )
+            .filter(UserFollowModel.followed_user_id == followed_user_id)
+            .order_by(UserFollowModel.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [self._to_entity(row) for row in rows]
+
+    def _to_entity(self, db_user: UserModel) -> User:
         return User(
             id=db_user.id,
             email=db_user.email,

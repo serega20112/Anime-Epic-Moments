@@ -2,6 +2,7 @@ from collections import Counter
 
 from src.backend.domain.highlight.value_object import HighlightAnimeGroup, HighlightFeedPage
 from src.backend.infrastructure.external.anime_api_client import AnimeApiClient
+from src.backend.infrastructure.repositories.user_repository import UserRepository
 from src.backend.repository.favorite_repository import FavoriteRepository
 from src.backend.repository.highlight_repository import HighlightRepository
 from src.backend.use_case.highlight.get_user_highlights import GetUserHighlightsUseCase
@@ -15,8 +16,9 @@ class GetHighlightFeedUseCase(GetUserHighlightsUseCase):
         repo: HighlightRepository,
         anime_api_client: AnimeApiClient,
         favorite_repo: FavoriteRepository,
+        user_repo: UserRepository | None = None,
     ):
-        super().__init__(repo, anime_api_client)
+        super().__init__(repo, anime_api_client, user_repo=user_repo)
         self.favorite_repo = favorite_repo
 
     def execute(

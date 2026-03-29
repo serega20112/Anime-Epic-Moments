@@ -219,6 +219,8 @@ def test_profile_page_requires_authenticated_user(
                         achievements=[],
                         ai_taste_summary="summary",
                     ),
+                    followers_count=0,
+                    following_count=0,
                 )
             )
         ),

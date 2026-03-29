@@ -25,6 +25,10 @@ class HighlightCard:
     is_saved: bool
     watch_url: str
     share_url: str
+    owner_user_id: int | None = None
+    owner_username: str | None = None
+    owner_avatar_url: str | None = None
+    owner_profile_url: str | None = None
 
 
 @dataclass

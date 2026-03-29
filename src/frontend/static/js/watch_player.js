@@ -77,6 +77,21 @@
   const buildProxyUrl = (streamUrl) =>
     `/watch/proxy?url=${encodeURIComponent(String(streamUrl || "").trim())}`;
 
+  const getPreferredStartSeconds = () =>
+    Math.max(Number(config.preferredStartSeconds || 0), 0);
+
+  const getResumePositionSeconds = () => {
+    const currentTime = Number(video?.currentTime || 0);
+    if (currentTime > 0) {
+      return currentTime;
+    }
+    const preferredStart = getPreferredStartSeconds();
+    if (preferredStart > 0) {
+      return preferredStart;
+    }
+    return Math.max(Number(config.lastPositionSeconds || 0), 0);
+  };
+
   const getSelectedSource = () =>
     allSources.find(
       (item) => Number(item.source_id) === Number(config.selectedSourceId),
@@ -380,7 +395,7 @@
     clearExternalSource();
     hidePlayerStatus();
     video.hidden = false;
-    const currentTime = video.currentTime || config.lastPositionSeconds || 0;
+    const currentTime = getResumePositionSeconds();
     if (hlsInstance) {
       hlsInstance.destroy();
       hlsInstance = null;
@@ -840,20 +855,6 @@
       config.selectedTranslationId = Number(translationSelect.value);
     }
     syncQualityOptions();
-  }
-
-  if (video && config.lastPositionSeconds > 0) {
-    video.addEventListener(
-      "loadedmetadata",
-      () => {
-        if (!isStreamSource(getSelectedSource())) {
-          return;
-        }
-        video.currentTime = config.lastPositionSeconds;
-        updateTimeline();
-      },
-      { once: true },
-    );
   }
 
   if (playerShell && playerOverlay) {

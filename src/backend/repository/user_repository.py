@@ -28,3 +28,35 @@ class UserRepository(ABC):
     @abstractmethod
     def update_password(self, user_id: int, password_hash: str) -> User:
         """Обновляет пароль существующего пользователя"""
+
+    @abstractmethod
+    def get_by_ids(self, user_ids: list[int]) -> list[User]:
+        """Возвращает пользователей по списку id."""
+
+    @abstractmethod
+    def follow(self, follower_user_id: int, followed_user_id: int) -> bool:
+        """Создает подписку пользователя на другого пользователя."""
+
+    @abstractmethod
+    def unfollow(self, follower_user_id: int, followed_user_id: int) -> bool:
+        """Удаляет подписку пользователя на другого пользователя."""
+
+    @abstractmethod
+    def is_following(self, follower_user_id: int, followed_user_id: int) -> bool:
+        """Проверяет, подписан ли пользователь на другого пользователя."""
+
+    @abstractmethod
+    def get_follow_stats(self, user_id: int) -> tuple[int, int]:
+        """Возвращает количество подписчиков и подписок пользователя."""
+
+    @abstractmethod
+    def get_followed_user_ids(self, follower_user_id: int) -> list[int]:
+        """Возвращает список id пользователей, на которых оформлена подписка."""
+
+    @abstractmethod
+    def get_followed_users(self, follower_user_id: int, limit: int = 12) -> list[User]:
+        """Возвращает пользователей, на которых оформлена подписка."""
+
+    @abstractmethod
+    def get_followers(self, followed_user_id: int, limit: int = 12) -> list[User]:
+        """Возвращает пользователей, которые подписаны на target-пользователя."""

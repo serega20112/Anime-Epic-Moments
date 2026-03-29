@@ -92,3 +92,50 @@ def test_user_repository_raises_for_missing_user_on_update(db_session, action):
 
     with pytest.raises(ValueError):
         action(repo)
+
+
+@pytest.mark.parametrize("follow_action", ["follow", "unfollow"])
+def test_user_repository_manages_follow_relationships(db_session, follow_action):
+    """Проверяем, что UserRepository создает и удаляет подписки, а также считает follower/following stats."""
+    repo = UserRepository(db_session)
+    follower = repo.add(
+        User(
+            email="follower@example.com",
+            username="follower",
+            password_hash="hash-1",
+        )
+    )
+    followed = repo.add(
+        User(
+            email="followed@example.com",
+            username="followed",
+            password_hash="hash-2",
+        )
+    )
+
+    repo.follow(follower.id, followed.id)
+    if follow_action == "unfollow":
+        repo.unfollow(follower.id, followed.id)
+
+    followers_count, following_count = repo.get_follow_stats(followed.id)
+    followed_user_ids = repo.get_followed_user_ids(follower.id)
+
+    assert repo.is_following(follower.id, followed.id) is (follow_action == "follow")
+    assert followed_user_ids == ([followed.id] if follow_action == "follow" else [])
+    assert followers_count == (1 if follow_action == "follow" else 0)
+    assert following_count == 0
+
+
+def test_user_repository_rejects_self_follow(db_session):
+    """Проверяем, что UserRepository не позволяет подписаться на самого себя."""
+    repo = UserRepository(db_session)
+    user = repo.add(
+        User(
+            email="self@example.com",
+            username="self-user",
+            password_hash="hash-1",
+        )
+    )
+
+    with pytest.raises(ValueError):
+        repo.follow(user.id, user.id)

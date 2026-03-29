@@ -13,6 +13,7 @@ def test_highlight_repository_is_abstract_and_declares_expected_methods():
         "delete",
         "get_by_id",
         "get_by_user",
+        "get_by_users",
         "get_public_top",
         "get_public_recent",
         "get_by_anime_episode",

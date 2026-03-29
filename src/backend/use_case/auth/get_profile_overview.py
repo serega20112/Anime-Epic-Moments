@@ -37,14 +37,17 @@ class GetProfileOverviewUseCase:
         self.recent_highlights_use_case = GetUserHighlightsUseCase(
             highlight_repo,
             anime_api_client,
+            user_repo=user_repo,
         )
         self.liked_highlights_use_case = GetLikedHighlightsUseCase(
             highlight_repo,
             anime_api_client,
+            user_repo=user_repo,
         )
         self.saved_highlights_use_case = GetSavedHighlightsUseCase(
             highlight_repo,
             anime_api_client,
+            user_repo=user_repo,
         )
         self.anime_api_client = anime_api_client
         self.hf_llm_client = hf_llm_client
@@ -110,6 +113,7 @@ class GetProfileOverviewUseCase:
         )
         summary = self.highlight_repo.get_profile_summary(user_id)
         recent_activity = self.highlight_repo.get_recent_activity(user_id, limit=8)
+        followers_count, following_count = self.user_repo.get_follow_stats(user_id)
         smart_profile = SmartProfile(
             favorite_genres=favorite_genres,
             dominant_mood=mood,
@@ -149,6 +153,8 @@ class GetProfileOverviewUseCase:
             saved_highlights=saved_dashboard.items[:4],
             recent_activity=recent_activity,
             smart_profile=smart_profile,
+            followers_count=followers_count,
+            following_count=following_count,
         )
 
     def _load_anime_map(self, favorites, own_highlights, watched_stats) -> dict[int, object | None]:

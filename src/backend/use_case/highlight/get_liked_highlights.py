@@ -1,4 +1,5 @@
 from src.backend.infrastructure.external.anime_api_client import AnimeApiClient
+from src.backend.infrastructure.repositories.user_repository import UserRepository
 from src.backend.repository.highlight_repository import HighlightRepository
 from src.backend.use_case.highlight.get_user_highlights import GetUserHighlightsUseCase
 
@@ -6,8 +7,13 @@ from src.backend.use_case.highlight.get_user_highlights import GetUserHighlights
 class GetLikedHighlightsUseCase(GetUserHighlightsUseCase):
     """Возвращает дашборд хайлайтов, которые пользователь лайкнул."""
 
-    def __init__(self, repo: HighlightRepository, anime_api_client: AnimeApiClient):
-        super().__init__(repo, anime_api_client)
+    def __init__(
+        self,
+        repo: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        user_repo: UserRepository | None = None,
+    ):
+        super().__init__(repo, anime_api_client, user_repo=user_repo)
 
     def execute(
         self,

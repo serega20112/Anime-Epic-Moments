@@ -12,6 +12,14 @@
       <div>
         <h3>{{ item.title }}</h3>
         <p class="highlight-meta-line">{{ item.anime_title }} • Серия {{ item.episode }}</p>
+        {% if item.owner_username %}
+        <p class="highlight-owner-line">
+          Автор:
+          <a href="{{ item.owner_profile_url or '#' }}">
+            @{{ item.owner_username }}
+          </a>
+        </p>
+        {% endif %}
       </div>
       <span class="highlight-like-badge" data-highlight-likes-badge="{{ item.id }}">
         {{ item.likes_count }} лайков

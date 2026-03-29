@@ -39,6 +39,7 @@ _allowed_media_host_suffixes = (
 def watch_page(anime_id: int):
     episode = _to_int(request.args.get("episode")) or 1
     selected_source_id = _to_int(request.args.get("source_id"))
+    preferred_start_seconds = _safe_float(request.args.get("start_at"))
     discussion_sort = str(request.args.get("discussion_sort") or "popular").strip().lower()
     user = getattr(g, "user", None)
     data = container.get_watch_page_use_case().execute(
@@ -46,6 +47,7 @@ def watch_page(anime_id: int):
         episode=episode,
         user_id=user.id if user else None,
         selected_source_id=selected_source_id,
+        preferred_start_seconds=preferred_start_seconds,
     )
     discussion = _load_discussion(
         anime_id=anime_id,

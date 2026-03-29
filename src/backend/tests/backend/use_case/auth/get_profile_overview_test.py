@@ -21,6 +21,7 @@ def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
         avatar_url="https://example.com/avatar.png",
         created_at=datetime(2026, 3, 20),
     )
+    user_repo.get_follow_stats.return_value = (11, 6)
     highlight_repo = Mock()
     highlight_repo.get_profile_summary.return_value = HighlightProfileSummary(
         highlight_count=3,
@@ -97,3 +98,5 @@ def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
     assert overview.smart_profile.hours_watched == 3.0
     assert overview.smart_profile.top_anime[0].title == "Gintama"
     assert overview.smart_profile.ai_taste_summary == "Тебя тянет к экшен-комедиям с хорошим темпом."
+    assert overview.followers_count == 11
+    assert overview.following_count == 6

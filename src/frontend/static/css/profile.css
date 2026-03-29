@@ -93,6 +93,14 @@
   flex: 1 1 160px;
 }
 
+.public-profile-follow-form {
+  margin-top: 1rem;
+}
+
+.public-profile-follow-form .btn {
+  width: 100%;
+}
+
 .profile-messages p {
   color: var(--accent);
 }
@@ -132,6 +140,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
+}
+
+.public-profile-following-list {
+  margin-top: 0.8rem;
 }
 
 .profile-tag,

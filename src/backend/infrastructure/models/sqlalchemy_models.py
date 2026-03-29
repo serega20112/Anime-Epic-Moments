@@ -29,6 +29,22 @@ class UserModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class UserFollowModel(Base):
+    __tablename__ = "user_follows"
+    __table_args__ = (
+        UniqueConstraint(
+            "follower_user_id",
+            "followed_user_id",
+            name="uq_user_follow",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    follower_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    followed_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class HighlightModel(Base):
     __tablename__ = "highlights"
 

@@ -52,6 +52,26 @@ def get_highlight_feed():
     return render_template("highlight/feed.html", feed=feed)
 
 
+@highlight_bp.route("/following", methods=["GET"])
+def get_following_highlights():
+    """Рендерит ленту хайлайтов пользователей, на которых подписан текущий зритель."""
+    user = getattr(g, "user", None)
+    if not user:
+        return redirect(url_for("auth.login_page"))
+    page = container.get_following_highlights_use_case().execute(
+        follower_user_id=user.id,
+        anime_id=_to_int(request.args.get("anime_id")),
+        emotion=request.args.get("emotion") or None,
+        category=request.args.get("category") or None,
+        sort_by=request.args.get("sort") or "recent",
+        created_date=request.args.get("date") or None,
+        query=request.args.get("query") or None,
+        include_spoilers=_to_bool(request.args.get("include_spoilers"), default=False),
+        limit=max(min(_to_int(request.args.get("limit")) or 24, 48), 1),
+    )
+    return render_template("highlight/following.html", page=page)
+
+
 @highlight_bp.route("/saved", methods=["GET"])
 def get_saved_highlights():
     """Рендер страницы с сохраненными хайлайтами текущего пользователя."""

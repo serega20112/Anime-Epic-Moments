@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {% set include_spoilers = True %}
+    {% set is_public = True %}
+    {% set view_mode = 'public_profile' %}
+    <title>{{ public_profile.profile.username }} - профиль AEM</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="logo">AEM</div>
+      <nav>
+        <a href="{{ url_for('index.index') }}">Главная</a>
+        <a href="{{ url_for('highlight.get_highlight_feed') }}">Фид</a>
+        <a href="{{ url_for('highlight.get_public_top_highlights') }}">Тренды</a>
+        {% if current_user %}
+        <a href="{{ url_for('highlight.get_following_highlights') }}">Подписки</a>
+        <a href="{{ url_for('auth.profile_page') }}">Мой профиль</a>
+        {% else %}
+        <a href="{{ url_for('auth.login_page') }}">Войти</a>
+        {% endif %}
+      </nav>
+    </header>
+
+    <main class="search-page profile-page">
+      <section class="search-shell highlight-dashboard">
+        <aside class="filters-panel">
+          <h1>Публичный профиль</h1>
+          <p class="filters-subtitle">
+            Профиль показывает вкус пользователя, его лучшие моменты и открытые коллекции.
+          </p>
+
+          <section class="profile-card">
+            {% if public_profile.profile.avatar_url %}
+            <img
+              src="{{ public_profile.profile.avatar_url }}"
+              alt="{{ public_profile.profile.username }}"
+              class="profile-avatar"
+            />
+            {% endif %}
+            <h2>{{ public_profile.profile.username }}</h2>
+            <p class="filters-subtitle">В проекте с {{ public_profile.profile.created_at }}</p>
+            {% if public_profile.can_follow %}
+            <form
+              method="post"
+              action="{% if public_profile.is_following %}{{ url_for('user.unfollow_user', user_id=public_profile.profile.user_id) }}{% else %}{{ url_for('user.follow_user', user_id=public_profile.profile.user_id) }}{% endif %}"
+              class="public-profile-follow-form"
+            >
+              <button type="submit" class="btn {% if public_profile.is_following %}neon-blue{% else %}neon-pink{% endif %}">
+                {{ 'Отписаться' if public_profile.is_following else 'Подписаться' }}
+              </button>
+            </form>
+            {% endif %}
+          </section>
+
+          <section class="highlight-stats">
+            <h2>Статистика</h2>
+            <div class="stat-card">
+              <span>Хайлайты</span>
+              <strong>{{ public_profile.profile.summary.highlight_count }}</strong>
+            </div>
+            <div class="stat-card">
+              <span>Подписчики</span>
+              <strong>{{ public_profile.followers_count }}</strong>
+            </div>
+            <div class="stat-card">
+              <span>Подписки</span>
+              <strong>{{ public_profile.following_count }}</strong>
+            </div>
+            <div class="stat-card">
+              <span>Часы просмотра</span>
+              <strong>{{ public_profile.profile.smart_profile.hours_watched }}</strong>
+            </div>
+          </section>
+
+          <section class="highlight-sidebar smart-profile-panel">
+            <h2>Вкус профиля</h2>
+            <p class="filters-subtitle">{{ public_profile.profile.smart_profile.ai_taste_summary }}</p>
+            <div class="profile-mood-card">
+              <strong>
+                {{ public_profile.profile.smart_profile.dominant_mood.emoji }}
+                {{ public_profile.profile.smart_profile.dominant_mood.label }}
+              </strong>
+              <p>{{ public_profile.profile.smart_profile.dominant_mood.description }}</p>
+            </div>
+            <div class="profile-tag-cloud">
+              {% for genre in public_profile.profile.smart_profile.favorite_genres %}
+              <span class="profile-tag">{{ genre.name }} · {{ genre.count }}</span>
+              {% endfor %}
+            </div>
+          </section>
+
+          <section class="highlight-sidebar">
+            <h2>Социальный граф</h2>
+            <div class="highlight-group-list">
+              {% for item in public_profile.followers_preview %}
+              <a class="highlight-group-link" href="{{ item.profile_url }}">
+                <span>@{{ item.username }}</span>
+                <strong>Подписчик</strong>
+              </a>
+              {% else %}
+              <p class="filters-subtitle">Подписчиков пока нет.</p>
+              {% endfor %}
+            </div>
+            <div class="highlight-group-list public-profile-following-list">
+              {% for item in public_profile.following_preview %}
+              <a class="highlight-group-link" href="{{ item.profile_url }}">
+                <span>@{{ item.username }}</span>
+                <strong>Подписка</strong>
+              </a>
+              {% else %}
+              <p class="filters-subtitle">Публичных подписок пока не видно.</p>
+              {% endfor %}
+            </div>
+          </section>
+        </aside>
+
+        <section class="results-panel">
+          <section class="feed-section-block">
+            <div class="results-head">
+              <h2>Лучшие хайлайты</h2>
+            </div>
+            {% if public_profile.profile.popular_highlights %}
+            <div class="highlight-feed">
+              {% for item in public_profile.profile.popular_highlights %}
+                {% include 'highlight/_card.html' %}
+              {% endfor %}
+            </div>
+            {% else %}
+            <section class="empty-state">
+              <h2>Пока пусто</h2>
+              <p>У пользователя еще нет популярных хайлайтов.</p>
+            </section>
+            {% endif %}
+          </section>
+
+          <section class="feed-section-block">
+            <div class="results-head">
+              <h2>Недавние хайлайты</h2>
+            </div>
+            {% if public_profile.profile.recent_highlights %}
+            <div class="highlight-feed">
+              {% for item in public_profile.profile.recent_highlights %}
+                {% include 'highlight/_card.html' %}
+              {% endfor %}
+            </div>
+            {% else %}
+            <section class="empty-state">
+              <h2>Пока пусто</h2>
+              <p>У пользователя еще нет недавних моментов.</p>
+            </section>
+            {% endif %}
+          </section>
+
+          <section class="feed-section-block">
+            <div class="results-head">
+              <h2>Публичные коллекции</h2>
+            </div>
+            {% if public_profile.public_collections %}
+            <div class="profile-achievement-grid">
+              {% for collection in public_profile.public_collections %}
+              <article class="profile-insight-card">
+                <span class="profile-insight-label">Коллекция</span>
+                <h3>{{ collection.title }}</h3>
+                <p>{{ collection.description or 'Без описания' }}</p>
+                <p class="filters-subtitle">{{ collection.items_count }} аниме · {{ collection.created_at }}</p>
+                <a class="btn neon-blue" href="{{ collection.share_url }}">Открыть</a>
+              </article>
+              {% endfor %}
+            </div>
+            {% else %}
+            <section class="empty-state">
+              <h2>Пока пусто</h2>
+              <p>У пользователя еще нет публичных коллекций.</p>
+            </section>
+            {% endif %}
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+  </body>
+</html>

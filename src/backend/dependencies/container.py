@@ -131,6 +131,13 @@ from src.backend.use_case.watch.sync_watch_sources import SyncWatchSourcesUseCas
 from src.backend.use_case.watch.upsert_user_anime_status import (
     UpsertUserAnimeStatusUseCase,
 )
+from src.backend.use_case.user.get_following_highlights import (
+    GetFollowingHighlightsUseCase,
+)
+from src.backend.use_case.user.get_public_profile_overview import (
+    GetPublicProfileOverviewUseCase,
+)
+from src.backend.use_case.user.set_user_follow import SetUserFollowUseCase
 
 
 class Container:
@@ -344,6 +351,7 @@ class Container:
         return GetUserHighlightsUseCase(
             self.highlight_repository,
             self.anime_api_client,
+            self.user_repository,
         )
 
     def get_public_top_highlights_use_case(self):
@@ -351,24 +359,28 @@ class Container:
             self.highlight_repository,
             self.anime_api_client,
             self.highlight_dashboard_cache,
+            self.user_repository,
         )
 
     def get_saved_highlights_use_case(self):
         return GetSavedHighlightsUseCase(
             self.highlight_repository,
             self.anime_api_client,
+            self.user_repository,
         )
 
     def get_liked_highlights_use_case(self):
         return GetLikedHighlightsUseCase(
             self.highlight_repository,
             self.anime_api_client,
+            self.user_repository,
         )
 
     def get_shared_highlight_use_case(self):
         return GetSharedHighlightUseCase(
             self.highlight_repository,
             self.anime_api_client,
+            self.user_repository,
         )
 
     def get_highlight_feed_use_case(self):
@@ -376,6 +388,24 @@ class Container:
             self.highlight_repository,
             self.anime_api_client,
             self.favorite_repository,
+            self.user_repository,
+        )
+
+    def get_following_highlights_use_case(self):
+        return GetFollowingHighlightsUseCase(
+            self.highlight_repository,
+            self.anime_api_client,
+            self.user_repository,
+        )
+
+    def set_user_follow_use_case(self):
+        return SetUserFollowUseCase(self.user_repository)
+
+    def get_public_profile_overview_use_case(self):
+        return GetPublicProfileOverviewUseCase(
+            self.get_profile_overview_use_case(),
+            self.user_repository,
+            self.collection_repository,
         )
 
     def set_highlight_like_use_case(self):

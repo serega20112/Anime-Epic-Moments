@@ -71,3 +71,21 @@ def test_collection_repository_returns_user_collections_and_supports_remove(db_s
 
     assert collections[0].title == "Тёмные тайтлы"
     assert repo.get_items(collection.id) == []
+
+
+def test_collection_repository_returns_only_public_user_collections(db_session):
+    """Проверяем, что CollectionRepository отдает в публичной выборке только коллекции с is_public=True."""
+    user = UserRepository(db_session).add(
+        User(email="public-collection@example.com", username="public-collector", password_hash="hash")
+    )
+    repo = CollectionRepository(db_session)
+    repo.create_collection(
+        AnimeCollection(user_id=user.id, title="Публичная коллекция", is_public=True)
+    )
+    repo.create_collection(
+        AnimeCollection(user_id=user.id, title="Приватная коллекция", is_public=False)
+    )
+
+    collections = repo.get_public_user_collections(user.id)
+
+    assert [item.title for item in collections] == ["Публичная коллекция"]

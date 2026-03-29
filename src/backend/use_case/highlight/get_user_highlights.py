@@ -8,15 +8,22 @@ from src.backend.domain.highlight.value_object import (
     HighlightStats,
 )
 from src.backend.infrastructure.external.anime_api_client import AnimeApiClient
+from src.backend.infrastructure.repositories.user_repository import UserRepository
 from src.backend.repository.highlight_repository import HighlightRepository
 
 
 class GetUserHighlightsUseCase:
     """Возвращает дашборд хайлайтов пользователя с фильтрами и статистикой."""
 
-    def __init__(self, repo: HighlightRepository, anime_api_client: AnimeApiClient):
+    def __init__(
+        self,
+        repo: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        user_repo: UserRepository | None = None,
+    ):
         self.repo = repo
         self.anime_api_client = anime_api_client
+        self.user_repo = user_repo
 
     def execute(
         self,
@@ -101,6 +108,7 @@ class GetUserHighlightsUseCase:
             [highlight.id for highlight in filtered if highlight.id is not None],
             viewer_user_id=viewer_user_id,
         )
+        owner_map = self._load_owner_map(filtered)
         cards = []
         counter = Counter()
         emotions = set()
@@ -138,8 +146,20 @@ class GetUserHighlightsUseCase:
                     comments_count=engagement.comments_count if engagement else 0,
                     is_liked=engagement.is_liked if engagement else False,
                     is_saved=engagement.is_saved if engagement else False,
-                    watch_url=f"/watch/{watch_id}?episode={highlight.episode}",
+                    watch_url=self._build_watch_url(
+                        watch_id=watch_id,
+                        episode=highlight.episode,
+                        start_timestamp=highlight.start_timestamp,
+                    ),
                     share_url=f"/highlights/share/{highlight.id}",
+                    owner_user_id=highlight.user_id,
+                    owner_username=owner_map.get(highlight.user_id).username
+                    if owner_map.get(highlight.user_id)
+                    else None,
+                    owner_avatar_url=owner_map.get(highlight.user_id).avatar_url
+                    if owner_map.get(highlight.user_id)
+                    else None,
+                    owner_profile_url=f"/users/{highlight.user_id}",
                 )
             )
 
@@ -176,6 +196,15 @@ class GetUserHighlightsUseCase:
         sec = int(seconds % 60)
         return f"{minutes:02d}:{sec:02d}"
 
+    def _build_watch_url(
+        self,
+        watch_id: int,
+        episode: int,
+        start_timestamp: float,
+    ) -> str:
+        start_at = max(int(float(start_timestamp or 0.0)), 0)
+        return f"/watch/{watch_id}?episode={episode}&start_at={start_at}"
+
     def _sort_highlights(self, highlights, sort_by: str):
         if sort_by == "popular":
             return sorted(
@@ -184,6 +213,16 @@ class GetUserHighlightsUseCase:
                 reverse=True,
             )
         return sorted(highlights, key=lambda item: item.created_at, reverse=True)
+
+    def _load_owner_map(self, highlights) -> dict[int, object]:
+        if self.user_repo is None:
+            return {}
+        owner_ids = sorted({int(item.user_id) for item in highlights})
+        return {
+            user.id: user
+            for user in self.user_repo.get_by_ids(owner_ids)
+            if user.id is not None
+        }
 
     def _popularity_score(self, highlight) -> float:
         age_hours = max(

@@ -17,6 +17,10 @@ class CollectionRepository(ABC):
         """Возвращает коллекции пользователя."""
 
     @abstractmethod
+    def get_public_user_collections(self, user_id: int) -> list[AnimeCollection]:
+        """Возвращает публичные коллекции пользователя."""
+
+    @abstractmethod
     def add_item(self, item: AnimeCollectionItem) -> AnimeCollectionItem:
         """Добавляет аниме в коллекцию пользователя."""
 

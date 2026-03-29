@@ -74,6 +74,7 @@ def flask_app_factory():
         _register_placeholder("/highlights/<int:user_id>", "highlight.get_user_highlights")
         _register_placeholder("/highlights/top", "highlight.get_public_top_highlights")
         _register_placeholder("/highlights/feed", "highlight.get_highlight_feed")
+        _register_placeholder("/highlights/following", "highlight.get_following_highlights")
         _register_placeholder("/highlights/saved", "highlight.get_saved_highlights")
         _register_placeholder("/highlights/liked", "highlight.get_liked_highlights")
         _register_placeholder("/highlights/notifications", "highlight.get_highlight_notifications")
@@ -84,6 +85,9 @@ def flask_app_factory():
         _register_placeholder("/auth/login", "auth.login_page")
         _register_placeholder("/auth/register", "auth.register_page")
         _register_placeholder("/auth/logout", "auth.logout_user", methods=("POST",))
+        _register_placeholder("/users/<int:user_id>", "user.public_profile_page")
+        _register_placeholder("/users/<int:user_id>/follow", "user.follow_user", methods=("POST",))
+        _register_placeholder("/users/<int:user_id>/unfollow", "user.unfollow_user", methods=("POST",))
         _register_placeholder("/watch/<int:anime_id>", "watch.watch_page")
         _register_placeholder("/", "index.index")
         return app

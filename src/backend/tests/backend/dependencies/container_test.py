@@ -96,6 +96,9 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         "GenerateRecommendationsUseCase",
         "AskAiRecommendationsUseCase",
         "RefreshRecommendationsUseCase",
+        "GetFollowingHighlightsUseCase",
+        "GetPublicProfileOverviewUseCase",
+        "SetUserFollowUseCase",
         "CreateWatchHighlightUseCase",
         "AddAnimeCommentUseCase",
         "GetAnimeDiscussionUseCase",
@@ -150,6 +153,7 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
     assert built.get_saved_highlights_use_case().args == (
         built.highlight_repository,
         built.anime_api_client,
+        built.user_repository,
     )
     assert built.create_collection_use_case().args == (built.collection_repository,)
     assert built.add_collection_item_use_case().args == (built.collection_repository,)
@@ -167,6 +171,7 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
     assert built.get_liked_highlights_use_case().args == (
         built.highlight_repository,
         built.anime_api_client,
+        built.user_repository,
     )
     assert built.ask_ai_recommendations_use_case().args == (
         built.favorite_repository,
@@ -176,6 +181,7 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
     assert built.get_shared_highlight_use_case().args == (
         built.highlight_repository,
         built.anime_api_client,
+        built.user_repository,
     )
     assert built.add_anime_comment_use_case().args == (built.watch_repository,)
     assert built.get_anime_discussion_use_case().args == (built.watch_repository,)
@@ -184,9 +190,21 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         built.highlight_repository,
         built.anime_api_client,
         built.favorite_repository,
+        built.user_repository,
     )
     assert built.get_highlight_notifications_use_case().args == (
         built.highlight_repository,
+    )
+    assert built.get_following_highlights_use_case().args == (
+        built.highlight_repository,
+        built.anime_api_client,
+        built.user_repository,
+    )
+    assert built.set_user_follow_use_case().args == (built.user_repository,)
+    public_profile_use_case = built.get_public_profile_overview_use_case()
+    assert public_profile_use_case.args[1:] == (
+        built.user_repository,
+        built.collection_repository,
     )
 
 
@@ -272,6 +290,9 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
         "GenerateRecommendationsUseCase",
         "AskAiRecommendationsUseCase",
         "RefreshRecommendationsUseCase",
+        "GetFollowingHighlightsUseCase",
+        "GetPublicProfileOverviewUseCase",
+        "SetUserFollowUseCase",
         "CreateWatchHighlightUseCase",
         "AddAnimeCommentUseCase",
         "GetAnimeDiscussionUseCase",

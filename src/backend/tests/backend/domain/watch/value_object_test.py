@@ -55,6 +55,7 @@ def test_watch_value_objects_store_page_payload():
         highlights=[highlight],
         current_status="watching",
         last_position_seconds=33.0,
+        preferred_start_seconds=10.0,
         saved_volume=0.5,
         saved_quality_label="1080",
         can_discover_sources=True,
@@ -82,6 +83,7 @@ def test_watch_value_objects_store_page_payload():
     assert payload["anime_title"] == "Gintama"
     assert payload["episode_total"] == 24
     assert payload["episode_options"] == [1, 2, 3]
+    assert payload["preferred_start_seconds"] == 10.0
     assert payload["highlights"][0]["category"] == "бой"
     assert payload["sources"][0]["translation_name"] == "AniLibria"
     assert discovered.provider_name == "Kodik"

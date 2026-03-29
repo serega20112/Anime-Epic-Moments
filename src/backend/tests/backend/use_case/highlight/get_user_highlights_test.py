@@ -59,7 +59,7 @@ def test_get_user_highlights_builds_dashboard_with_filters_stats_and_sort(anime_
 
     assert len(dashboard.items) == 2
     assert dashboard.items[0].anime_title == "Initial D"
-    assert dashboard.items[0].watch_url == "/watch/185?episode=3"
+    assert dashboard.items[0].watch_url == "/watch/185?episode=3&start_at=5"
     assert dashboard.stats.total_highlights == 2
     assert dashboard.stats.top_anime_title == "Initial D"
     assert dashboard.stats.average_duration_seconds == 10.0
@@ -89,5 +89,5 @@ def test_get_user_highlights_uses_fallback_title_when_anime_missing():
     dashboard = use_case.execute(user_id=1)
 
     assert dashboard.items[0].anime_title == "Anime #99"
-    assert dashboard.items[0].watch_url == "/watch/99?episode=1"
+    assert dashboard.items[0].watch_url == "/watch/99?episode=1&start_at=1"
     assert dashboard.selected_sort == "recent"

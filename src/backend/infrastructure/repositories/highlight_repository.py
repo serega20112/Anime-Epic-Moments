@@ -83,6 +83,19 @@ class HighlightRepository:
         rows = self.session.query(HighlightModel).filter_by(user_id=user_id).all()
         return [self._to_entity(row) for row in rows]
 
+    def get_by_users(self, user_ids: List[int], limit: int | None = None) -> List[Highlight]:
+        if not user_ids:
+            return []
+        query = (
+            self.session.query(HighlightModel)
+            .filter(HighlightModel.user_id.in_(user_ids))
+            .order_by(HighlightModel.created_at.desc())
+        )
+        if limit is not None:
+            query = query.limit(limit)
+        rows = query.all()
+        return [self._to_entity(row) for row in rows]
+
     def get_public_top(self, limit: int = 20) -> List[Highlight]:
         rows = self.session.query(HighlightModel).all()
         return self._order_by_popularity(rows, limit=limit)

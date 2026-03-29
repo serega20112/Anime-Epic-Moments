@@ -33,6 +33,10 @@ class HighlightRepository(ABC):
         """Возвращает все хайлайты пользователя"""
 
     @abstractmethod
+    def get_by_users(self, user_ids: List[int], limit: int | None = None) -> List[Highlight]:
+        """Возвращает хайлайты нескольких пользователей."""
+
+    @abstractmethod
     def get_public_top(self, limit: int = 20) -> List[Highlight]:
         """Возвращает топ публичных хайлайтов по лайкам"""
 

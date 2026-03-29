@@ -28,6 +28,7 @@ def test_watch_page_renders_with_watch_data(flask_app_factory, monkeypatch, user
         highlights=[],
         current_status=None,
         last_position_seconds=0.0,
+        preferred_start_seconds=0.0,
         saved_volume=1.0,
         saved_quality_label=None,
         can_discover_sources=True,
@@ -69,6 +70,7 @@ def test_watch_page_renders_even_if_discussion_unavailable(
         highlights=[],
         current_status=None,
         last_position_seconds=0.0,
+        preferred_start_seconds=0.0,
         saved_volume=1.0,
         saved_quality_label=None,
         can_discover_sources=True,
@@ -86,6 +88,52 @@ def test_watch_page_renders_even_if_discussion_unavailable(
     response = app.test_client().get("/watch/1?episode=1")
 
     assert response.status_code == 200
+
+
+def test_watch_page_passes_highlight_start_override_to_use_case(flask_app_factory, monkeypatch):
+    """Проверяем, что GET /watch/<id> передает start_at в use case как приоритетный старт серии."""
+    captured = {}
+    watch_data = SimpleNamespace(
+        anime_id=1,
+        anime_title="Title",
+        anime_cover=None,
+        anime_description="desc",
+        anime_year=2024,
+        anime_rating=8.0,
+        genres=[],
+        episode=1,
+        episode_total=12,
+        episode_options=[1, 2, 3],
+        selected_source_id=None,
+        selected_translation_id=None,
+        sources=[],
+        highlights=[],
+        current_status=None,
+        last_position_seconds=30.0,
+        preferred_start_seconds=15.0,
+        saved_volume=1.0,
+        saved_quality_label=None,
+        can_discover_sources=True,
+        discovery_provider_name="Kodik",
+    )
+
+    def execute(**kwargs):
+        captured.update(kwargs)
+        return watch_data
+
+    container = SimpleNamespace(
+        get_watch_page_use_case=lambda: SimpleNamespace(execute=execute),
+        get_anime_discussion_use_case=lambda: SimpleNamespace(
+            execute=lambda **kwargs: SimpleNamespace(items=[], selected_sort="popular", total_comments=0)
+        ),
+    )
+    monkeypatch.setattr(watch_route_module, "container", container)
+    app = flask_app_factory(watch_bp)
+
+    response = app.test_client().get("/watch/1?episode=1&start_at=15")
+
+    assert response.status_code == 200
+    assert captured["preferred_start_seconds"] == 15.0
 
 
 def test_watch_proxy_rewrites_hls_manifest(flask_app_factory, monkeypatch):

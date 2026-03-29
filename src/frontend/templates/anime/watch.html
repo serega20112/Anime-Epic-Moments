@@ -567,6 +567,7 @@
           selectedSourceId: {{ watch.selected_source_id or 'null' }},
           selectedTranslationId: {{ watch.selected_translation_id or 'null' }},
           lastPositionSeconds: {{ watch.last_position_seconds }},
+          preferredStartSeconds: {{ watch.preferred_start_seconds }},
           savedVolume: {{ watch.saved_volume }},
           savedQualityLabel: {{ watch.saved_quality_label|tojson }},
           isAuthenticated: {{ 'true' if current_user else 'false' }}

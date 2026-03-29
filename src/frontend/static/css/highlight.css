@@ -247,6 +247,21 @@
   overflow-wrap: anywhere;
 }
 
+.highlight-owner-line {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+}
+
+.highlight-owner-line a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.highlight-owner-line a:hover {
+  text-decoration: underline;
+}
+
 .highlight-description {
   color: #dbeafe;
   line-height: 1.55;

@@ -75,6 +75,7 @@ class WatchPageData:
     highlights: List[WatchHighlightCard]
     current_status: str | None
     last_position_seconds: float
+    preferred_start_seconds: float
     saved_volume: float
     saved_quality_label: str | None
     can_discover_sources: bool = False

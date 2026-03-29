@@ -109,6 +109,7 @@ def test_get_watch_page_builds_sorted_sources_and_highlight_cards(anime_factory)
     assert page.episode_options[-1] == 12
     assert page.current_status == "watching"
     assert page.last_position_seconds == 75.0
+    assert page.preferred_start_seconds == 0.0
     assert page.saved_volume == 0.6
     assert page.highlights[0].title == "best drift"
     assert page.highlights[0].translation_name == "StudioBand"
@@ -136,7 +137,12 @@ def test_get_watch_page_uses_fallbacks_when_anime_and_sources_are_missing():
         sync_service,
     )
 
-    page = use_case.execute(anime_id=999, episode=1, user_id=None)
+    page = use_case.execute(
+        anime_id=999,
+        episode=1,
+        user_id=None,
+        preferred_start_seconds=42.0,
+    )
 
     assert page.anime_title == "Anime #999"
     assert page.anime_description == "Описание недоступно"
@@ -145,4 +151,5 @@ def test_get_watch_page_uses_fallbacks_when_anime_and_sources_are_missing():
     assert page.selected_source_id is None
     assert page.sources == []
     assert page.highlights == []
+    assert page.preferred_start_seconds == 42.0
     assert page.can_discover_sources is False

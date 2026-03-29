@@ -49,6 +49,7 @@ def test_create_highlight_route_forwards_payload(flask_app_factory, monkeypatch)
         ("/highlights/3?emotion=hype&query=test", {"user_id": 3}, True),
         ("/highlights/top?limit=5&include_spoilers=1", {"limit": 5}, True),
         ("/highlights/feed", {}, True),
+        ("/highlights/following", {}, True),
         ("/highlights/saved", {}, True),
         ("/highlights/liked", {}, True),
         ("/highlights/notifications", {}, True),
@@ -88,10 +89,16 @@ def test_highlight_pages_render_with_valid_payloads(path, kwargs, with_user, fla
         profile=None,
         recent_activity=[],
     )
+    following_page = SimpleNamespace(
+        dashboard=dashboard,
+        followed_users=[],
+        total_following=0,
+    )
     container = SimpleNamespace(
         get_user_highlights_use_case=lambda: SimpleNamespace(execute=lambda **payload: dashboard),
         get_public_top_highlights_use_case=lambda: SimpleNamespace(execute=lambda **payload: dashboard),
         get_highlight_feed_use_case=lambda: SimpleNamespace(execute=lambda **payload: feed),
+        get_following_highlights_use_case=lambda: SimpleNamespace(execute=lambda **payload: following_page),
         get_saved_highlights_use_case=lambda: SimpleNamespace(execute=lambda **payload: dashboard),
         get_liked_highlights_use_case=lambda: SimpleNamespace(execute=lambda **payload: dashboard),
         get_highlight_notifications_use_case=lambda: SimpleNamespace(execute=lambda **payload: []),

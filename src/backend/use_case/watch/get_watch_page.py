@@ -31,6 +31,7 @@ class GetWatchPageUseCase:
         episode: int,
         user_id: int | None = None,
         selected_source_id: int | None = None,
+        preferred_start_seconds: float | None = None,
     ) -> WatchPageData:
         anime = self.anime_api_client.get_by_id(anime_id)
         sources = self.watch_source_sync_service.sync_for_anime(
@@ -182,6 +183,7 @@ class GetWatchPageUseCase:
             highlights=highlight_cards,
             current_status=status.status if status else None,
             last_position_seconds=session.position_seconds if session else 0.0,
+            preferred_start_seconds=max(float(preferred_start_seconds or 0.0), 0.0),
             saved_volume=session.volume if session else 1.0,
             saved_quality_label=(
                 session.quality_label

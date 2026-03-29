@@ -59,6 +59,25 @@ class CollectionRepository:
             for row in rows
         ]
 
+    def get_public_user_collections(self, user_id: int) -> list[AnimeCollection]:
+        rows = (
+            self.session.query(AnimeCollectionModel)
+            .filter_by(user_id=user_id, is_public=True)
+            .order_by(AnimeCollectionModel.created_at.desc())
+            .all()
+        )
+        return [
+            AnimeCollection(
+                id=row.id,
+                user_id=row.user_id,
+                title=row.title,
+                description=row.description or "",
+                is_public=row.is_public,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]
+
     def add_item(self, item: AnimeCollectionItem) -> AnimeCollectionItem:
         existing = (
             self.session.query(AnimeCollectionItemModel)
