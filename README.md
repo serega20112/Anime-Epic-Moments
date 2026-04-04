@@ -46,6 +46,8 @@ docker compose -f build/docker-compose.yml up --build
 ```
 
 `docker compose` поднимает `app`, `postgres`, `redis` и Redis GUI.
+По умолчанию Docker-запуск использует `DATABASE_AUTO_INIT=1` и `RUN_DB_MIGRATIONS=0`,
+потому что в репозитории нет revision-файлов Alembic в `build/alembic/versions`.
 
 Redis GUI после старта доступен в браузере:
 

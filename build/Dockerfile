@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -14,7 +14,7 @@ RUN pip install --upgrade pip && pip install -r /app/requirements.txt
 COPY src /app/src
 COPY build /app/build
 
-RUN chmod +x /app/build/scripts/entrypoint.sh
+RUN sed -i 's/\r$//' /app/build/scripts/entrypoint.sh && chmod +x /app/build/scripts/entrypoint.sh
 
 EXPOSE 5000
 
