@@ -1,48 +1,50 @@
-from flask import Blueprint, request, jsonify
-from src.backend.dependencies.container import container
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
+
+from src.backend.delivery.api.helpers import get_container, read_payload
 from src.backend.infrastructure.security.flask_protection import client_ip, rate_limit
 
-recommendation_bp = Blueprint(
-    "recommendation", __name__, url_prefix="/api/v1/recommendations"
-)
+recommendation_router = APIRouter(prefix="/api/v1/recommendations")
+recommendation_bp = recommendation_router
+container = None
 
 
-@recommendation_bp.route("/generate/<int:user_id>", methods=["POST"])
+@recommendation_router.post("/generate/{user_id}", name="recommendation.generate_recommendations")
 @rate_limit(
-    container_getter=lambda: container,
     scope="recommendation_generate",
     limit=20,
     window_seconds=60,
-    key_builder=lambda: f"{client_ip()}::{request.view_args.get('user_id')}",
+    key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
 )
-def generate_recommendations(user_id: int):
-    results = container.generate_recommendations_use_case().execute(user_id=user_id)
-    return jsonify([vars(r) for r in results])
+async def generate_recommendations(request: Request, user_id: int):
+    container = get_container(request)
+    results = await container.generate_recommendations_use_case().execute(user_id=user_id)
+    return [vars(item) for item in results]
 
 
-@recommendation_bp.route("/refresh/<int:user_id>", methods=["POST"])
+@recommendation_router.post("/refresh/{user_id}", name="recommendation.refresh_recommendations")
 @rate_limit(
-    container_getter=lambda: container,
     scope="recommendation_refresh",
     limit=10,
     window_seconds=60,
-    key_builder=lambda: f"{client_ip()}::{request.view_args.get('user_id')}",
+    key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
 )
-def refresh_recommendations(user_id: int):
-    results = container.refresh_recommendations_use_case().execute(user_id=user_id)
-    return jsonify([vars(r) for r in results])
+async def refresh_recommendations(request: Request, user_id: int):
+    container = get_container(request)
+    results = await container.refresh_recommendations_use_case().execute(user_id=user_id)
+    return [vars(item) for item in results]
 
 
-@recommendation_bp.route("/ask/<int:user_id>", methods=["POST"])
+@recommendation_router.post("/ask/{user_id}", name="recommendation.ask_ai_recommendations")
 @rate_limit(
-    container_getter=lambda: container,
     scope="recommendation_ask_ai",
     limit=20,
     window_seconds=60,
-    key_builder=lambda: f"{client_ip()}::{request.view_args.get('user_id')}",
+    key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
 )
-def ask_ai_recommendations(user_id: int):
-    payload = request.get_json(silent=True) or {}
+async def ask_ai_recommendations(request: Request, user_id: int):
+    container = get_container(request)
+    payload = await read_payload(request)
     query = str(payload.get("query") or "").strip()
     limit = payload.get("limit", 6)
     try:
@@ -50,10 +52,10 @@ def ask_ai_recommendations(user_id: int):
     except (TypeError, ValueError):
         limit = 6
     if not query:
-        return jsonify({"error": "invalid_query"}), 400
-    results = container.ask_ai_recommendations_use_case().execute(
+        return JSONResponse({"error": "invalid_query"}, status_code=400)
+    results = await container.ask_ai_recommendations_use_case().execute(
         user_id=user_id,
         query=query,
         limit=limit,
     )
-    return jsonify([vars(r) for r in results])
+    return [vars(item) for item in results]

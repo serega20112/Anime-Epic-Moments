@@ -16,7 +16,7 @@ class HighlightDashboardCache:
         self.ttl_seconds = max(int(ttl_seconds), 1)
         self.prefix = "highlight_dashboard:public"
 
-    def get_public(
+    async def get_public(
         self,
         limit: int,
         anime_id: int | None,
@@ -27,7 +27,7 @@ class HighlightDashboardCache:
         query: str | None,
         include_spoilers: bool,
     ) -> HighlightDashboard | None:
-        return self.store.get(
+        return await self.store.get(
             self._key(
                 limit=limit,
                 anime_id=anime_id,
@@ -40,7 +40,7 @@ class HighlightDashboardCache:
             )
         )
 
-    def set_public(
+    async def set_public(
         self,
         limit: int,
         anime_id: int | None,
@@ -52,7 +52,7 @@ class HighlightDashboardCache:
         include_spoilers: bool,
         value: HighlightDashboard,
     ) -> HighlightDashboard:
-        return self.store.set(
+        return await self.store.set(
             self._key(
                 limit=limit,
                 anime_id=anime_id,
@@ -67,8 +67,8 @@ class HighlightDashboardCache:
             ttl_seconds=self.ttl_seconds,
         )
 
-    def invalidate_public(self):
-        self.store.delete_prefix(f"{self.prefix}:")
+    async def invalidate_public(self):
+        await self.store.delete_prefix(f"{self.prefix}:")
 
     def _key(
         self,

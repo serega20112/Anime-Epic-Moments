@@ -1,53 +1,68 @@
 """
-Инициализация базы данных и сессии
+Async SQLAlchemy engine/session bootstrap.
 """
 
-from sqlalchemy import create_engine, inspect, text
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+
+from sqlalchemy import inspect, text
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import declarative_base
 
 from src.backend.dependencies.settings import Settings
 
 Base = declarative_base()
-engine: Engine | None = None
-SessionLocal: sessionmaker | None = None
+engine: AsyncEngine | None = None
+SessionLocal: async_sessionmaker[AsyncSession] | None = None
 
 
-def create_db_engine(database_url: str) -> Engine:
-    """Создает SQLAlchemy engine с настройками под конкретный драйвер."""
+def create_db_engine(database_url: str) -> AsyncEngine:
+    """Create async SQLAlchemy engine for the configured driver."""
     engine_kwargs = {"echo": False}
     if database_url.startswith("sqlite"):
         engine_kwargs["connect_args"] = {"check_same_thread": False}
     else:
         engine_kwargs["pool_pre_ping"] = True
-    return create_engine(database_url, **engine_kwargs)
+    return create_async_engine(database_url, **engine_kwargs)
 
 
-def create_session_factory(db_engine: Engine) -> sessionmaker:
-    """Создает фабрику SQLAlchemy session для заданного engine."""
-    return sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
+def create_session_factory(
+    db_engine: AsyncEngine,
+) -> async_sessionmaker[AsyncSession]:
+    """Create async session factory bound to the engine."""
+    return async_sessionmaker(
+        bind=db_engine,
+        expire_on_commit=False,
+        autoflush=False,
+        autocommit=False,
+        class_=AsyncSession,
+    )
 
 
-def get_engine() -> Engine:
-    """Возвращает singleton SQLAlchemy engine для приложения."""
+def get_engine() -> AsyncEngine:
+    """Return process-wide async engine singleton."""
     global engine
     if engine is None:
         engine = create_db_engine(Settings.database_url)
     return engine
 
 
-def get_session_factory() -> sessionmaker:
-    """Возвращает singleton session factory для приложения."""
+def get_session_factory() -> async_sessionmaker[AsyncSession]:
+    """Return process-wide async sessionmaker singleton."""
     global SessionLocal
     if SessionLocal is None:
         SessionLocal = create_session_factory(get_engine())
     return SessionLocal
 
 
-def init_db():
-    """
-    Инициализирует базу данных, создавая все таблицы
-    """
+async def init_db():
+    """Initialize tables and backward-compatible columns."""
     from src.backend.infrastructure.models.sqlalchemy_models import (
         AnimeCollectionItemModel,
         AnimeCollectionModel,
@@ -62,50 +77,47 @@ def init_db():
         SupportTicketModel,
         TranslationModel,
         UserAnimeStatusModel,
+        UserFollowModel,
         UserModel,
         ViewingSessionModel,
         WatchSourceModel,
     )
 
-    db_engine = get_engine()
-    Base.metadata.create_all(bind=db_engine)
-    _ensure_watch_source_columns(db_engine)
-    _ensure_favorite_columns(db_engine)
-    _ensure_highlight_columns(db_engine)
-    _ensure_support_ticket_columns(db_engine)
-    print("✓ Таблицы успешно созданы или уже существуют")
+    async_engine = get_engine()
+    async with async_engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+        await connection.run_sync(_ensure_watch_source_columns)
+        await connection.run_sync(_ensure_favorite_columns)
+        await connection.run_sync(_ensure_highlight_columns)
+        await connection.run_sync(_ensure_support_ticket_columns)
+    print("✓ Tables initialized")
 
 
-def get_session():
-    """
-    Получение сессии SQLAlchemy
-    """
-    return get_session_factory()()
+async def get_session() -> AsyncIterator[AsyncSession]:
+    """FastAPI dependency that yields a request-scoped AsyncSession."""
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        yield session
 
 
-def _ensure_watch_source_columns(db_engine: Engine | None = None):
-    """Добавляет недостающие колонки в watch_sources для обратной совместимости."""
-    db_engine = db_engine or get_engine()
-    inspector = inspect(db_engine)
+def _ensure_watch_source_columns(connection):
+    """Add legacy-compatible columns in watch_sources."""
+    inspector = inspect(connection)
     if "watch_sources" not in inspector.get_table_names():
         return
-    existing_columns = {
-        column["name"] for column in inspector.get_columns("watch_sources")
-    }
+    existing_columns = {column["name"] for column in inspector.get_columns("watch_sources")}
     if "source_type" not in existing_columns:
-        with db_engine.begin() as connection:
-            connection.execute(
-                text(
-                    "ALTER TABLE watch_sources "
-                    "ADD COLUMN source_type VARCHAR NOT NULL DEFAULT 'stream'"
-                )
+        connection.execute(
+            text(
+                "ALTER TABLE watch_sources "
+                "ADD COLUMN source_type VARCHAR NOT NULL DEFAULT 'stream'"
             )
+        )
 
 
-def _ensure_favorite_columns(db_engine: Engine | None = None):
-    """Добавляет snapshot-колонки в favorites для офлайн-рендера карточек."""
-    db_engine = db_engine or get_engine()
-    inspector = inspect(db_engine)
+def _ensure_favorite_columns(connection):
+    """Add snapshot columns to favorites for backward compatibility."""
+    inspector = inspect(connection)
     if "favorites" not in inspector.get_table_names():
         return
     existing_columns = {column["name"] for column in inspector.get_columns("favorites")}
@@ -115,20 +127,14 @@ def _ensure_favorite_columns(db_engine: Engine | None = None):
         "cover_url": "ALTER TABLE favorites ADD COLUMN cover_url VARCHAR",
         "genres_json": "ALTER TABLE favorites ADD COLUMN genres_json VARCHAR",
     }
-    statements = [
-        ddl for column_name, ddl in missing_columns.items() if column_name not in existing_columns
-    ]
-    if not statements:
-        return
-    with db_engine.begin() as connection:
-        for statement in statements:
-            connection.execute(text(statement))
+    for column_name, ddl in missing_columns.items():
+        if column_name not in existing_columns:
+            connection.execute(text(ddl))
 
 
-def _ensure_highlight_columns(db_engine: Engine | None = None):
-    """Добавляет недостающие поля в highlights для новых карточек и шеринга."""
-    db_engine = db_engine or get_engine()
-    inspector = inspect(db_engine)
+def _ensure_highlight_columns(connection):
+    """Add highlight columns used by newer UI flows."""
+    inspector = inspect(connection)
     if "highlights" not in inspector.get_table_names():
         return
     existing_columns = {column["name"] for column in inspector.get_columns("highlights")}
@@ -137,36 +143,23 @@ def _ensure_highlight_columns(db_engine: Engine | None = None):
         "category": "ALTER TABLE highlights ADD COLUMN category VARCHAR",
         "views_count": "ALTER TABLE highlights ADD COLUMN views_count INTEGER NOT NULL DEFAULT 0",
     }
-    statements = [
-        ddl for column_name, ddl in missing_columns.items() if column_name not in existing_columns
-    ]
-    if not statements:
-        return
-    with db_engine.begin() as connection:
-        for statement in statements:
-            connection.execute(text(statement))
+    for column_name, ddl in missing_columns.items():
+        if column_name not in existing_columns:
+            connection.execute(text(ddl))
 
 
-def _ensure_support_ticket_columns(db_engine: Engine | None = None):
-    """Добавляет недостающие поля в support_tickets для новых каналов доставки."""
-    db_engine = db_engine or get_engine()
-    inspector = inspect(db_engine)
+def _ensure_support_ticket_columns(connection):
+    """Add support ticket delivery metadata columns."""
+    inspector = inspect(connection)
     if "support_tickets" not in inspector.get_table_names():
         return
-    existing_columns = {
-        column["name"] for column in inspector.get_columns("support_tickets")
-    }
+    existing_columns = {column["name"] for column in inspector.get_columns("support_tickets")}
     missing_columns = {
         "channel": (
             "ALTER TABLE support_tickets "
             "ADD COLUMN channel VARCHAR NOT NULL DEFAULT 'telegram'"
         ),
     }
-    statements = [
-        ddl for column_name, ddl in missing_columns.items() if column_name not in existing_columns
-    ]
-    if not statements:
-        return
-    with db_engine.begin() as connection:
-        for statement in statements:
-            connection.execute(text(statement))
+    for column_name, ddl in missing_columns.items():
+        if column_name not in existing_columns:
+            connection.execute(text(ddl))

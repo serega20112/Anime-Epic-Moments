@@ -17,12 +17,12 @@ class RegisterUserUseCase:
         self.user_repo = user_repo
         self.password_service = password_service
 
-    def execute(self, email: str, password: str, username: str):
-        if self.user_repo.get_by_email(email):
+    async def execute(self, email: str, password: str, username: str):
+        if await self.user_repo.get_by_email(email):
             raise EmailAlreadyExistsError(
                 f"Пользователь с email {email} уже существует"
             )
 
         password_hash = self.password_service.hash_password(password)
         user = User(email=email, username=username, password_hash=password_hash)
-        return self.user_repo.add(user)
+        return await self.user_repo.add(user)

@@ -16,53 +16,53 @@ from src.backend.domain.anime.value_object import AnimeDiscussionComment
 
 class WatchRepository(ABC):
     @abstractmethod
-    def get_status(self, user_id: int, anime_id: int) -> Optional[UserAnimeStatus]:
+    async def get_status(self, user_id: int, anime_id: int) -> Optional[UserAnimeStatus]:
         """Возвращает статус просмотра пользователя."""
 
     @abstractmethod
-    def upsert_status(self, status: UserAnimeStatus) -> UserAnimeStatus:
+    async def upsert_status(self, status: UserAnimeStatus) -> UserAnimeStatus:
         """Создает или обновляет статус просмотра пользователя."""
 
     @abstractmethod
-    def get_translations(self, anime_id: int) -> List[Translation]:
+    async def get_translations(self, anime_id: int) -> List[Translation]:
         """Возвращает список озвучек/сабов аниме."""
 
     @abstractmethod
-    def add_translation(self, translation: Translation) -> Translation:
+    async def add_translation(self, translation: Translation) -> Translation:
         """Создает новую озвучку/сабы."""
 
     @abstractmethod
-    def get_sources(
+    async def get_sources(
         self, anime_id: int, episode: int | None = None
     ) -> List[WatchSource]:
         """Возвращает источники просмотра."""
 
     @abstractmethod
-    def add_source(self, source: WatchSource) -> WatchSource:
+    async def add_source(self, source: WatchSource) -> WatchSource:
         """Создает источник просмотра."""
 
     @abstractmethod
-    def get_session(
+    async def get_session(
         self, user_id: int, anime_id: int, episode: int
     ) -> Optional[ViewingSession]:
         """Возвращает последнюю сессию просмотра."""
 
     @abstractmethod
-    def upsert_session(self, session: ViewingSession) -> ViewingSession:
+    async def upsert_session(self, session: ViewingSession) -> ViewingSession:
         """Создает или обновляет сессию просмотра."""
 
     @abstractmethod
-    def add_highlight_context(self, context: HighlightContext) -> HighlightContext:
+    async def add_highlight_context(self, context: HighlightContext) -> HighlightContext:
         """Сохраняет связь хайлайта с источником и озвучкой."""
 
     @abstractmethod
-    def get_highlight_contexts(
+    async def get_highlight_contexts(
         self, highlight_ids: List[int]
     ) -> List[HighlightContext]:
         """Возвращает контексты для набора хайлайтов."""
 
     @abstractmethod
-    def get_watched_anime_stats(
+    async def get_watched_anime_stats(
         self,
         user_id: int,
         limit: int | None = None,
@@ -70,7 +70,7 @@ class WatchRepository(ABC):
         """Возвращает агрегированную статистику просмотра по аниме."""
 
     @abstractmethod
-    def get_viewing_heatmap(
+    async def get_viewing_heatmap(
         self,
         user_id: int,
         days: int = 35,
@@ -78,7 +78,7 @@ class WatchRepository(ABC):
         """Возвращает тепловую карту активности просмотра по дням."""
 
     @abstractmethod
-    def add_anime_comment(
+    async def add_anime_comment(
         self,
         anime_id: int,
         user_id: int,
@@ -87,7 +87,7 @@ class WatchRepository(ABC):
         """Добавляет комментарий в обсуждение аниме."""
 
     @abstractmethod
-    def get_anime_comments(
+    async def get_anime_comments(
         self,
         anime_id: int,
         sort_by: str = "popular",
@@ -97,7 +97,7 @@ class WatchRepository(ABC):
         """Возвращает комментарии обсуждения аниме."""
 
     @abstractmethod
-    def set_anime_comment_like(
+    async def set_anime_comment_like(
         self,
         comment_id: int,
         user_id: int,

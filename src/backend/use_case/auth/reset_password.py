@@ -21,7 +21,7 @@ class ResetPasswordUseCase:
         self.jwt_service = jwt_service
         self.password_service = password_service
 
-    def execute(self, token: str, new_password: str):
+    async def execute(self, token: str, new_password: str):
         """Принимает reset token и новый пароль, возвращает обновленного пользователя."""
         try:
             user_id = self.jwt_service.decode_password_reset_token(token)
@@ -30,11 +30,11 @@ class ResetPasswordUseCase:
                 "Ссылка для сброса пароля недействительна или устарела"
             ) from exc
 
-        user = self.user_repo.get_by_id(user_id)
+        user = await self.user_repo.get_by_id(user_id)
         if not user:
             raise InvalidPasswordResetTokenError("Пользователь не найден")
 
         password_hash = self.password_service.hash_password(new_password)
-        return self.user_repo.update_password(
+        return await self.user_repo.update_password(
             user_id=user_id, password_hash=password_hash
         )

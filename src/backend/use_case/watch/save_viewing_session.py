@@ -14,7 +14,7 @@ class SaveViewingSessionUseCase:
         self.watch_repo = watch_repo
         self.profile_overview_cache = profile_overview_cache
 
-    def execute(
+    async def execute(
         self,
         user_id: int,
         anime_id: int,
@@ -25,7 +25,7 @@ class SaveViewingSessionUseCase:
         quality_label: str,
         is_paused: bool,
     ) -> ViewingSession:
-        session = self.watch_repo.upsert_session(
+        session = await self.watch_repo.upsert_session(
             ViewingSession(
                 user_id=user_id,
                 anime_id=anime_id,
@@ -38,5 +38,5 @@ class SaveViewingSessionUseCase:
             )
         )
         if self.profile_overview_cache is not None:
-            self.profile_overview_cache.invalidate_overview(user_id)
+            await self.profile_overview_cache.invalidate_overview(user_id)
         return session

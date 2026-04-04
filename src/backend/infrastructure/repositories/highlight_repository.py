@@ -4,8 +4,10 @@ from datetime import datetime
 from typing import Iterable, List
 
 from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from src.backend.infrastructure.repositories._async import repository_method
 from src.backend.domain.highlight.entity import Highlight
 from src.backend.domain.highlight.value_object import (
     HighlightActivityItem,
@@ -25,9 +27,10 @@ from src.backend.infrastructure.models.sqlalchemy_models import (
 
 
 class HighlightRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
+    @repository_method
     def add(self, highlight: Highlight) -> Highlight:
         db_highlight = HighlightModel(
             user_id=highlight.user_id,
@@ -47,10 +50,12 @@ class HighlightRepository:
         self.session.commit()
         return self._to_entity(db_highlight)
 
+    @repository_method
     def get_by_id(self, highlight_id: int):
         row = self.session.query(HighlightModel).filter_by(id=highlight_id).first()
         return self._to_entity(row) if row else None
 
+    @repository_method
     def update(self, highlight: Highlight) -> Highlight:
         db_highlight = self.session.query(HighlightModel).filter_by(id=highlight.id).first()
         if not db_highlight:
@@ -69,6 +74,7 @@ class HighlightRepository:
         self.session.commit()
         return self._to_entity(db_highlight)
 
+    @repository_method
     def delete(self, highlight_id: int):
         self.session.query(HighlightLikeModel).filter_by(highlight_id=highlight_id).delete()
         self.session.query(HighlightCommentModel).filter_by(highlight_id=highlight_id).delete()
@@ -79,10 +85,12 @@ class HighlightRepository:
             self.session.delete(db_highlight)
             self.session.commit()
 
+    @repository_method
     def get_by_user(self, user_id: int) -> List[Highlight]:
         rows = self.session.query(HighlightModel).filter_by(user_id=user_id).all()
         return [self._to_entity(row) for row in rows]
 
+    @repository_method
     def get_by_users(self, user_ids: List[int], limit: int | None = None) -> List[Highlight]:
         if not user_ids:
             return []
@@ -96,10 +104,12 @@ class HighlightRepository:
         rows = query.all()
         return [self._to_entity(row) for row in rows]
 
+    @repository_method
     def get_public_top(self, limit: int = 20) -> List[Highlight]:
         rows = self.session.query(HighlightModel).all()
         return self._order_by_popularity(rows, limit=limit)
 
+    @repository_method
     def get_public_recent(self, limit: int = 20) -> List[Highlight]:
         rows = (
             self.session.query(HighlightModel)
@@ -109,6 +119,7 @@ class HighlightRepository:
         )
         return [self._to_entity(row) for row in rows]
 
+    @repository_method
     def get_by_anime_episode(
         self, anime_id: int, episode: int, user_id: int | None = None
     ) -> List[Highlight]:
@@ -121,6 +132,7 @@ class HighlightRepository:
         rows = query.order_by(HighlightModel.created_at.desc()).all()
         return [self._to_entity(row) for row in rows]
 
+    @repository_method
     def get_saved_by_user(self, user_id: int, limit: int | None = None) -> List[Highlight]:
         query = (
             self.session.query(HighlightModel)
@@ -132,6 +144,7 @@ class HighlightRepository:
             query = query.limit(limit)
         return [self._to_entity(row) for row in query.all()]
 
+    @repository_method
     def get_liked_by_user(self, user_id: int, limit: int | None = None) -> List[Highlight]:
         query = (
             self.session.query(HighlightModel)
@@ -143,6 +156,7 @@ class HighlightRepository:
             query = query.limit(limit)
         return [self._to_entity(row) for row in query.all()]
 
+    @repository_method
     def get_from_anime_ids(self, anime_ids: List[int], limit: int = 20) -> List[Highlight]:
         if not anime_ids:
             return []
@@ -153,6 +167,7 @@ class HighlightRepository:
         )
         return self._order_by_popularity(rows, limit=limit)
 
+    @repository_method
     def set_like(self, highlight_id: int, user_id: int, liked: bool) -> Highlight:
         db_highlight = self.session.query(HighlightModel).filter_by(id=highlight_id).first()
         if db_highlight is None:
@@ -172,6 +187,7 @@ class HighlightRepository:
         self.session.commit()
         return self._to_entity(db_highlight)
 
+    @repository_method
     def get_likers(self, highlight_id: int, limit: int = 20) -> List[HighlightLikeUser]:
         rows = (
             self.session.query(HighlightLikeModel, UserModel.username)
@@ -190,6 +206,7 @@ class HighlightRepository:
             for item, username in rows
         ]
 
+    @repository_method
     def add_comment(
         self, highlight_id: int, user_id: int, content: str
     ) -> HighlightCommentItem:
@@ -218,6 +235,7 @@ class HighlightRepository:
             created_at=db_comment.created_at.strftime("%Y-%m-%d %H:%M"),
         )
 
+    @repository_method
     def get_comments(
         self, highlight_id: int, limit: int = 20
     ) -> List[HighlightCommentItem]:
@@ -240,6 +258,7 @@ class HighlightRepository:
             for item, username in rows
         ]
 
+    @repository_method
     def set_saved(self, highlight_id: int, user_id: int, saved: bool) -> bool:
         db_highlight = self.session.query(HighlightModel).filter_by(id=highlight_id).first()
         if db_highlight is None:
@@ -260,6 +279,7 @@ class HighlightRepository:
             return False
         return bool(saved and existing is not None)
 
+    @repository_method
     def get_engagement_map(
         self, highlight_ids: List[int], viewer_user_id: int | None = None
     ) -> dict[int, HighlightEngagement]:
@@ -305,6 +325,7 @@ class HighlightRepository:
 
         return result
 
+    @repository_method
     def increment_views(self, highlight_id: int) -> Highlight:
         db_highlight = self.session.query(HighlightModel).filter_by(id=highlight_id).first()
         if db_highlight is None:
@@ -313,6 +334,7 @@ class HighlightRepository:
         self.session.commit()
         return self._to_entity(db_highlight)
 
+    @repository_method
     def get_profile_summary(self, user_id: int) -> HighlightProfileSummary:
         highlight_count = (
             self.session.query(func.count(HighlightModel.id))
@@ -338,6 +360,7 @@ class HighlightRepository:
             saved_count=int(saved_count),
         )
 
+    @repository_method
     def get_recent_activity(
         self, user_id: int, limit: int = 10
     ) -> List[HighlightActivityItem]:

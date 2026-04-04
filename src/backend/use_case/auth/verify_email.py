@@ -25,16 +25,16 @@ class VerifyEmailUseCase:
         self.user_repo = user_repo
         self.verification_store = verification_store
 
-    def execute(self, email: str, code: str) -> User:
+    async def execute(self, email: str, code: str) -> User:
         normalized_email = str(email or "").strip().lower()
         normalized_code = str(code or "").strip()
-        payload = self.verification_store.get(normalized_email)
+        payload = await self.verification_store.get(normalized_email)
         if payload is None:
             raise EmailVerificationExpiredError("Код подтверждения истёк. Запроси новый.")
         if payload.code != normalized_code:
             raise InvalidEmailVerificationCodeError("Неверный код подтверждения.")
-        if self.user_repo.get_by_email(normalized_email):
-            self.verification_store.delete(normalized_email)
+        if await self.user_repo.get_by_email(normalized_email):
+            await self.verification_store.delete(normalized_email)
             raise EmailAlreadyExistsError(
                 f"Пользователь с email {normalized_email} уже существует"
             )
@@ -44,6 +44,6 @@ class VerifyEmailUseCase:
             username=payload.username,
             password_hash=payload.password_hash,
         )
-        created_user = self.user_repo.add(user)
-        self.verification_store.delete(normalized_email)
+        created_user = await self.user_repo.add(user)
+        await self.verification_store.delete(normalized_email)
         return created_user

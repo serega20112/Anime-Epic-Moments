@@ -5,6 +5,7 @@ from urllib.parse import urlencode, urljoin
 
 import requests
 
+from src.backend.infrastructure.external._async import external_method
 from src.backend.dependencies.settings import Settings
 from src.backend.domain.watch.value_object import DiscoveredWatchSource
 from src.backend.infrastructure.external.watch_source_provider import (
@@ -35,6 +36,7 @@ class KodikClient(WatchSourceProvider):
     def is_configured(self) -> bool:
         return self.is_enabled()
 
+    @external_method
     def search_sources(
         self,
         title: str,

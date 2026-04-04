@@ -7,27 +7,53 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 load_dotenv(PROJECT_ROOT / ".env")
 
 
-def _build_default_database_url() -> str:
+def _build_default_database_url(*, async_mode: bool) -> str:
     user = os.getenv("POSTGRES_USER", "anime_epic_moments")
     password = os.getenv("POSTGRES_PASSWORD", "anime_epic_moments")
     host = os.getenv("POSTGRES_HOST", "localhost")
     port = os.getenv("POSTGRES_PORT", "5432")
     database = os.getenv("POSTGRES_DB", "anime_epic_moments")
-    return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{database}"
+    scheme = "postgresql+asyncpg" if async_mode else "postgresql+psycopg"
+    return f"{scheme}://{user}:{password}@{host}:{port}/{database}"
 
 
-def _normalize_database_url(value: str | None) -> str:
+def _normalize_database_url(value: str | None, *, async_mode: bool) -> str:
     raw_value = str(value or "").strip()
     if not raw_value:
-        return _build_default_database_url()
+        return _build_default_database_url(async_mode=async_mode)
     if raw_value.startswith("postgres://"):
-        return f"postgresql+psycopg://{raw_value[len('postgres://') :]}"
-    if raw_value.startswith("postgresql://") and "+psycopg" not in raw_value:
+        raw_value = f"postgresql://{raw_value[len('postgres://') :]}"
+    if async_mode:
+        if raw_value.startswith("postgresql+asyncpg://"):
+            return raw_value
+        if raw_value.startswith("postgresql+psycopg://"):
+            return f"postgresql+asyncpg://{raw_value[len('postgresql+psycopg://') :]}"
+        if raw_value.startswith("postgresql://"):
+            return f"postgresql+asyncpg://{raw_value[len('postgresql://') :]}"
+        if raw_value.startswith("sqlite+aiosqlite:///"):
+            return raw_value
+        if raw_value.startswith("sqlite:///"):
+            return f"sqlite+aiosqlite:///{raw_value[len('sqlite:///') :]}"
+        return raw_value
+    if raw_value.startswith("postgresql+psycopg://"):
+        return raw_value
+    if raw_value.startswith("postgresql+asyncpg://"):
+        return f"postgresql+psycopg://{raw_value[len('postgresql+asyncpg://') :]}"
+    if raw_value.startswith("postgresql://"):
         return f"postgresql+psycopg://{raw_value[len('postgresql://') :]}"
+    if raw_value.startswith("sqlite+aiosqlite:///"):
+        return f"sqlite:///{raw_value[len('sqlite+aiosqlite:///') :]}"
     return raw_value
 
 
-DEFAULT_DATABASE_URL = _normalize_database_url(os.getenv("DATABASE_URL"))
+DEFAULT_DATABASE_SYNC_URL = _normalize_database_url(
+    os.getenv("DATABASE_URL"),
+    async_mode=False,
+)
+DEFAULT_DATABASE_URL = _normalize_database_url(
+    os.getenv("DATABASE_URL"),
+    async_mode=True,
+)
 DEFAULT_DATABASE_AUTO_INIT = os.getenv("DATABASE_AUTO_INIT", "0")
 
 
@@ -38,6 +64,7 @@ class Settings:
 
     secret_key: str = os.getenv("SECRET_KEY", "epic-anime-secret-key-123")
     database_url: str = DEFAULT_DATABASE_URL
+    database_sync_url: str = DEFAULT_DATABASE_SYNC_URL
     database_auto_init: bool = DEFAULT_DATABASE_AUTO_INIT == "1"
     redis_enabled: bool = os.getenv("REDIS_ENABLED", "1") == "1"
     redis_required: bool = os.getenv("REDIS_REQUIRED", "0") == "1"

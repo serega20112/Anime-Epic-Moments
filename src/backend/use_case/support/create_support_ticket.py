@@ -28,7 +28,7 @@ class CreateSupportTicketUseCase:
         self.telegram_notifier = telegram_notifier
         self.email_mailer = email_mailer
 
-    def execute(
+    async def execute(
         self,
         *,
         email: str,
@@ -54,7 +54,7 @@ class CreateSupportTicketUseCase:
         self._validate_channel(normalized_channel)
         self._validate_page_url(normalized_page_url)
 
-        ticket = self.support_repo.add(
+        ticket = await self.support_repo.add(
             SupportTicket(
                 user_id=user_id,
                 email=normalized_email,
@@ -67,12 +67,12 @@ class CreateSupportTicketUseCase:
         )
 
         try:
-            self._delivery_provider(normalized_channel).send_ticket_created(ticket)
+            await self._delivery_provider(normalized_channel).send_ticket_created(ticket)
             ticket.mark_delivered()
         except RuntimeError as error:
             ticket.mark_delivery_failed(str(error))
 
-        return self.support_repo.update(ticket)
+        return await self.support_repo.update(ticket)
 
     def _normalize_email(self, value: str | None) -> str:
         """Нормализует email пользователя."""

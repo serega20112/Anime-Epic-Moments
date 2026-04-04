@@ -7,5 +7,5 @@ class RemoveCollectionItemUseCase:
     def __init__(self, collection_repo: CollectionRepository):
         self.collection_repo = collection_repo
 
-    def execute(self, collection_id: int, anime_id: int) -> None:
-        self.collection_repo.remove_item(collection_id=collection_id, anime_id=anime_id)
+    async def execute(self, collection_id: int, anime_id: int) -> None:
+        await self.collection_repo.remove_item(collection_id=collection_id, anime_id=anime_id)

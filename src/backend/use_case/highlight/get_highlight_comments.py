@@ -7,8 +7,8 @@ class GetHighlightCommentsUseCase:
     def __init__(self, repo: HighlightRepository):
         self.repo = repo
 
-    def execute(self, highlight_id: int, limit: int = 20):
-        return self.repo.get_comments(
+    async def execute(self, highlight_id: int, limit: int = 20):
+        return await self.repo.get_comments(
             highlight_id=highlight_id,
             limit=max(min(int(limit), 100), 1),
         )

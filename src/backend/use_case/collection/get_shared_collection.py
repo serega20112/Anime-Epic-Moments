@@ -12,11 +12,11 @@ class GetSharedCollectionUseCase:
     def __init__(self, collection_repo: CollectionRepository):
         self.collection_repo = collection_repo
 
-    def execute(self, collection_id: int) -> CollectionDetails:
-        collection = self.collection_repo.get_by_id(collection_id)
+    async def execute(self, collection_id: int) -> CollectionDetails:
+        collection = await self.collection_repo.get_by_id(collection_id)
         if collection is None or (not collection.is_public):
             raise ValueError("Коллекция не найдена")
-        items = self.collection_repo.get_items(collection_id)
+        items = await self.collection_repo.get_items(collection_id)
         return CollectionDetails(
             collection=CollectionCard(
                 id=collection.id or collection_id,

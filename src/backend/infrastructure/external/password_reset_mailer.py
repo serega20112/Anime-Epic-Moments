@@ -1,11 +1,13 @@
 import smtplib
 from email.message import EmailMessage
+from src.backend.infrastructure.external._async import external_method
 from src.backend.dependencies.settings import Settings
 
 
 class PasswordResetMailer:
     """Отправляет письмо со ссылкой для сброса пароля."""
 
+    @external_method
     def send_reset_email(self, email: str, reset_link: str) -> None:
         """Отправляет письмо со ссылкой сброса на email пользователя."""
         if not Settings.smtp_host or not Settings.smtp_from_email:

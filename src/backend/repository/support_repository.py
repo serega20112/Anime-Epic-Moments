@@ -7,9 +7,9 @@ class SupportRepository(ABC):
     """Контракт хранилища тикетов поддержки."""
 
     @abstractmethod
-    def add(self, ticket: SupportTicket) -> SupportTicket:
+    async def add(self, ticket: SupportTicket) -> SupportTicket:
         """Создает новый тикет поддержки."""
 
     @abstractmethod
-    def update(self, ticket: SupportTicket) -> SupportTicket:
+    async def update(self, ticket: SupportTicket) -> SupportTicket:
         """Обновляет существующий тикет поддержки."""

@@ -8,7 +8,7 @@ class AddCollectionItemUseCase:
     def __init__(self, collection_repo: CollectionRepository):
         self.collection_repo = collection_repo
 
-    def execute(
+    async def execute(
         self,
         collection_id: int,
         anime_id: int,
@@ -25,4 +25,4 @@ class AddCollectionItemUseCase:
             cover_url=cover_url,
             genres=genres,
         )
-        return self.collection_repo.add_item(item)
+        return await self.collection_repo.add_item(item)

@@ -19,9 +19,9 @@ class RequestPasswordResetUseCase:
         self.jwt_service = jwt_service
         self.mailer = mailer
 
-    def execute(self, email: str, base_url: str | None = None) -> None:
+    async def execute(self, email: str, base_url: str | None = None) -> None:
         """Принимает email пользователя и отправляет письмо, если пользователь найден."""
-        user = self.user_repo.get_by_email(email)
+        user = await self.user_repo.get_by_email(email)
         if not user:
             return
 
@@ -30,4 +30,4 @@ class RequestPasswordResetUseCase:
         )
         normalized_base_url = (base_url or Settings.app_base_url).rstrip("/")
         reset_link = f"{normalized_base_url}/auth/password-reset/confirm?token={token}"
-        self.mailer.send_reset_email(user.email, reset_link)
+        await self.mailer.send_reset_email(user.email, reset_link)

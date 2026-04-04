@@ -106,7 +106,7 @@ class AskAiRecommendationsUseCase:
         self.anime_api_client = anime_api_client
         self.hf_llm_client = hf_llm_client
 
-    def execute(
+    async def execute(
         self,
         user_id: int,
         query: str,
@@ -116,8 +116,8 @@ class AskAiRecommendationsUseCase:
         if not normalized_query:
             return []
 
-        favorites = self.favorite_repo.get_by_user(user_id)
-        queries, mode, _error = self.hf_llm_client.build_search_queries_with_meta(
+        favorites = await self.favorite_repo.get_by_user(user_id)
+        queries, mode, _error = await self.hf_llm_client.build_search_queries_with_meta(
             description=normalized_query,
             genre_hint=None,
         )
@@ -142,12 +142,12 @@ class AskAiRecommendationsUseCase:
         for index, plan in enumerate(search_plan):
             search_query = str(plan["query"]).strip()
             query_source = str(plan["source"]).strip()
-            candidates = self.anime_api_client.search_by_description(
+            candidates = await self.anime_api_client.search_by_description(
                 description=search_query,
                 limit=max(limit * 2, 8),
             )
             if not candidates:
-                candidates = self.anime_api_client.search_by_title(
+                candidates = await self.anime_api_client.search_by_title(
                     title=search_query,
                     limit=max(limit * 2, 8),
                 )

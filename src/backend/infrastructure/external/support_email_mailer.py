@@ -1,6 +1,7 @@
 import smtplib
 from email.message import EmailMessage
 
+from src.backend.infrastructure.external._async import external_method
 from src.backend.dependencies.settings import Settings
 from src.backend.domain.support.entity import SupportTicket
 
@@ -19,6 +20,7 @@ class SupportEmailMailer:
             and self.recipient_emails
         )
 
+    @external_method
     def send_ticket_created(self, ticket: SupportTicket) -> int:
         """Отправляет тикет поддержки по email во все настроенные адреса."""
         if not self.is_enabled():

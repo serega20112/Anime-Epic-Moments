@@ -25,7 +25,7 @@ class GetUserHighlightsUseCase:
         self.anime_api_client = anime_api_client
         self.user_repo = user_repo
 
-    def execute(
+    async def execute(
         self,
         user_id: int,
         anime_id: int | None = None,
@@ -37,8 +37,8 @@ class GetUserHighlightsUseCase:
         include_spoilers: bool = True,
         viewer_user_id: int | None = None,
     ) -> HighlightDashboard:
-        highlights = self.repo.get_by_user(user_id)
-        return self._build_dashboard(
+        highlights = await self.repo.get_by_user(user_id)
+        return await self._build_dashboard(
             highlights=highlights,
             anime_id=anime_id,
             emotion=emotion,
@@ -50,7 +50,7 @@ class GetUserHighlightsUseCase:
             viewer_user_id=viewer_user_id,
         )
 
-    def _build_dashboard(
+    async def _build_dashboard(
         self,
         highlights,
         anime_id: int | None,
@@ -64,9 +64,9 @@ class GetUserHighlightsUseCase:
     ) -> HighlightDashboard:
         anime_cache: dict[int, tuple[str, str | None, int]] = {}
 
-        def anime_meta(value: int) -> tuple[str, str | None, int]:
+        async def anime_meta(value: int) -> tuple[str, str | None, int]:
             if value not in anime_cache:
-                anime = self.anime_api_client.get_by_id(value)
+                anime = await self.anime_api_client.get_by_id(value)
                 watch_id = value
                 if anime and anime.external_id:
                     try:
@@ -84,7 +84,7 @@ class GetUserHighlightsUseCase:
 
         filtered = []
         for highlight in highlights:
-            anime_title, _cover, _watch_id = anime_meta(highlight.anime_id)
+            anime_title, _cover, _watch_id = await anime_meta(highlight.anime_id)
             if anime_id is not None and highlight.anime_id != anime_id:
                 continue
             if emotion and (highlight.emotion or "") != emotion:
@@ -104,11 +104,11 @@ class GetUserHighlightsUseCase:
             filtered.append(highlight)
 
         filtered = self._sort_highlights(filtered, sort_by=sort_by)
-        engagement_map = self.repo.get_engagement_map(
+        engagement_map = await self.repo.get_engagement_map(
             [highlight.id for highlight in filtered if highlight.id is not None],
             viewer_user_id=viewer_user_id,
         )
-        owner_map = self._load_owner_map(filtered)
+        owner_map = await self._load_owner_map(filtered)
         cards = []
         counter = Counter()
         emotions = set()
@@ -116,7 +116,7 @@ class GetUserHighlightsUseCase:
         total_duration = 0.0
 
         for highlight in filtered:
-            anime_title, cover, watch_id = anime_meta(highlight.anime_id)
+            anime_title, cover, watch_id = await anime_meta(highlight.anime_id)
             duration = max(highlight.end_timestamp - highlight.start_timestamp, 0.0)
             counter[(highlight.anime_id, anime_title)] += 1
             if highlight.emotion:
@@ -214,13 +214,13 @@ class GetUserHighlightsUseCase:
             )
         return sorted(highlights, key=lambda item: item.created_at, reverse=True)
 
-    def _load_owner_map(self, highlights) -> dict[int, object]:
+    async def _load_owner_map(self, highlights) -> dict[int, object]:
         if self.user_repo is None:
             return {}
         owner_ids = sorted({int(item.user_id) for item in highlights})
         return {
             user.id: user
-            for user in self.user_repo.get_by_ids(owner_ids)
+            for user in await self.user_repo.get_by_ids(owner_ids)
             if user.id is not None
         }
 

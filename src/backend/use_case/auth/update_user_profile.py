@@ -23,9 +23,9 @@ class UpdateUserProfileUseCase:
         self.user_repo = user_repo
         self.profile_overview_cache = profile_overview_cache
 
-    def execute(self, user_id: int, username: str, avatar_url: str | None) -> User:
+    async def execute(self, user_id: int, username: str, avatar_url: str | None) -> User:
         """Обновляет имя и аватар текущего пользователя."""
-        user = self.user_repo.get_by_id(user_id)
+        user = await self.user_repo.get_by_id(user_id)
         if not user:
             raise UserNotFoundError("Пользователь не найден")
 
@@ -40,7 +40,7 @@ class UpdateUserProfileUseCase:
 
         normalized_avatar = avatar_url.strip() if avatar_url else None
         user.update_avatar(normalized_avatar)
-        updated_user = self.user_repo.update(user)
+        updated_user = await self.user_repo.update(user)
         if self.profile_overview_cache is not None:
-            self.profile_overview_cache.invalidate_overview(user_id)
+            await self.profile_overview_cache.invalidate_overview(user_id)
         return updated_user

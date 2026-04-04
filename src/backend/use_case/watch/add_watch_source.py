@@ -8,7 +8,7 @@ class AddWatchSourceUseCase:
     def __init__(self, watch_repo: WatchRepository):
         self.watch_repo = watch_repo
 
-    def execute(
+    async def execute(
         self,
         anime_id: int,
         episode: int,
@@ -22,7 +22,7 @@ class AddWatchSourceUseCase:
         source_type: str = "stream",
     ) -> WatchSource:
         """Создает озвучку и источник просмотра для аниме."""
-        translation = self.watch_repo.add_translation(
+        translation = await self.watch_repo.add_translation(
             Translation(
                 anime_id=anime_id,
                 name=translation_name,
@@ -30,7 +30,7 @@ class AddWatchSourceUseCase:
                 language=language,
             )
         )
-        return self.watch_repo.add_source(
+        return await self.watch_repo.add_source(
             WatchSource(
                 anime_id=anime_id,
                 episode=episode,

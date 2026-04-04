@@ -24,9 +24,9 @@ class ResendEmailVerificationUseCase:
         self.verification_store = verification_store
         self.mailer = mailer
 
-    def execute(self, email: str) -> PendingEmailVerification:
+    async def execute(self, email: str) -> PendingEmailVerification:
         normalized_email = str(email or "").strip().lower()
-        payload = self.verification_store.get(normalized_email)
+        payload = await self.verification_store.get(normalized_email)
         if payload is None:
             raise PendingEmailVerificationNotFoundError(
                 "Не найдена ожидающая регистрация для этого email."
@@ -38,8 +38,8 @@ class ResendEmailVerificationUseCase:
             code=self._generate_code(),
             theme=payload.theme,
         )
-        self.verification_store.save(refreshed)
-        self.mailer.send_verification_code(
+        await self.verification_store.save(refreshed)
+        await self.mailer.send_verification_code(
             refreshed.email,
             refreshed.code,
             theme=refreshed.theme,

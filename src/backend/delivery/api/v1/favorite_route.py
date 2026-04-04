@@ -1,54 +1,57 @@
-from flask import Blueprint, request, render_template, abort
-from src.backend.dependencies.container import container
+from fastapi import APIRouter, Request
+from fastapi.responses import Response
 
-favorite_bp = Blueprint("favorite", __name__, url_prefix="/favorites")
+from src.backend.delivery.api.helpers import get_container, read_payload
+from src.backend.infrastructure.web.templating import render_template
+
+favorite_router = APIRouter(prefix="/favorites")
+favorite_bp = favorite_router
+container = None
 
 
-def _extract_favorite_payload():
-    """Извлекает user_id, anime_id и snapshot-метаданные из JSON или form-data."""
-    payload = request.get_json(silent=True) or {}
+def _extract_favorite_payload(payload, user_id_fallback=None):
     return {
-        "user_id": payload.get("user_id", request.form.get("user_id")),
-        "anime_id": payload.get("anime_id", request.form.get("anime_id")),
-        "title": payload.get("title", request.form.get("title")),
-        "description": payload.get("description", request.form.get("description")),
-        "cover_url": payload.get("cover_url", request.form.get("cover_url")),
-        "genres": payload.get("genres", request.form.get("genres")),
+        "user_id": payload.get("user_id", user_id_fallback),
+        "anime_id": payload.get("anime_id"),
+        "title": payload.get("title"),
+        "description": payload.get("description"),
+        "cover_url": payload.get("cover_url"),
+        "genres": payload.get("genres"),
     }
 
 
-@favorite_bp.route("/", methods=["POST"])
-def add_favorite():
-    """Добавление аниме в избранное пользователя"""
-    favorite_payload = _extract_favorite_payload()
-    user_id = favorite_payload["user_id"]
-    anime_id = favorite_payload["anime_id"]
-    if user_id is None or anime_id is None:
-        abort(400)
-    container.add_favorite_use_case().execute(**favorite_payload)
-    return "", 201
+@favorite_router.post("/", name="favorite.add_favorite")
+async def add_favorite(request: Request):
+    container = get_container(request)
+    payload = _extract_favorite_payload(await read_payload(request))
+    if payload["user_id"] is None or payload["anime_id"] is None:
+        return Response(status_code=400)
+    await container.add_favorite_use_case().execute(**payload)
+    return Response(status_code=201)
 
 
-@favorite_bp.route("/", methods=["DELETE"])
-def remove_favorite():
-    """Удаление аниме из избранного пользователя"""
-    favorite_payload = _extract_favorite_payload()
-    user_id = favorite_payload["user_id"]
-    anime_id = favorite_payload["anime_id"]
-    if user_id is None or anime_id is None:
-        abort(400)
-    container.remove_favorite_use_case().execute(user_id=user_id, anime_id=anime_id)
-    return "", 204
+@favorite_router.delete("/", name="favorite.remove_favorite")
+async def remove_favorite(request: Request):
+    container = get_container(request)
+    payload = _extract_favorite_payload(await read_payload(request))
+    if payload["user_id"] is None or payload["anime_id"] is None:
+        return Response(status_code=400)
+    await container.remove_favorite_use_case().execute(
+        user_id=payload["user_id"],
+        anime_id=payload["anime_id"],
+    )
+    return Response(status_code=204)
 
 
-@favorite_bp.route("/<int:user_id>", methods=["GET"])
-def get_favorites(user_id: int):
-    """Рендер страницы с избранным пользователя"""
-    favorites = container.get_favorites_use_case().execute(user_id=user_id)
-    recommendations = container.generate_recommendations_use_case().execute(
+@favorite_router.get("/{user_id}", name="favorite.get_favorites")
+async def get_favorites(request: Request, user_id: int):
+    container = get_container(request)
+    favorites = await container.get_favorites_use_case().execute(user_id=user_id)
+    recommendations = await container.generate_recommendations_use_case().execute(
         user_id=user_id
     )
     return render_template(
+        request,
         "favorite/list.html",
         favorites=favorites,
         recommendations=recommendations,

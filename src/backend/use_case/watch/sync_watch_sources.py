@@ -13,14 +13,14 @@ class SyncWatchSourcesUseCase:
         self.anime_api_client = anime_api_client
         self.watch_source_sync_service = watch_source_sync_service
 
-    def execute(
+    async def execute(
         self, anime_id: int, episode: int, force: bool = False
     ) -> dict[str, int | bool]:
-        anime = self.anime_api_client.get_by_id(anime_id)
-        if not self.watch_source_sync_service.is_enabled():
+        anime = await self.anime_api_client.get_by_id(anime_id)
+        if not await self.watch_source_sync_service.is_enabled():
             return {"enabled": False, "sources_count": 0, "provider_names": []}
 
-        sources = self.watch_source_sync_service.sync_for_anime(
+        sources = await self.watch_source_sync_service.sync_for_anime(
             anime_id=anime_id,
             anime=anime,
             episode=episode,
@@ -29,5 +29,5 @@ class SyncWatchSourcesUseCase:
         return {
             "enabled": True,
             "sources_count": len(sources),
-            "provider_names": self.watch_source_sync_service.get_enabled_provider_names(),
+            "provider_names": await self.watch_source_sync_service.get_enabled_provider_names(),
         }

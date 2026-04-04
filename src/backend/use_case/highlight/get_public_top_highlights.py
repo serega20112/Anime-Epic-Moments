@@ -20,7 +20,7 @@ class GetPublicTopHighlightsUseCase(GetUserHighlightsUseCase):
         super().__init__(repo, anime_api_client, user_repo=user_repo)
         self.highlight_dashboard_cache = highlight_dashboard_cache
 
-    def execute(
+    async def execute(
         self,
         limit: int = 20,
         anime_id: int | None = None,
@@ -35,7 +35,7 @@ class GetPublicTopHighlightsUseCase(GetUserHighlightsUseCase):
         normalized_sort = sort_by if sort_by in {"popular", "recent"} else "popular"
         use_cache = self.highlight_dashboard_cache is not None and viewer_user_id is None
         if use_cache:
-            cached = self.highlight_dashboard_cache.get_public(
+            cached = await self.highlight_dashboard_cache.get_public(
                 limit=limit,
                 anime_id=anime_id,
                 emotion=emotion,
@@ -48,11 +48,11 @@ class GetPublicTopHighlightsUseCase(GetUserHighlightsUseCase):
             if cached is not None:
                 return cached
         highlights = (
-            self.repo.get_public_top(limit)
+            await self.repo.get_public_top(limit)
             if normalized_sort == "popular"
-            else self.repo.get_public_recent(limit)
+            else await self.repo.get_public_recent(limit)
         )
-        dashboard = self._build_dashboard(
+        dashboard = await self._build_dashboard(
             highlights=highlights,
             anime_id=anime_id,
             emotion=emotion,
@@ -64,7 +64,7 @@ class GetPublicTopHighlightsUseCase(GetUserHighlightsUseCase):
             viewer_user_id=viewer_user_id,
         )
         if use_cache:
-            self.highlight_dashboard_cache.set_public(
+            await self.highlight_dashboard_cache.set_public(
                 limit=limit,
                 anime_id=anime_id,
                 emotion=emotion,

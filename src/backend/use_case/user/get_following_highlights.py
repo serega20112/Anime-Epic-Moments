@@ -26,7 +26,7 @@ class GetFollowingHighlightsUseCase(GetUserHighlightsUseCase):
         super().__init__(repo, anime_api_client, user_repo=user_repo)
         self.user_repo = user_repo
 
-    def execute(
+    async def execute(
         self,
         follower_user_id: int,
         anime_id: int | None = None,
@@ -38,10 +38,10 @@ class GetFollowingHighlightsUseCase(GetUserHighlightsUseCase):
         include_spoilers: bool = False,
         limit: int = 24,
     ) -> FollowingHighlightsPage:
-        followed_users = self.user_repo.get_followed_users(follower_user_id, limit=12)
+        followed_users = await self.user_repo.get_followed_users(follower_user_id, limit=12)
         followed_ids = [user.id for user in followed_users if user.id is not None]
-        highlights = self.repo.get_by_users(followed_ids, limit=max(limit * 4, 48))
-        dashboard = self._build_dashboard(
+        highlights = await self.repo.get_by_users(followed_ids, limit=max(limit * 4, 48))
+        dashboard = await self._build_dashboard(
             highlights=highlights,
             anime_id=anime_id,
             emotion=emotion,
@@ -54,6 +54,7 @@ class GetFollowingHighlightsUseCase(GetUserHighlightsUseCase):
         )
         dashboard.items = dashboard.items[:limit]
         dashboard.stats.total_highlights = len(dashboard.items)
+        follow_stats = await self.user_repo.get_follow_stats(follower_user_id)
         return FollowingHighlightsPage(
             dashboard=dashboard,
             followed_users=[
@@ -66,5 +67,5 @@ class GetFollowingHighlightsUseCase(GetUserHighlightsUseCase):
                 for user in followed_users
                 if user.id is not None
             ],
-            total_following=self.user_repo.get_follow_stats(follower_user_id)[1],
+            total_following=follow_stats[1],
         )

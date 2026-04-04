@@ -12,16 +12,16 @@ class GetUserCollectionsUseCase:
     def __init__(self, collection_repo: CollectionRepository):
         self.collection_repo = collection_repo
 
-    def execute(self, user_id: int) -> list[CollectionDetails]:
-        collections = self.collection_repo.get_user_collections(user_id)
-        counts = self.collection_repo.get_items_count_map(
+    async def execute(self, user_id: int) -> list[CollectionDetails]:
+        collections = await self.collection_repo.get_user_collections(user_id)
+        counts = await self.collection_repo.get_items_count_map(
             [item.id for item in collections if item.id is not None]
         )
         result: list[CollectionDetails] = []
         for collection in collections:
             if collection.id is None:
                 continue
-            items = self.collection_repo.get_items(collection.id)
+            items = await self.collection_repo.get_items(collection.id)
             result.append(
                 CollectionDetails(
                     collection=CollectionCard(

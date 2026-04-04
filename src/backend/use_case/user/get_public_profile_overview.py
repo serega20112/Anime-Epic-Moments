@@ -23,15 +23,15 @@ class GetPublicProfileOverviewUseCase:
         self.user_repo = user_repo
         self.collection_repo = collection_repo
 
-    def execute(
+    async def execute(
         self,
         profile_user_id: int,
         viewer_user_id: int | None = None,
     ) -> PublicProfileOverview:
-        profile = self.profile_overview_use_case.execute(profile_user_id)
-        followers_count, following_count = self.user_repo.get_follow_stats(profile_user_id)
-        collections = self.collection_repo.get_public_user_collections(profile_user_id)
-        items_count_map = self.collection_repo.get_items_count_map(
+        profile = await self.profile_overview_use_case.execute(profile_user_id)
+        followers_count, following_count = await self.user_repo.get_follow_stats(profile_user_id)
+        collections = await self.collection_repo.get_public_user_collections(profile_user_id)
+        items_count_map = await self.collection_repo.get_items_count_map(
             [item.id for item in collections if item.id is not None]
         )
         public_collections = [
@@ -54,7 +54,7 @@ class GetPublicProfileOverviewUseCase:
                 avatar_url=user.avatar_url,
                 profile_url=f"/users/{user.id}",
             )
-            for user in self.user_repo.get_followers(profile_user_id, limit=6)
+            for user in await self.user_repo.get_followers(profile_user_id, limit=6)
             if user.id is not None
         ]
         following_preview = [
@@ -64,13 +64,13 @@ class GetPublicProfileOverviewUseCase:
                 avatar_url=user.avatar_url,
                 profile_url=f"/users/{user.id}",
             )
-            for user in self.user_repo.get_followed_users(profile_user_id, limit=6)
+            for user in await self.user_repo.get_followed_users(profile_user_id, limit=6)
             if user.id is not None
         ]
         is_following = (
             viewer_user_id is not None
             and viewer_user_id != profile_user_id
-            and self.user_repo.is_following(viewer_user_id, profile_user_id)
+            and await self.user_repo.is_following(viewer_user_id, profile_user_id)
         )
         return PublicProfileOverview(
             profile=profile,

@@ -1,21 +1,12 @@
-from flask import (
-    Blueprint,
-    current_app,
-    jsonify,
-    render_template,
-    request,
-    redirect,
-    url_for,
-    flash,
-    make_response,
-    g,
-)
+import logging
+
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+
 from src.backend.dependencies.settings import Settings
-from src.backend.dependencies.container import container
-from src.backend.infrastructure.security.flask_protection import (
-    client_ip,
-    rate_limit,
-)
+from src.backend.delivery.api.helpers import get_container, get_current_user
+from src.backend.infrastructure.security.flask_protection import client_ip, rate_limit
+from src.backend.infrastructure.web.templating import flash, render_template
 from src.backend.infrastructure.security.jwt_service import JWTService
 from src.backend.use_case.auth.login_user import InvalidCredentialsError
 from src.backend.use_case.auth.register_user import EmailAlreadyExistsError
@@ -32,7 +23,10 @@ from src.backend.use_case.auth.verify_email import (
     InvalidEmailVerificationCodeError,
 )
 
-auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+auth_router = APIRouter(prefix="/auth")
+auth_bp = auth_router
+container = None
+logger = logging.getLogger("anime_epic_moments")
 
 jwt_service = JWTService()
 LOGIN_ATTEMPTS_LIMIT = 5
@@ -43,313 +37,376 @@ VERIFY_EMAIL_RESEND_LIMIT = 3
 AUTH_WINDOW_SECONDS = 300
 
 
-@auth_bp.route("/login", methods=["GET"])
-def login_page():
-    """Рендер страницы входа"""
-    return render_template("auth/login.html")
+@auth_router.get("/login", name="auth.login_page")
+async def login_page(request: Request):
+    return render_template(request, "auth/login.html")
 
 
-@auth_bp.route("/register", methods=["GET"])
-def register_page():
-    """Рендер страницы регистрации"""
-    return render_template("auth/register.html")
+@auth_router.get("/register", name="auth.register_page")
+async def register_page(request: Request):
+    return render_template(request, "auth/register.html")
 
 
-@auth_bp.route("/password-reset", methods=["GET"])
-def password_reset_request_page():
-    """Рендер страницы запроса сброса пароля."""
-    return render_template("auth/password_reset_request.html")
+@auth_router.get("/password-reset", name="auth.password_reset_request_page")
+async def password_reset_request_page(request: Request):
+    return render_template(request, "auth/password_reset_request.html")
 
 
-@auth_bp.route("/verify-email", methods=["GET"])
-def verify_email_page():
-    """Рендер страницы подтверждения email кодом."""
+@auth_router.get("/verify-email", name="auth.verify_email_page")
+async def verify_email_page(request: Request):
     return render_template(
+        request,
         "auth/verify_email.html",
-        email=_normalize_email(request.args.get("email")),
+        email=_normalize_email(request.query_params.get("email")),
     )
 
 
-@auth_bp.route("/password-reset/confirm", methods=["GET"])
-def password_reset_confirm_page():
-    """Рендер страницы установки нового пароля по токену."""
-    token = request.args.get("token", "")
-    return render_template("auth/password_reset_confirm.html", token=token)
+@auth_router.get("/password-reset/confirm", name="auth.password_reset_confirm_page")
+async def password_reset_confirm_page(request: Request):
+    token = request.query_params.get("token", "")
+    return render_template(
+        request,
+        "auth/password_reset_confirm.html",
+        token=token,
+    )
 
 
-@auth_bp.route("/login", methods=["POST"])
+@auth_router.post("/login", name="auth.login_user")
 @rate_limit(
-    container_getter=lambda: container,
     scope="auth_login",
     limit=LOGIN_ATTEMPTS_LIMIT,
     window_seconds=AUTH_WINDOW_SECONDS,
-    key_builder=lambda: _auth_attempt_subject(request.form.get("email")),
+    key_builder=lambda request: client_ip(request),
     response_mode="redirect",
     redirect_endpoint="auth.login_page",
 )
-def login_user():
-    """Обработка входа пользователя"""
-    email = _normalize_email(request.form.get("email"))
-    password = request.form.get("password")
+async def login_user(request: Request):
+    container = get_container(request)
+    form = await request.form()
+    email = _normalize_email(form.get("email"))
+    password = form.get("password")
     if not email or len(email) > 254 or not password:
-        flash("Некорректные данные для входа")
-        return redirect(url_for("auth.login_page"))
-    try:
-        user = container.login_user_use_case().execute(email=email, password=password)
-        current_app.logger.info("login_success user_id=%s ip=%s", user.id, client_ip())
-        flash(f"Добро пожаловать, {user.username}!")
-        resp = make_response(redirect(url_for("index.index")))
-        _set_auth_cookies(resp, user.id)
-        return resp
-    except InvalidCredentialsError as e:
-        current_app.logger.warning(
-            "login_failed email=%s ip=%s",
-            email,
-            client_ip(),
+        flash(request, "Некорректные данные для входа")
+        return RedirectResponse(
+            url=request.app.url_path_for("auth.login_page"),
+            status_code=303,
         )
-        flash(str(e))
-        return redirect(url_for("auth.login_page"))
+    try:
+        user = await container.login_user_use_case().execute(email=email, password=password)
+        logger.info("login_success user_id=%s ip=%s", user.id, client_ip(request))
+        flash(request, f"Добро пожаловать, {user.username}!")
+        response = RedirectResponse(
+            url=request.app.url_path_for("index.index"),
+            status_code=303,
+        )
+        _set_auth_cookies(response, user.id)
+        return response
+    except InvalidCredentialsError as error:
+        logger.warning("login_failed email=%s ip=%s", email, client_ip(request))
+        flash(request, str(error))
+        return RedirectResponse(
+            url=request.app.url_path_for("auth.login_page"),
+            status_code=303,
+        )
 
 
-@auth_bp.route("/register", methods=["POST"])
+@auth_router.post("/register", name="auth.register_user")
 @rate_limit(
-    container_getter=lambda: container,
     scope="auth_register",
     limit=REGISTER_ATTEMPTS_LIMIT,
     window_seconds=AUTH_WINDOW_SECONDS,
-    key_builder=lambda: _auth_attempt_subject(request.form.get("email")),
+    key_builder=lambda request: client_ip(request),
     response_mode="redirect",
     redirect_endpoint="auth.register_page",
 )
-def register_user():
-    """Обработка регистрации пользователя"""
-    email = _normalize_email(request.form.get("email"))
-    password = request.form.get("password")
-    username = str(request.form.get("username") or "").strip()
-    theme = _normalize_theme(request.form.get("theme"))
+async def register_user(request: Request):
+    container = get_container(request)
+    form = await request.form()
+    email = _normalize_email(form.get("email"))
+    password = form.get("password")
+    username = str(form.get("username") or "").strip()
+    theme = _normalize_theme(form.get("theme"))
     if not email or len(email) > 254:
-        flash("Некорректный email")
-        return redirect(url_for("auth.register_page"))
+        flash(request, "Некорректный email")
+        return RedirectResponse(
+            url=request.app.url_path_for("auth.register_page"),
+            status_code=303,
+        )
     if not password or len(password) < 8 or len(password) > 128:
-        flash("Пароль должен быть не короче 8 символов")
-        return redirect(url_for("auth.register_page"))
+        flash(request, "Пароль должен быть не короче 8 символов")
+        return RedirectResponse(
+            url=request.app.url_path_for("auth.register_page"),
+            status_code=303,
+        )
     if not username or len(username) > 20:
-        flash("Некорректный username")
-        return redirect(url_for("auth.register_page"))
+        flash(request, "Некорректный username")
+        return RedirectResponse(
+            url=request.app.url_path_for("auth.register_page"),
+            status_code=303,
+        )
     try:
-        container.request_email_verification_use_case().execute(
+        await container.request_email_verification_use_case().execute(
             email=email,
             password=password,
             username=username,
             theme=theme,
         )
-        current_app.logger.info("register_verification_requested email=%s ip=%s", email, client_ip())
-        flash("Мы отправили код подтверждения на почту. Введи его, чтобы завершить регистрацию.")
-        return redirect(url_for("auth.verify_email_page", email=email))
-    except EmailAlreadyExistsError as e:
-        flash(str(e))
-        return redirect(url_for("auth.register_page"))
+        logger.info("register_verification_requested email=%s ip=%s", email, client_ip(request))
+        flash(request, "Мы отправили код подтверждения на почту. Введи его, чтобы завершить регистрацию.")
+        return RedirectResponse(
+            url=f"{request.app.url_path_for('auth.verify_email_page')}?email={email}",
+            status_code=303,
+        )
+    except EmailAlreadyExistsError as error:
+        flash(request, str(error))
     except RuntimeError as error:
-        flash(str(error))
-        return redirect(url_for("auth.register_page"))
+        flash(request, str(error))
+    return RedirectResponse(
+        url=request.app.url_path_for("auth.register_page"),
+        status_code=303,
+    )
 
 
-@auth_bp.route("/verify-email", methods=["POST"])
+@auth_router.post("/verify-email", name="auth.verify_email")
 @rate_limit(
-    container_getter=lambda: container,
     scope="auth_verify_email",
     limit=VERIFY_EMAIL_ATTEMPTS_LIMIT,
     window_seconds=AUTH_WINDOW_SECONDS,
-    key_builder=lambda: _auth_attempt_subject(request.form.get("email")),
+    key_builder=lambda request: client_ip(request),
     response_mode="redirect",
     redirect_endpoint="auth.verify_email_page",
 )
-def verify_email():
-    """Подтверждает email кодом и завершает регистрацию пользователя."""
-    email = _normalize_email(request.form.get("email"))
-    code = _normalize_verification_code(request.form.get("code"))
+async def verify_email(request: Request):
+    container = get_container(request)
+    form = await request.form()
+    email = _normalize_email(form.get("email"))
+    code = _normalize_verification_code(form.get("code"))
     if not email or len(email) > 254:
-        flash("Некорректный email")
-        return redirect(url_for("auth.verify_email_page", email=email))
+        flash(request, "Некорректный email")
+        return RedirectResponse(
+            url=f"{request.app.url_path_for('auth.verify_email_page')}?email={email}",
+            status_code=303,
+        )
     if len(code) != 6:
-        flash("Код подтверждения должен содержать 6 цифр")
-        return redirect(url_for("auth.verify_email_page", email=email))
+        flash(request, "Код подтверждения должен содержать 6 цифр")
+        return RedirectResponse(
+            url=f"{request.app.url_path_for('auth.verify_email_page')}?email={email}",
+            status_code=303,
+        )
     try:
-        user = container.verify_email_use_case().execute(email=email, code=code)
-        current_app.logger.info("email_verified user_id=%s ip=%s", user.id, client_ip())
-        flash(f"Добро пожаловать, {user.username}!")
-        resp = make_response(redirect(url_for("index.index")))
-        _set_auth_cookies(resp, user.id)
-        return resp
+        user = await container.verify_email_use_case().execute(email=email, code=code)
+        logger.info("email_verified user_id=%s ip=%s", user.id, client_ip(request))
+        flash(request, f"Добро пожаловать, {user.username}!")
+        response = RedirectResponse(
+            url=request.app.url_path_for("index.index"),
+            status_code=303,
+        )
+        _set_auth_cookies(response, user.id)
+        return response
     except (
         InvalidEmailVerificationCodeError,
         EmailVerificationExpiredError,
         EmailAlreadyExistsError,
     ) as error:
-        flash(str(error))
-        return redirect(url_for("auth.verify_email_page", email=email))
+        flash(request, str(error))
+        return RedirectResponse(
+            url=f"{request.app.url_path_for('auth.verify_email_page')}?email={email}",
+            status_code=303,
+        )
 
 
-@auth_bp.route("/verify-email/resend", methods=["POST"])
+@auth_router.post("/verify-email/resend", name="auth.resend_verification_email")
 @rate_limit(
-    container_getter=lambda: container,
     scope="auth_verify_email_resend",
     limit=VERIFY_EMAIL_RESEND_LIMIT,
     window_seconds=AUTH_WINDOW_SECONDS,
-    key_builder=lambda: _auth_attempt_subject(request.form.get("email")),
+    key_builder=lambda request: client_ip(request),
     response_mode="redirect",
     redirect_endpoint="auth.verify_email_page",
 )
-def resend_verification_email():
-    """Повторно отправляет код подтверждения для ожидающей регистрации."""
-    email = _normalize_email(request.form.get("email"))
+async def resend_verification_email(request: Request):
+    container = get_container(request)
+    form = await request.form()
+    email = _normalize_email(form.get("email"))
     if not email or len(email) > 254:
-        flash("Некорректный email")
-        return redirect(url_for("auth.verify_email_page", email=email))
+        flash(request, "Некорректный email")
+        return RedirectResponse(
+            url=f"{request.app.url_path_for('auth.verify_email_page')}?email={email}",
+            status_code=303,
+        )
     try:
-        container.resend_email_verification_use_case().execute(email=email)
-        flash("Новый код подтверждения отправлен.")
-        return redirect(url_for("auth.verify_email_page", email=email))
+        await container.resend_email_verification_use_case().execute(email=email)
+        flash(request, "Новый код подтверждения отправлен.")
     except (PendingEmailVerificationNotFoundError, RuntimeError) as error:
-        flash(str(error))
-        return redirect(url_for("auth.verify_email_page", email=email))
+        flash(request, str(error))
+    return RedirectResponse(
+        url=f"{request.app.url_path_for('auth.verify_email_page')}?email={email}",
+        status_code=303,
+    )
 
 
-@auth_bp.route("/password-reset", methods=["POST"])
+@auth_router.post("/password-reset", name="auth.request_password_reset")
 @rate_limit(
-    container_getter=lambda: container,
     scope="auth_password_reset",
     limit=PASSWORD_RESET_ATTEMPTS_LIMIT,
     window_seconds=AUTH_WINDOW_SECONDS,
-    key_builder=lambda: _auth_attempt_subject(request.form.get("email")),
+    key_builder=lambda request: client_ip(request),
     response_mode="redirect",
     redirect_endpoint="auth.password_reset_request_page",
 )
-def request_password_reset():
-    """Обрабатывает запрос на сброс пароля и отправляет письмо."""
-    email = _normalize_email(request.form.get("email", ""))
+async def request_password_reset(request: Request):
+    container = get_container(request)
+    form = await request.form()
+    email = _normalize_email(form.get("email"))
     if not email or len(email) > 254:
-        flash("Некорректный email")
-        return redirect(url_for("auth.password_reset_request_page"))
+        flash(request, "Некорректный email")
+        return RedirectResponse(
+            url=request.app.url_path_for("auth.password_reset_request_page"),
+            status_code=303,
+        )
     try:
-        container.request_password_reset_use_case().execute(
-            email=email, base_url=request.url_root.rstrip("/")
+        await container.request_password_reset_use_case().execute(
+            email=email,
+            base_url=str(request.base_url).rstrip("/"),
         )
-        flash(
-            "Если пользователь с таким email существует, мы отправили письмо со ссылкой для сброса пароля."
-        )
+        flash(request, "Если пользователь с таким email существует, мы отправили письмо со ссылкой для сброса пароля.")
     except RuntimeError as error:
-        flash(str(error))
-    return redirect(url_for("auth.password_reset_request_page"))
+        flash(request, str(error))
+    return RedirectResponse(
+        url=request.app.url_path_for("auth.password_reset_request_page"),
+        status_code=303,
+    )
 
 
-@auth_bp.route("/password-reset/confirm", methods=["POST"])
-def confirm_password_reset():
-    """Сохраняет новый пароль пользователя по reset token."""
-    token = request.form.get("token", "").strip()
-    password = request.form.get("password", "")
-    password_repeat = request.form.get("password_repeat", "")
+@auth_router.post("/password-reset/confirm", name="auth.confirm_password_reset")
+async def confirm_password_reset(request: Request):
+    container = get_container(request)
+    form = await request.form()
+    token = str(form.get("token") or "").strip()
+    password = str(form.get("password") or "")
+    password_repeat = str(form.get("password_repeat") or "")
 
     if password != password_repeat:
-        flash("Пароли не совпадают")
-        return redirect(url_for("auth.password_reset_confirm_page", token=token))
+        flash(request, "Пароли не совпадают")
+        return RedirectResponse(
+            url=f"{request.app.url_path_for('auth.password_reset_confirm_page')}?token={token}",
+            status_code=303,
+        )
     if len(password) < 8 or len(password) > 128:
-        flash("Пароль должен быть не короче 8 символов")
-        return redirect(url_for("auth.password_reset_confirm_page", token=token))
+        flash(request, "Пароль должен быть не короче 8 символов")
+        return RedirectResponse(
+            url=f"{request.app.url_path_for('auth.password_reset_confirm_page')}?token={token}",
+            status_code=303,
+        )
 
     try:
-        container.reset_password_use_case().execute(token=token, new_password=password)
-        flash("Пароль обновлен. Теперь можно войти.")
-        return redirect(url_for("auth.login_page"))
+        await container.reset_password_use_case().execute(token=token, new_password=password)
+        flash(request, "Пароль обновлен. Теперь можно войти.")
+        return RedirectResponse(
+            url=request.app.url_path_for("auth.login_page"),
+            status_code=303,
+        )
     except InvalidPasswordResetTokenError as error:
-        flash(str(error))
-        return redirect(url_for("auth.password_reset_confirm_page", token=token))
+        flash(request, str(error))
+        return RedirectResponse(
+            url=f"{request.app.url_path_for('auth.password_reset_confirm_page')}?token={token}",
+            status_code=303,
+        )
 
 
-@auth_bp.route("/logout", methods=["POST"])
-def logout_user():
-    """Обработка выхода пользователя"""
-    _revoke_auth_tokens_from_request()
-    resp = make_response(redirect(url_for("index.index")))
-    _clear_auth_cookies(resp)
-    return resp
+@auth_router.post("/logout", name="auth.logout_user")
+async def logout_user(request: Request):
+    container = get_container(request)
+    await _revoke_auth_tokens_from_request(request, container)
+    response = RedirectResponse(
+        url=request.app.url_path_for("index.index"),
+        status_code=303,
+    )
+    _clear_auth_cookies(response)
+    return response
 
 
-@auth_bp.route("/refresh", methods=["POST"])
+@auth_router.post("/refresh", name="auth.refresh_session")
 @rate_limit(
-    container_getter=lambda: container,
     scope="auth_refresh",
     limit=10,
     window_seconds=AUTH_WINDOW_SECONDS,
-    key_builder=lambda: client_ip(),
+    key_builder=lambda request: client_ip(request),
 )
-def refresh_session():
-    """Перевыпускает access и refresh token по валидному refresh token."""
+async def refresh_session(request: Request):
+    container = get_container(request)
     refresh_token = str(request.cookies.get("refresh_token") or "").strip()
     token_blocklist = getattr(container, "token_blocklist", None)
     if not refresh_token:
-        return jsonify({"error": "auth_required"}), 401
-    if token_blocklist is not None and token_blocklist.is_revoked(refresh_token):
-        return jsonify({"error": "invalid_token"}), 401
+        return JSONResponse({"error": "auth_required"}, status_code=401)
+    if token_blocklist is not None and await token_blocklist.is_revoked(refresh_token):
+        return JSONResponse({"error": "invalid_token"}, status_code=401)
     try:
         user_id = jwt_service.decode_refresh_token(refresh_token)
     except Exception:
-        current_app.logger.warning("refresh_failed ip=%s", client_ip(), exc_info=True)
-        return jsonify({"error": "invalid_token"}), 401
+        logger.warning("refresh_failed ip=%s", client_ip(request), exc_info=True)
+        return JSONResponse({"error": "invalid_token"}, status_code=401)
 
     if token_blocklist is not None:
-        token_blocklist.revoke(
+        await token_blocklist.revoke(
             refresh_token,
             jwt_service.get_token_ttl_seconds(refresh_token, expected_type="refresh"),
         )
 
-    response = jsonify({"status": "ok"})
+    response = JSONResponse({"status": "ok"})
     _set_auth_cookies(response, user_id)
     return response
 
 
-@auth_bp.route("/profile", methods=["GET"])
-def profile_page():
-    """Рендер страницы профиля текущего пользователя."""
-    user = getattr(g, "user", None)
+@auth_router.get("/profile", name="auth.profile_page")
+async def profile_page(request: Request):
+    container = get_container(request)
+    user = get_current_user(request)
     if not user:
-        return redirect(url_for("auth.login_page"))
-    overview = container.get_profile_overview_use_case().execute(user.id)
+        return RedirectResponse(
+            url=request.app.url_path_for("auth.login_page"),
+            status_code=303,
+        )
+    overview = await container.get_profile_overview_use_case().execute(user.id)
     return render_template(
+        request,
         "auth/profile.html",
         profile_user=user,
         profile_overview=overview,
     )
 
 
-@auth_bp.route("/profile", methods=["POST"])
-def update_profile():
-    """Обновляет профиль текущего пользователя."""
-    user = getattr(g, "user", None)
+@auth_router.post("/profile", name="auth.update_profile")
+async def update_profile(request: Request):
+    container = get_container(request)
+    user = get_current_user(request)
     if not user:
-        return redirect(url_for("auth.login_page"))
-
-    username = request.form.get("username", "")
-    avatar_url = request.form.get("avatar_url")
+        return RedirectResponse(
+            url=request.app.url_path_for("auth.login_page"),
+            status_code=303,
+        )
+    form = await request.form()
+    username = form.get("username", "")
+    avatar_url = form.get("avatar_url")
 
     try:
-        container.update_user_profile_use_case().execute(
-            user_id=user.id, username=username, avatar_url=avatar_url
+        await container.update_user_profile_use_case().execute(
+            user_id=user.id,
+            username=username,
+            avatar_url=avatar_url,
         )
-        flash("Профиль обновлён")
+        flash(request, "Профиль обновлён")
     except (InvalidProfileDataError, UserNotFoundError) as error:
-        flash(str(error))
+        flash(request, str(error))
 
-    return redirect(url_for("auth.profile_page"))
+    return RedirectResponse(
+        url=request.app.url_path_for("auth.profile_page"),
+        status_code=303,
+    )
 
 
 def _normalize_email(value: str | None) -> str:
     return str(value or "").strip().lower()
-
-
-def _auth_attempt_subject(email: str | None) -> str:
-    normalized_email = _normalize_email(email) or "anonymous"
-    return f"{client_ip()}::{normalized_email}"
 
 
 def _normalize_verification_code(value: str | None) -> str:
@@ -395,11 +452,11 @@ def _clear_auth_cookies(response):
     }
     if Settings.cookie_domain:
         cookie_kwargs["domain"] = Settings.cookie_domain
-    response.set_cookie("access_token", "", expires=0, **cookie_kwargs)
-    response.set_cookie("refresh_token", "", expires=0, **cookie_kwargs)
+    response.delete_cookie("access_token", **cookie_kwargs)
+    response.delete_cookie("refresh_token", **cookie_kwargs)
 
 
-def _revoke_auth_tokens_from_request():
+async def _revoke_auth_tokens_from_request(request: Request, container):
     token_blocklist = getattr(container, "token_blocklist", None)
     if token_blocklist is None:
         return
@@ -411,14 +468,14 @@ def _revoke_auth_tokens_from_request():
         if not token:
             continue
         try:
-            token_blocklist.revoke(
+            await token_blocklist.revoke(
                 token,
                 jwt_service.get_token_ttl_seconds(token, expected_type=expected_type),
             )
         except Exception:
-            current_app.logger.warning(
+            logger.warning(
                 "token_revoke_failed cookie=%s ip=%s",
                 cookie_name,
-                client_ip(),
+                client_ip(request),
                 exc_info=True,
             )

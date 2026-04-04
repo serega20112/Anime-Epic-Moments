@@ -1,3 +1,4 @@
+from src.backend.infrastructure.external._async import external_method
 import re
 import requests
 
@@ -67,7 +68,8 @@ class HuggingFaceLLMClient:
         allow_adult: bool = False,
     ) -> tuple[str, str, str | None]:
         """Возвращает запрос и метаданные режима: hf_llm или fallback_*."""
-        queries, mode, error = self.build_search_queries_with_meta(
+        queries, mode, error = self.__class__.build_search_queries_with_meta.__wrapped__(
+            self,
             description=description,
             genre_hint=genre_hint,
             year_from=year_from,
@@ -79,6 +81,7 @@ class HuggingFaceLLMClient:
         first = queries[0] if queries else ""
         return first, mode, error
 
+    @external_method
     def build_search_queries_with_meta(
         self,
         description: str,
@@ -155,6 +158,7 @@ class HuggingFaceLLMClient:
         )
         return [fallback_query], "fallback_invalid_json", None
 
+    @external_method
     def describe_taste_profile(
         self,
         profile_data: dict[str, object],

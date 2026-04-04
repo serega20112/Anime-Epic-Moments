@@ -24,7 +24,7 @@ class SearchAnimeByDescriptionUseCase:
         self.llm_client = llm_client
         self.safety_policy = safety_policy or AnimeSafetyPolicy()
 
-    def execute(
+    async def execute(
         self,
         description: str,
         genre_hint: str | None = None,
@@ -61,7 +61,7 @@ class SearchAnimeByDescriptionUseCase:
         include_adult = bool(adult_confirmed) and age_rating == "18+"
 
         llm_queries, llm_mode, llm_error = (
-            self.llm_client.build_search_queries_with_meta(
+            await self.llm_client.build_search_queries_with_meta(
                 description=base_description,
                 genre_hint=genre_hint,
                 year_from=year_from,
@@ -87,13 +87,13 @@ class SearchAnimeByDescriptionUseCase:
 
         results: List[Anime] = []
         for candidate in title_queries:
-            batch = self.api_client.search_by_title(
+            batch = await self.api_client.search_by_title(
                 title=candidate, include_adult=include_adult, limit=expanded_limit
             )
             results = self._merge_unique(results, batch)
 
         for candidate in queries:
-            batch = self.api_client.search_by_description(
+            batch = await self.api_client.search_by_description(
                 description=candidate,
                 year_from=year_from,
                 year_to=year_to,
@@ -105,7 +105,7 @@ class SearchAnimeByDescriptionUseCase:
 
         if not results:
             for candidate in queries:
-                batch = self.api_client.search_by_description(
+                batch = await self.api_client.search_by_description(
                     description=candidate,
                     include_adult=include_adult,
                     limit=expanded_limit,

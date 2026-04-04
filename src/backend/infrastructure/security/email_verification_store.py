@@ -14,23 +14,23 @@ class EmailVerificationStore:
         self.ttl_seconds = max(int(ttl_seconds), 60)
         self.prefix = "email_verification"
 
-    def save(self, payload: PendingEmailVerification) -> PendingEmailVerification:
-        self.store.set(
+    async def save(self, payload: PendingEmailVerification) -> PendingEmailVerification:
+        await self.store.set(
             self._key(payload.email),
             payload,
             ttl_seconds=self.ttl_seconds,
         )
         return payload
 
-    def get(self, email: str) -> PendingEmailVerification | None:
-        value = self.store.get(self._key(email))
+    async def get(self, email: str) -> PendingEmailVerification | None:
+        value = await self.store.get(self._key(email))
         return value if isinstance(value, PendingEmailVerification) else None
 
-    def delete(self, email: str):
-        self.store.delete(self._key(email))
+    async def delete(self, email: str):
+        await self.store.delete(self._key(email))
 
-    def get_ttl_seconds(self, email: str) -> int:
-        return self.store.get_ttl(self._key(email))
+    async def get_ttl_seconds(self, email: str) -> int:
+        return await self.store.get_ttl(self._key(email))
 
     def _key(self, email: str) -> str:
         return f"{self.prefix}:{str(email or '').strip().lower()}"

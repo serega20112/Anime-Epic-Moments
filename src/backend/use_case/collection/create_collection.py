@@ -8,7 +8,7 @@ class CreateCollectionUseCase:
     def __init__(self, collection_repo: CollectionRepository):
         self.collection_repo = collection_repo
 
-    def execute(
+    async def execute(
         self,
         user_id: int,
         title: str,
@@ -21,4 +21,4 @@ class CreateCollectionUseCase:
             description=description,
             is_public=is_public,
         )
-        return self.collection_repo.create_collection(collection)
+        return await self.collection_repo.create_collection(collection)

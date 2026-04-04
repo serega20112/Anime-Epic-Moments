@@ -1,5 +1,7 @@
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from src.backend.infrastructure.repositories._async import repository_method
 from src.backend.domain.support.entity import SupportTicket
 from src.backend.infrastructure.models.sqlalchemy_models import SupportTicketModel
 
@@ -7,9 +9,10 @@ from src.backend.infrastructure.models.sqlalchemy_models import SupportTicketMod
 class SupportRepository:
     """SQLAlchemy-репозиторий тикетов поддержки."""
 
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
+    @repository_method
     def add(self, ticket: SupportTicket) -> SupportTicket:
         """Сохраняет новый тикет поддержки в базе."""
         db_ticket = SupportTicketModel(
@@ -28,6 +31,7 @@ class SupportRepository:
         self.session.commit()
         return self._to_entity(db_ticket)
 
+    @repository_method
     def update(self, ticket: SupportTicket) -> SupportTicket:
         """Обновляет статус доставки существующего тикета."""
         db_ticket = self.session.query(SupportTicketModel).filter_by(id=ticket.id).first()

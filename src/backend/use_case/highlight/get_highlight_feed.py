@@ -21,7 +21,7 @@ class GetHighlightFeedUseCase(GetUserHighlightsUseCase):
         super().__init__(repo, anime_api_client, user_repo=user_repo)
         self.favorite_repo = favorite_repo
 
-    def execute(
+    async def execute(
         self,
         viewer_user_id: int | None = None,
         anime_id: int | None = None,
@@ -29,8 +29,9 @@ class GetHighlightFeedUseCase(GetUserHighlightsUseCase):
         include_spoilers: bool = False,
         limit: int = 12,
     ) -> HighlightFeedPage:
-        popular_items = self._build_dashboard(
-            highlights=self.repo.get_public_top(limit),
+        popular_items = (
+            await self._build_dashboard(
+            highlights=await self.repo.get_public_top(limit),
             anime_id=anime_id,
             emotion=None,
             category=category,
@@ -39,9 +40,10 @@ class GetHighlightFeedUseCase(GetUserHighlightsUseCase):
             query=None,
             include_spoilers=include_spoilers,
             viewer_user_id=viewer_user_id,
-        ).items
-        recent_items = self._build_dashboard(
-            highlights=self.repo.get_public_recent(limit),
+        )).items
+        recent_items = (
+            await self._build_dashboard(
+            highlights=await self.repo.get_public_recent(limit),
             anime_id=anime_id,
             emotion=None,
             category=category,
@@ -50,15 +52,16 @@ class GetHighlightFeedUseCase(GetUserHighlightsUseCase):
             query=None,
             include_spoilers=include_spoilers,
             viewer_user_id=viewer_user_id,
-        ).items
+        )).items
 
         liked_items = []
         from_favorites_items = []
         profile = None
         recent_activity = []
         if viewer_user_id is not None:
-            liked_items = self._build_dashboard(
-                highlights=self.repo.get_liked_by_user(viewer_user_id, limit=limit),
+            liked_items = (
+                await self._build_dashboard(
+                highlights=await self.repo.get_liked_by_user(viewer_user_id, limit=limit),
                 anime_id=anime_id,
                 emotion=None,
                 category=category,
@@ -67,12 +70,13 @@ class GetHighlightFeedUseCase(GetUserHighlightsUseCase):
                 query=None,
                 include_spoilers=include_spoilers,
                 viewer_user_id=viewer_user_id,
-            ).items
+            )).items
             favorite_anime_ids = [
-                favorite.anime_id for favorite in self.favorite_repo.get_by_user(viewer_user_id)
+                favorite.anime_id for favorite in await self.favorite_repo.get_by_user(viewer_user_id)
             ]
-            from_favorites_items = self._build_dashboard(
-                highlights=self.repo.get_from_anime_ids(favorite_anime_ids, limit=limit),
+            from_favorites_items = (
+                await self._build_dashboard(
+                highlights=await self.repo.get_from_anime_ids(favorite_anime_ids, limit=limit),
                 anime_id=anime_id,
                 emotion=None,
                 category=category,
@@ -81,9 +85,9 @@ class GetHighlightFeedUseCase(GetUserHighlightsUseCase):
                 query=None,
                 include_spoilers=include_spoilers,
                 viewer_user_id=viewer_user_id,
-            ).items
-            profile = self.repo.get_profile_summary(viewer_user_id)
-            recent_activity = self.repo.get_recent_activity(viewer_user_id)
+            )).items
+            profile = await self.repo.get_profile_summary(viewer_user_id)
+            recent_activity = await self.repo.get_recent_activity(viewer_user_id)
 
         combined_items = popular_items + recent_items + liked_items + from_favorites_items
         anime_counter = Counter((item.anime_id, item.anime_title) for item in combined_items)

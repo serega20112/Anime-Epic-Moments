@@ -18,20 +18,20 @@ class AddHighlightCommentUseCase:
         self.highlight_dashboard_cache = highlight_dashboard_cache
         self.profile_overview_cache = profile_overview_cache
 
-    def execute(self, highlight_id: int, user_id: int, content: str):
+    async def execute(self, highlight_id: int, user_id: int, content: str):
         normalized_content = str(content or "").strip()
         if not normalized_content:
             raise ValueError("Комментарий не может быть пустым")
         if len(normalized_content) > 600:
             raise ValueError("Комментарий слишком длинный")
-        highlight = self.repo.get_by_id(highlight_id)
-        comment = self.repo.add_comment(
+        highlight = await self.repo.get_by_id(highlight_id)
+        comment = await self.repo.add_comment(
             highlight_id=highlight_id,
             user_id=user_id,
             content=normalized_content,
         )
         if self.highlight_dashboard_cache is not None:
-            self.highlight_dashboard_cache.invalidate_public()
+            await self.highlight_dashboard_cache.invalidate_public()
         if self.profile_overview_cache is not None and highlight.user_id is not None:
-            self.profile_overview_cache.invalidate_overview(int(highlight.user_id))
+            await self.profile_overview_cache.invalidate_overview(int(highlight.user_id))
         return comment

@@ -8,7 +8,7 @@ class GetAnimeDiscussionUseCase:
     def __init__(self, watch_repo: WatchRepository):
         self.watch_repo = watch_repo
 
-    def execute(
+    async def execute(
         self,
         anime_id: int,
         sort_by: str = "popular",
@@ -18,7 +18,7 @@ class GetAnimeDiscussionUseCase:
         normalized_sort = str(sort_by or "popular").strip().lower()
         if normalized_sort not in {"popular", "recent"}:
             normalized_sort = "popular"
-        items = self.watch_repo.get_anime_comments(
+        items = await self.watch_repo.get_anime_comments(
             anime_id=anime_id,
             sort_by=normalized_sort,
             viewer_user_id=viewer_user_id,

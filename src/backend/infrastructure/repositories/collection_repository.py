@@ -1,8 +1,10 @@
 import json
 
 from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from src.backend.infrastructure.repositories._async import repository_method
 from src.backend.domain.collection.entity import AnimeCollection, AnimeCollectionItem
 from src.backend.infrastructure.models.sqlalchemy_models import (
     AnimeCollectionItemModel,
@@ -11,9 +13,10 @@ from src.backend.infrastructure.models.sqlalchemy_models import (
 
 
 class CollectionRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
+    @repository_method
     def create_collection(self, collection: AnimeCollection) -> AnimeCollection:
         row = AnimeCollectionModel(
             user_id=collection.user_id,
@@ -27,6 +30,7 @@ class CollectionRepository:
         collection.created_at = row.created_at
         return collection
 
+    @repository_method
     def get_by_id(self, collection_id: int) -> AnimeCollection | None:
         row = self.session.query(AnimeCollectionModel).filter_by(id=collection_id).first()
         if row is None:
@@ -40,6 +44,7 @@ class CollectionRepository:
             created_at=row.created_at,
         )
 
+    @repository_method
     def get_user_collections(self, user_id: int) -> list[AnimeCollection]:
         rows = (
             self.session.query(AnimeCollectionModel)
@@ -59,6 +64,7 @@ class CollectionRepository:
             for row in rows
         ]
 
+    @repository_method
     def get_public_user_collections(self, user_id: int) -> list[AnimeCollection]:
         rows = (
             self.session.query(AnimeCollectionModel)
@@ -78,6 +84,7 @@ class CollectionRepository:
             for row in rows
         ]
 
+    @repository_method
     def add_item(self, item: AnimeCollectionItem) -> AnimeCollectionItem:
         existing = (
             self.session.query(AnimeCollectionItemModel)
@@ -102,6 +109,7 @@ class CollectionRepository:
         item.added_at = row.added_at
         return item
 
+    @repository_method
     def remove_item(self, collection_id: int, anime_id: int) -> None:
         row = (
             self.session.query(AnimeCollectionItemModel)
@@ -112,6 +120,7 @@ class CollectionRepository:
             self.session.delete(row)
             self.session.commit()
 
+    @repository_method
     def get_items(self, collection_id: int) -> list[AnimeCollectionItem]:
         rows = (
             self.session.query(AnimeCollectionItemModel)
@@ -133,6 +142,7 @@ class CollectionRepository:
             for row in rows
         ]
 
+    @repository_method
     def get_items_count_map(self, collection_ids: list[int]) -> dict[int, int]:
         if not collection_ids:
             return {}

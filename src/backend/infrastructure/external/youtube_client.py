@@ -2,6 +2,7 @@ import re
 
 import requests
 
+from src.backend.infrastructure.external._async import external_method
 from src.backend.dependencies.settings import Settings
 from src.backend.domain.watch.policy import canonicalize_translation_name
 from src.backend.domain.watch.value_object import DiscoveredWatchSource
@@ -25,6 +26,7 @@ class YouTubeClient(WatchSourceProvider):
         """Возвращает доступность YouTube-провайдера."""
         return bool(self.api_key)
 
+    @external_method
     def search_sources(
         self,
         title: str,

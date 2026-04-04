@@ -15,9 +15,9 @@ class GetSharedHighlightUseCase(GetUserHighlightsUseCase):
     ):
         super().__init__(repo, anime_api_client, user_repo=user_repo)
 
-    def execute(self, highlight_id: int, viewer_user_id: int | None = None):
-        highlight = self.repo.increment_views(highlight_id)
-        return self._build_dashboard(
+    async def execute(self, highlight_id: int, viewer_user_id: int | None = None):
+        highlight = await self.repo.increment_views(highlight_id)
+        return await self._build_dashboard(
             highlights=[highlight],
             anime_id=None,
             emotion=None,

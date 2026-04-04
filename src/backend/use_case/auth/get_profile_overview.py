@@ -55,21 +55,21 @@ class GetProfileOverviewUseCase:
         self.hf_llm_client = hf_llm_client
         self.profile_overview_cache = profile_overview_cache
 
-    def execute(self, user_id: int) -> ProfileOverview:
+    async def execute(self, user_id: int) -> ProfileOverview:
         if self.profile_overview_cache is not None:
-            cached_overview = self.profile_overview_cache.get_overview(user_id)
+            cached_overview = await self.profile_overview_cache.get_overview(user_id)
             if cached_overview is not None:
                 return cached_overview
 
-        user = self.user_repo.get_by_id(user_id)
+        user = await self.user_repo.get_by_id(user_id)
         if not user:
             raise ValueError("Пользователь не найден")
 
-        favorites = self.favorite_repo.get_by_user(user_id)
-        own_highlights = self.highlight_repo.get_by_user(user_id)
-        watched_stats = self.watch_repo.get_watched_anime_stats(user_id=user_id, limit=10)
-        heatmap = self.watch_repo.get_viewing_heatmap(user_id=user_id, days=35)
-        anime_map = self._load_anime_map(
+        favorites = await self.favorite_repo.get_by_user(user_id)
+        own_highlights = await self.highlight_repo.get_by_user(user_id)
+        watched_stats = await self.watch_repo.get_watched_anime_stats(user_id=user_id, limit=10)
+        heatmap = await self.watch_repo.get_viewing_heatmap(user_id=user_id, days=35)
+        anime_map = await self._load_anime_map(
             favorites=favorites,
             own_highlights=own_highlights,
             watched_stats=watched_stats,
@@ -97,31 +97,31 @@ class GetProfileOverviewUseCase:
         ]
         average_rating = round(mean(rating_values), 1) if rating_values else None
 
-        recent_dashboard = self.recent_highlights_use_case.execute(
+        recent_dashboard = await self.recent_highlights_use_case.execute(
             user_id=user_id,
             include_spoilers=True,
             viewer_user_id=user_id,
             sort_by="recent",
         )
-        popular_dashboard = self.recent_highlights_use_case.execute(
+        popular_dashboard = await self.recent_highlights_use_case.execute(
             user_id=user_id,
             include_spoilers=True,
             viewer_user_id=user_id,
             sort_by="popular",
         )
-        liked_dashboard = self.liked_highlights_use_case.execute(
+        liked_dashboard = await self.liked_highlights_use_case.execute(
             user_id=user_id,
             include_spoilers=True,
             sort_by="popular",
         )
-        saved_dashboard = self.saved_highlights_use_case.execute(
+        saved_dashboard = await self.saved_highlights_use_case.execute(
             user_id=user_id,
             include_spoilers=True,
             sort_by="popular",
         )
-        summary = self.highlight_repo.get_profile_summary(user_id)
-        recent_activity = self.highlight_repo.get_recent_activity(user_id, limit=8)
-        followers_count, following_count = self.user_repo.get_follow_stats(user_id)
+        summary = await self.highlight_repo.get_profile_summary(user_id)
+        recent_activity = await self.highlight_repo.get_recent_activity(user_id, limit=8)
+        followers_count, following_count = await self.user_repo.get_follow_stats(user_id)
         smart_profile = SmartProfile(
             favorite_genres=favorite_genres,
             dominant_mood=mood,
@@ -139,7 +139,7 @@ class GetProfileOverviewUseCase:
                 highlight_likes_received=sum(item.likes_count for item in own_highlights),
                 top_mood=mood,
             ),
-            ai_taste_summary=self._build_taste_summary(
+            ai_taste_summary=await self._build_taste_summary(
                 user_id=user_id,
                 favorite_genres=favorite_genres,
                 mood=mood,
@@ -166,10 +166,15 @@ class GetProfileOverviewUseCase:
             following_count=following_count,
         )
         if self.profile_overview_cache is not None:
-            return self.profile_overview_cache.set_overview(user_id, overview)
+            return await self.profile_overview_cache.set_overview(user_id, overview)
         return overview
 
-    def _load_anime_map(self, favorites, own_highlights, watched_stats) -> dict[int, object | None]:
+    async def _load_anime_map(
+        self,
+        favorites,
+        own_highlights,
+        watched_stats,
+    ) -> dict[int, object | None]:
         anime_ids = {
             int(item.anime_id)
             for item in favorites
@@ -178,7 +183,7 @@ class GetProfileOverviewUseCase:
         anime_ids.update(int(item.anime_id) for item in watched_stats)
         anime_map: dict[int, object | None] = {}
         for anime_id in anime_ids:
-            anime_map[anime_id] = self.anime_api_client.get_by_id(anime_id)
+            anime_map[anime_id] = await self.anime_api_client.get_by_id(anime_id)
         return anime_map
 
     def _collect_genres(self, favorites, anime_map: dict[int, object | None]) -> list[str]:
@@ -225,7 +230,7 @@ class GetProfileOverviewUseCase:
             )
         return result
 
-    def _build_taste_summary(
+    async def _build_taste_summary(
         self,
         user_id: int,
         favorite_genres,
@@ -244,12 +249,12 @@ class GetProfileOverviewUseCase:
             f"Топ по активности: {top_titles}."
         )
         if self.profile_overview_cache is not None:
-            cached_summary = self.profile_overview_cache.get_ai_summary(user_id)
+            cached_summary = await self.profile_overview_cache.get_ai_summary(user_id)
             if cached_summary:
                 return cached_summary
         if self.hf_llm_client is None:
             return fallback
-        summary = self.hf_llm_client.describe_taste_profile(
+        summary = await self.hf_llm_client.describe_taste_profile(
             profile_data={
                 "mood": mood.label,
                 "mood_description": mood.description,
@@ -261,5 +266,5 @@ class GetProfileOverviewUseCase:
             fallback=fallback,
         )
         if self.profile_overview_cache is not None and summary != fallback:
-            self.profile_overview_cache.set_ai_summary(user_id, summary)
+            await self.profile_overview_cache.set_ai_summary(user_id, summary)
         return summary

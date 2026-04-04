@@ -2,12 +2,14 @@ import smtplib
 from email.message import EmailMessage
 from html import escape
 
+from src.backend.infrastructure.external._async import external_method
 from src.backend.dependencies.settings import Settings
 
 
 class EmailVerificationMailer:
     """Отправляет письмо с кодом подтверждения email."""
 
+    @external_method
     def send_verification_code(
         self,
         email: str,

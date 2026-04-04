@@ -25,7 +25,7 @@ class CreateHighlightUseCase:
         self.highlight_dashboard_cache = highlight_dashboard_cache
         self.profile_overview_cache = profile_overview_cache
 
-    def execute(
+    async def execute(
         self,
         user_id: int | None,
         anime_id: int,
@@ -58,11 +58,11 @@ class CreateHighlightUseCase:
             emotion=emotion,
         )
 
-        result = self.repo.add(highlight)
+        result = await self.repo.add(highlight)
         if self.recommendation_service and user_id is not None:
-            self.recommendation_service.invalidate_user(int(user_id))
+            await self.recommendation_service.invalidate_user(int(user_id))
         if self.highlight_dashboard_cache is not None:
-            self.highlight_dashboard_cache.invalidate_public()
+            await self.highlight_dashboard_cache.invalidate_public()
         if self.profile_overview_cache is not None and user_id is not None:
-            self.profile_overview_cache.invalidate_user(int(user_id), include_ai_summary=True)
+            await self.profile_overview_cache.invalidate_user(int(user_id), include_ai_summary=True)
         return result

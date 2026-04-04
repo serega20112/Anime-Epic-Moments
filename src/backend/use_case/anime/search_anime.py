@@ -11,8 +11,8 @@ class SearchAnimeUseCase:
     def __init__(self, api_client: AnimeApiClient):
         self.api_client = api_client
 
-    def execute(self, title: str, limit: int = 10) -> List[Anime]:
+    async def execute(self, title: str, limit: int = 10) -> List[Anime]:
         """
         Возвращает список объектов Anime, найденных по названию
         """
-        return self.api_client.search_by_title(title=title, limit=limit)
+        return await self.api_client.search_by_title(title=title, limit=limit)

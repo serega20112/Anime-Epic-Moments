@@ -1,16 +1,19 @@
 from typing import Optional
 
 from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from src.backend.infrastructure.repositories._async import repository_method
 from src.backend.domain.user.entity import User
 from src.backend.infrastructure.models.sqlalchemy_models import UserFollowModel, UserModel
 
 
 class UserRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
+    @repository_method
     def add(self, user: User):
         db_user = UserModel(
             email=user.email,
@@ -24,18 +27,21 @@ class UserRepository:
         user.created_at = db_user.created_at
         return user
 
+    @repository_method
     def get_by_id(self, user_id: int) -> Optional[User]:
         db_user = self.session.query(UserModel).filter_by(id=user_id).first()
         if not db_user:
             return None
         return self._to_entity(db_user)
 
+    @repository_method
     def get_by_email(self, email: str) -> Optional[User]:
         db_user = self.session.query(UserModel).filter_by(email=email).first()
         if not db_user:
             return None
         return self._to_entity(db_user)
 
+    @repository_method
     def get_by_ids(self, user_ids: list[int]) -> list[User]:
         if not user_ids:
             return []
@@ -46,6 +52,7 @@ class UserRepository:
         )
         return [self._to_entity(row) for row in rows]
 
+    @repository_method
     def update(self, user: User) -> User:
         """Обновляет username и avatar_url пользователя."""
         db_user = self.session.query(UserModel).filter_by(id=user.id).first()
@@ -56,6 +63,7 @@ class UserRepository:
         self.session.commit()
         return user
 
+    @repository_method
     def update_password(self, user_id: int, password_hash: str) -> User:
         """Обновляет password_hash пользователя."""
         db_user = self.session.query(UserModel).filter_by(id=user_id).first()
@@ -65,6 +73,7 @@ class UserRepository:
         self.session.commit()
         return self._to_entity(db_user)
 
+    @repository_method
     def follow(self, follower_user_id: int, followed_user_id: int) -> bool:
         if follower_user_id == followed_user_id:
             raise ValueError("Нельзя подписаться на самого себя")
@@ -86,6 +95,7 @@ class UserRepository:
             self.session.commit()
         return True
 
+    @repository_method
     def unfollow(self, follower_user_id: int, followed_user_id: int) -> bool:
         if follower_user_id == followed_user_id:
             raise ValueError("Нельзя отписаться от самого себя")
@@ -102,6 +112,7 @@ class UserRepository:
             self.session.commit()
         return False
 
+    @repository_method
     def is_following(self, follower_user_id: int, followed_user_id: int) -> bool:
         if follower_user_id == followed_user_id:
             return False
@@ -115,6 +126,7 @@ class UserRepository:
             is not None
         )
 
+    @repository_method
     def get_follow_stats(self, user_id: int) -> tuple[int, int]:
         followers_count = (
             self.session.query(func.count(UserFollowModel.id))
@@ -130,6 +142,7 @@ class UserRepository:
         )
         return int(followers_count), int(following_count)
 
+    @repository_method
     def get_followed_user_ids(self, follower_user_id: int) -> list[int]:
         rows = (
             self.session.query(UserFollowModel.followed_user_id)
@@ -139,6 +152,7 @@ class UserRepository:
         )
         return [int(value) for (value,) in rows]
 
+    @repository_method
     def get_followed_users(self, follower_user_id: int, limit: int = 12) -> list[User]:
         rows = (
             self.session.query(UserModel)
@@ -153,6 +167,7 @@ class UserRepository:
         )
         return [self._to_entity(row) for row in rows]
 
+    @repository_method
     def get_followers(self, followed_user_id: int, limit: int = 12) -> list[User]:
         rows = (
             self.session.query(UserModel)

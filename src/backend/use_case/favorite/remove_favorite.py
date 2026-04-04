@@ -14,9 +14,9 @@ class RemoveFavoriteUseCase:
         self.recommendation_service = recommendation_service
         self.profile_overview_cache = profile_overview_cache
 
-    def execute(self, user_id: int, anime_id: int):
-        self.repo.remove(user_id, anime_id)
+    async def execute(self, user_id: int, anime_id: int):
+        await self.repo.remove(user_id, anime_id)
         if self.recommendation_service:
-            self.recommendation_service.invalidate_user(int(user_id))
+            await self.recommendation_service.invalidate_user(int(user_id))
         if self.profile_overview_cache is not None:
-            self.profile_overview_cache.invalidate_user(int(user_id), include_ai_summary=True)
+            await self.profile_overview_cache.invalidate_user(int(user_id), include_ai_summary=True)

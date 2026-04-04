@@ -1,33 +1,33 @@
 """
-auth_dependencies.py — DI зависимости для Auth
+Backward-compatible auth helpers for FastAPI handlers/tests.
 """
 
-from src.backend.infrastructure.security.password_service import PasswordService
-from src.backend.infrastructure.security.jwt_service import JWTService
+from __future__ import annotations
 
-# Сервисы аутентификации / шифрования
+from functools import wraps
+
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+from src.backend.infrastructure.security.jwt_service import JWTService
+from src.backend.infrastructure.security.password_service import PasswordService
+
 password_service = PasswordService()
 jwt_service = JWTService()
 
 
-# Middleware (Flask decorator), чтобы проверять авторизацию
-def auth_required(f):
-    from functools import wraps
-    from flask import request, jsonify
-
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get("Authorization")
+def auth_required(handler):
+    @wraps(handler)
+    async def decorated(request: Request, *args, **kwargs):
+        token = str(request.headers.get("Authorization") or "").strip()
         if not token:
-            return jsonify({"error": "Authorization token required"}), 401
-
+            return JSONResponse({"error": "Authorization token required"}, status_code=401)
         try:
             user_id = jwt_service.decode_token(token)
         except Exception:
-            return jsonify({"error": "Invalid or expired token"}), 401
+            return JSONResponse({"error": "Invalid or expired token"}, status_code=401)
 
-        # прокидываем user_id в kwargs, чтобы use case мог его получить
         kwargs["user_id"] = user_id
-        return f(*args, **kwargs)
+        return await handler(request, *args, **kwargs)
 
     return decorated

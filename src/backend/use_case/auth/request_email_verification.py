@@ -27,7 +27,7 @@ class RequestEmailVerificationUseCase:
         self.verification_store = verification_store
         self.mailer = mailer
 
-    def execute(
+    async def execute(
         self,
         email: str,
         password: str,
@@ -36,7 +36,7 @@ class RequestEmailVerificationUseCase:
     ) -> PendingEmailVerification:
         normalized_email = str(email or "").strip().lower()
         normalized_username = str(username or "").strip()
-        if self.user_repo.get_by_email(normalized_email):
+        if await self.user_repo.get_by_email(normalized_email):
             raise EmailAlreadyExistsError(
                 f"Пользователь с email {normalized_email} уже существует"
             )
@@ -48,8 +48,8 @@ class RequestEmailVerificationUseCase:
             code=self._generate_code(),
             theme=self._normalize_theme(theme),
         )
-        self.verification_store.save(payload)
-        self.mailer.send_verification_code(
+        await self.verification_store.save(payload)
+        await self.mailer.send_verification_code(
             payload.email,
             payload.code,
             theme=payload.theme,

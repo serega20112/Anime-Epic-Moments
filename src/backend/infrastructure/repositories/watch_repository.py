@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+from src.backend.infrastructure.repositories._async import repository_method
 from src.backend.domain.anime.value_object import AnimeDiscussionComment
 from src.backend.domain.watch.entity import (
     HighlightContext,
@@ -27,9 +29,10 @@ from src.backend.infrastructure.models.sqlalchemy_models import (
 
 
 class WatchRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
+    @repository_method
     def get_status(self, user_id: int, anime_id: int) -> Optional[UserAnimeStatus]:
         row = (
             self.session.query(UserAnimeStatusModel)
@@ -46,6 +49,7 @@ class WatchRepository:
             updated_at=row.updated_at,
         )
 
+    @repository_method
     def upsert_status(self, status: UserAnimeStatus) -> UserAnimeStatus:
         row = (
             self.session.query(UserAnimeStatusModel)
@@ -74,6 +78,7 @@ class WatchRepository:
         status.updated_at = row.updated_at
         return status
 
+    @repository_method
     def get_translations(self, anime_id: int) -> List[Translation]:
         rows = (
             self.session.query(TranslationModel)
@@ -93,6 +98,7 @@ class WatchRepository:
             for row in rows
         ]
 
+    @repository_method
     def add_translation(self, translation: Translation) -> Translation:
         existing = (
             self.session.query(TranslationModel)
@@ -121,6 +127,7 @@ class WatchRepository:
         translation.created_at = row.created_at
         return translation
 
+    @repository_method
     def get_sources(
         self, anime_id: int, episode: int | None = None
     ) -> List[WatchSource]:
@@ -146,6 +153,7 @@ class WatchRepository:
             for row in rows
         ]
 
+    @repository_method
     def add_source(self, source: WatchSource) -> WatchSource:
         existing = (
             self.session.query(WatchSourceModel)
@@ -182,6 +190,7 @@ class WatchRepository:
         source.created_at = row.created_at
         return source
 
+    @repository_method
     def get_session(
         self, user_id: int, anime_id: int, episode: int
     ) -> Optional[ViewingSession]:
@@ -209,6 +218,7 @@ class WatchRepository:
             updated_at=row.updated_at,
         )
 
+    @repository_method
     def upsert_session(self, session: ViewingSession) -> ViewingSession:
         row = (
             self.session.query(ViewingSessionModel)
@@ -247,6 +257,7 @@ class WatchRepository:
         session.updated_at = row.updated_at
         return session
 
+    @repository_method
     def add_highlight_context(self, context: HighlightContext) -> HighlightContext:
         row = HighlightContextModel(
             highlight_id=context.highlight_id,
@@ -260,6 +271,7 @@ class WatchRepository:
         context.created_at = row.created_at
         return context
 
+    @repository_method
     def get_highlight_contexts(
         self, highlight_ids: List[int]
     ) -> List[HighlightContext]:
@@ -282,6 +294,7 @@ class WatchRepository:
             for row in rows
         ]
 
+    @repository_method
     def get_watched_anime_stats(
         self,
         user_id: int,
@@ -318,6 +331,7 @@ class WatchRepository:
             for row in rows
         ]
 
+    @repository_method
     def get_viewing_heatmap(
         self,
         user_id: int,
@@ -345,6 +359,7 @@ class WatchRepository:
             for row in rows
         ]
 
+    @repository_method
     def add_anime_comment(
         self,
         anime_id: int,
@@ -375,6 +390,7 @@ class WatchRepository:
             is_liked=False,
         )
 
+    @repository_method
     def get_anime_comments(
         self,
         anime_id: int,
@@ -434,6 +450,7 @@ class WatchRepository:
             for item, username, likes_count in rows
         ]
 
+    @repository_method
     def set_anime_comment_like(
         self,
         comment_id: int,
@@ -459,7 +476,8 @@ class WatchRepository:
         elif not liked and existing is not None:
             self.session.delete(existing)
         self.session.commit()
-        refreshed = self.get_anime_comments(
+        refreshed = self.__class__.get_anime_comments.__wrapped__(
+            self,
             anime_id=comment.anime_id,
             viewer_user_id=user_id,
             limit=200,

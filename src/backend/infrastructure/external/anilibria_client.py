@@ -2,6 +2,7 @@ import re
 
 import requests
 
+from src.backend.infrastructure.external._async import external_method
 from src.backend.dependencies.settings import Settings
 from src.backend.domain.watch.value_object import DiscoveredWatchSource
 from src.backend.infrastructure.external.watch_source_provider import (
@@ -21,6 +22,7 @@ class AniLibriaClient(WatchSourceProvider):
     def is_enabled(self) -> bool:
         return bool(self.api_url)
 
+    @external_method
     def search_sources(
         self,
         title: str,

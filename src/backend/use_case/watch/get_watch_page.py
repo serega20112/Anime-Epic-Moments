@@ -1,3 +1,5 @@
+import asyncio
+
 from src.backend.domain.watch.policy import get_translation_priority
 from src.backend.domain.watch.value_object import (
     WatchHighlightCard,
@@ -25,7 +27,7 @@ class GetWatchPageUseCase:
         self.anime_api_client = anime_api_client
         self.watch_source_sync_service = watch_source_sync_service
 
-    def execute(
+    async def execute(
         self,
         anime_id: int,
         episode: int,
@@ -33,15 +35,15 @@ class GetWatchPageUseCase:
         selected_source_id: int | None = None,
         preferred_start_seconds: float | None = None,
     ) -> WatchPageData:
-        anime = self.anime_api_client.get_by_id(anime_id)
-        sources = self.watch_source_sync_service.sync_for_anime(
+        anime = await self.anime_api_client.get_by_id(anime_id)
+        sources = await self.watch_source_sync_service.sync_for_anime(
             anime_id=anime_id,
             anime=anime,
             episode=episode,
         )
         translations = {
             item.id: item
-            for item in self.watch_repo.get_translations(anime_id=anime_id)
+            for item in await self.watch_repo.get_translations(anime_id=anime_id)
         }
         sources = sorted(
             sources,
@@ -57,14 +59,14 @@ class GetWatchPageUseCase:
             ),
         )
         session = (
-            self.watch_repo.get_session(
+            await self.watch_repo.get_session(
                 user_id=user_id, anime_id=anime_id, episode=episode
             )
             if user_id
             else None
         )
         status = (
-            self.watch_repo.get_status(user_id=user_id, anime_id=anime_id)
+            await self.watch_repo.get_status(user_id=user_id, anime_id=anime_id)
             if user_id
             else None
         )
@@ -95,14 +97,19 @@ class GetWatchPageUseCase:
             )
             for item in sources
         ]
+        source_by_id = {
+            item.source_id: item
+            for item in source_cards
+            if getattr(item, "source_id", None) is not None
+        }
 
-        episode_highlights = self.highlight_repo.get_by_anime_episode(
+        episode_highlights = await self.highlight_repo.get_by_anime_episode(
             anime_id=anime_id,
             episode=episode,
         )
         highlight_contexts = {
             item.highlight_id: item
-            for item in self.watch_repo.get_highlight_contexts(
+            for item in await self.watch_repo.get_highlight_contexts(
                 [
                     highlight.id
                     for highlight in episode_highlights
@@ -118,14 +125,7 @@ class GetWatchPageUseCase:
             if context:
                 translation = translations.get(context.translation_id)
                 translation_name = translation.name if translation else None
-                source = next(
-                    (
-                        source
-                        for source in sources
-                        if source.id == context.watch_source_id
-                    ),
-                    None,
-                )
+                source = source_by_id.get(context.watch_source_id)
                 provider_name = source.provider_name if source else None
             highlight_cards.append(
                 WatchHighlightCard(
@@ -155,6 +155,10 @@ class GetWatchPageUseCase:
             anime=anime,
             sources=source_cards,
             episode=episode,
+        )
+        can_discover_sources, discovery_provider_name = await asyncio.gather(
+            self.watch_source_sync_service.is_enabled(),
+            self.watch_source_sync_service.get_provider_label(),
         )
 
         return WatchPageData(
@@ -190,8 +194,8 @@ class GetWatchPageUseCase:
                 if session
                 else (active_source.quality_label if active_source else None)
             ),
-            can_discover_sources=self.watch_source_sync_service.is_enabled(),
-            discovery_provider_name=self.watch_source_sync_service.get_provider_label(),
+            can_discover_sources=can_discover_sources,
+            discovery_provider_name=discovery_provider_name,
         )
 
     def _format_timestamp(self, seconds: float) -> str:

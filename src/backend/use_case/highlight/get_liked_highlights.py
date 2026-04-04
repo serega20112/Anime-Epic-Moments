@@ -15,7 +15,7 @@ class GetLikedHighlightsUseCase(GetUserHighlightsUseCase):
     ):
         super().__init__(repo, anime_api_client, user_repo=user_repo)
 
-    def execute(
+    async def execute(
         self,
         user_id: int,
         anime_id: int | None = None,
@@ -26,8 +26,8 @@ class GetLikedHighlightsUseCase(GetUserHighlightsUseCase):
         query: str | None = None,
         include_spoilers: bool = True,
     ):
-        highlights = self.repo.get_liked_by_user(user_id)
-        return self._build_dashboard(
+        highlights = await self.repo.get_liked_by_user(user_id)
+        return await self._build_dashboard(
             highlights=highlights,
             anime_id=anime_id,
             emotion=emotion,

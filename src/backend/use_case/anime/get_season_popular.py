@@ -23,7 +23,7 @@ class GetSeasonPopularUseCase:
         else:
             return "fall"
 
-    def execute(
+    async def execute(
         self, year: int = None, season: str = None, limit: int = 10
     ) -> List[Anime]:
         """
@@ -33,4 +33,4 @@ class GetSeasonPopularUseCase:
         """
         year = year or datetime.now().year
         season = season or self._current_season()
-        return self.api_client.get_season_popular(year=year, season=season, limit=limit)
+        return await self.api_client.get_season_popular(year=year, season=season, limit=limit)

@@ -4,6 +4,7 @@ from html import escape
 
 import requests
 
+from src.backend.infrastructure.external._async import external_method
 from src.backend.dependencies.settings import Settings
 from src.backend.domain.support.entity import SupportTicket
 
@@ -22,6 +23,7 @@ class TelegramSupportNotifier:
         """Возвращает доступность Telegram notifier по текущей конфигурации."""
         return bool(self.bot_token and self.admin_chat_ids)
 
+    @external_method
     def send_ticket_created(self, ticket: SupportTicket) -> int:
         """Отправляет уведомление о новом тикете хотя бы в один admin chat."""
         if not self.bot_token or not self.admin_chat_ids:

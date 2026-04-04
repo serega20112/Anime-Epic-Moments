@@ -17,8 +17,8 @@ class LoginUserUseCase:
         self.user_repo = user_repo
         self.password_service = password_service
 
-    def execute(self, email: str, password: str) -> User:
-        user = self.user_repo.get_by_email(email)
+    async def execute(self, email: str, password: str) -> User:
+        user = await self.user_repo.get_by_email(email)
         if not user or not self.password_service.verify_password(
             password, user.password_hash
         ):

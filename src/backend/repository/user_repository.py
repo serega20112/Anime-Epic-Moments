@@ -10,53 +10,53 @@ from src.backend.domain.user.entity import User
 
 class UserRepository(ABC):
     @abstractmethod
-    def add(self, user: User) -> User:
+    async def add(self, user: User) -> User:
         """Сохраняет нового пользователя и возвращает с id"""
 
     @abstractmethod
-    def get_by_email(self, email: str) -> Optional[User]:
+    async def get_by_email(self, email: str) -> Optional[User]:
         """Получает пользователя по email"""
 
     @abstractmethod
-    def get_by_id(self, user_id: int) -> Optional[User]:
+    async def get_by_id(self, user_id: int) -> Optional[User]:
         """Получает пользователя по id"""
 
     @abstractmethod
-    def update(self, user: User) -> User:
+    async def update(self, user: User) -> User:
         """Обновляет существующего пользователя"""
 
     @abstractmethod
-    def update_password(self, user_id: int, password_hash: str) -> User:
+    async def update_password(self, user_id: int, password_hash: str) -> User:
         """Обновляет пароль существующего пользователя"""
 
     @abstractmethod
-    def get_by_ids(self, user_ids: list[int]) -> list[User]:
+    async def get_by_ids(self, user_ids: list[int]) -> list[User]:
         """Возвращает пользователей по списку id."""
 
     @abstractmethod
-    def follow(self, follower_user_id: int, followed_user_id: int) -> bool:
+    async def follow(self, follower_user_id: int, followed_user_id: int) -> bool:
         """Создает подписку пользователя на другого пользователя."""
 
     @abstractmethod
-    def unfollow(self, follower_user_id: int, followed_user_id: int) -> bool:
+    async def unfollow(self, follower_user_id: int, followed_user_id: int) -> bool:
         """Удаляет подписку пользователя на другого пользователя."""
 
     @abstractmethod
-    def is_following(self, follower_user_id: int, followed_user_id: int) -> bool:
+    async def is_following(self, follower_user_id: int, followed_user_id: int) -> bool:
         """Проверяет, подписан ли пользователь на другого пользователя."""
 
     @abstractmethod
-    def get_follow_stats(self, user_id: int) -> tuple[int, int]:
+    async def get_follow_stats(self, user_id: int) -> tuple[int, int]:
         """Возвращает количество подписчиков и подписок пользователя."""
 
     @abstractmethod
-    def get_followed_user_ids(self, follower_user_id: int) -> list[int]:
+    async def get_followed_user_ids(self, follower_user_id: int) -> list[int]:
         """Возвращает список id пользователей, на которых оформлена подписка."""
 
     @abstractmethod
-    def get_followed_users(self, follower_user_id: int, limit: int = 12) -> list[User]:
+    async def get_followed_users(self, follower_user_id: int, limit: int = 12) -> list[User]:
         """Возвращает пользователей, на которых оформлена подписка."""
 
     @abstractmethod
-    def get_followers(self, followed_user_id: int, limit: int = 12) -> list[User]:
+    async def get_followers(self, followed_user_id: int, limit: int = 12) -> list[User]:
         """Возвращает пользователей, которые подписаны на target-пользователя."""

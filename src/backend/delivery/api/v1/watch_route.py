@@ -1,29 +1,25 @@
+import logging
 import re
 from urllib.parse import urljoin, urlparse
 
-import requests
-from flask import (
-    Blueprint,
-    Response,
-    abort,
-    current_app,
-    g,
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    stream_with_context,
-    url_for,
-)
-from sqlalchemy.exc import SQLAlchemyError
+import httpx
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 
-from src.backend.dependencies.container import container
+from src.backend.delivery.api.helpers import (
+    get_container,
+    get_current_user,
+    read_payload,
+)
 from src.backend.domain.anime.value_object import AnimeDiscussionBoard
 from src.backend.infrastructure.security.flask_protection import client_ip, rate_limit
+from src.backend.infrastructure.web.templating import render_template
 
-watch_bp = Blueprint("watch", __name__, url_prefix="/watch")
-_proxy_media_session = requests.Session()
-_proxy_media_session.trust_env = False
+watch_router = APIRouter(prefix="/watch")
+watch_bp = watch_router
+container = None
+logger = logging.getLogger("anime_epic_moments")
+_proxy_media_client = httpx.AsyncClient(follow_redirects=True, trust_env=False, timeout=30.0)
 _allowed_media_host_suffixes = (
     "libria.fun",
     "anilibria.top",
@@ -35,142 +31,145 @@ _allowed_media_host_suffixes = (
 )
 
 
-@watch_bp.route("/<int:anime_id>", methods=["GET"])
-def watch_page(anime_id: int):
-    episode = _to_int(request.args.get("episode")) or 1
-    selected_source_id = _to_int(request.args.get("source_id"))
-    preferred_start_seconds = _safe_float(request.args.get("start_at"))
-    discussion_sort = str(request.args.get("discussion_sort") or "popular").strip().lower()
-    user = getattr(g, "user", None)
-    data = container.get_watch_page_use_case().execute(
+@watch_router.get("/proxy", name="watch.proxy_stream")
+@watch_router.head("/proxy", name="watch.proxy_stream_head")
+async def proxy_stream(request: Request):
+    upstream_url = str(request.query_params.get("url") or "").strip()
+    if not _is_allowed_media_url(upstream_url):
+        return Response(status_code=403)
+    request_headers = {"User-Agent": _browser_user_agent(request)}
+    if request.headers.get("Range"):
+        request_headers["Range"] = request.headers["Range"]
+    try:
+        upstream_response = await _proxy_media_client.get(
+            upstream_url,
+            headers=request_headers,
+        )
+        upstream_response.raise_for_status()
+    except httpx.HTTPError:
+        logger.exception("watch_stream_proxy_failed url=%s", upstream_url)
+        return JSONResponse({"error": "stream_unavailable"}, status_code=502)
+
+    content_type = str(upstream_response.headers.get("Content-Type") or "").lower()
+    upstream_status = int(upstream_response.status_code or 200)
+    if _is_hls_manifest(upstream_url=upstream_url, content_type=content_type):
+        proxied_manifest = _rewrite_hls_manifest(
+            request=request,
+            manifest_text=upstream_response.text,
+            upstream_url=upstream_url,
+        )
+        return Response(
+            content=proxied_manifest,
+            media_type="application/vnd.apple.mpegurl",
+            status_code=upstream_status,
+        )
+
+    async def generate():
+        async with _proxy_media_client.stream(
+            "GET",
+            upstream_url,
+            headers=request_headers,
+        ) as stream_response:
+            async for chunk in stream_response.aiter_bytes(chunk_size=64 * 1024):
+                if chunk:
+                    yield chunk
+
+    response_headers = {}
+    for header_name in (
+        "Content-Type",
+        "Content-Length",
+        "Accept-Ranges",
+        "Content-Range",
+    ):
+        if upstream_response.headers.get(header_name):
+            response_headers[header_name] = upstream_response.headers[header_name]
+    return StreamingResponse(
+        generate(),
+        headers=response_headers,
+        status_code=upstream_status,
+    )
+
+
+@watch_router.get("/{anime_id}", name="watch.watch_page")
+async def watch_page(request: Request, anime_id: int):
+    container = get_container(request)
+    user = get_current_user(request)
+    episode = _to_int(request.query_params.get("episode")) or 1
+    selected_source_id = _to_int(request.query_params.get("source_id"))
+    preferred_start_seconds = _safe_float(request.query_params.get("start_at"))
+    discussion_sort = str(request.query_params.get("discussion_sort") or "popular").strip().lower()
+    data = await container.get_watch_page_use_case().execute(
         anime_id=anime_id,
         episode=episode,
         user_id=user.id if user else None,
         selected_source_id=selected_source_id,
         preferred_start_seconds=preferred_start_seconds,
     )
-    discussion = _load_discussion(
+    discussion = await _load_discussion(
+        request=request,
         anime_id=anime_id,
         discussion_sort=discussion_sort,
         viewer_user_id=user.id if user else None,
     )
-    return render_template("anime/watch.html", watch=data, discussion=discussion)
+    return render_template(request, "anime/watch.html", watch=data, discussion=discussion)
 
 
-@watch_bp.route("/proxy", methods=["GET", "HEAD"])
-def proxy_stream():
-    upstream_url = str(request.args.get("url") or "").strip()
-    if not _is_allowed_media_url(upstream_url):
-        abort(403)
-    request_headers = {"User-Agent": _browser_user_agent()}
-    if request.headers.get("Range"):
-        request_headers["Range"] = request.headers["Range"]
-    try:
-        upstream_response = _proxy_media_session.get(
-            upstream_url,
-            timeout=30,
-            stream=True,
-            headers=request_headers,
-        )
-        upstream_response.raise_for_status()
-    except requests.RequestException:
-        current_app.logger.exception("watch_stream_proxy_failed url=%s", upstream_url)
-        return jsonify({"error": "stream_unavailable"}), 502
-
-    content_type = str(upstream_response.headers.get("Content-Type") or "").lower()
-    upstream_status = int(getattr(upstream_response, "status_code", 200) or 200)
-    if _is_hls_manifest(upstream_url=upstream_url, content_type=content_type):
-        manifest_text = upstream_response.text
-        upstream_response.close()
-        proxied_manifest = _rewrite_hls_manifest(
-            manifest_text=manifest_text,
-            upstream_url=upstream_url,
-        )
-        return Response(
-            proxied_manifest,
-            content_type="application/vnd.apple.mpegurl",
-            status=upstream_status,
-        )
-
-    response_headers = {}
-    if upstream_response.headers.get("Content-Type"):
-        response_headers["Content-Type"] = upstream_response.headers["Content-Type"]
-    if upstream_response.headers.get("Content-Length"):
-        response_headers["Content-Length"] = upstream_response.headers["Content-Length"]
-    if upstream_response.headers.get("Accept-Ranges"):
-        response_headers["Accept-Ranges"] = upstream_response.headers["Accept-Ranges"]
-    if upstream_response.headers.get("Content-Range"):
-        response_headers["Content-Range"] = upstream_response.headers["Content-Range"]
-
-    def generate():
-        try:
-            for chunk in upstream_response.iter_content(chunk_size=64 * 1024):
-                if chunk:
-                    yield chunk
-        finally:
-            upstream_response.close()
-
-    return Response(
-        stream_with_context(generate()),
-        headers=response_headers,
-        status=upstream_status,
-    )
-
-
-@watch_bp.route("/<int:anime_id>/status", methods=["POST"])
-def update_status(anime_id: int):
-    user = getattr(g, "user", None)
+@watch_router.post("/{anime_id}/status", name="watch.update_status")
+async def update_status(request: Request, anime_id: int):
+    container = get_container(request)
+    user = get_current_user(request)
     if not user:
-        return jsonify({"error": "auth_required"}), 401
-    payload = request.get_json(silent=True) or {}
+        return JSONResponse({"error": "auth_required"}, status_code=401)
+    payload = await read_payload(request)
     status = str(payload.get("status") or "").strip()
     if not status:
-        return jsonify({"error": "status_required"}), 400
-    result = container.upsert_user_anime_status_use_case().execute(
+        return JSONResponse({"error": "status_required"}, status_code=400)
+    result = await container.upsert_user_anime_status_use_case().execute(
         user_id=user.id,
         anime_id=anime_id,
         status=status,
     )
-    return jsonify({"status": result.status})
+    return {"status": result.status}
 
 
-@watch_bp.route("/<int:anime_id>/sources", methods=["POST"])
-def add_source(anime_id: int):
-    return jsonify({"error": "manual_source_creation_disabled"}), 403
+@watch_router.post("/{anime_id}/sources", name="watch.add_source")
+async def add_source(_request: Request, anime_id: int):
+    return JSONResponse({"error": "manual_source_creation_disabled"}, status_code=403)
 
 
-@watch_bp.route("/<int:anime_id>/sources/discover", methods=["POST"])
+@watch_router.post("/{anime_id}/sources/discover", name="watch.discover_sources")
 @rate_limit(
-    container_getter=lambda: container,
     scope="watch_discover_sources",
     limit=15,
     window_seconds=60,
-    key_builder=lambda: f"{client_ip()}::{request.view_args.get('anime_id')}",
+    key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('anime_id')}",
 )
-def discover_sources(anime_id: int):
-    payload = request.get_json(silent=True) or request.form
+async def discover_sources(request: Request, anime_id: int):
+    container = get_container(request)
+    payload = await read_payload(request)
     episode = _to_int(str(payload.get("episode") or "")) or 1
-    result = container.sync_watch_sources_use_case().execute(
+    result = await container.sync_watch_sources_use_case().execute(
         anime_id=anime_id,
         episode=episode,
         force=True,
     )
     if not result["enabled"]:
-        return jsonify({"error": "provider_not_configured"}), 400
-    return jsonify(result)
+        return JSONResponse({"error": "provider_not_configured"}, status_code=400)
+    return result
 
 
-@watch_bp.route("/<int:anime_id>/session", methods=["POST"])
-def save_session(anime_id: int):
-    user = getattr(g, "user", None)
+@watch_router.post("/{anime_id}/session", name="watch.save_session")
+async def save_session(request: Request, anime_id: int):
+    container = get_container(request)
+    user = get_current_user(request)
     if not user:
-        return jsonify({"error": "auth_required"}), 401
-    payload = request.get_json(silent=True) or {}
+        return JSONResponse({"error": "auth_required"}, status_code=401)
+    payload = await read_payload(request)
     episode = _to_int(str(payload.get("episode") or ""))
     watch_source_id = _to_int(str(payload.get("watch_source_id") or ""))
     if episode is None or watch_source_id is None:
-        return jsonify({"error": "invalid_payload"}), 400
-    session = container.save_viewing_session_use_case().execute(
+        return JSONResponse({"error": "invalid_payload"}, status_code=400)
+    session = await container.save_viewing_session_use_case().execute(
         user_id=user.id,
         anime_id=anime_id,
         episode=episode,
@@ -180,22 +179,22 @@ def save_session(anime_id: int):
         quality_label=str(payload.get("quality_label") or "Auto"),
         is_paused=bool(payload.get("is_paused")),
     )
-    return jsonify({"session_id": session.id})
+    return {"session_id": session.id}
 
 
-@watch_bp.route("/<int:anime_id>/highlights", methods=["POST"])
+@watch_router.post("/{anime_id}/highlights", name="watch.create_highlight")
 @rate_limit(
-    container_getter=lambda: container,
     scope="watch_create_highlight",
     limit=20,
     window_seconds=60,
-    key_builder=lambda: f"{client_ip()}::{getattr(g, 'user', None).id if getattr(g, 'user', None) else 'guest'}",
+    key_builder=lambda request: f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}",
 )
-def create_highlight(anime_id: int):
-    user = getattr(g, "user", None)
+async def create_highlight(request: Request, anime_id: int):
+    container = get_container(request)
+    user = get_current_user(request)
     if not user:
-        return jsonify({"error": "auth_required"}), 401
-    payload = request.get_json(silent=True) or {}
+        return JSONResponse({"error": "auth_required"}, status_code=401)
+    payload = await read_payload(request)
     episode = _to_int(str(payload.get("episode") or ""))
     watch_source_id = _to_int(str(payload.get("watch_source_id") or ""))
     translation_id = _to_int(str(payload.get("translation_id") or ""))
@@ -208,86 +207,88 @@ def create_highlight(anime_id: int):
         or start_timestamp is None
         or end_timestamp is None
     ):
-        return jsonify({"error": "invalid_payload"}), 400
-    highlight = container.create_watch_highlight_use_case().execute(
+        return JSONResponse({"error": "invalid_payload"}, status_code=400)
+    highlight = await container.create_watch_highlight_use_case().execute(
         user_id=user.id,
         anime_id=anime_id,
         episode=episode,
         title=str(payload.get("title") or "").strip(),
-        category=(
-            str(payload.get("category")).strip()
-            if payload.get("category") is not None
-            else None
-        ),
+        category=(str(payload.get("category")).strip() if payload.get("category") is not None else None),
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
         description=str(payload.get("description") or "").strip(),
         is_spoiler=_to_bool(payload.get("is_spoiler")),
-        emotion=(
-            str(payload.get("emotion")).strip()
-            if payload.get("emotion") is not None
-            else None
-        ),
+        emotion=(str(payload.get("emotion")).strip() if payload.get("emotion") is not None else None),
         watch_source_id=watch_source_id,
         translation_id=translation_id,
     )
-    return jsonify({"highlight_id": highlight.id}), 201
+    return JSONResponse({"highlight_id": highlight.id}, status_code=201)
 
 
-@watch_bp.route("/<int:anime_id>/discussion", methods=["POST"])
-def add_anime_comment(anime_id: int):
-    user = getattr(g, "user", None)
+@watch_router.post("/{anime_id}/discussion", name="watch.add_anime_comment")
+async def add_anime_comment(request: Request, anime_id: int):
+    container = get_container(request)
+    user = get_current_user(request)
     if not user:
-        return jsonify({"error": "auth_required"}), 401
-    payload = request.get_json(silent=True) or request.form
+        return JSONResponse({"error": "auth_required"}, status_code=401)
+    payload = await read_payload(request)
     content = str(payload.get("content") or "").strip()
     try:
-        comment = container.add_anime_comment_use_case().execute(
+        comment = await container.add_anime_comment_use_case().execute(
             anime_id=anime_id,
             user_id=user.id,
             content=content,
         )
     except ValueError as error:
-        return jsonify({"error": str(error)}), 400
-    except SQLAlchemyError:
-        current_app.logger.exception("anime_discussion_comment_unavailable")
-        return _discussion_unavailable_response(anime_id=anime_id, payload=payload)
-    if request.is_json:
-        return jsonify(vars(comment)), 201
-    return redirect(
-        url_for(
-            "watch.watch_page",
+        return JSONResponse({"error": str(error)}, status_code=400)
+    except Exception:
+        logger.exception("anime_discussion_comment_unavailable")
+        return _discussion_unavailable_response(
+            request=request,
             anime_id=anime_id,
-            episode=_to_int(str(payload.get("episode") or "")) or 1,
-            discussion_sort=str(payload.get("discussion_sort") or "popular"),
+            payload=payload,
         )
+    if "application/json" in str(request.headers.get("content-type") or "").lower():
+        return JSONResponse(vars(comment), status_code=201)
+    return RedirectResponse(
+        url=(
+            f"{request.app.url_path_for('watch.watch_page', anime_id=str(anime_id))}"
+            f"?episode={_to_int(str(payload.get('episode') or '')) or 1}"
+            f"&discussion_sort={str(payload.get('discussion_sort') or 'popular')}"
+        ),
+        status_code=303,
     )
 
 
-@watch_bp.route("/discussion/comments/<int:comment_id>/likes", methods=["POST", "DELETE"])
-def set_anime_comment_like(comment_id: int):
-    user = getattr(g, "user", None)
+@watch_router.post("/discussion/comments/{comment_id}/likes", name="watch.set_anime_comment_like")
+@watch_router.delete("/discussion/comments/{comment_id}/likes", name="watch.remove_anime_comment_like")
+async def set_anime_comment_like(request: Request, comment_id: int):
+    container = get_container(request)
+    user = get_current_user(request)
     if not user:
-        return jsonify({"error": "auth_required"}), 401
+        return JSONResponse({"error": "auth_required"}, status_code=401)
     liked = request.method == "POST"
     try:
-        comment = container.set_anime_comment_like_use_case().execute(
+        comment = await container.set_anime_comment_like_use_case().execute(
             comment_id=comment_id,
             user_id=user.id,
             liked=liked,
         )
     except ValueError as error:
-        return jsonify({"error": str(error)}), 404
-    except SQLAlchemyError:
-        current_app.logger.exception("anime_discussion_like_unavailable")
-        return jsonify({"error": "discussion_unavailable"}), 503
-    return jsonify(vars(comment))
+        return JSONResponse({"error": str(error)}, status_code=404)
+    except Exception:
+        logger.exception("anime_discussion_like_unavailable")
+        return JSONResponse({"error": "discussion_unavailable"}, status_code=503)
+    return vars(comment)
 
 
-@watch_bp.route("/open/<int:anime_id>", methods=["GET"])
-def redirect_to_watch(anime_id: int):
-    episode = _to_int(request.args.get("episode")) or 1
-    return redirect(url_for("watch.watch_page", anime_id=anime_id, episode=episode))
+@watch_router.get("/open/{anime_id}", name="watch.redirect_to_watch")
+async def redirect_to_watch(request: Request, anime_id: int):
+    episode = _to_int(request.query_params.get("episode")) or 1
+    return RedirectResponse(
+        url=f"{request.app.url_path_for('watch.watch_page', anime_id=str(anime_id))}?episode={episode}",
+        status_code=303,
+    )
 
 
 def _to_int(value: str | None) -> int | None:
@@ -312,23 +313,22 @@ def _to_bool(value) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _load_discussion(
+async def _load_discussion(
+    request: Request,
     anime_id: int,
     discussion_sort: str,
     viewer_user_id: int | None,
 ) -> AnimeDiscussionBoard:
-    normalized_sort = (
-        discussion_sort if discussion_sort in {"popular", "recent"} else "popular"
-    )
+    normalized_sort = discussion_sort if discussion_sort in {"popular", "recent"} else "popular"
     try:
-        return container.get_anime_discussion_use_case().execute(
+        return await get_container(request).get_anime_discussion_use_case().execute(
             anime_id=anime_id,
             sort_by=normalized_sort,
             viewer_user_id=viewer_user_id,
             limit=20,
         )
-    except SQLAlchemyError:
-        current_app.logger.exception("anime_discussion_unavailable")
+    except Exception:
+        logger.exception("anime_discussion_unavailable")
         return AnimeDiscussionBoard(
             anime_id=anime_id,
             items=[],
@@ -337,16 +337,16 @@ def _load_discussion(
         )
 
 
-def _discussion_unavailable_response(anime_id: int, payload):
-    if request.is_json:
-        return jsonify({"error": "discussion_unavailable"}), 503
-    return redirect(
-        url_for(
-            "watch.watch_page",
-            anime_id=anime_id,
-            episode=_to_int(str(payload.get("episode") or "")) or 1,
-            discussion_sort=str(payload.get("discussion_sort") or "popular"),
-        )
+def _discussion_unavailable_response(request: Request, anime_id: int, payload):
+    if "application/json" in str(request.headers.get("content-type") or "").lower():
+        return JSONResponse({"error": "discussion_unavailable"}, status_code=503)
+    return RedirectResponse(
+        url=(
+            f"{request.app.url_path_for('watch.watch_page', anime_id=str(anime_id))}"
+            f"?episode={_to_int(str(payload.get('episode') or '')) or 1}"
+            f"&discussion_sort={str(payload.get('discussion_sort') or 'popular')}"
+        ),
+        status_code=303,
     )
 
 
@@ -365,7 +365,7 @@ def _is_hls_manifest(upstream_url: str, content_type: str) -> bool:
     return ".m3u8" in upstream_url.lower() or "mpegurl" in content_type
 
 
-def _rewrite_hls_manifest(manifest_text: str, upstream_url: str) -> str:
+def _rewrite_hls_manifest(request: Request, manifest_text: str, upstream_url: str) -> str:
     rewritten_lines: list[str] = []
     for line in manifest_text.splitlines():
         stripped = line.strip()
@@ -373,25 +373,29 @@ def _rewrite_hls_manifest(manifest_text: str, upstream_url: str) -> str:
             rewritten_lines.append(line)
             continue
         if stripped.startswith("#"):
-            rewritten_lines.append(_rewrite_manifest_uri_attributes(line, upstream_url))
+            rewritten_lines.append(_rewrite_manifest_uri_attributes(request, line, upstream_url))
             continue
         absolute_url = urljoin(upstream_url, stripped)
-        rewritten_lines.append(_build_proxy_url(absolute_url))
+        rewritten_lines.append(_build_proxy_url(request, absolute_url))
     return "\n".join(rewritten_lines)
 
 
-def _rewrite_manifest_uri_attributes(line: str, upstream_url: str) -> str:
+def _rewrite_manifest_uri_attributes(request: Request, line: str, upstream_url: str) -> str:
     def replace(match):
         absolute_url = urljoin(upstream_url, match.group("uri"))
-        return f'URI="{_build_proxy_url(absolute_url)}"'
+        return f'URI="{_build_proxy_url(request, absolute_url)}"'
 
     return re.sub(r'URI="(?P<uri>[^"]+)"', replace, line)
 
 
-def _build_proxy_url(upstream_url: str) -> str:
-    return url_for("watch.proxy_stream", url=upstream_url)
+def _build_proxy_url(request: Request, upstream_url: str) -> str:
+    return f"{request.app.url_path_for('watch.proxy_stream')}?url={upstream_url}"
 
 
-def _browser_user_agent() -> str:
+def _browser_user_agent(request: Request) -> str:
     user_agent = str(request.headers.get("User-Agent") or "").strip()
     return user_agent or "Mozilla/5.0"
+
+
+async def close_watch_route_clients():
+    await _proxy_media_client.aclose()

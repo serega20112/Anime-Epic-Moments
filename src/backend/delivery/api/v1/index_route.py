@@ -1,21 +1,22 @@
 from datetime import datetime
 
-from flask import Blueprint, render_template, g
+from fastapi import APIRouter, Request
 
-index_bp = Blueprint("index", __name__, url_prefix="/")
+from src.backend.infrastructure.web.templating import render_template
+
+index_router = APIRouter()
+index_bp = index_router
+container = None
 
 
-@index_bp.route("/", methods=["GET"])
-def index():
-    """Главная страница"""
-    user = g.user
+@index_router.get("/", name="index.index")
+async def index(request: Request):
     home_year, home_season = _resolve_current_anime_season()
-
     return render_template(
+        request,
         "index.html",
         popular_anime=[],
         recommendations=[],
-        current_user=user,
         home_year=home_year,
         home_season=home_season,
     )

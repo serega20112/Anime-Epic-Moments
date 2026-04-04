@@ -3,6 +3,7 @@ from typing import Any, List
 import requests
 from src.backend.domain.anime.entity import Anime
 from src.backend.infrastructure.cache.key_value_store import KeyValueStore
+from src.backend.infrastructure.external._async import external_method
 
 _CACHE_MISS = object()
 
@@ -21,6 +22,7 @@ class AnimeApiClient:
         self.store = store or KeyValueStore(redis_url=None, namespace="anime_api")
 
     # ----------------- Jikan -----------------
+    @external_method
     def search_by_title(
         self, title: str, limit: int = 10, include_adult: bool = False
     ) -> List[Anime]:
@@ -55,6 +57,7 @@ class AnimeApiClient:
             result.append(self._build_anime_from_jikan_item(item))
         return list(self._set_cached(cache_key, result, ttl_seconds=300))
 
+    @external_method
     def get_season_popular(
         self, year: int, season: str, limit: int = 10
     ) -> List[Anime]:
@@ -85,6 +88,7 @@ class AnimeApiClient:
         return list(self._set_cached(cache_key, result, ttl_seconds=900))
 
     # ----------------- AniList GraphQL -----------------
+    @external_method
     def search_by_description(
         self,
         description: str,
@@ -144,7 +148,8 @@ class AnimeApiClient:
             resp.raise_for_status()
             data = resp.json()["data"]["Page"]["media"]
         except (requests.RequestException, KeyError, TypeError, ValueError):
-            fallback = self.search_by_title(
+            fallback = self.__class__.search_by_title.__wrapped__(
+                self,
                 title=sanitized_description, limit=limit, include_adult=include_adult
             )
             return list(self._set_cached(cache_key, fallback, ttl_seconds=300))
@@ -178,6 +183,7 @@ class AnimeApiClient:
                 break
         return list(self._set_cached(cache_key, result, ttl_seconds=300))
 
+    @external_method
     def get_by_id(self, anime_id: int) -> Anime | None:
         """Получает аниме по id с приоритетом MAL/Jikan и fallback на AniList."""
         anime_id = int(anime_id)
@@ -223,6 +229,7 @@ class AnimeApiClient:
             fallback_to_anilist_id=False,
         )
 
+    @external_method
     def get_top_anime(self, limit: int = 25) -> List[Anime]:
         """Получает список популярных аниме через Jikan top."""
         cache_key = self._cache_key("top", int(limit))
@@ -405,11 +412,11 @@ class AnimeApiClient:
     def _get_cached(self, key: str):
         if self.store is None:
             return _CACHE_MISS
-        if not self.store.contains(key):
+        if not self.store.contains_sync(key):
             return _CACHE_MISS
-        return self.store.get(key)
+        return self.store.get_sync(key)
 
     def _set_cached(self, key: str, value, ttl_seconds: int):
         if self.store is None:
             return value
-        return self.store.set(key, value, ttl_seconds=ttl_seconds)
+        return self.store.set_sync(key, value, ttl_seconds=ttl_seconds)

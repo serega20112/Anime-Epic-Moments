@@ -9,14 +9,14 @@ class GetFavoritesUseCase:
         self.repo = repo
         self.anime_api_client = anime_api_client
 
-    def execute(self, user_id: int) -> List[FavoriteAnimeCard]:
-        favorites = self.repo.get_by_user(user_id)
+    async def execute(self, user_id: int) -> List[FavoriteAnimeCard]:
+        favorites = await self.repo.get_by_user(user_id)
         result: List[FavoriteAnimeCard] = []
         for favorite in favorites:
             anime = None
             needs_remote_lookup = not favorite.title
             if needs_remote_lookup:
-                anime = self.anime_api_client.get_by_id(favorite.anime_id)
+                anime = await self.anime_api_client.get_by_id(favorite.anime_id)
             watch_id = self._resolve_watch_id(
                 stored_anime_id=favorite.anime_id,
                 resolved_external_id=anime.external_id if anime else None,

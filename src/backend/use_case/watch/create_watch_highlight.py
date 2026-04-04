@@ -14,7 +14,7 @@ class CreateWatchHighlightUseCase:
         self.create_highlight_use_case = create_highlight_use_case
         self.watch_repo = watch_repo
 
-    def execute(
+    async def execute(
         self,
         user_id: int,
         anime_id: int,
@@ -41,7 +41,7 @@ class CreateWatchHighlightUseCase:
             is_spoiler=is_spoiler,
             emotion=emotion,
         )
-        self.watch_repo.add_highlight_context(
+        await self.watch_repo.add_highlight_context(
             HighlightContext(
                 highlight_id=highlight.id or 0,
                 watch_source_id=watch_source_id,

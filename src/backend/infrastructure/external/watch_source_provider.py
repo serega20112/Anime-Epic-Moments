@@ -13,7 +13,7 @@ class WatchSourceProvider(ABC):
         """Возвращает доступность провайдера."""
 
     @abstractmethod
-    def search_sources(
+    async def search_sources(
         self,
         title: str,
         episode: int,

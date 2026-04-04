@@ -19,24 +19,24 @@ class RecommendationCache:
         self.ttl_seconds = max(int(ttl_seconds), 1)
         self.prefix = "recommendation"
 
-    def get(self, user_id: int, limit: int) -> List[RecommendationResult] | None:
-        return self.store.get(self._key(user_id=user_id, limit=limit))
+    async def get(self, user_id: int, limit: int) -> List[RecommendationResult] | None:
+        return await self.store.get(self._key(user_id=user_id, limit=limit))
 
-    def set(
+    async def set(
         self, user_id: int, limit: int, value: List[RecommendationResult]
     ) -> List[RecommendationResult]:
-        return self.store.set(
+        return await self.store.set(
             self._key(user_id=user_id, limit=limit),
             list(value),
             ttl_seconds=self.ttl_seconds,
         )
 
-    def invalidate_user(self, user_id: int):
+    async def invalidate_user(self, user_id: int):
         target_user_id = int(user_id)
-        self.store.delete_prefix(f"{self.prefix}:{target_user_id}:")
+        await self.store.delete_prefix(f"{self.prefix}:{target_user_id}:")
 
-    def clear(self):
-        self.store.delete_prefix(f"{self.prefix}:")
+    async def clear(self):
+        await self.store.delete_prefix(f"{self.prefix}:")
 
     def _key(self, user_id: int, limit: int) -> str:
         return f"{self.prefix}:{int(user_id)}:{int(limit)}"

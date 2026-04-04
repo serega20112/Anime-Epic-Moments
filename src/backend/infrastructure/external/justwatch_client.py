@@ -2,6 +2,7 @@ import re
 
 import requests
 
+from src.backend.infrastructure.external._async import external_method
 from src.backend.dependencies.settings import Settings
 from src.backend.domain.watch.value_object import DiscoveredWatchSource
 from src.backend.infrastructure.external.watch_source_provider import (
@@ -25,6 +26,7 @@ class JustWatchClient(WatchSourceProvider):
         """Возвращает доступность JustWatch-провайдера."""
         return bool(self.partner_token)
 
+    @external_method
     def search_sources(
         self,
         title: str,

@@ -11,8 +11,8 @@ class RefreshRecommendationsUseCase:
     def __init__(self, service: RecommendationService):
         self.service = service
 
-    def execute(self, user_id: int, limit: int = 5) -> List[RecommendationResult]:
+    async def execute(self, user_id: int, limit: int = 5) -> List[RecommendationResult]:
         """
         Генерирует новые рекомендации, игнорируя кэш
         """
-        return self.service.generate(user_id, limit, force_refresh=True)
+        return await self.service.generate(user_id, limit, force_refresh=True)

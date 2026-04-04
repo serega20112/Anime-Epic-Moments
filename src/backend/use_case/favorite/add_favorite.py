@@ -17,7 +17,7 @@ class AddFavoriteUseCase:
         self.recommendation_service = recommendation_service
         self.profile_overview_cache = profile_overview_cache
 
-    def execute(
+    async def execute(
         self,
         user_id: int,
         anime_id: int,
@@ -34,11 +34,11 @@ class AddFavoriteUseCase:
             cover_url=self._normalize_text(cover_url),
             genres=self._normalize_genres(genres),
         )
-        result = self.repo.add(favorite)
+        result = await self.repo.add(favorite)
         if self.recommendation_service:
-            self.recommendation_service.invalidate_user(int(user_id))
+            await self.recommendation_service.invalidate_user(int(user_id))
         if self.profile_overview_cache is not None:
-            self.profile_overview_cache.invalidate_user(int(user_id), include_ai_summary=True)
+            await self.profile_overview_cache.invalidate_user(int(user_id), include_ai_summary=True)
         return result
 
     def _normalize_text(self, value: str | None) -> str | None:
