@@ -85,6 +85,7 @@ def flask_app_factory():
         _register_placeholder("/auth/login", "auth.login_page")
         _register_placeholder("/auth/register", "auth.register_page")
         _register_placeholder("/auth/logout", "auth.logout_user", methods=("POST",))
+        _register_placeholder("/support", "support.support_page")
         _register_placeholder("/users/<int:user_id>", "user.public_profile_page")
         _register_placeholder("/users/<int:user_id>/follow", "user.follow_user", methods=("POST",))
         _register_placeholder("/users/<int:user_id>/unfollow", "user.unfollow_user", methods=("POST",))

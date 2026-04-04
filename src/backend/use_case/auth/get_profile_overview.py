@@ -7,6 +7,7 @@ from src.backend.domain.user.policy import (
 )
 from src.backend.domain.user.value_object import ProfileOverview
 from src.backend.domain.user.value_object import SmartProfile, TopAnimeEntry, ViewingHeatmapCell
+from src.backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from src.backend.infrastructure.external.anime_api_client import AnimeApiClient
 from src.backend.infrastructure.external.huggingface_llm_client import HuggingFaceLLMClient
 from src.backend.repository.favorite_repository import FavoriteRepository
@@ -29,6 +30,7 @@ class GetProfileOverviewUseCase:
         favorite_repo: FavoriteRepository,
         watch_repo: WatchRepository,
         hf_llm_client: HuggingFaceLLMClient | None = None,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.user_repo = user_repo
         self.highlight_repo = highlight_repo
@@ -51,8 +53,14 @@ class GetProfileOverviewUseCase:
         )
         self.anime_api_client = anime_api_client
         self.hf_llm_client = hf_llm_client
+        self.profile_overview_cache = profile_overview_cache
 
     def execute(self, user_id: int) -> ProfileOverview:
+        if self.profile_overview_cache is not None:
+            cached_overview = self.profile_overview_cache.get_overview(user_id)
+            if cached_overview is not None:
+                return cached_overview
+
         user = self.user_repo.get_by_id(user_id)
         if not user:
             raise ValueError("Пользователь не найден")
@@ -132,6 +140,7 @@ class GetProfileOverviewUseCase:
                 top_mood=mood,
             ),
             ai_taste_summary=self._build_taste_summary(
+                user_id=user_id,
                 favorite_genres=favorite_genres,
                 mood=mood,
                 average_rating=average_rating,
@@ -140,7 +149,7 @@ class GetProfileOverviewUseCase:
             ),
         )
 
-        return ProfileOverview(
+        overview = ProfileOverview(
             user_id=user.id or user_id,
             email=user.email,
             username=user.username,
@@ -156,6 +165,9 @@ class GetProfileOverviewUseCase:
             followers_count=followers_count,
             following_count=following_count,
         )
+        if self.profile_overview_cache is not None:
+            return self.profile_overview_cache.set_overview(user_id, overview)
+        return overview
 
     def _load_anime_map(self, favorites, own_highlights, watched_stats) -> dict[int, object | None]:
         anime_ids = {
@@ -215,6 +227,7 @@ class GetProfileOverviewUseCase:
 
     def _build_taste_summary(
         self,
+        user_id: int,
         favorite_genres,
         mood,
         average_rating: float | None,
@@ -230,9 +243,13 @@ class GetProfileOverviewUseCase:
             f"Зафиксировано {hours_watched} ч. просмотра. "
             f"Топ по активности: {top_titles}."
         )
+        if self.profile_overview_cache is not None:
+            cached_summary = self.profile_overview_cache.get_ai_summary(user_id)
+            if cached_summary:
+                return cached_summary
         if self.hf_llm_client is None:
             return fallback
-        return self.hf_llm_client.describe_taste_profile(
+        summary = self.hf_llm_client.describe_taste_profile(
             profile_data={
                 "mood": mood.label,
                 "mood_description": mood.description,
@@ -243,3 +260,6 @@ class GetProfileOverviewUseCase:
             },
             fallback=fallback,
         )
+        if self.profile_overview_cache is not None and summary != fallback:
+            self.profile_overview_cache.set_ai_summary(user_id, summary)
+        return summary

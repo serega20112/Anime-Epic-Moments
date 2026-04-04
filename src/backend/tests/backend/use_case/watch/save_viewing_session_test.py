@@ -8,8 +8,9 @@ from src.backend.use_case.watch.save_viewing_session import SaveViewingSessionUs
 def test_save_viewing_session_persists_session_object():
     """Проверяем, что SaveViewingSessionUseCase передает в репозиторий корректную ViewingSession."""
     watch_repo = Mock()
+    profile_cache = Mock()
     watch_repo.upsert_session.return_value = "saved"
-    use_case = SaveViewingSessionUseCase(watch_repo)
+    use_case = SaveViewingSessionUseCase(watch_repo, profile_cache)
 
     result = use_case.execute(
         user_id=1,
@@ -27,3 +28,4 @@ def test_save_viewing_session_persists_session_object():
     assert session.user_id == 1
     assert session.watch_source_id == 3
     assert session.position_seconds == 15.5
+    profile_cache.invalidate_overview.assert_called_once_with(1)

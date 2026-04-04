@@ -59,6 +59,7 @@ def init_db():
         HighlightLikeModel,
         HighlightModel,
         SavedHighlightModel,
+        SupportTicketModel,
         TranslationModel,
         UserAnimeStatusModel,
         UserModel,
@@ -71,6 +72,7 @@ def init_db():
     _ensure_watch_source_columns(db_engine)
     _ensure_favorite_columns(db_engine)
     _ensure_highlight_columns(db_engine)
+    _ensure_support_ticket_columns(db_engine)
     print("✓ Таблицы успешно созданы или уже существуют")
 
 
@@ -134,6 +136,31 @@ def _ensure_highlight_columns(db_engine: Engine | None = None):
         "title": "ALTER TABLE highlights ADD COLUMN title VARCHAR NOT NULL DEFAULT ''",
         "category": "ALTER TABLE highlights ADD COLUMN category VARCHAR",
         "views_count": "ALTER TABLE highlights ADD COLUMN views_count INTEGER NOT NULL DEFAULT 0",
+    }
+    statements = [
+        ddl for column_name, ddl in missing_columns.items() if column_name not in existing_columns
+    ]
+    if not statements:
+        return
+    with db_engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
+def _ensure_support_ticket_columns(db_engine: Engine | None = None):
+    """Добавляет недостающие поля в support_tickets для новых каналов доставки."""
+    db_engine = db_engine or get_engine()
+    inspector = inspect(db_engine)
+    if "support_tickets" not in inspector.get_table_names():
+        return
+    existing_columns = {
+        column["name"] for column in inspector.get_columns("support_tickets")
+    }
+    missing_columns = {
+        "channel": (
+            "ALTER TABLE support_tickets "
+            "ADD COLUMN channel VARCHAR NOT NULL DEFAULT 'telegram'"
+        ),
     }
     statements = [
         ddl for column_name, ddl in missing_columns.items() if column_name not in existing_columns

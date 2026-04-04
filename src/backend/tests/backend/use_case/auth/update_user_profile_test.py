@@ -48,10 +48,12 @@ def test_update_user_profile_trims_and_persists_fields():
     user_repo = Mock()
     user_repo.get_by_id.return_value = user
     user_repo.update.return_value = user
-    use_case = UpdateUserProfileUseCase(user_repo)
+    profile_cache = Mock()
+    use_case = UpdateUserProfileUseCase(user_repo, profile_cache)
 
     result = use_case.execute(1, "  updated-name  ", "  https://example.com/avatar.png  ")
 
     assert result.username == "updated-name"
     assert result.avatar_url == "https://example.com/avatar.png"
     user_repo.update.assert_called_once_with(user)
+    profile_cache.invalidate_overview.assert_called_once_with(1)

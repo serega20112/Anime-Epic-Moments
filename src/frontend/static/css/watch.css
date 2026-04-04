@@ -34,6 +34,17 @@ html[data-theme="light"] .watch-page {
   --watch-muted: #64748b;
 }
 
+html[data-theme="rose"] .watch-page {
+  --watch-cyan: rgba(174, 236, 228, 0.92);
+  --watch-cyan-soft: rgba(174, 236, 228, 0.14);
+  --watch-pink: rgba(241, 181, 219, 0.3);
+  --watch-panel: rgba(31, 16, 31, 0.84);
+  --watch-panel-strong: rgba(19, 10, 23, 0.96);
+  --watch-border: rgba(231, 215, 233, 0.08);
+  --watch-text: #fff4f8;
+  --watch-muted: #c7b3c8;
+}
+
 .watch-page::before {
   content: "";
   position: fixed;
@@ -61,6 +72,10 @@ html[data-theme="light"] .watch-page {
 html[data-theme="dark"] .watch-page::before,
 html[data-theme="light"] .watch-page::before {
   opacity: 0.38;
+}
+
+html[data-theme="rose"] .watch-page::before {
+  opacity: 0.46;
 }
 
 .watch-layout {

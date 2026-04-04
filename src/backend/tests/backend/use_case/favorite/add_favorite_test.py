@@ -22,7 +22,8 @@ def test_add_favorite_use_case_normalizes_payload_and_invalidates_cache(
     """Проверяем, что add_favorite нормализует snapshot-данные и сбрасывает рекомендации."""
     repo = Mock()
     recommendation_service = Mock()
-    use_case = AddFavoriteUseCase(repo, recommendation_service)
+    profile_cache = Mock()
+    use_case = AddFavoriteUseCase(repo, recommendation_service, profile_cache)
     repo.add.side_effect = lambda favorite: favorite
 
     result = use_case.execute(
@@ -41,3 +42,4 @@ def test_add_favorite_use_case_normalizes_payload_and_invalidates_cache(
     assert result.cover_url == "https://example.com/cover.jpg"
     assert result.genres == expected_genres
     recommendation_service.invalidate_user.assert_called_once_with(5)
+    profile_cache.invalidate_user.assert_called_once_with(5, include_ai_summary=True)

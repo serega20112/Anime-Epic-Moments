@@ -12,6 +12,7 @@ from src.backend.delivery.api.v1.favorite_route import favorite_bp
 from src.backend.delivery.api.v1.collection_route import collection_bp
 from src.backend.delivery.api.v1.anime_route import anime_bp
 from src.backend.delivery.api.v1.recommendation_route import recommendation_bp
+from src.backend.delivery.api.v1.support_route import support_bp
 from src.backend.delivery.api.v1.user_route import user_bp
 from src.backend.delivery.api.v1.watch_route import watch_bp
 from src.backend.infrastructure.security.jwt_service import JWTService
@@ -146,6 +147,7 @@ def create_app():
     app.register_blueprint(anime_bp)
     app.register_blueprint(watch_bp)
     app.register_blueprint(recommendation_bp)
+    app.register_blueprint(support_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(index_bp)
 

@@ -49,6 +49,11 @@
       </form>
       <nav class="header-nav">
         <div class="nav-buttons">
+          <a
+            href="{{ url_for('support.support_page', page=request.url) }}"
+            class="btn neon-blue"
+            >Поддержка</a
+          >
           {% if current_user %}
           <a
             href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}"
@@ -78,6 +83,7 @@
             />
             <div class="dropdown-menu">
               <a href="{{ url_for('auth.profile_page') }}">Мой профиль</a>
+              <a href="{{ url_for('support.support_page', page=request.url) }}">Поддержка</a>
               <form
                 action="{{ url_for('auth.logout_user') }}"
                 method="post"

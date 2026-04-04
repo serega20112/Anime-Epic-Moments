@@ -26,6 +26,7 @@
       <nav>
         <a href="{{ url_for('index.index') }}">Главная</a>
         <a href="{{ url_for('highlight.get_public_top_highlights') }}">Тренды</a>
+        <a href="{{ url_for('support.support_page', page=request.url) }}">Поддержка</a>
         {% if current_user %}
         <a href="{{ url_for('highlight.get_following_highlights') }}">Подписки</a>
         <a href="{{ url_for('auth.profile_page') }}">Профиль</a>

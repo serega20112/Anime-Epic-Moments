@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Поддержка - AEM</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/support.css') }}" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="logo">AEM</div>
+      <nav>
+        <a href="{{ url_for('index.index') }}">Главная</a>
+        <a href="{{ url_for('highlight.get_highlight_feed') }}">Фид</a>
+        {% if current_user %}
+        <a href="{{ url_for('auth.profile_page') }}">Профиль</a>
+        <a href="{{ url_for('highlight.get_saved_highlights') }}">Сохраненные</a>
+        {% else %}
+        <a href="{{ url_for('auth.login_page') }}">Вход</a>
+        <a href="{{ url_for('auth.register_page') }}">Регистрация</a>
+        {% endif %}
+      </nav>
+    </header>
+
+    <main class="support-page">
+      <section class="support-shell">
+        <aside class="support-intro">
+          <span class="support-kicker">Support Desk</span>
+          <h1>Выбери канал и отправь тикет без смешивания потоков</h1>
+          <p class="support-copy">
+            Тикет можно отправить либо в Telegram, либо по email. Система использует только один выбранный канал.
+          </p>
+          <div class="support-facts">
+            <article class="support-fact-card">
+              <strong>Telegram</strong>
+              <p>Бот шлет тикет прямо в admin chat или в личные чаты админов.</p>
+            </article>
+            <article class="support-fact-card">
+              <strong>Email</strong>
+              <p>Тикет уходит в support inbox и на него можно отвечать обычной почтой.</p>
+            </article>
+            <article class="support-fact-card">
+              <strong>Контекст</strong>
+              <p>Можно приложить страницу, где сломался UI, поиск или плеер.</p>
+            </article>
+          </div>
+        </aside>
+
+        <section class="support-panel">
+          {% with messages = get_flashed_messages() %}
+          {% if messages %}
+          <div class="support-alerts">
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% endwith %}
+
+          <form method="post" action="{{ url_for('support.create_support_ticket') }}" class="support-form">
+            {% if current_user %}
+            <section class="support-user-card">
+              <span class="support-user-label">Отправитель</span>
+              <strong>{{ current_user.username }}</strong>
+              <p>{{ current_user.email }}</p>
+            </section>
+            {% else %}
+            <div class="support-grid">
+              <label>
+                <span>Email</span>
+                <input
+                  type="email"
+                  name="email"
+                  value="{{ support_form.email }}"
+                  maxlength="254"
+                  placeholder="you@example.com"
+                  required
+                />
+              </label>
+              <label>
+                <span>Ник или имя</span>
+                <input
+                  type="text"
+                  name="username"
+                  value="{{ support_form.username }}"
+                  maxlength="40"
+                  placeholder="Как к тебе обращаться"
+                  required
+                />
+              </label>
+            </div>
+            {% endif %}
+
+            <fieldset class="support-channel-fieldset">
+              <legend>Куда отправить тикет</legend>
+              <div class="support-channel-grid">
+                <label class="support-channel-card">
+                  <input type="radio" name="channel" value="telegram" {% if support_form.channel != 'email' %}checked{% endif %} />
+                  <span class="support-channel-body">
+                    <strong>Telegram</strong>
+                    <small>Мгновенная доставка в support bot/admin chat</small>
+                  </span>
+                </label>
+                <label class="support-channel-card">
+                  <input type="radio" name="channel" value="email" {% if support_form.channel == 'email' %}checked{% endif %} />
+                  <span class="support-channel-body">
+                    <strong>Email</strong>
+                    <small>Обычное письмо в support inbox без Telegram</small>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+
+            <label>
+              <span>Тема</span>
+              <input
+                type="text"
+                name="subject"
+                value="{{ support_form.subject }}"
+                maxlength="120"
+                placeholder="Например: не открывается серия 12"
+                required
+              />
+            </label>
+
+            <label>
+              <span>Страница с проблемой</span>
+              <input
+                type="text"
+                name="page_url"
+                value="{{ support_form.page_url }}"
+                maxlength="500"
+                placeholder="https://example.com/watch/123"
+              />
+            </label>
+
+            <label>
+              <span>Что произошло</span>
+              <textarea
+                name="message"
+                rows="10"
+                minlength="10"
+                maxlength="4000"
+                placeholder="Опиши баг, как его воспроизвести и что ожидалось."
+                required
+              >{{ support_form.message }}</textarea>
+            </label>
+
+            <div class="support-actions">
+              <button type="submit" class="btn neon-pink">Создать тикет</button>
+              <a href="{{ request.referrer or url_for('index.index') }}" class="btn neon-blue">Назад</a>
+            </div>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+  </body>
+</html>

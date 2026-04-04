@@ -96,8 +96,8 @@ def test_huggingface_llm_client_builds_taste_summary_from_completion(monkeypatch
     client = HuggingFaceLLMClient(api_key="token", model="model", provider="provider")
     monkeypatch.setattr(
         client,
-        "_create_completion",
-        lambda model_route, messages: {
+        "_create_completion_with_timeout",
+        lambda model_route, messages, timeout_seconds: {
             "choices": [{"message": {"content": "Ты любишь экшен с сильным темпом."}}]
         },
     )

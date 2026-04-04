@@ -24,6 +24,7 @@
         <a href="{{ url_for('highlight.get_saved_highlights') }}">Сохраненные</a>
         <a href="{{ url_for('collection.collections_page') }}">Коллекции</a>
         <a href="{{ url_for('highlight.get_highlight_notifications') }}">Уведомления</a>
+        <a href="{{ url_for('support.support_page', page=request.url) }}">Поддержка</a>
       </nav>
     </header>
 
@@ -125,6 +126,10 @@
               <a class="highlight-group-link" href="{{ url_for('highlight.get_highlight_notifications') }}">
                 <span>Отклик аудитории</span>
                 <strong>{{ profile_overview.recent_activity|length }}</strong>
+              </a>
+              <a class="highlight-group-link" href="{{ url_for('support.support_page', page=request.url) }}">
+                <span>Сообщить о проблеме</span>
+                <strong>Support</strong>
               </a>
             </div>
           </section>

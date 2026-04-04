@@ -121,20 +121,30 @@
 }
 
 .anime-card {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.8rem;
   width: 280px;
   background: rgba(16, 18, 36, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 1rem;
+  text-align: center;
 }
 
 .anime-card img {
   width: 120px;
   height: 170px;
   object-fit: cover;
+  object-position: center center;
   border-radius: 8px;
-  margin-bottom: 0.5rem;
+  margin: 0 auto;
   background: #222;
+}
+
+.anime-card h3 {
+  margin: 0;
 }
 
 .popular-section h2,
@@ -170,8 +180,10 @@
 
 html[data-theme="dark"] .hero-block,
 html[data-theme="light"] .hero-block,
+html[data-theme="rose"] .hero-block,
 html[data-theme="dark"] .anime-card,
-html[data-theme="light"] .anime-card {
+html[data-theme="light"] .anime-card,
+html[data-theme="rose"] .anime-card {
   background: var(--page-surface);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-md);
@@ -186,6 +198,24 @@ html[data-theme="light"] .hero-block h1 {
 }
 
 html[data-theme="dark"] .hero-block p,
-html[data-theme="light"] .hero-block p {
+html[data-theme="light"] .hero-block p,
+html[data-theme="rose"] .hero-block p {
   color: var(--text-muted);
+}
+
+html[data-theme="rose"] .hero-block {
+  background:
+    linear-gradient(180deg, rgba(39, 23, 45, 0.9), rgba(17, 12, 22, 0.94)),
+    var(--page-surface);
+  box-shadow:
+    0 22px 46px rgba(8, 2, 6, 0.44),
+    0 0 36px rgba(173, 237, 230, 0.12);
+}
+
+html[data-theme="rose"] .hero-block h1 {
+  background: linear-gradient(90deg, #ffe3f4, #adefe7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow:
+    0 0 18px rgba(184, 239, 232, 0.12);
 }

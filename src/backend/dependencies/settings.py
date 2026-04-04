@@ -71,6 +71,20 @@ class Settings:
         "JUSTWATCH_API_URL", "https://apis.justwatch.com/contentpartner/v2/content"
     )
     justwatch_locale: str = os.getenv("JUSTWATCH_LOCALE", "en_US")
+    telegram_support_bot_token: str | None = os.getenv("TELEGRAM_SUPPORT_BOT_TOKEN")
+    telegram_support_api_url: str = os.getenv(
+        "TELEGRAM_SUPPORT_API_URL", "https://api.telegram.org"
+    )
+    telegram_support_admin_chat_ids: list[str] = [
+        item.strip()
+        for item in os.getenv("TELEGRAM_SUPPORT_ADMIN_CHAT_IDS", "").split(",")
+        if item.strip()
+    ]
+    support_email_to: list[str] = [
+        item.strip()
+        for item in os.getenv("SUPPORT_EMAIL_TO", "").split(",")
+        if item.strip()
+    ]
     flask_host: str = os.getenv("FLASK_HOST", "0.0.0.0")
     flask_port: int = int(os.getenv("FLASK_PORT", "5000"))
     flask_debug: bool = os.getenv("FLASK_DEBUG", "0") == "1"

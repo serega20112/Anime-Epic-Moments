@@ -1,15 +1,17 @@
 (function () {
   const storageKey = "aem_theme";
-  const themes = ["neon", "dark", "light"];
+  const themes = ["neon", "dark", "light", "rose"];
   const labels = {
     neon: "Неон",
     dark: "Тёмная",
     light: "Светлая",
+    rose: "Сакура",
   };
   const icons = {
     neon: "✦",
     dark: "◐",
     light: "☼",
+    rose: "✿",
   };
 
   let toggleButton = null;

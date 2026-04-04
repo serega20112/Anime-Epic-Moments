@@ -25,6 +25,7 @@ def test_request_email_verification_rejects_duplicate_email():
     ("email", "username", "theme", "expected_theme"),
     [
         ("User@Example.COM", "tester", "dark", "dark"),
+        ("rose@example.com", "rose-user", "rose", "rose"),
         (" user@example.com ", "  tester  ", "unknown", "neon"),
     ],
 )

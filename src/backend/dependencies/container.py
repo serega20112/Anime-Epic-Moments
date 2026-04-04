@@ -9,6 +9,9 @@ from src.backend.infrastructure.cache.highlight_dashboard_cache import (
     HighlightDashboardCache,
 )
 from src.backend.infrastructure.cache.key_value_store import KeyValueStore
+from src.backend.infrastructure.cache.profile_overview_cache import (
+    ProfileOverviewCache,
+)
 from src.backend.infrastructure.cache.recommendation_cache import RecommendationCache
 from src.backend.infrastructure.external.anilibria_client import AniLibriaClient
 from src.backend.infrastructure.external.anime_api_client import AnimeApiClient
@@ -23,6 +26,12 @@ from src.backend.infrastructure.external.kodik_client import KodikClient
 from src.backend.infrastructure.external.password_reset_mailer import (
     PasswordResetMailer,
 )
+from src.backend.infrastructure.external.support_email_mailer import (
+    SupportEmailMailer,
+)
+from src.backend.infrastructure.external.telegram_support_notifier import (
+    TelegramSupportNotifier,
+)
 from src.backend.infrastructure.external.youtube_client import YouTubeClient
 from src.backend.infrastructure.files.database import get_session
 from src.backend.infrastructure.repositories.favorite_repository import (
@@ -33,6 +42,9 @@ from src.backend.infrastructure.repositories.collection_repository import (
 )
 from src.backend.infrastructure.repositories.highlight_repository import (
     HighlightRepository,
+)
+from src.backend.infrastructure.repositories.support_repository import (
+    SupportRepository,
 )
 from src.backend.infrastructure.repositories.user_repository import UserRepository
 from src.backend.infrastructure.repositories.watch_repository import WatchRepository
@@ -110,6 +122,9 @@ from src.backend.use_case.highlight.set_highlight_like import SetHighlightLikeUs
 from src.backend.use_case.highlight.set_saved_highlight import SetSavedHighlightUseCase
 from src.backend.use_case.recommendation.generate_recommendations import (
     GenerateRecommendationsUseCase,
+)
+from src.backend.use_case.support.create_support_ticket import (
+    CreateSupportTicketUseCase,
 )
 from src.backend.use_case.recommendation.ask_ai_recommendations import (
     AskAiRecommendationsUseCase,
@@ -211,12 +226,20 @@ class Container:
         return WatchRepository(self.db_session)
 
     @cached_property
+    def support_repository(self):
+        return SupportRepository(self.db_session)
+
+    @cached_property
     def recommendation_cache(self):
         return RecommendationCache(store=self.key_value_store)
 
     @cached_property
     def highlight_dashboard_cache(self):
         return HighlightDashboardCache(store=self.key_value_store)
+
+    @cached_property
+    def profile_overview_cache(self):
+        return ProfileOverviewCache(store=self.key_value_store)
 
     @cached_property
     def recommendation_service(self):
@@ -264,6 +287,14 @@ class Container:
         return EmailVerificationMailer()
 
     @cached_property
+    def telegram_support_notifier(self):
+        return TelegramSupportNotifier()
+
+    @cached_property
+    def support_email_mailer(self):
+        return SupportEmailMailer()
+
+    @cached_property
     def email_verification_store(self):
         return EmailVerificationStore(
             store=self.key_value_store,
@@ -300,7 +331,10 @@ class Container:
         return LogoutUserUseCase(self.user_repository)
 
     def update_user_profile_use_case(self):
-        return UpdateUserProfileUseCase(self.user_repository)
+        return UpdateUserProfileUseCase(
+            self.user_repository,
+            self.profile_overview_cache,
+        )
 
     def get_profile_overview_use_case(self):
         return GetProfileOverviewUseCase(
@@ -310,6 +344,7 @@ class Container:
             self.favorite_repository,
             self.watch_repository,
             self.hf_llm_client,
+            self.profile_overview_cache,
         )
 
     def request_password_reset_use_case(self):
@@ -331,6 +366,7 @@ class Container:
             self.highlight_repository,
             self.recommendation_service,
             self.highlight_dashboard_cache,
+            self.profile_overview_cache,
         )
 
     def delete_highlight_use_case(self):
@@ -338,6 +374,7 @@ class Container:
             self.highlight_repository,
             self.recommendation_service,
             self.highlight_dashboard_cache,
+            self.profile_overview_cache,
         )
 
     def edit_highlight_use_case(self):
@@ -345,6 +382,7 @@ class Container:
             self.highlight_repository,
             self.recommendation_service,
             self.highlight_dashboard_cache,
+            self.profile_overview_cache,
         )
 
     def get_user_highlights_use_case(self):
@@ -399,7 +437,10 @@ class Container:
         )
 
     def set_user_follow_use_case(self):
-        return SetUserFollowUseCase(self.user_repository)
+        return SetUserFollowUseCase(
+            self.user_repository,
+            self.profile_overview_cache,
+        )
 
     def get_public_profile_overview_use_case(self):
         return GetPublicProfileOverviewUseCase(
@@ -412,12 +453,14 @@ class Container:
         return SetHighlightLikeUseCase(
             self.highlight_repository,
             self.highlight_dashboard_cache,
+            self.profile_overview_cache,
         )
 
     def add_highlight_comment_use_case(self):
         return AddHighlightCommentUseCase(
             self.highlight_repository,
             self.highlight_dashboard_cache,
+            self.profile_overview_cache,
         )
 
     def get_highlight_comments_use_case(self):
@@ -430,18 +473,23 @@ class Container:
         return GetHighlightNotificationsUseCase(self.highlight_repository)
 
     def set_saved_highlight_use_case(self):
-        return SetSavedHighlightUseCase(self.highlight_repository)
+        return SetSavedHighlightUseCase(
+            self.highlight_repository,
+            self.profile_overview_cache,
+        )
 
     def add_favorite_use_case(self):
         return AddFavoriteUseCase(
             self.favorite_repository,
             self.recommendation_service,
+            self.profile_overview_cache,
         )
 
     def remove_favorite_use_case(self):
         return RemoveFavoriteUseCase(
             self.favorite_repository,
             self.recommendation_service,
+            self.profile_overview_cache,
         )
 
     def get_favorites_use_case(self):
@@ -493,6 +541,13 @@ class Container:
     def refresh_recommendations_use_case(self):
         return RefreshRecommendationsUseCase(self.recommendation_service)
 
+    def create_support_ticket_use_case(self):
+        return CreateSupportTicketUseCase(
+            self.support_repository,
+            self.telegram_support_notifier,
+            self.support_email_mailer,
+        )
+
     def get_watch_page_use_case(self):
         return GetWatchPageUseCase(
             self.watch_repository,
@@ -508,10 +563,16 @@ class Container:
         )
 
     def upsert_user_anime_status_use_case(self):
-        return UpsertUserAnimeStatusUseCase(self.watch_repository)
+        return UpsertUserAnimeStatusUseCase(
+            self.watch_repository,
+            self.profile_overview_cache,
+        )
 
     def save_viewing_session_use_case(self):
-        return SaveViewingSessionUseCase(self.watch_repository)
+        return SaveViewingSessionUseCase(
+            self.watch_repository,
+            self.profile_overview_cache,
+        )
 
     def add_anime_comment_use_case(self):
         return AddAnimeCommentUseCase(self.watch_repository)

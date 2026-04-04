@@ -93,13 +93,14 @@ class EmailVerificationMailer:
 
     def _normalize_theme(self, value: str | None) -> str:
         normalized = str(value or "").strip().lower()
-        return normalized if normalized in {"neon", "dark", "light"} else "neon"
+        return normalized if normalized in {"neon", "dark", "light", "rose"} else "neon"
 
     def _theme_label(self, theme: str) -> str:
         labels = {
             "neon": "Неоновая тема",
             "dark": "Тёмная тема",
             "light": "Светлая тема",
+            "rose": "Тема сакуры",
         }
         return labels[theme]
 
@@ -108,6 +109,7 @@ class EmailVerificationMailer:
             "neon": "Подтверждение почты в неоновом стиле",
             "dark": "Подтверждение почты в тёмной теме",
             "light": "Подтверждение почты в светлой теме",
+            "rose": "Подтверждение почты в теме сакуры",
         }
         return titles[theme]
 
@@ -157,6 +159,21 @@ class EmailVerificationMailer:
                 "code_background": "#fff2df",
                 "code_border": "#ddb375",
                 "code_text": "#5b3d21",
+            },
+            "rose": {
+                "page_background": "#130810",
+                "card_background": "#22101b",
+                "hero_background": "linear-gradient(135deg, #341425 0%, #51203a 100%)",
+                "border": "#70314d",
+                "shadow": "0 28px 70px rgba(0, 0, 0, 0.38)",
+                "badge_background": "#ff7eab",
+                "badge_text": "#ffffff",
+                "title": "#fff1f6",
+                "text": "#ffe3ed",
+                "muted": "#d3a6b8",
+                "code_background": "#2c1121",
+                "code_border": "#ff9cc0",
+                "code_text": "#ffd1e0",
             },
         }
         return palettes[theme]

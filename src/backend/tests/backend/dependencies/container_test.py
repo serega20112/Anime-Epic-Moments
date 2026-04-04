@@ -37,6 +37,7 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         "AnimeApiClient",
         "HighlightDashboardCache",
         "KeyValueStore",
+        "ProfileOverviewCache",
         "KodikClient",
         "AniLibriaClient",
         "YouTubeClient",
@@ -131,6 +132,7 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
     )
     assert built.recommendation_cache.kwargs == {"store": built.key_value_store}
     assert built.highlight_dashboard_cache.kwargs == {"store": built.key_value_store}
+    assert built.profile_overview_cache.kwargs == {"store": built.key_value_store}
     assert built.email_verification_store.kwargs == {
         "store": built.key_value_store,
         "ttl_seconds": 600,
@@ -167,6 +169,7 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         built.favorite_repository,
         built.watch_repository,
         built.hf_llm_client,
+        built.profile_overview_cache,
     )
     assert built.get_liked_highlights_use_case().args == (
         built.highlight_repository,
@@ -200,7 +203,10 @@ def test_container_wires_repositories_services_and_use_cases(monkeypatch):
         built.anime_api_client,
         built.user_repository,
     )
-    assert built.set_user_follow_use_case().args == (built.user_repository,)
+    assert built.set_user_follow_use_case().args == (
+        built.user_repository,
+        built.profile_overview_cache,
+    )
     public_profile_use_case = built.get_public_profile_overview_use_case()
     assert public_profile_use_case.args[1:] == (
         built.user_repository,
@@ -231,6 +237,7 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
         "AnimeApiClient",
         "HighlightDashboardCache",
         "KeyValueStore",
+        "ProfileOverviewCache",
         "KodikClient",
         "AniLibriaClient",
         "YouTubeClient",
@@ -315,5 +322,6 @@ def test_container_builds_watch_highlight_use_case_via_inner_factory(monkeypatch
         built.highlight_repository,
         built.recommendation_service,
         built.highlight_dashboard_cache,
+        built.profile_overview_cache,
     )
     assert first.args[1] is built.watch_repository

@@ -121,6 +121,7 @@ def test_email_verification_mailer_wraps_network_errors(monkeypatch):
         ("neon", "Неоновая тема"),
         ("dark", "Тёмная тема"),
         ("light", "Светлая тема"),
+        ("rose", "Тема сакуры"),
         ("unknown", "Неоновая тема"),
     ],
 )

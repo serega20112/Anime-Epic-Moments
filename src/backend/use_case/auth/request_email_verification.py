@@ -61,4 +61,4 @@ class RequestEmailVerificationUseCase:
 
     def _normalize_theme(self, value: str | None) -> str:
         normalized = str(value or "").strip().lower()
-        return normalized if normalized in {"neon", "dark", "light"} else "neon"
+        return normalized if normalized in {"neon", "dark", "light", "rose"} else "neon"

@@ -358,7 +358,7 @@ def _normalize_verification_code(value: str | None) -> str:
 
 def _normalize_theme(value: str | None) -> str:
     normalized = str(value or "").strip().lower()
-    return normalized if normalized in {"neon", "dark", "light"} else "neon"
+    return normalized if normalized in {"neon", "dark", "light", "rose"} else "neon"
 
 
 def _set_auth_cookies(response, user_id: int):

@@ -2,6 +2,7 @@ import json
 
 from src.backend.repository.favorite_repository import FavoriteRepository
 from src.backend.domain.favorite.entity import Favorite
+from src.backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from src.backend.services.recommendation_service import RecommendationService
 
 
@@ -10,9 +11,11 @@ class AddFavoriteUseCase:
         self,
         repo: FavoriteRepository,
         recommendation_service: RecommendationService | None = None,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.repo = repo
         self.recommendation_service = recommendation_service
+        self.profile_overview_cache = profile_overview_cache
 
     def execute(
         self,
@@ -34,6 +37,8 @@ class AddFavoriteUseCase:
         result = self.repo.add(favorite)
         if self.recommendation_service:
             self.recommendation_service.invalidate_user(int(user_id))
+        if self.profile_overview_cache is not None:
+            self.profile_overview_cache.invalidate_user(int(user_id), include_ai_summary=True)
         return result
 
     def _normalize_text(self, value: str | None) -> str | None:

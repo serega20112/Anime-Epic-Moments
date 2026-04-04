@@ -21,9 +21,10 @@ def test_set_user_follow_use_case_delegates_to_expected_repository_method(
 ):
     """Проверяем, что SetUserFollowUseCase вызывает follow или unfollow в зависимости от команды."""
     user_repo = Mock()
+    profile_cache = Mock()
     user_repo.get_by_id.return_value = SimpleNamespace(id=7)
     getattr(user_repo, expected_method).return_value = follow
-    use_case = SetUserFollowUseCase(user_repo)
+    use_case = SetUserFollowUseCase(user_repo, profile_cache)
 
     result = use_case.execute(
         follower_user_id=3,
@@ -33,6 +34,8 @@ def test_set_user_follow_use_case_delegates_to_expected_repository_method(
 
     assert result is follow
     getattr(user_repo, expected_method).assert_called_once_with(3, 7)
+    profile_cache.invalidate_overview.assert_any_call(3)
+    profile_cache.invalidate_overview.assert_any_call(7)
 
 
 def test_set_user_follow_use_case_rejects_missing_target_user():

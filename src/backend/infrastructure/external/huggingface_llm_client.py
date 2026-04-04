@@ -181,9 +181,10 @@ class HuggingFaceLLMClient:
             },
         ]
         try:
-            completion = self._create_completion(
+            completion = self._create_completion_with_timeout(
                 model_route=self._resolve_model_route(),
                 messages=messages,
+                timeout_seconds=6,
             )
             content = self._extract_message_content(completion)
             if not content:
@@ -240,6 +241,19 @@ class HuggingFaceLLMClient:
 
     def _create_completion(self, model_route: str, messages: list[dict]) -> dict:
         """Отправляет запрос в Hugging Face Router и возвращает JSON-ответ."""
+        return self._create_completion_with_timeout(
+            model_route=model_route,
+            messages=messages,
+            timeout_seconds=30,
+        )
+
+    def _create_completion_with_timeout(
+        self,
+        model_route: str,
+        messages: list[dict],
+        timeout_seconds: float | int,
+    ) -> dict:
+        """Отправляет запрос в Hugging Face Router и возвращает JSON-ответ."""
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -252,7 +266,7 @@ class HuggingFaceLLMClient:
             "reasoning_effort": "low",
         }
         response = self.session.post(
-            self.api_url, headers=headers, json=payload, timeout=30
+            self.api_url, headers=headers, json=payload, timeout=timeout_seconds
         )
         response.raise_for_status()
         return response.json()
