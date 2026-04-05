@@ -33,7 +33,7 @@ class AnimeApiClient:
         if not sanitized_title:
             return []
         cache_key = self._cache_key(
-            "search_by_title",
+            "search_by_title_v2",
             sanitized_title.lower(),
             int(limit),
             int(bool(include_adult)),
@@ -48,13 +48,27 @@ class AnimeApiClient:
             resp.raise_for_status()
             data = resp.json().get("data", [])
         except (requests.RequestException, ValueError, KeyError, TypeError):
-            return list(self._set_cached(cache_key, [], ttl_seconds=300))
+            fallback = self._search_by_title_via_anilist(
+                title=sanitized_title,
+                limit=limit,
+                include_adult=include_adult,
+            )
+            ttl_seconds = 300 if fallback else 60
+            return list(self._set_cached(cache_key, fallback, ttl_seconds=ttl_seconds))
 
         result = []
         for item in data:
             if self._is_nsfw_jikan(item) and not include_adult:
                 continue
             result.append(self._build_anime_from_jikan_item(item))
+        if not result:
+            fallback = self._search_by_title_via_anilist(
+                title=sanitized_title,
+                limit=limit,
+                include_adult=include_adult,
+            )
+            ttl_seconds = 300 if fallback else 60
+            return list(self._set_cached(cache_key, fallback, ttl_seconds=ttl_seconds))
         return list(self._set_cached(cache_key, result, ttl_seconds=300))
 
     @external_method
@@ -295,6 +309,61 @@ class AnimeApiClient:
             item,
             fallback_to_anilist_id=fallback_to_anilist_id,
         )
+
+    def _search_by_title_via_anilist(
+        self,
+        *,
+        title: str,
+        limit: int,
+        include_adult: bool,
+    ) -> List[Anime]:
+        query = """
+        query ($search: String, $perPage: Int, $isAdult: Boolean) {
+          Page(perPage: $perPage) {
+            media(search: $search, type: ANIME, isAdult: $isAdult) {
+              id
+              idMal
+              episodes
+              title { romaji english native }
+              description
+              genres
+              isAdult
+              seasonYear
+              averageScore
+              coverImage { large }
+            }
+          }
+        }
+        """
+        variables: dict[str, object] = {
+            "search": title,
+            "perPage": limit,
+            "isAdult": None if include_adult else False,
+        }
+        try:
+            resp = self.session.post(
+                self.anilist_base,
+                json={"query": query, "variables": variables},
+                timeout=20,
+            )
+            resp.raise_for_status()
+            data = resp.json().get("data", {}).get("Page", {}).get("media", [])
+        except (requests.RequestException, ValueError, KeyError, TypeError):
+            return []
+
+        result = []
+        for item in data:
+            if self._is_nsfw_anilist(item) and not include_adult:
+                continue
+            result.append(
+                self._build_anime_from_anilist_item(
+                    item,
+                    fallback_to_anilist_id=False,
+                )
+            )
+            if len(result) >= limit:
+                break
+        return result
 
     def _passes_filters(
         self,
