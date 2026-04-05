@@ -21,11 +21,11 @@
 
   const escapeHtml = (value) =>
     String(value || "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
 
   const buildWatchUrl = (title, externalId) => {
     const numericId = Number(externalId);
@@ -77,6 +77,8 @@
     const coverUrl = anime.cover_url || "/static/images/no-cover.png";
     const watchUrl =
       anime.watch_url || buildWatchUrl(anime.title, anime.external_id);
+    const rating = anime.rating == null ? "?" : anime.rating;
+    const year = anime.year == null ? "?" : anime.year;
     const canFavorite =
       Number.isInteger(Number(anime.external_id)) &&
       Number(anime.external_id) > 0;
@@ -91,8 +93,8 @@
                         ${genres.map((genre) => `<span class="genre-chip">${escapeHtml(genre)}</span>`).join("")}
                     </div>
                     <div class="result-meta">
-                        <span>Рейтинг: ${escapeHtml(anime.rating ?? "?")}</span>
-                        <span>Год: ${escapeHtml(anime.year ?? "?")}</span>
+                        <span>Рейтинг: ${escapeHtml(rating)}</span>
+                        <span>Год: ${escapeHtml(year)}</span>
                     </div>
                     <div class="result-actions">
                         ${canFavorite ? `<button class="btn-favorite" data-anime-id="${escapeHtml(anime.external_id)}">В избранное</button>` : ""}
@@ -157,15 +159,19 @@
           renderAutocomplete(autocomplete, []);
           return;
         }
-        const response = await fetch(
-          `/anime/api/autocomplete?query=${encodeURIComponent(query)}&limit=6`,
-        );
-        if (!response.ok) {
+        try {
+          const response = await fetch(
+            `/anime/api/autocomplete?query=${encodeURIComponent(query)}&limit=6`,
+          );
+          if (!response.ok) {
+            renderAutocomplete(autocomplete, []);
+            return;
+          }
+          const items = await response.json();
+          renderAutocomplete(autocomplete, Array.isArray(items) ? items : []);
+        } catch (_error) {
           renderAutocomplete(autocomplete, []);
-          return;
         }
-        const items = await response.json();
-        renderAutocomplete(autocomplete, Array.isArray(items) ? items : []);
       }, AUTOCOMPLETE_DELAY);
 
       input.addEventListener("input", loadSuggestions);
@@ -198,27 +204,33 @@
       }
 
       resultsContainer.innerHTML = "<p>Ищем аниме...</p>";
-      const response = await fetch(
-        `/anime/api/search?title=${encodeURIComponent(query)}&limit=18`,
-      );
-      if (!response.ok) {
-        resultsContainer.innerHTML = "<p>Не удалось загрузить результаты.</p>";
-        return;
+      try {
+        const response = await fetch(
+          `/anime/api/search?title=${encodeURIComponent(query)}&limit=18`,
+        );
+        if (!response.ok) {
+          resultsContainer.innerHTML = "<p>Не удалось загрузить результаты.</p>";
+          return;
+        }
+
+        const apiItems = await response.json();
+        const mergedItems = Array.isArray(apiItems) ? apiItems : [];
+
+        if (resultsMeta) {
+          resultsMeta.textContent = `Найдено: ${mergedItems.length}`;
+        }
+
+        if (!mergedItems.length) {
+          resultsContainer.innerHTML = "<p>Ничего не найдено по названию.</p>";
+          return;
+        }
+
+        renderAnimeCards(resultsContainer, mergedItems);
+      } catch (error) {
+        console.error("title_search_render_failed", error);
+        resultsContainer.innerHTML =
+          "<p>Не удалось показать результаты. Обнови страницу и попробуй снова.</p>";
       }
-
-      const apiItems = await response.json();
-      const mergedItems = Array.isArray(apiItems) ? apiItems : [];
-
-      if (resultsMeta) {
-        resultsMeta.textContent = `Найдено: ${mergedItems.length}`;
-      }
-
-      if (!mergedItems.length) {
-        resultsContainer.innerHTML = "<p>Ничего не найдено по названию.</p>";
-        return;
-      }
-
-      renderAnimeCards(resultsContainer, mergedItems);
     };
 
     form.addEventListener("submit", (event) => {

@@ -71,6 +71,18 @@ python -m src.main
 docker compose -f build/docker-compose.yml up --build
 ```
 
+Запуск в Docker с доступом по внешнему IP:
+
+```powershell
+$env:APP_PUBLIC_HOST="203.0.113.10"
+docker compose -f build/docker-compose.yml up --build
+```
+
+Compose публикует web-порт на `0.0.0.0`. Если задать `APP_PUBLIC_HOST`, entrypoint автоматически:
+
+- подставит внешний адрес в `APP_BASE_URL`, если там оставлен localhost/127.0.0.1
+- добавит внешний origin в `APP_ALLOWED_ORIGINS`
+
 Redis GUI в браузере:
 
 ```text
@@ -93,6 +105,10 @@ http://localhost:8081
 - `RUN_DB_MIGRATIONS`
 - `FLASK_HOST`
 - `FLASK_PORT`
+- `APP_BIND_IP`
+- `APP_PUBLIC_HOST`
+- `APP_PUBLIC_PORT`
+- `APP_PUBLIC_SCHEME`
 - `HF_TOKEN`
 - API-ключи провайдеров и SMTP-параметры
 
