@@ -2,7 +2,9 @@
   const root = document.getElementById("index-recommendation-grid");
   const popularRoot = document.getElementById("index-popular-grid");
   const config = window.AEMIndexPage || {};
-  const userId = String(config.currentUserId || root?.dataset.userId || "").trim();
+  const userId = String(
+    config.currentUserId || root?.dataset.userId || "",
+  ).trim();
 
   const escapeHtml = (value) =>
     String(value ?? "")
@@ -40,7 +42,10 @@
           ${
             genres.length
               ? `<div class="result-genres">${genres
-                  .map((genre) => `<span class="genre-chip">${escapeHtml(genre)}</span>`)
+                  .map(
+                    (genre) =>
+                      `<span class="genre-chip">${escapeHtml(genre)}</span>`,
+                  )
                   .join("")}</div>`
               : ""
           }
@@ -67,28 +72,30 @@
   };
 
   const bindFavoriteButtons = () => {
-    root.querySelectorAll(".recommendation-favorite-button").forEach((button) => {
-      button.addEventListener("click", async () => {
-        const response = await fetch("/favorites/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: userId,
-            anime_id: button.dataset.animeId,
-            title: button.dataset.title || "",
-            description: button.dataset.description || "",
-            cover_url: button.dataset.coverUrl || "",
-            genres: JSON.parse(button.dataset.genres || "[]"),
-          }),
+    root
+      .querySelectorAll(".recommendation-favorite-button")
+      .forEach((button) => {
+        button.addEventListener("click", async () => {
+          const response = await fetch("/favorites/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: userId,
+              anime_id: button.dataset.animeId,
+              title: button.dataset.title || "",
+              description: button.dataset.description || "",
+              cover_url: button.dataset.coverUrl || "",
+              genres: JSON.parse(button.dataset.genres || "[]"),
+            }),
+          });
+          if (!response.ok) {
+            window.alert("Не удалось добавить аниме в избранное.");
+            return;
+          }
+          button.textContent = "В избранном";
+          button.classList.add("is-added");
         });
-        if (!response.ok) {
-          window.alert("Не удалось добавить аниме в избранное.");
-          return;
-        }
-        button.textContent = "В избранном";
-        button.classList.add("is-added");
       });
-    });
   };
 
   const renderEmptyState = (title, text) => {
@@ -105,10 +112,13 @@
       return;
     }
     try {
-      const response = await fetch(`/api/v1/recommendations/generate/${userId}`, {
-        method: "POST",
-        headers: { Accept: "application/json" },
-      });
+      const response = await fetch(
+        `/api/v1/recommendations/generate/${userId}`,
+        {
+          method: "POST",
+          headers: { Accept: "application/json" },
+        },
+      );
       if (!response.ok) {
         throw new Error(`http_${response.status}`);
       }
@@ -146,7 +156,9 @@
     if (!popularRoot) {
       return;
     }
-    const season = String(config.season || popularRoot.dataset.season || "").trim();
+    const season = String(
+      config.season || popularRoot.dataset.season || "",
+    ).trim();
     const year = String(config.year || popularRoot.dataset.year || "").trim();
     if (!season || !year) {
       return;

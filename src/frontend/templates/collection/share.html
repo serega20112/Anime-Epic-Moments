@@ -8,10 +8,22 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/anime.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/highlight.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/profile.css') }}"
+    />
   </head>
   <body>
     <header class="header">
@@ -28,11 +40,14 @@
             <div class="results-head">
               <div>
                 <h1>{{ collection.collection.title }}</h1>
-                <p class="filters-subtitle">{{ collection.collection.description }}</p>
+                <p class="filters-subtitle">
+                  {{ collection.collection.description }}
+                </p>
               </div>
             </div>
             <p class="filters-subtitle">
-              {{ collection.collection.items_count }} аниме · создана {{ collection.collection.created_at }}
+              {{ collection.collection.items_count }} аниме · создана {{
+              collection.collection.created_at }}
             </p>
             <div class="highlight-feed">
               {% for item in collection.items %}
@@ -40,11 +55,17 @@
                 <div class="highlight-entry-body">
                   <div class="highlight-entry-head">
                     <h3>{{ item.title }}</h3>
-                    <span class="highlight-like-badge">{{ item.genres|join(', ') }}</span>
+                    <span class="highlight-like-badge"
+                      >{{ item.genres|join(', ') }}</span
+                    >
                   </div>
                   <p class="highlight-meta-line">{{ item.description }}</p>
                   <div class="result-actions">
-                    <a class="btn neon-blue btn-watch" href="{{ item.watch_url }}">Открыть</a>
+                    <a
+                      class="btn neon-blue btn-watch"
+                      href="{{ item.watch_url }}"
+                      >Открыть</a
+                    >
                   </div>
                 </div>
               </article>

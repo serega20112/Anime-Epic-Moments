@@ -8,10 +8,22 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/anime.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/highlight.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/profile.css') }}"
+    />
   </head>
   <body>
     <header class="header">
@@ -19,12 +31,21 @@
       <nav>
         <a href="{{ url_for('index.index') }}">Главная</a>
         <a href="{{ url_for('highlight.get_highlight_feed') }}">Фид</a>
-        <a href="{{ url_for('highlight.get_user_highlights', user_id=profile_user.id) }}">Мои хайлайты</a>
+        <a
+          href="{{ url_for('highlight.get_user_highlights', user_id=profile_user.id) }}"
+          >Мои хайлайты</a
+        >
         <a href="{{ url_for('highlight.get_liked_highlights') }}">Мои лайки</a>
-        <a href="{{ url_for('highlight.get_saved_highlights') }}">Сохраненные</a>
+        <a href="{{ url_for('highlight.get_saved_highlights') }}"
+          >Сохраненные</a
+        >
         <a href="{{ url_for('collection.collections_page') }}">Коллекции</a>
-        <a href="{{ url_for('highlight.get_highlight_notifications') }}">Уведомления</a>
-        <a href="{{ url_for('support.support_page', page=request.url) }}">Поддержка</a>
+        <a href="{{ url_for('highlight.get_highlight_notifications') }}"
+          >Уведомления</a
+        >
+        <a href="{{ url_for('support.support_page', page=request.url) }}"
+          >Поддержка</a
+        >
       </nav>
     </header>
 
@@ -33,16 +54,23 @@
         <aside class="filters-panel">
           <h1>Мой профиль</h1>
           <p class="filters-subtitle">
-            Один экран для профиля, статистики, твоих лучших моментов и отклика аудитории.
+            Один экран для профиля, статистики, твоих лучших моментов и отклика
+            аудитории.
           </p>
 
           <section class="profile-card">
             {% if profile_overview.avatar_url %}
-            <img src="{{ profile_overview.avatar_url }}" alt="{{ profile_overview.username }}" class="profile-avatar" />
+            <img
+              src="{{ profile_overview.avatar_url }}"
+              alt="{{ profile_overview.username }}"
+              class="profile-avatar"
+            />
             {% endif %}
             <h2>{{ profile_overview.username }}</h2>
             <p class="filters-subtitle">{{ profile_overview.email }}</p>
-            <p class="filters-subtitle">В проекте с {{ profile_overview.created_at }}</p>
+            <p class="filters-subtitle">
+              В проекте с {{ profile_overview.created_at }}
+            </p>
           </section>
 
           <section class="highlight-stats">
@@ -61,15 +89,23 @@
             </div>
             <div class="stat-card">
               <span>Часы просмотра</span>
-              <strong>{{ profile_overview.smart_profile.hours_watched }}</strong>
+              <strong
+                >{{ profile_overview.smart_profile.hours_watched }}</strong
+              >
             </div>
             <div class="stat-card">
               <span>Средний рейтинг</span>
-              <strong>{{ profile_overview.smart_profile.average_rating or '—' }}</strong>
+              <strong
+                >{{ profile_overview.smart_profile.average_rating or '—'
+                }}</strong
+              >
             </div>
             <div class="stat-card">
               <span>Главный вайб</span>
-              <strong>{{ profile_overview.smart_profile.dominant_mood.label }}</strong>
+              <strong
+                >{{ profile_overview.smart_profile.dominant_mood.label
+                }}</strong
+              >
             </div>
             <div class="stat-card">
               <span>Подписчики</span>
@@ -88,14 +124,18 @@
             </p>
             <div class="profile-mood-card">
               <strong>
-                {{ profile_overview.smart_profile.dominant_mood.emoji }}
-                {{ profile_overview.smart_profile.dominant_mood.label }}
+                {{ profile_overview.smart_profile.dominant_mood.emoji }} {{
+                profile_overview.smart_profile.dominant_mood.label }}
               </strong>
-              <p>{{ profile_overview.smart_profile.dominant_mood.description }}</p>
+              <p>
+                {{ profile_overview.smart_profile.dominant_mood.description }}
+              </p>
             </div>
             <div class="profile-tag-cloud">
               {% for genre in profile_overview.smart_profile.favorite_genres %}
-              <span class="profile-tag">{{ genre.name }} · {{ genre.count }}</span>
+              <span class="profile-tag"
+                >{{ genre.name }} · {{ genre.count }}</span
+              >
               {% endfor %}
             </div>
           </section>
@@ -103,60 +143,103 @@
           <section class="highlight-sidebar">
             <h2>Быстрые действия</h2>
             <div class="highlight-group-list">
-              <a class="highlight-group-link" href="{{ url_for('highlight.get_user_highlights', user_id=profile_user.id, sort='popular') }}">
+              <a
+                class="highlight-group-link"
+                href="{{ url_for('highlight.get_user_highlights', user_id=profile_user.id, sort='popular') }}"
+              >
                 <span>Мои лучшие моменты</span>
                 <strong>Открыть</strong>
               </a>
-              <a class="highlight-group-link" href="{{ url_for('highlight.get_liked_highlights', sort='popular') }}">
+              <a
+                class="highlight-group-link"
+                href="{{ url_for('highlight.get_liked_highlights', sort='popular') }}"
+              >
                 <span>Лайкнутые по популярности</span>
                 <strong>Открыть</strong>
               </a>
-              <a class="highlight-group-link" href="{{ url_for('highlight.get_saved_highlights', sort='popular') }}">
+              <a
+                class="highlight-group-link"
+                href="{{ url_for('highlight.get_saved_highlights', sort='popular') }}"
+              >
                 <span>Сохраненные по ценности</span>
                 <strong>Открыть</strong>
               </a>
-              <a class="highlight-group-link" href="{{ url_for('highlight.get_following_highlights') }}">
+              <a
+                class="highlight-group-link"
+                href="{{ url_for('highlight.get_following_highlights') }}"
+              >
                 <span>Лента подписок</span>
                 <strong>{{ profile_overview.following_count }}</strong>
               </a>
-              <a class="highlight-group-link" href="{{ url_for('user.public_profile_page', user_id=profile_user.id) }}">
+              <a
+                class="highlight-group-link"
+                href="{{ url_for('user.public_profile_page', user_id=profile_user.id) }}"
+              >
                 <span>Публичный профиль</span>
                 <strong>Открыть</strong>
               </a>
-              <a class="highlight-group-link" href="{{ url_for('highlight.get_highlight_notifications') }}">
+              <a
+                class="highlight-group-link"
+                href="{{ url_for('highlight.get_highlight_notifications') }}"
+              >
                 <span>Отклик аудитории</span>
                 <strong>{{ profile_overview.recent_activity|length }}</strong>
               </a>
-              <a class="highlight-group-link" href="{{ url_for('support.support_page', page=request.url) }}">
+              <a
+                class="highlight-group-link"
+                href="{{ url_for('support.support_page', page=request.url) }}"
+              >
                 <span>Сообщить о проблеме</span>
                 <strong>Support</strong>
               </a>
             </div>
           </section>
 
-          {% with messages = get_flashed_messages() %}
-          {% if messages %}
+          {% with messages = get_flashed_messages() %} {% if messages %}
           <div class="profile-messages">
             {% for message in messages %}
             <p>{{ message }}</p>
             {% endfor %}
           </div>
-          {% endif %}
-          {% endwith %}
+          {% endif %} {% endwith %}
 
-          <form method="post" action="{{ url_for('auth.update_profile') }}" class="profile-form">
+          <form
+            method="post"
+            action="{{ url_for('auth.update_profile') }}"
+            class="profile-form"
+          >
             <label for="username">Никнейм</label>
-            <input id="username" name="username" type="text" value="{{ profile_user.username }}" minlength="3" maxlength="20" required />
+            <input
+              id="username"
+              name="username"
+              type="text"
+              value="{{ profile_user.username }}"
+              minlength="3"
+              maxlength="20"
+              required
+            />
 
             <label for="avatar_url">URL аватара</label>
-            <input id="avatar_url" name="avatar_url" type="url" value="{{ profile_user.avatar_url or '' }}" placeholder="https://..." />
+            <input
+              id="avatar_url"
+              name="avatar_url"
+              type="url"
+              value="{{ profile_user.avatar_url or '' }}"
+              placeholder="https://..."
+            />
 
             <div class="profile-actions">
               <button type="submit" class="btn neon-blue">Сохранить</button>
-              <button type="submit" form="logoutForm" class="btn neon-pink">Выйти</button>
+              <button type="submit" form="logoutForm" class="btn neon-pink">
+                Выйти
+              </button>
             </div>
           </form>
-          <form id="logoutForm" method="post" action="{{ url_for('auth.logout_user') }}"></form>
+          <form
+            id="logoutForm"
+            method="post"
+            action="{{ url_for('auth.logout_user') }}"
+          ></form>
         </aside>
 
         <section class="results-panel">
@@ -167,26 +250,26 @@
             <div class="profile-smart-grid">
               <article class="profile-insight-card">
                 <span class="profile-insight-label">Автоопределение вкуса</span>
-                <h3>{{ profile_overview.smart_profile.dominant_mood.label }}</h3>
-                <p>{{ profile_overview.smart_profile.dominant_mood.description }}</p>
+                <h3>
+                  {{ profile_overview.smart_profile.dominant_mood.label }}
+                </h3>
+                <p>
+                  {{ profile_overview.smart_profile.dominant_mood.description }}
+                </p>
               </article>
               <article class="profile-insight-card">
                 <span class="profile-insight-label">Любимые жанры</span>
                 <h3>
-                  {% if profile_overview.smart_profile.favorite_genres %}
-                  {{ profile_overview.smart_profile.favorite_genres[0].name }}
-                  {% else %}
-                  Пока без лидера
-                  {% endif %}
+                  {% if profile_overview.smart_profile.favorite_genres %} {{
+                  profile_overview.smart_profile.favorite_genres[0].name }} {%
+                  else %} Пока без лидера {% endif %}
                 </h3>
                 <p>
-                  {% if profile_overview.smart_profile.favorite_genres %}
-                  {% for genre in profile_overview.smart_profile.favorite_genres[:3] %}
+                  {% if profile_overview.smart_profile.favorite_genres %} {% for
+                  genre in profile_overview.smart_profile.favorite_genres[:3] %}
                   <span class="profile-inline-pill">{{ genre.name }}</span>
-                  {% endfor %}
-                  {% else %}
-                  Нужно еще немного активности, чтобы профиль собрал жанровую картину.
-                  {% endif %}
+                  {% endfor %} {% else %} Нужно еще немного активности, чтобы
+                  профиль собрал жанровую картину. {% endif %}
                 </p>
               </article>
               <article class="profile-insight-card">
@@ -201,9 +284,15 @@
             <div class="results-head">
               <h2>AI-рекомендатель</h2>
             </div>
-            <section class="profile-ai-panel" data-ai-recommendations data-user-id="{{ profile_user.id }}">
+            <section
+              class="profile-ai-panel"
+              data-ai-recommendations
+              data-user-id="{{ profile_user.id }}"
+            >
               <form class="profile-ai-form">
-                <label for="profile-ai-query">Опиши, что хочешь посмотреть</label>
+                <label for="profile-ai-query"
+                  >Опиши, что хочешь посмотреть</label
+                >
                 <div class="profile-ai-form-row">
                   <input
                     id="profile-ai-query"
@@ -212,7 +301,9 @@
                     placeholder="Что-то как Naruto, но темнее и быстрее по темпу"
                     required
                   />
-                  <button type="submit" class="btn neon-pink">Спросить AI</button>
+                  <button type="submit" class="btn neon-pink">
+                    Спросить AI
+                  </button>
                 </div>
               </form>
               <div class="profile-ai-results"></div>
@@ -225,7 +316,9 @@
             </div>
             <div class="profile-achievement-grid">
               {% for badge in profile_overview.smart_profile.achievements %}
-              <article class="profile-achievement-card profile-achievement-{{ badge.rarity }}">
+              <article
+                class="profile-achievement-card profile-achievement-{{ badge.rarity }}"
+              >
                 <span class="profile-achievement-icon">{{ badge.icon }}</span>
                 <div>
                   <h3>{{ badge.title }}</h3>
@@ -245,7 +338,10 @@
                 <span class="profile-insight-label">Топ по активности</span>
                 <div class="profile-top-anime-list">
                   {% for item in profile_overview.smart_profile.top_anime %}
-                  <a class="profile-top-anime-item" href="{{ url_for('watch.watch_page', anime_id=item.anime_id) }}">
+                  <a
+                    class="profile-top-anime-item"
+                    href="{{ url_for('watch.watch_page', anime_id=item.anime_id) }}"
+                  >
                     <span>{{ loop.index }}. {{ item.title }}</span>
                     <strong>{{ item.weight }}</strong>
                   </a>
@@ -262,17 +358,22 @@
                   ></span>
                   {% endfor %}
                 </div>
-                <p class="filters-subtitle">Каждая ячейка показывает активность просмотра по дням.</p>
+                <p class="filters-subtitle">
+                  Каждая ячейка показывает активность просмотра по дням.
+                </p>
               </article>
             </div>
           </section>
 
-          {% for title, items, link in [
-            ('Недавние хайлайты', profile_overview.recent_highlights, url_for('highlight.get_user_highlights', user_id=profile_user.id)),
-            ('Лучшие хайлайты', profile_overview.popular_highlights, url_for('highlight.get_user_highlights', user_id=profile_user.id, sort='popular')),
-            ('Мои лайки', profile_overview.liked_highlights, url_for('highlight.get_liked_highlights')),
-            ('Мои сохраненные', profile_overview.saved_highlights, url_for('highlight.get_saved_highlights'))
-          ] %}
+          {% for title, items, link in [ ('Недавние хайлайты',
+          profile_overview.recent_highlights,
+          url_for('highlight.get_user_highlights', user_id=profile_user.id)),
+          ('Лучшие хайлайты', profile_overview.popular_highlights,
+          url_for('highlight.get_user_highlights', user_id=profile_user.id,
+          sort='popular')), ('Мои лайки', profile_overview.liked_highlights,
+          url_for('highlight.get_liked_highlights')), ('Мои сохраненные',
+          profile_overview.saved_highlights,
+          url_for('highlight.get_saved_highlights')) ] %}
           <section class="feed-section-block">
             <div class="results-head">
               <h2>{{ title }}</h2>
@@ -280,23 +381,19 @@
             </div>
             {% if items %}
             <div class="highlight-feed">
-              {% set include_spoilers = true %}
-              {% set is_public = false %}
-              {% if title == 'Мои лайки' %}
-                {% set view_mode = 'liked' %}
-              {% elif title == 'Мои сохраненные' %}
-                {% set view_mode = 'saved' %}
-              {% else %}
-                {% set view_mode = 'user' %}
-              {% endif %}
-              {% for item in items %}
-                {% include 'highlight/_card.html' %}
-              {% endfor %}
+              {% set include_spoilers = true %} {% set is_public = false %} {%
+              if title == 'Мои лайки' %} {% set view_mode = 'liked' %} {% elif
+              title == 'Мои сохраненные' %} {% set view_mode = 'saved' %} {%
+              else %} {% set view_mode = 'user' %} {% endif %} {% for item in
+              items %} {% include 'highlight/_card.html' %} {% endfor %}
             </div>
             {% else %}
             <section class="empty-state">
               <h2>Пока пусто</h2>
-              <p>Здесь появится контент, когда ты начнешь активно взаимодействовать с хайлайтами.</p>
+              <p>
+                Здесь появится контент, когда ты начнешь активно
+                взаимодействовать с хайлайтами.
+              </p>
             </section>
             {% endif %}
           </section>
@@ -305,7 +402,11 @@
           <section class="feed-section-block">
             <div class="results-head">
               <h2>Социальный отклик</h2>
-              <a class="btn neon-blue" href="{{ url_for('highlight.get_highlight_notifications') }}">Все уведомления</a>
+              <a
+                class="btn neon-blue"
+                href="{{ url_for('highlight.get_highlight_notifications') }}"
+                >Все уведомления</a
+              >
             </div>
             {% if profile_overview.recent_activity %}
             <div class="highlight-feed">
@@ -314,18 +415,20 @@
                 <div class="highlight-entry-body">
                   <div class="highlight-entry-head">
                     <h3>{{ item.highlight_title }}</h3>
-                    <span class="highlight-like-badge">{{ item.created_at }}</span>
+                    <span class="highlight-like-badge"
+                      >{{ item.created_at }}</span
+                    >
                   </div>
                   <p class="highlight-meta-line">
-                    {{ item.actor_username }}
-                    {% if item.action == 'comment' %}
-                    оставил комментарий
-                    {% else %}
-                    поставил лайк
-                    {% endif %}
+                    {{ item.actor_username }} {% if item.action == 'comment' %}
+                    оставил комментарий {% else %} поставил лайк {% endif %}
                   </p>
                   <div class="result-actions">
-                    <a class="btn neon-blue btn-watch" href="{{ url_for('highlight.get_shared_highlight', highlight_id=item.highlight_id) }}">Открыть хайлайт</a>
+                    <a
+                      class="btn neon-blue btn-watch"
+                      href="{{ url_for('highlight.get_shared_highlight', highlight_id=item.highlight_id) }}"
+                      >Открыть хайлайт</a
+                    >
                   </div>
                 </div>
               </article>
@@ -334,7 +437,10 @@
             {% else %}
             <section class="empty-state">
               <h2>Пока нет отклика</h2>
-              <p>Когда кто-то увидит, лайкнет или прокомментирует твои моменты, это появится здесь.</p>
+              <p>
+                Когда кто-то увидит, лайкнет или прокомментирует твои моменты,
+                это появится здесь.
+              </p>
             </section>
             {% endif %}
           </section>
@@ -347,4 +453,3 @@
     <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
   </body>
 </html>
-

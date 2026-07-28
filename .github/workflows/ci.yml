@@ -1,0 +1,51 @@
+name: CI
+
+on: [push, pull_request]
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install lint dependencies
+        run: pip install ruff
+      - name: Run ruff
+        run: ruff check src/ --output-format=github
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: anime_epic_moments
+          POSTGRES_PASSWORD: anime_epic_moments
+          POSTGRES_DB: anime_epic_moments
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      - name: Run tests
+        run: python -m pytest src/backend/tests -q
+        env:
+          DATABASE_URL: postgresql+asyncpg://anime_epic_moments:anime_epic_moments@localhost:5432/anime_epic_moments
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: ci-secret-key

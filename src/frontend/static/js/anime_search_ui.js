@@ -209,7 +209,8 @@
           `/anime/api/search?title=${encodeURIComponent(query)}&limit=18`,
         );
         if (!response.ok) {
-          resultsContainer.innerHTML = "<p>Не удалось загрузить результаты.</p>";
+          resultsContainer.innerHTML =
+            "<p>Не удалось загрузить результаты.</p>";
           return;
         }
 

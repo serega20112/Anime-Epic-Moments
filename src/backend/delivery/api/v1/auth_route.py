@@ -1,4 +1,5 @@
 import logging
+from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -6,6 +7,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from src.backend.dependencies.settings import Settings
 from src.backend.delivery.api.helpers import get_container, get_current_user
 from src.backend.infrastructure.security.flask_protection import client_ip, rate_limit
+from src.backend.infrastructure.security.account_lock_service import AccountLockService
 from src.backend.infrastructure.web.templating import flash, render_template
 from src.backend.infrastructure.security.jwt_service import JWTService
 from src.backend.use_case.auth.login_user import InvalidCredentialsError
@@ -29,12 +31,6 @@ container = None
 logger = logging.getLogger("anime_epic_moments")
 
 jwt_service = JWTService()
-LOGIN_ATTEMPTS_LIMIT = 5
-REGISTER_ATTEMPTS_LIMIT = 3
-PASSWORD_RESET_ATTEMPTS_LIMIT = 3
-VERIFY_EMAIL_ATTEMPTS_LIMIT = 10
-VERIFY_EMAIL_RESEND_LIMIT = 3
-AUTH_WINDOW_SECONDS = 300
 
 
 @auth_router.get("/login", name="auth.login_page")
@@ -74,8 +70,8 @@ async def password_reset_confirm_page(request: Request):
 @auth_router.post("/login", name="auth.login_user")
 @rate_limit(
     scope="auth_login",
-    limit=LOGIN_ATTEMPTS_LIMIT,
-    window_seconds=AUTH_WINDOW_SECONDS,
+    limit=Settings.auth_login_attempts_limit,
+    window_seconds=Settings.auth_window_seconds,
     key_builder=lambda request: client_ip(request),
     response_mode="redirect",
     redirect_endpoint="auth.login_page",
@@ -91,8 +87,23 @@ async def login_user(request: Request):
             url=request.app.url_path_for("auth.login_page"),
             status_code=303,
         )
+    account_lock = getattr(container, "account_lock_service", None)
+    if account_lock is not None:
+        is_locked, _unlock_at = await account_lock.is_account_locked(email)
+        if is_locked:
+            logger.warning(
+                "login_blocked_locked_account email=%s ip=%s",
+                email, client_ip(request),
+            )
+            flash(request, "Аккаунт временно заблокирован из-за множества неудачных попыток входа. Попробуйте позже.")
+            return RedirectResponse(
+                url=request.app.url_path_for("auth.login_page"),
+                status_code=303,
+            )
     try:
         user = await container.login_user_use_case().execute(email=email, password=password)
+        if account_lock is not None:
+            await account_lock.unlock_account(email)
         logger.info("login_success user_id=%s ip=%s", user.id, client_ip(request))
         flash(request, f"Добро пожаловать, {user.username}!")
         response = RedirectResponse(
@@ -102,7 +113,18 @@ async def login_user(request: Request):
         _set_auth_cookies(response, user.id)
         return response
     except InvalidCredentialsError as error:
-        logger.warning("login_failed email=%s ip=%s", email, client_ip(request))
+        if account_lock is not None:
+            await account_lock.record_failed_attempt(email)
+            status = await account_lock.get_account_status(email)
+            logger.warning(
+                "login_failed email=%s ip=%s attempts=%s/%s",
+                email,
+                client_ip(request),
+                status.failed_attempts,
+                status.max_attempts,
+            )
+        else:
+            logger.warning("login_failed email=%s ip=%s", email, client_ip(request))
         flash(request, str(error))
         return RedirectResponse(
             url=request.app.url_path_for("auth.login_page"),
@@ -113,8 +135,8 @@ async def login_user(request: Request):
 @auth_router.post("/register", name="auth.register_user")
 @rate_limit(
     scope="auth_register",
-    limit=REGISTER_ATTEMPTS_LIMIT,
-    window_seconds=AUTH_WINDOW_SECONDS,
+    limit=Settings.auth_register_attempts_limit,
+    window_seconds=Settings.auth_window_seconds,
     key_builder=lambda request: client_ip(request),
     response_mode="redirect",
     redirect_endpoint="auth.register_page",
@@ -170,8 +192,8 @@ async def register_user(request: Request):
 @auth_router.post("/verify-email", name="auth.verify_email")
 @rate_limit(
     scope="auth_verify_email",
-    limit=VERIFY_EMAIL_ATTEMPTS_LIMIT,
-    window_seconds=AUTH_WINDOW_SECONDS,
+    limit=Settings.auth_verify_email_attempts_limit,
+    window_seconds=Settings.auth_window_seconds,
     key_builder=lambda request: client_ip(request),
     response_mode="redirect",
     redirect_endpoint="auth.verify_email_page",
@@ -218,8 +240,8 @@ async def verify_email(request: Request):
 @auth_router.post("/verify-email/resend", name="auth.resend_verification_email")
 @rate_limit(
     scope="auth_verify_email_resend",
-    limit=VERIFY_EMAIL_RESEND_LIMIT,
-    window_seconds=AUTH_WINDOW_SECONDS,
+    limit=Settings.auth_verify_email_resend_limit,
+    window_seconds=Settings.auth_window_seconds,
     key_builder=lambda request: client_ip(request),
     response_mode="redirect",
     redirect_endpoint="auth.verify_email_page",
@@ -248,8 +270,8 @@ async def resend_verification_email(request: Request):
 @auth_router.post("/password-reset", name="auth.request_password_reset")
 @rate_limit(
     scope="auth_password_reset",
-    limit=PASSWORD_RESET_ATTEMPTS_LIMIT,
-    window_seconds=AUTH_WINDOW_SECONDS,
+    limit=Settings.auth_password_reset_attempts_limit,
+    window_seconds=Settings.auth_window_seconds,
     key_builder=lambda request: client_ip(request),
     response_mode="redirect",
     redirect_endpoint="auth.password_reset_request_page",
@@ -330,7 +352,7 @@ async def logout_user(request: Request):
 @rate_limit(
     scope="auth_refresh",
     limit=10,
-    window_seconds=AUTH_WINDOW_SECONDS,
+    window_seconds=Settings.auth_window_seconds,
     key_builder=lambda request: client_ip(request),
 )
 async def refresh_session(request: Request):

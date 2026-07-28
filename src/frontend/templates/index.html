@@ -8,9 +8,18 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/anime.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/index.css') }}"
+    />
   </head>
   <body>
     <div id="particles-js"></div>
@@ -83,7 +92,9 @@
             />
             <div class="dropdown-menu">
               <a href="{{ url_for('auth.profile_page') }}">Мой профиль</a>
-              <a href="{{ url_for('support.support_page', page=request.url) }}">Поддержка</a>
+              <a href="{{ url_for('support.support_page', page=request.url) }}"
+                >Поддержка</a
+              >
               <form
                 action="{{ url_for('auth.logout_user') }}"
                 method="post"
@@ -124,7 +135,10 @@
         >
           <section class="empty-state index-recommendation-state">
             <h2>Загружаем рекомендации</h2>
-            <p>Главная уже открыта. Подборка подтянется отдельно, без блокировки входа.</p>
+            <p>
+              Главная уже открыта. Подборка подтянется отдельно, без блокировки
+              входа.
+            </p>
           </section>
         </div>
       </div>
@@ -139,7 +153,10 @@
         >
           <section class="empty-state index-recommendation-state">
             <h2>Загружаем сезонные тайтлы</h2>
-            <p>Подборка сезона подтянется отдельно, без блокировки главной страницы.</p>
+            <p>
+              Подборка сезона подтянется отдельно, без блокировки главной
+              страницы.
+            </p>
           </section>
         </div>
       </section>
@@ -156,8 +173,8 @@
     <script>
       window.AEMIndexPage = {
         currentUserId: '{{ current_user.id if current_user else "" }}',
-        season: '{{ home_season }}',
-        year: {{ home_year }}
+        season: "{{ home_season }}",
+        year: "{{ home_year }}",
       };
     </script>
     {% with messages = get_flashed_messages() %} {% if messages %}

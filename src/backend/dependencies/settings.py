@@ -143,3 +143,30 @@ class Settings:
     password_reset_expire_minutes: int = int(
         os.getenv("PASSWORD_RESET_EXPIRE_MINUTES", "30")
     )
+    auth_login_attempts_limit: int = int(
+        os.getenv("AUTH_LOGIN_ATTEMPTS_LIMIT", "5")
+    )
+    auth_register_attempts_limit: int = int(
+        os.getenv("AUTH_REGISTER_ATTEMPTS_LIMIT", "3")
+    )
+    auth_password_reset_attempts_limit: int = int(
+        os.getenv("AUTH_PASSWORD_RESET_ATTEMPTS_LIMIT", "3")
+    )
+    auth_verify_email_attempts_limit: int = int(
+        os.getenv("AUTH_VERIFY_EMAIL_ATTEMPTS_LIMIT", "10")
+    )
+    auth_verify_email_resend_limit: int = int(
+        os.getenv("AUTH_VERIFY_EMAIL_RESEND_LIMIT", "3")
+    )
+    auth_window_seconds: int = int(
+        os.getenv("AUTH_WINDOW_SECONDS", "300")
+    )
+    support_ticket_rate_limit: int = int(
+        os.getenv("SUPPORT_TICKET_RATE_LIMIT", "3")
+    )
+    highlight_comment_rate_limit: int = int(
+        os.getenv("HIGHLIGHT_COMMENT_RATE_LIMIT", "30")
+    )
+    highlight_rate_window_seconds: int = int(
+        os.getenv("HIGHLIGHT_RATE_WINDOW_SECONDS", "60")
+    )

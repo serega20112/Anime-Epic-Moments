@@ -7,7 +7,9 @@
   const playerShell = document.getElementById("watch-player-shell");
   const playerOverlay = document.getElementById("watch-player-overlay");
   const playerStatus = document.getElementById("watch-player-status");
-  const playerStatusTitle = document.getElementById("watch-player-status-title");
+  const playerStatusTitle = document.getElementById(
+    "watch-player-status-title",
+  );
   const playerStatusText = document.getElementById("watch-player-status-text");
   const video = document.getElementById("watch-video");
   const embedFrame = document.getElementById("watch-embed-frame");
@@ -100,8 +102,8 @@
   const canUseNativeHls = () =>
     Boolean(
       video &&
-        (video.canPlayType("application/vnd.apple.mpegurl") ||
-          video.canPlayType("application/x-mpegURL")),
+      (video.canPlayType("application/vnd.apple.mpegurl") ||
+        video.canPlayType("application/x-mpegURL")),
     );
 
   const isStreamSource = (source) =>
@@ -131,7 +133,8 @@
       .filter((item) => String(item.translation_id) === String(translationId))
       .sort((left, right) => {
         const qualityDiff =
-          getQualityRank(right.quality_label) - getQualityRank(left.quality_label);
+          getQualityRank(right.quality_label) -
+          getQualityRank(left.quality_label);
         if (qualityDiff !== 0) {
           return qualityDiff;
         }
@@ -174,7 +177,9 @@
     }
     if (muteToggle) {
       muteToggle.textContent =
-        streamMode && video && !(video.muted || video.volume === 0) ? "🔊" : "🔇";
+        streamMode && video && !(video.muted || video.volume === 0)
+          ? "🔊"
+          : "🔇";
     }
   };
 
@@ -291,7 +296,11 @@
         watch_source_id: selectedSource.source_id,
         position_seconds: streamMode && video ? video.currentTime || 0 : 0,
         volume:
-          streamMode && video ? (video.muted ? 0 : video.volume) : config.savedVolume,
+          streamMode && video
+            ? video.muted
+              ? 0
+              : video.volume
+            : config.savedVolume,
         quality_label: qualitySelect
           ? qualitySelect.selectedOptions[0]?.textContent || "Auto"
           : "Auto",
@@ -517,7 +526,9 @@
 
     const preferred =
       items.find((item) => item.quality_label === config.savedQualityLabel) ||
-      items.find((item) => Number(item.source_id) === Number(config.selectedSourceId)) ||
+      items.find(
+        (item) => Number(item.source_id) === Number(config.selectedSourceId),
+      ) ||
       items[0];
     qualitySelect.value = String(preferred.source_id);
     config.selectedSourceId = preferred.source_id;
@@ -645,7 +656,9 @@
       return;
     }
     if (!isStreamSource(getSelectedSource())) {
-      window.alert("Для embed и внешних источников сохранение таймкодов недоступно.");
+      window.alert(
+        "Для embed и внешних источников сохранение таймкодов недоступно.",
+      );
       return;
     }
     const formData = new FormData(highlightForm);
@@ -873,9 +886,12 @@
     button.addEventListener("click", async () => {
       const commentId = button.getAttribute("data-comment-id");
       const liked = button.getAttribute("data-liked") === "1";
-      const response = await fetch(`/watch/discussion/comments/${commentId}/likes`, {
-        method: liked ? "DELETE" : "POST",
-      });
+      const response = await fetch(
+        `/watch/discussion/comments/${commentId}/likes`,
+        {
+          method: liked ? "DELETE" : "POST",
+        },
+      );
       if (!response.ok) {
         return;
       }

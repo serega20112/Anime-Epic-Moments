@@ -108,12 +108,19 @@ def render_template(
     def url_for(name: str, **params: Any) -> str:
         return proxy.url_for(name, **params)
 
+    def csrf_token() -> str:
+        token_data = getattr(request.state, "csrf_token", None)
+        if token_data and isinstance(token_data, dict):
+            return token_data.get("value", "")
+        return getattr(request.state, "csrf_token", "") or ""
+
     template = _environment.get_template(template_name)
     html = template.render(
         request=proxy,
         current_user=getattr(request.state, "user", None),
         get_flashed_messages=get_flashed_messages,
         url_for=url_for,
+        csrf_token=csrf_token,
         **context,
     )
     return HTMLResponse(content=html, status_code=status_code, headers=headers)

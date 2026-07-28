@@ -8,8 +8,14 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/support.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/support.css') }}"
+    />
   </head>
   <body>
     <header class="header">
@@ -19,7 +25,9 @@
         <a href="{{ url_for('highlight.get_highlight_feed') }}">Фид</a>
         {% if current_user %}
         <a href="{{ url_for('auth.profile_page') }}">Профиль</a>
-        <a href="{{ url_for('highlight.get_saved_highlights') }}">Сохраненные</a>
+        <a href="{{ url_for('highlight.get_saved_highlights') }}"
+          >Сохраненные</a
+        >
         {% else %}
         <a href="{{ url_for('auth.login_page') }}">Вход</a>
         <a href="{{ url_for('auth.register_page') }}">Регистрация</a>
@@ -33,16 +41,22 @@
           <span class="support-kicker">Support Desk</span>
           <h1>Выбери канал и отправь тикет без смешивания потоков</h1>
           <p class="support-copy">
-            Тикет можно отправить либо в Telegram, либо по email. Система использует только один выбранный канал.
+            Тикет можно отправить либо в Telegram, либо по email. Система
+            использует только один выбранный канал.
           </p>
           <div class="support-facts">
             <article class="support-fact-card">
               <strong>Telegram</strong>
-              <p>Бот шлет тикет прямо в admin chat или в личные чаты админов.</p>
+              <p>
+                Бот шлет тикет прямо в admin chat или в личные чаты админов.
+              </p>
             </article>
             <article class="support-fact-card">
               <strong>Email</strong>
-              <p>Тикет уходит в support inbox и на него можно отвечать обычной почтой.</p>
+              <p>
+                Тикет уходит в support inbox и на него можно отвечать обычной
+                почтой.
+              </p>
             </article>
             <article class="support-fact-card">
               <strong>Контекст</strong>
@@ -52,17 +66,19 @@
         </aside>
 
         <section class="support-panel">
-          {% with messages = get_flashed_messages() %}
-          {% if messages %}
+          {% with messages = get_flashed_messages() %} {% if messages %}
           <div class="support-alerts">
             {% for message in messages %}
             <p>{{ message }}</p>
             {% endfor %}
           </div>
-          {% endif %}
-          {% endwith %}
+          {% endif %} {% endwith %}
 
-          <form method="post" action="{{ url_for('support.create_support_ticket') }}" class="support-form">
+          <form
+            method="post"
+            action="{{ url_for('support.create_support_ticket') }}"
+            class="support-form"
+          >
             {% if current_user %}
             <section class="support-user-card">
               <span class="support-user-label">Отправитель</span>
@@ -100,14 +116,36 @@
               <legend>Куда отправить тикет</legend>
               <div class="support-channel-grid">
                 <label class="support-channel-card">
-                  <input type="radio" name="channel" value="telegram" {% if support_form.channel != 'email' %}checked{% endif %} />
+                  <input
+                    type="radio"
+                    name="channel"
+                    value="telegram"
+                    {%
+                    if
+                    support_form.channel
+                    !="email"
+                    %}checked{%
+                    endif
+                    %}
+                  />
                   <span class="support-channel-body">
                     <strong>Telegram</strong>
                     <small>Мгновенная доставка в support bot/admin chat</small>
                   </span>
                 </label>
                 <label class="support-channel-card">
-                  <input type="radio" name="channel" value="email" {% if support_form.channel == 'email' %}checked{% endif %} />
+                  <input
+                    type="radio"
+                    name="channel"
+                    value="email"
+                    {%
+                    if
+                    support_form.channel=""
+                    ="email"
+                    %}checked{%
+                    endif
+                    %}
+                  />
                   <span class="support-channel-body">
                     <strong>Email</strong>
                     <small>Обычное письмо в support inbox без Telegram</small>
@@ -148,12 +186,18 @@
                 maxlength="4000"
                 placeholder="Опиши баг, как его воспроизвести и что ожидалось."
                 required
-              >{{ support_form.message }}</textarea>
+              >
+{{ support_form.message }}</textarea
+              >
             </label>
 
             <div class="support-actions">
               <button type="submit" class="btn neon-pink">Создать тикет</button>
-              <a href="{{ request.referrer or url_for('index.index') }}" class="btn neon-blue">Назад</a>
+              <a
+                href="{{ request.referrer or url_for('index.index') }}"
+                class="btn neon-blue"
+                >Назад</a
+              >
             </div>
           </form>
         </section>

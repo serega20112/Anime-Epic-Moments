@@ -8,8 +8,14 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/auth.css') }}"
+    />
   </head>
   <body>
     <div class="auth-page">
@@ -20,12 +26,7 @@
           action="{{ url_for('auth.register_user') }}"
           method="POST"
         >
-          <input
-            type="hidden"
-            name="theme"
-            value="neon"
-            data-theme-field
-          />
+          <input type="hidden" name="theme" value="neon" data-theme-field />
           <div class="form-group">
             <label for="username">Имя пользователя</label>
             <input
@@ -107,7 +108,6 @@
     </script>
     {% endif %} {% endwith %}
     <script src="{{ url_for('static', filename='js/password_strength.js') }}"></script>
-      <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
   </body>
 </html>
-

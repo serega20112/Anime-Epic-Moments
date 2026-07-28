@@ -28,6 +28,7 @@ from src.backend.dependencies.settings import Settings
 from src.backend.infrastructure.files.database import get_session_factory, init_db
 from src.backend.infrastructure.security.jwt_service import JWTService
 from src.backend.infrastructure.web.templating import render_template
+from src.backend.infrastructure.security.csrf_service import csrf_service
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FRONTEND_ROOT = PROJECT_ROOT / "src" / "frontend"
@@ -68,6 +69,7 @@ def create_app() -> FastAPI:
         )
         request.state.user = None
         request.state.clear_access_token_cookie = False
+        request.state.csrf_token = None
 
         if _is_cross_origin_write_request(request):
             logger.warning(
@@ -81,6 +83,13 @@ def create_app() -> FastAPI:
         try:
             if not _is_scope_free_request(request):
                 await _load_user(request)
+                csrf_service.generate_token(request.state)
+            if request.method in {"POST", "PUT", "PATCH", "DELETE"} and not _is_csrf_exempt(request):
+                if not _validate_csrf(request):
+                    logger.warning("csrf_validation_failed path=%s", request.url.path)
+                    if _wants_json(request):
+                        return JSONResponse({"error": "csrf_failed"}, status_code=403)
+                    return PlainTextResponse("CSRF validation failed", status_code=403)
             response = await call_next(request)
         finally:
             close = getattr(request.state.container, "aclose", None)
@@ -109,6 +118,20 @@ def create_app() -> FastAPI:
     app.include_router(support_router)
     app.include_router(user_router)
     app.include_router(index_router)
+
+    @app.exception_handler(404)
+    async def handle_not_found(request: Request, _error):
+        logger.warning("not_found path=%s", request.url.path)
+        if _wants_json(request):
+            return JSONResponse({"error": "not_found"}, status_code=404)
+        return render_template(request, "errors/404.html", status_code=404)
+
+    @app.exception_handler(Exception)
+    async def handle_internal_error(request: Request, _error: Exception):
+        logger.exception("internal_server_error path=%s", request.url.path)
+        if _wants_json(request):
+            return JSONResponse({"error": "internal_server_error"}, status_code=500)
+        return render_template(request, "errors/500_modal.html", status_code=500)
 
     return app
 
@@ -213,6 +236,27 @@ def _is_scope_free_request(request: Request) -> bool:
     return request.url.path == "/watch/proxy"
 
 
+def _is_csrf_exempt(request: Request) -> bool:
+    path = request.url.path
+    return any(
+        path.startswith(prefix)
+        for prefix in ("/auth", "/static", "/watch/proxy")
+    )
+
+
+def _validate_csrf(request: Request) -> bool:
+    # Check X-CSRF-Token header (used by JS/AJAX)
+    header_token = request.headers.get("X-CSRF-Token")
+    if header_token:
+        return csrf_service.validate_token(request.state, header_token)
+    # For JSON API clients the Origin check in _is_cross_origin_write_request suffices
+    if _wants_json(request):
+        return True
+    # For form submissions: skip validation in middleware;
+    # validated inside the route handler after form is loaded
+    return True
+
+
 def _build_request_container(root_container, *, request_state):
     if hasattr(root_container, "scope"):
         return root_container.scope(
@@ -226,6 +270,11 @@ def _apply_security_headers(response):
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("Referrer-Policy", "same-origin")
+    if Settings.cookie_secure:
+        response.headers.setdefault(
+            "Strict-Transport-Security",
+            "max-age=63072000; includeSubDomains"
+        )
     response.headers.setdefault(
         "Content-Security-Policy",
         "default-src 'self'; "
@@ -254,3 +303,5 @@ def _clear_cookie(response, cookie_name: str):
     if Settings.cookie_domain:
         cookie_kwargs["domain"] = Settings.cookie_domain
     response.delete_cookie(cookie_name, **cookie_kwargs)
+
+

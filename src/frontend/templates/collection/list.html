@@ -8,17 +8,32 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/anime.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/highlight.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/profile.css') }}"
+    />
   </head>
   <body>
     <header class="header">
       <div class="logo">AEM</div>
       <nav>
         <a href="{{ url_for('index.index') }}">Главная</a>
-        <a href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}">Избранное</a>
+        <a
+          href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}"
+          >Избранное</a
+        >
         <a href="{{ url_for('auth.profile_page') }}">Профиль</a>
       </nav>
     </header>
@@ -30,16 +45,35 @@
           <p class="filters-subtitle">
             Собирай аниме в тематические подборки и делись ими по ссылке.
           </p>
-          <form class="profile-ai-panel profile-form" method="post" action="{{ url_for('collection.create_collection') }}">
+          <form
+            class="profile-ai-panel profile-form"
+            method="post"
+            action="{{ url_for('collection.create_collection') }}"
+          >
             <label for="title">Название коллекции</label>
-            <input id="title" name="title" type="text" maxlength="80" required placeholder="Лучшие боевики" />
+            <input
+              id="title"
+              name="title"
+              type="text"
+              maxlength="80"
+              required
+              placeholder="Лучшие боевики"
+            />
             <label for="description">Описание</label>
-            <input id="description" name="description" type="text" maxlength="400" placeholder="Что сюда попадает и почему" />
+            <input
+              id="description"
+              name="description"
+              type="text"
+              maxlength="400"
+              placeholder="Что сюда попадает и почему"
+            />
             <label class="profile-tag">
               <input type="checkbox" name="is_public" value="1" checked />
               Публичная share-ссылка
             </label>
-            <button type="submit" class="btn neon-pink">Создать коллекцию</button>
+            <button type="submit" class="btn neon-pink">
+              Создать коллекцию
+            </button>
           </form>
         </aside>
 
@@ -49,16 +83,33 @@
             <div class="results-head">
               <div>
                 <h2>{{ collection.collection.title }}</h2>
-                <p class="filters-subtitle">{{ collection.collection.description }}</p>
+                <p class="filters-subtitle">
+                  {{ collection.collection.description }}
+                </p>
               </div>
-              <a class="btn neon-blue" href="{{ collection.collection.share_url }}">Поделиться</a>
+              <a
+                class="btn neon-blue"
+                href="{{ collection.collection.share_url }}"
+                >Поделиться</a
+              >
             </div>
             <p class="filters-subtitle">
-              {{ collection.collection.items_count }} аниме · создана {{ collection.collection.created_at }}
+              {{ collection.collection.items_count }} аниме · создана {{
+              collection.collection.created_at }}
             </p>
-            <form class="profile-ai-panel profile-form" method="post" action="{{ url_for('collection.add_collection_item', collection_id=collection.collection.id) }}">
-              <label for="anime-{{ collection.collection.id }}">Добавить из избранного</label>
-              <select id="anime-{{ collection.collection.id }}" name="anime_id" required>
+            <form
+              class="profile-ai-panel profile-form"
+              method="post"
+              action="{{ url_for('collection.add_collection_item', collection_id=collection.collection.id) }}"
+            >
+              <label for="anime-{{ collection.collection.id }}"
+                >Добавить из избранного</label
+              >
+              <select
+                id="anime-{{ collection.collection.id }}"
+                name="anime_id"
+                required
+              >
                 <option value="">Выбери аниме</option>
                 {% for favorite in favorites %}
                 <option
@@ -85,14 +136,29 @@
                 <div class="highlight-entry-body">
                   <div class="highlight-entry-head">
                     <h3>{{ item.title }}</h3>
-                    <span class="highlight-like-badge">{{ item.genres|join(', ') }}</span>
+                    <span class="highlight-like-badge"
+                      >{{ item.genres|join(', ') }}</span
+                    >
                   </div>
                   <p class="highlight-meta-line">{{ item.description }}</p>
                   <div class="result-actions">
-                    <a class="btn neon-blue btn-watch" href="{{ item.watch_url }}">Открыть</a>
-                    <form method="post" action="{{ url_for('collection.remove_collection_item', collection_id=collection.collection.id) }}">
-                      <input type="hidden" name="anime_id" value="{{ item.anime_id }}" />
-                      <button type="submit" class="btn neon-pink">Убрать</button>
+                    <a
+                      class="btn neon-blue btn-watch"
+                      href="{{ item.watch_url }}"
+                      >Открыть</a
+                    >
+                    <form
+                      method="post"
+                      action="{{ url_for('collection.remove_collection_item', collection_id=collection.collection.id) }}"
+                    >
+                      <input
+                        type="hidden"
+                        name="anime_id"
+                        value="{{ item.anime_id }}"
+                      />
+                      <button type="submit" class="btn neon-pink">
+                        Убрать
+                      </button>
                     </form>
                   </div>
                 </div>
@@ -102,14 +168,19 @@
             {% else %}
             <section class="empty-state">
               <h2>Пока пусто</h2>
-              <p>Добавь сюда аниме из избранного и преврати список в готовую подборку.</p>
+              <p>
+                Добавь сюда аниме из избранного и преврати список в готовую
+                подборку.
+              </p>
             </section>
             {% endif %}
           </section>
           {% else %}
           <section class="empty-state">
             <h2>Коллекций пока нет</h2>
-            <p>Создай первую подборку и собери туда аниме под конкретный вайб.</p>
+            <p>
+              Создай первую подборку и собери туда аниме под конкретный вайб.
+            </p>
           </section>
           {% endfor %}
         </section>
@@ -120,7 +191,9 @@
       document.querySelectorAll('form[action$="/items"]').forEach((form) => {
         const select = form.querySelector('select[name="anime_id"]');
         const titleInput = form.querySelector('input[name="title"]');
-        const descriptionInput = form.querySelector('input[name="description"]');
+        const descriptionInput = form.querySelector(
+          'input[name="description"]',
+        );
         const coverInput = form.querySelector('input[name="cover_url"]');
         const genresInput = form.querySelector('input[name="genres"]');
         const sync = () => {
@@ -131,7 +204,7 @@
           coverInput.value = option.dataset.coverUrl || "";
           genresInput.value = option.dataset.genres || "";
         };
-        select.addEventListener('change', sync);
+        select.addEventListener("change", sync);
       });
     </script>
     <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>

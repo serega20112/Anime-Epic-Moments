@@ -55,6 +55,8 @@ from src.backend.infrastructure.repositories.watch_repository import WatchReposi
 from src.backend.infrastructure.security.email_verification_store import (
     EmailVerificationStore,
 )
+from src.backend.infrastructure.security.account_lock_service import AccountLockService
+from src.backend.infrastructure.security.csrf_service import CSRFService
 from src.backend.infrastructure.security.jwt_service import JWTService
 from src.backend.infrastructure.security.password_service import PasswordService
 from src.backend.infrastructure.security.rate_limiter import RateLimiter
@@ -225,6 +227,14 @@ class Container:
     @cached_property
     def token_blocklist(self):
         return TokenBlocklist(self.key_value_store)
+
+    @cached_property
+    def csrf_service(self):
+        return CSRFService()
+
+    @cached_property
+    def account_lock_service(self):
+        return AccountLockService(store=self.key_value_store)
 
     @cached_property
     def rate_limiter(self):

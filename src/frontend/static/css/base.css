@@ -2,8 +2,16 @@
 html[data-theme="neon"] {
   color-scheme: dark;
   --page-background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 30%),
-    radial-gradient(circle at top right, rgba(244, 114, 182, 0.12), transparent 26%),
+    radial-gradient(
+      circle at top left,
+      rgba(56, 189, 248, 0.12),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(244, 114, 182, 0.12),
+      transparent 26%
+    ),
     linear-gradient(180deg, #0d0d1a 0%, #050816 55%, #020617 100%);
   --theme-art-image: url("/static/images/themes/neon-jotaro.gif");
   --theme-art-opacity: 0.16;
@@ -44,8 +52,7 @@ html[data-theme="neon"] {
   --logo-gradient: linear-gradient(90deg, #ff4fd8, #38bdf8);
   --logo-color: #f8fafc;
   --logo-shadow:
-    0 0 8px rgba(255, 79, 216, 0.65),
-    0 0 16px rgba(56, 189, 248, 0.55);
+    0 0 8px rgba(255, 79, 216, 0.65), 0 0 16px rgba(56, 189, 248, 0.55);
   --particle-color: rgba(56, 189, 248, 0.28);
   --particle-opacity: 0.85;
 }
@@ -101,7 +108,11 @@ html[data-theme="dark"] {
 html[data-theme="light"] {
   color-scheme: light;
   --page-background:
-    radial-gradient(circle at top left, rgba(59, 130, 246, 0.06), transparent 34%),
+    radial-gradient(
+      circle at top left,
+      rgba(59, 130, 246, 0.06),
+      transparent 34%
+    ),
     linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
   --theme-art-image: url("/static/images/themes/light-gojo.gif");
   --theme-art-opacity: 0.14;
@@ -149,9 +160,21 @@ html[data-theme="light"] {
 html[data-theme="rose"] {
   color-scheme: dark;
   --page-background:
-    radial-gradient(circle at 18% 14%, rgba(255, 191, 224, 0.18), transparent 26%),
-    radial-gradient(circle at 78% 20%, rgba(165, 239, 231, 0.14), transparent 24%),
-    radial-gradient(circle at 50% 100%, rgba(49, 21, 50, 0.34), transparent 44%),
+    radial-gradient(
+      circle at 18% 14%,
+      rgba(255, 191, 224, 0.18),
+      transparent 26%
+    ),
+    radial-gradient(
+      circle at 78% 20%,
+      rgba(165, 239, 231, 0.14),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 50% 100%,
+      rgba(49, 21, 50, 0.34),
+      transparent 44%
+    ),
     linear-gradient(180deg, #120b15 0%, #201326 50%, #0d0b11 100%);
   --theme-art-image: url("/static/images/themes/sakura-twilight.png");
   --theme-art-opacity: 0.5;
@@ -192,8 +215,7 @@ html[data-theme="rose"] {
   --logo-gradient: linear-gradient(90deg, #ffe3f5, #b0efe8);
   --logo-color: #fff6fb;
   --logo-shadow:
-    0 0 10px rgba(255, 211, 236, 0.3),
-    0 0 24px rgba(176, 238, 231, 0.22);
+    0 0 10px rgba(255, 211, 236, 0.3), 0 0 24px rgba(176, 238, 231, 0.22);
   --particle-color: rgba(250, 212, 234, 0.14);
   --particle-opacity: 0.3;
 }
@@ -241,18 +263,27 @@ body::before {
 
 body::after {
   z-index: -1;
-  background:
-    linear-gradient(180deg, rgba(2, 6, 23, 0.08), rgba(2, 6, 23, 0.22));
+  background: linear-gradient(
+    180deg,
+    rgba(2, 6, 23, 0.08),
+    rgba(2, 6, 23, 0.22)
+  );
 }
 
 html[data-theme="light"] body::after {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(248, 250, 252, 0.36));
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(248, 250, 252, 0.36)
+  );
 }
 
 html[data-theme="rose"] body::after {
-  background:
-    linear-gradient(180deg, rgba(12, 8, 15, 0.16), rgba(5, 5, 9, 0.5));
+  background: linear-gradient(
+    180deg,
+    rgba(12, 8, 15, 0.16),
+    rgba(5, 5, 9, 0.5)
+  );
 }
 
 html[data-theme="rose"] body::before {

@@ -8,9 +8,18 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/watch.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/anime.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/watch.css') }}"
+    />
   </head>
   <body data-current-user-id="{{ current_user.id if current_user else '' }}">
     <header class="header">
@@ -84,7 +93,15 @@
               id="watch-embed-frame"
               class="watch-embed-frame"
               title="Embedded watch player"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allow="
+                accelerometer;
+                autoplay;
+                clipboard-write;
+                encrypted-media;
+                gyroscope;
+                picture-in-picture;
+                web-share;
+              "
               referrerpolicy="strict-origin-when-cross-origin"
               allowfullscreen
               hidden
@@ -116,9 +133,11 @@
                   <span class="watch-kicker">Anime Epic Moments Player</span>
                   <h1>{{ watch.anime_title }}</h1>
                   <p>
-                    Эпизод {{ watch.episode }}{% if watch.episode_total and watch.episode_total > watch.episode %}/{{ watch.episode_total }}{% endif %} {% if watch.anime_year %} • {{
-                    watch.anime_year }}{% endif %} {% if watch.anime_rating %} •
-                    ★ {{ '%.1f'|format(watch.anime_rating) }}{% endif %}
+                    Эпизод {{ watch.episode }}{% if watch.episode_total and
+                    watch.episode_total > watch.episode %}/{{
+                    watch.episode_total }}{% endif %} {% if watch.anime_year %}
+                    • {{ watch.anime_year }}{% endif %} {% if watch.anime_rating
+                    %} • ★ {{ '%.1f'|format(watch.anime_rating) }}{% endif %}
                   </p>
                 </div>
                 {% if watch.current_status %}
@@ -194,9 +213,22 @@
                     >
                       <label for="episode-select" class="sr-only">Эпизод</label>
                       {% if watch.episode_options %}
-                      <select id="episode-select" name="episode" class="player-select">
+                      <select
+                        id="episode-select"
+                        name="episode"
+                        class="player-select"
+                      >
                         {% for episode_number in watch.episode_options %}
-                        <option value="{{ episode_number }}" {% if watch.episode == episode_number %}selected{% endif %}>
+                        <option
+                          value="{{ episode_number }}"
+                          {%
+                          if
+                          watch.episode=""
+                          ="episode_number"
+                          %}selected{%
+                          endif
+                          %}
+                        >
                           Серия {{ episode_number }}
                         </option>
                         {% endfor %}
@@ -220,7 +252,13 @@
                       {% for source in watch.sources %}
                       <option
                         value="{{ source.translation_id }}"
-                        {% if watch.selected_translation_id == source.translation_id %}selected{% endif %}
+                        {%
+                        if
+                        watch.selected_translation_id=""
+                        ="source.translation_id"
+                        %}selected{%
+                        endif
+                        %}
                       >
                         {{ source.translation_name }}
                       </option>
@@ -356,7 +394,9 @@
                 <div class="watch-meta-stat">
                   <span>Эпизод</span>
                   <strong>
-                    {{ watch.episode }}{% if watch.episode_total and watch.episode_total > watch.episode %}/{{ watch.episode_total }}{% endif %}
+                    {{ watch.episode }}{% if watch.episode_total and
+                    watch.episode_total > watch.episode %}/{{
+                    watch.episode_total }}{% endif %}
                   </strong>
                 </div>
                 {% if watch.current_status %}
@@ -457,8 +497,7 @@
                   <h3>{{ highlight.title }}</h3>
                   {% if highlight.category %}
                   <span class="genre-chip">{{ highlight.category }}</span>
-                  {% endif %}
-                  {% if highlight.emotion %}
+                  {% endif %} {% if highlight.emotion %}
                   <span class="genre-chip">{{ highlight.emotion }}</span>
                   {% endif %}
                 </div>
@@ -508,14 +547,20 @@
               action="{{ url_for('watch.add_anime_comment', anime_id=watch.anime_id) }}"
             >
               <input type="hidden" name="episode" value="{{ watch.episode }}" />
-              <input type="hidden" name="discussion_sort" value="{{ discussion.selected_sort }}" />
+              <input
+                type="hidden"
+                name="discussion_sort"
+                value="{{ discussion.selected_sort }}"
+              />
               <textarea
                 name="content"
                 placeholder="Напиши, что думаешь об этом тайтле, сцене или вайбе"
                 required
                 maxlength="600"
               ></textarea>
-              <button type="submit" class="btn neon-blue">Отправить в обсуждение</button>
+              <button type="submit" class="btn neon-blue">
+                Отправить в обсуждение
+              </button>
             </form>
             {% endif %}
             <div class="watch-mini-feed">
@@ -537,7 +582,9 @@
                     👍 <span>{{ comment.likes_count }}</span>
                   </button>
                   {% else %}
-                  <span class="highlight-like-badge">👍 {{ comment.likes_count }}</span>
+                  <span class="highlight-like-badge"
+                    >👍 {{ comment.likes_count }}</span
+                  >
                   {% endif %}
                 </div>
               </article>
@@ -579,4 +626,3 @@
     <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
   </body>
 </html>
-

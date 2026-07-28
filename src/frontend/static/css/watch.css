@@ -447,8 +447,11 @@ html[data-theme="rose"] .watch-page::before {
     ),
     linear-gradient(var(--track-rest), var(--track-rest));
   background-repeat: no-repeat;
-  background-position: left center, left center;
-  background-size: var(--timeline-progress) var(--track-height),
+  background-position:
+    left center,
+    left center;
+  background-size:
+    var(--timeline-progress) var(--track-height),
     100% var(--track-height);
   border-radius: 999px;
 }
@@ -465,8 +468,11 @@ html[data-theme="rose"] .watch-page::before {
     ),
     linear-gradient(var(--track-rest), var(--track-rest));
   background-repeat: no-repeat;
-  background-position: left center, left center;
-  background-size: var(--volume-progress) var(--track-height),
+  background-position:
+    left center,
+    left center;
+  background-size:
+    var(--volume-progress) var(--track-height),
     100% var(--track-height);
   border-radius: 999px;
 }

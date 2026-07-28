@@ -37,7 +37,9 @@
   };
 
   const renderComments = (highlightId, items) => {
-    const list = document.querySelector(`[data-comments-list="${highlightId}"]`);
+    const list = document.querySelector(
+      `[data-comments-list="${highlightId}"]`,
+    );
     if (!list) {
       return;
     }
@@ -121,8 +123,12 @@
         return;
       }
       button.dataset.saved = payload.saved ? "1" : "0";
-      button.textContent = payload.saved ? "Убрать из сохраненных" : "Сохранить";
-      showToast(payload.saved ? "Хайлайт сохранен" : "Хайлайт удален из сохраненных");
+      button.textContent = payload.saved
+        ? "Убрать из сохраненных"
+        : "Сохранить";
+      showToast(
+        payload.saved ? "Хайлайт сохранен" : "Хайлайт удален из сохраненных",
+      );
     });
   });
 
@@ -137,7 +143,9 @@
         return;
       }
       const message = payload.items.length
-        ? payload.items.map((item) => `${item.username} • ${item.created_at}`).join("\n")
+        ? payload.items
+            .map((item) => `${item.username} • ${item.created_at}`)
+            .join("\n")
         : "Пока никто не лайкнул";
       window.alert(message);
     });
@@ -183,17 +191,24 @@
         return;
       }
       textarea.value = "";
-      const panel = document.querySelector(`[data-comments-panel="${highlightId}"]`);
+      const panel = document.querySelector(
+        `[data-comments-panel="${highlightId}"]`,
+      );
       if (panel) {
         panel.hidden = false;
       }
-      const commentsPayload = await requestJson(`/highlights/${highlightId}/comments`, {
-        method: "GET",
-      }).catch(() => null);
+      const commentsPayload = await requestJson(
+        `/highlights/${highlightId}/comments`,
+        {
+          method: "GET",
+        },
+      ).catch(() => null);
       if (commentsPayload) {
         renderComments(highlightId, commentsPayload.items || []);
       }
-      const badge = document.querySelector(`[data-highlight-comments-badge="${highlightId}"]`);
+      const badge = document.querySelector(
+        `[data-highlight-comments-badge="${highlightId}"]`,
+      );
       if (badge) {
         const nextCount = commentsPayload?.items?.length || 1;
         badge.textContent = `${nextCount} комментариев`;
@@ -205,7 +220,9 @@
   document.querySelectorAll(".highlight-delete-button").forEach((button) => {
     button.addEventListener("click", async () => {
       const highlightId = button.dataset.highlightId;
-      const response = await fetch(`/highlights/${highlightId}`, { method: "DELETE" });
+      const response = await fetch(`/highlights/${highlightId}`, {
+        method: "DELETE",
+      });
       if (!response.ok) {
         showToast("Не удалось удалить хайлайт");
         return;
@@ -222,7 +239,10 @@
       if (title === null) {
         return;
       }
-      const category = window.prompt("Категория", button.dataset.category || "");
+      const category = window.prompt(
+        "Категория",
+        button.dataset.category || "",
+      );
       if (category === null) {
         return;
       }
@@ -230,7 +250,10 @@
       if (episode === null) {
         return;
       }
-      const startTimestamp = window.prompt("Начало MM:SS", button.dataset.start);
+      const startTimestamp = window.prompt(
+        "Начало MM:SS",
+        button.dataset.start,
+      );
       if (startTimestamp === null) {
         return;
       }

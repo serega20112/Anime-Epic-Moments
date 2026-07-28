@@ -8,9 +8,18 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/anime.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/highlight.css') }}"
+    />
   </head>
   <body>
     <header class="header">
@@ -19,8 +28,13 @@
         <a href="{{ url_for('index.index') }}">Главная</a>
         <a href="{{ url_for('highlight.get_highlight_feed') }}">Фид</a>
         <a href="{{ url_for('highlight.get_liked_highlights') }}">Мои лайки</a>
-        <a href="{{ url_for('highlight.get_saved_highlights') }}">Сохраненные</a>
-        <a href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}">Мои хайлайты</a>
+        <a href="{{ url_for('highlight.get_saved_highlights') }}"
+          >Сохраненные</a
+        >
+        <a
+          href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}"
+          >Мои хайлайты</a
+        >
       </nav>
     </header>
 
@@ -46,18 +60,19 @@
               <div class="highlight-entry-body">
                 <div class="highlight-entry-head">
                   <h3>{{ item.highlight_title }}</h3>
-                  <span class="highlight-like-badge">{{ item.created_at }}</span>
+                  <span class="highlight-like-badge"
+                    >{{ item.created_at }}</span
+                  >
                 </div>
                 <p class="highlight-meta-line">
-                  {{ item.actor_username }}
-                  {% if item.action == 'comment' %}
-                  оставил комментарий
-                  {% else %}
-                  поставил лайк
-                  {% endif %}
+                  {{ item.actor_username }} {% if item.action == 'comment' %}
+                  оставил комментарий {% else %} поставил лайк {% endif %}
                 </p>
                 <div class="result-actions">
-                  <a class="btn neon-blue btn-watch" href="{{ url_for('highlight.get_shared_highlight', highlight_id=item.highlight_id) }}">
+                  <a
+                    class="btn neon-blue btn-watch"
+                    href="{{ url_for('highlight.get_shared_highlight', highlight_id=item.highlight_id) }}"
+                  >
                     Открыть хайлайт
                   </a>
                 </div>
@@ -68,13 +83,15 @@
           {% else %}
           <section class="empty-state">
             <h2>Пока тихо</h2>
-            <p>Когда кто-то начнет лайкать или комментировать твои моменты, они появятся здесь.</p>
+            <p>
+              Когда кто-то начнет лайкать или комментировать твои моменты, они
+              появятся здесь.
+            </p>
           </section>
           {% endif %}
         </section>
       </section>
     </main>
-      <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
   </body>
 </html>
-

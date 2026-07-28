@@ -3,37 +3,72 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {% set page_title = 'Топ хайлайтов' if view_mode == 'public' else 'Сохраненные хайлайты' if view_mode == 'saved' else 'Мои лайки' if view_mode == 'liked' else 'Поделиться хайлайтом' if view_mode == 'share' else 'Мои хайлайты' %}
-    {% set include_spoilers = dashboard.include_spoilers %}
+    {% set page_title = 'Топ хайлайтов' if view_mode == 'public' else
+    'Сохраненные хайлайты' if view_mode == 'saved' else 'Мои лайки' if view_mode
+    == 'liked' else 'Поделиться хайлайтом' if view_mode == 'share' else 'Мои
+    хайлайты' %} {% set include_spoilers = dashboard.include_spoilers %}
     <title>{{ page_title }} - AEM</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/anime.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/highlight.css') }}"
+    />
   </head>
   <body>
     <header class="header">
       <div class="logo">AEM</div>
-      <form class="search-container global-search-form" action="{{ url_for('anime.search_anime_page') }}" method="get" autocomplete="off">
-        <input type="text" name="title" class="global-search-input" placeholder="Найди аниме по названию, жанру или эмоции…" />
+      <form
+        class="search-container global-search-form"
+        action="{{ url_for('anime.search_anime_page') }}"
+        method="get"
+        autocomplete="off"
+      >
+        <input
+          type="text"
+          name="title"
+          class="global-search-input"
+          placeholder="Найди аниме по названию, жанру или эмоции…"
+        />
         <button type="submit">🔍</button>
         <div class="search-autocomplete" hidden></div>
       </form>
       <nav>
         <a href="{{ url_for('index.index') }}">Главная</a>
         <a href="{{ url_for('highlight.get_highlight_feed') }}">Фид</a>
-        <a href="{{ url_for('highlight.get_public_top_highlights') }}">Тренды</a>
+        <a href="{{ url_for('highlight.get_public_top_highlights') }}"
+          >Тренды</a
+        >
         {% if current_user %}
-        <a href="{{ url_for('highlight.get_following_highlights') }}">Подписки</a>
+        <a href="{{ url_for('highlight.get_following_highlights') }}"
+          >Подписки</a
+        >
         <a href="{{ url_for('auth.profile_page') }}">Профиль</a>
         <a href="{{ url_for('highlight.get_liked_highlights') }}">Мои лайки</a>
-        <a href="{{ url_for('highlight.get_saved_highlights') }}">Сохраненные</a>
-        <a href="{{ url_for('highlight.get_highlight_notifications') }}">Уведомления</a>
-        <a href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}">Мои хайлайты</a>
-        <a href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}">Избранное</a>
+        <a href="{{ url_for('highlight.get_saved_highlights') }}"
+          >Сохраненные</a
+        >
+        <a href="{{ url_for('highlight.get_highlight_notifications') }}"
+          >Уведомления</a
+        >
+        <a
+          href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}"
+          >Мои хайлайты</a
+        >
+        <a
+          href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}"
+          >Избранное</a
+        >
         {% endif %}
       </nav>
     </header>
@@ -43,17 +78,14 @@
         <aside class="filters-panel">
           <h1>{{ page_title }}</h1>
           <p class="filters-subtitle">
-            {% if view_mode == 'public' %}
-            Смотри самые обсуждаемые моменты сообщества, фильтруй по аниме и категории.
-            {% elif view_mode == 'saved' %}
-            Храни ценные моменты отдельно от обычных лайков и возвращайся к ним позже.
-            {% elif view_mode == 'liked' %}
-            Отдельная лента моментов, которые ты уже отметил лайком.
-            {% elif view_mode == 'share' %}
-            Открытая карточка одного момента, которой можно делиться без лишнего контекста.
-            {% else %}
-            Управляй своей библиотекой моментов, категориями и откликом аудитории.
-            {% endif %}
+            {% if view_mode == 'public' %} Смотри самые обсуждаемые моменты
+            сообщества, фильтруй по аниме и категории. {% elif view_mode ==
+            'saved' %} Храни ценные моменты отдельно от обычных лайков и
+            возвращайся к ним позже. {% elif view_mode == 'liked' %} Отдельная
+            лента моментов, которые ты уже отметил лайком. {% elif view_mode ==
+            'share' %} Открытая карточка одного момента, которой можно делиться
+            без лишнего контекста. {% else %} Управляй своей библиотекой
+            моментов, категориями и откликом аудитории. {% endif %}
           </p>
 
           <form class="description-search-form" method="get">
@@ -62,7 +94,16 @@
               <select id="anime_id" name="anime_id">
                 <option value="">Все аниме</option>
                 {% for group in dashboard.anime_groups %}
-                <option value="{{ group.anime_id }}" {% if dashboard.selected_anime_id == group.anime_id %}selected{% endif %}>
+                <option
+                  value="{{ group.anime_id }}"
+                  {%
+                  if
+                  dashboard.selected_anime_id=""
+                  ="group.anime_id"
+                  %}selected{%
+                  endif
+                  %}
+                >
                   {{ group.anime_title }} ({{ group.count }})
                 </option>
                 {% endfor %}
@@ -74,7 +115,16 @@
               <select id="emotion" name="emotion">
                 <option value="">Все эмоции</option>
                 {% for emotion in dashboard.emotions %}
-                <option value="{{ emotion }}" {% if dashboard.selected_emotion == emotion %}selected{% endif %}>
+                <option
+                  value="{{ emotion }}"
+                  {%
+                  if
+                  dashboard.selected_emotion=""
+                  ="emotion"
+                  %}selected{%
+                  endif
+                  %}
+                >
                   {{ emotion }}
                 </option>
                 {% endfor %}
@@ -86,7 +136,16 @@
               <select id="category" name="category">
                 <option value="">Все категории</option>
                 {% for category in dashboard.categories %}
-                <option value="{{ category }}" {% if dashboard.selected_category == category %}selected{% endif %}>
+                <option
+                  value="{{ category }}"
+                  {%
+                  if
+                  dashboard.selected_category=""
+                  ="category"
+                  %}selected{%
+                  endif
+                  %}
+                >
                   {{ category }}
                 </option>
                 {% endfor %}
@@ -96,10 +155,28 @@
             <div class="filter-control">
               <label for="sort">Сортировка</label>
               <select id="sort" name="sort">
-                <option value="recent" {% if dashboard.selected_sort == 'recent' %}selected{% endif %}>
+                <option
+                  value="recent"
+                  {%
+                  if
+                  dashboard.selected_sort=""
+                  ="recent"
+                  %}selected{%
+                  endif
+                  %}
+                >
                   Сначала новые
                 </option>
-                <option value="popular" {% if dashboard.selected_sort == 'popular' %}selected{% endif %}>
+                <option
+                  value="popular"
+                  {%
+                  if
+                  dashboard.selected_sort=""
+                  ="popular"
+                  %}selected{%
+                  endif
+                  %}
+                >
                   По популярности
                 </option>
               </select>
@@ -107,16 +184,37 @@
 
             <div class="filter-control">
               <label for="date">По дате</label>
-              <input id="date" type="date" name="date" value="{{ dashboard.selected_date or '' }}" />
+              <input
+                id="date"
+                type="date"
+                name="date"
+                value="{{ dashboard.selected_date or '' }}"
+              />
             </div>
 
             <div class="filter-control">
               <label for="query">Поиск по содержанию</label>
-              <input id="query" type="text" name="query" value="{{ dashboard.selected_query or '' }}" placeholder="Название, описание, эмоция" />
+              <input
+                id="query"
+                type="text"
+                name="query"
+                value="{{ dashboard.selected_query or '' }}"
+                placeholder="Название, описание, эмоция"
+              />
             </div>
 
             <label class="filter-checkbox">
-              <input type="checkbox" name="include_spoilers" value="1" {% if dashboard.include_spoilers %}checked{% endif %} />
+              <input
+                type="checkbox"
+                name="include_spoilers"
+                value="1"
+                {%
+                if
+                dashboard.include_spoilers
+                %}checked{%
+                endif
+                %}
+              />
               <span>Показывать спойлеры</span>
             </label>
 
@@ -138,7 +236,9 @@
             </div>
             <div class="stat-card">
               <span>Средняя длительность</span>
-              <strong>{{ dashboard.stats.average_duration_seconds }} сек</strong>
+              <strong
+                >{{ dashboard.stats.average_duration_seconds }} сек</strong
+              >
             </div>
           </section>
         </aside>
@@ -157,9 +257,8 @@
           {% endif %}
 
           <div class="highlight-feed">
-            {% for item in dashboard.items %}
-              {% include 'highlight/_card.html' %}
-            {% endfor %}
+            {% for item in dashboard.items %} {% include 'highlight/_card.html'
+            %} {% endfor %}
           </div>
         </section>
       </section>
@@ -167,7 +266,6 @@
 
     <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
     <script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
-      <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
   </body>
 </html>
-

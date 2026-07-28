@@ -30,7 +30,10 @@
     if (!toggleButton) {
       return;
     }
-    toggleButton.setAttribute("aria-label", `Переключить тему. Сейчас: ${labels[theme]}`);
+    toggleButton.setAttribute(
+      "aria-label",
+      `Переключить тему. Сейчас: ${labels[theme]}`,
+    );
     const labelNode = toggleButton.querySelector(".theme-toggle-label");
     const valueNode = toggleButton.querySelector(".theme-toggle-value");
     const iconNode = toggleButton.querySelector(".theme-toggle-icon");
@@ -46,11 +49,9 @@
   };
 
   const syncThemeFields = (theme) => {
-    document
-      .querySelectorAll("input[data-theme-field]")
-      .forEach((field) => {
-        field.value = theme;
-      });
+    document.querySelectorAll("input[data-theme-field]").forEach((field) => {
+      field.value = theme;
+    });
   };
 
   const applyTheme = (theme) => {

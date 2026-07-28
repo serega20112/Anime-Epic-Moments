@@ -8,8 +8,14 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/auth.css') }}"
+    />
   </head>
   <body>
     <div class="auth-page">
@@ -48,10 +54,15 @@
           method="POST"
         >
           <input type="hidden" name="email" value="{{ email }}" />
-          <button type="submit" class="btn btn-large">Отправить код заново</button>
+          <button type="submit" class="btn btn-large">
+            Отправить код заново
+          </button>
         </form>
         <p class="auth-switch">
-          Ошибся в адресе? <a href="{{ url_for('auth.register_page') }}">Вернуться к регистрации</a>
+          Ошибся в адресе?
+          <a href="{{ url_for('auth.register_page') }}"
+            >Вернуться к регистрации</a
+          >
         </p>
       </div>
     </div>

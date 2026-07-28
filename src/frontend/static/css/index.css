@@ -216,6 +216,5 @@ html[data-theme="rose"] .hero-block h1 {
   background: linear-gradient(90deg, #ffe3f4, #adefe7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow:
-    0 0 18px rgba(184, 239, 232, 0.12);
+  text-shadow: 0 0 18px rgba(184, 239, 232, 0.12);
 }
