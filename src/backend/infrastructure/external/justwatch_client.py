@@ -1,13 +1,11 @@
-import re
+﻿import re
 
 import requests
 
-from src.backend.infrastructure.external._async import external_method
-from src.backend.dependencies.settings import Settings
-from src.backend.domain.watch.value_object import DiscoveredWatchSource
-from src.backend.infrastructure.external.watch_source_provider import (
-    WatchSourceProvider,
-)
+from backend.config import Settings
+from backend.domain.watch.value_object import DiscoveredWatchSource
+from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
+from backend.infrastructure.external._async import external_method
 
 
 class JustWatchClient(WatchSourceProvider):
@@ -28,11 +26,11 @@ class JustWatchClient(WatchSourceProvider):
 
     @external_method
     def search_sources(
-        self,
-        title: str,
-        episode: int,
-        year: int | None = None,
-        limit: int = 8,
+            self,
+            title: str,
+            episode: int,
+            year: int | None = None,
+            limit: int = 8,
     ) -> list[DiscoveredWatchSource]:
         """Возвращает внешние офферы просмотра для тайтла."""
         if not self.is_enabled() or not year:
@@ -126,8 +124,8 @@ class JustWatchClient(WatchSourceProvider):
                 ).strip()
                 for item in payload
                 if isinstance(item, dict)
-                and item.get("id") is not None
-                and str(item.get("clear_name") or item.get("short_name") or "").strip()
+                   and item.get("id") is not None
+                   and str(item.get("clear_name") or item.get("short_name") or "").strip()
             }
         else:
             self._provider_cache = {}

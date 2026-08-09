@@ -1,13 +1,11 @@
-import re
+﻿import re
 
 import requests
 
-from src.backend.infrastructure.external._async import external_method
-from src.backend.dependencies.settings import Settings
-from src.backend.domain.watch.value_object import DiscoveredWatchSource
-from src.backend.infrastructure.external.watch_source_provider import (
-    WatchSourceProvider,
-)
+from backend.config import Settings
+from backend.domain.watch.value_object import DiscoveredWatchSource
+from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
+from backend.infrastructure.external._async import external_method
 
 
 class AniLibriaClient(WatchSourceProvider):
@@ -24,11 +22,11 @@ class AniLibriaClient(WatchSourceProvider):
 
     @external_method
     def search_sources(
-        self,
-        title: str,
-        episode: int,
-        year: int | None = None,
-        limit: int = 6,
+            self,
+            title: str,
+            episode: int,
+            year: int | None = None,
+            limit: int = 6,
     ) -> list[DiscoveredWatchSource]:
         if not self.is_enabled():
             return []
@@ -41,7 +39,7 @@ class AniLibriaClient(WatchSourceProvider):
         seen: set[tuple[str, str, str]] = set()
         for release in search_payload:
             if not self._looks_relevant(
-                release=release, requested_title=title, requested_year=year
+                    release=release, requested_title=title, requested_year=year
             ):
                 continue
 
@@ -60,8 +58,7 @@ class AniLibriaClient(WatchSourceProvider):
                 (
                     item
                     for item in episodes
-                    if isinstance(item, dict)
-                    and int(item.get("ordinal") or 0) == int(episode)
+                    if isinstance(item, dict) and int(item.get("ordinal") or 0) == int(episode)
                 ),
                 None,
             )
@@ -71,9 +68,9 @@ class AniLibriaClient(WatchSourceProvider):
             translation_name = self.provider_name
             source_name = str(release.get("alias") or f"anilibria-{release_id}")
             for quality_label, field_name in (
-                ("1080", "hls_1080"),
-                ("720", "hls_720"),
-                ("480", "hls_480"),
+                    ("1080", "hls_1080"),
+                    ("720", "hls_720"),
+                    ("480", "hls_480"),
             ):
                 stream_url = self._normalize_link(target_episode.get(field_name))
                 if not stream_url:
@@ -123,13 +120,13 @@ class AniLibriaClient(WatchSourceProvider):
         return payload if isinstance(payload, dict) else None
 
     def _looks_relevant(
-        self, release: dict, requested_title: str, requested_year: int | None
+            self, release: dict, requested_title: str, requested_year: int | None
     ) -> bool:
         release_year = release.get("year")
         if (
-            requested_year
-            and isinstance(release_year, int)
-            and abs(release_year - requested_year) > 1
+                requested_year
+                and isinstance(release_year, int)
+                and abs(release_year - requested_year) > 1
         ):
             return False
 
@@ -144,7 +141,7 @@ class AniLibriaClient(WatchSourceProvider):
         for candidate in candidates:
             normalized_candidate = self._normalize_title(candidate)
             if normalized_candidate and (
-                requested in normalized_candidate or normalized_candidate in requested
+                    requested in normalized_candidate or normalized_candidate in requested
             ):
                 return True
 

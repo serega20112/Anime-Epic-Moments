@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 
 class SupportTicket:
@@ -17,8 +16,8 @@ class SupportTicket:
         status: str = "open",
         delivery_status: str = "pending",
         delivery_error: str | None = None,
-        created_at: Optional[datetime] = None,
-        id: Optional[int] = None,
+        created_at: datetime | None = None,
+        id: int | None = None,
     ):
         self.id = id
         self.user_id = user_id

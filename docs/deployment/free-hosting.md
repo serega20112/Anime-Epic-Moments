@@ -9,7 +9,8 @@
 ## Подготовка
 
 1. Убедитесь, что `build/Dockerfile` и `build/docker-compose.yml` в репозитории есть.
-2. Запушьте проект на GitHub.
+2. Убедитесь, что `requirements/base.txt` содержит продакшен-зависимости.
+3. Запушьте проект на GitHub.
 
 ## Настройка PostgreSQL
 
@@ -45,18 +46,34 @@ COOKIE_SAMESITE=Lax
 APP_BASE_URL=https://anime-epic-moments.onrender.com
 FLASK_DEBUG=0
 MAX_REQUEST_BYTES=1048576
+LOG_LEVEL=INFO
+HSTS_MAX_AGE=63072000
+ACCOUNT_LOCK_DURATION_SECONDS=1800
 ```
+
+Параметры безопасности:
+- `COOKIE_SECURE=1` включает HSTS-заголовок `Strict-Transport-Security: max-age=63072000; includeSubDomains` (значение из `HSTS_MAX_AGE`).
+- `REDIS_REQUIRED=0` + `REDIS_ENABLED=0` переключают rate-limiter и account-lock на in-memory fallback.
+- `ACCOUNT_LOCK_DURATION_SECONDS` управляет длительностью блокировки при brute-force.
 
 5. Нажмите **Create Web Service**.
 
 ## После деплоя
 
 Render автоматически:
-- Соберёт Docker-образ
+- Соберёт Docker-образ на основе `build/Dockerfile`
+- Установит зависимости из `requirements/base.txt`
 - Запустит контейнер
 - Применит `init_db()` (благодаря `DATABASE_AUTO_INIT=1`)
 
 Первый запуск может занять 2-5 минут на Free плане (cold start).
+
+## Redis и fallback
+
+При `REDIS_ENABLED=0` или недоступном Redis-сервере система автоматически переключается на in-memory хранилище:
+- `KeyValueStore` использует thread-safe in-memory dict с TTL.
+- Rate limiter и account lock работают без Redis.
+- Ограничение: данные блокировок хранятся в памяти одного инстанса и сбрасываются при рестарте.
 
 ## Ограничения Free плана
 

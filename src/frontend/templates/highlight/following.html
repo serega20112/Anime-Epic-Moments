@@ -68,13 +68,7 @@
                 {% for group in page.dashboard.anime_groups %}
                 <option
                   value="{{ group.anime_id }}"
-                  {%
-                  if
-                  page.dashboard.selected_anime_id=""
-                  ="group.anime_id"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if page.dashboard.selected_anime_id == group.anime_id %}selected{% endif %}
                 >
                   {{ group.anime_title }} ({{ group.count }})
                 </option>
@@ -89,13 +83,7 @@
                 {% for emotion in page.dashboard.emotions %}
                 <option
                   value="{{ emotion }}"
-                  {%
-                  if
-                  page.dashboard.selected_emotion=""
-                  ="emotion"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if page.dashboard.selected_emotion == emotion %}selected{% endif %}
                 >
                   {{ emotion }}
                 </option>
@@ -110,13 +98,7 @@
                 {% for category in page.dashboard.categories %}
                 <option
                   value="{{ category }}"
-                  {%
-                  if
-                  page.dashboard.selected_category=""
-                  ="category"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if page.dashboard.selected_category == category %}selected{% endif %}
                 >
                   {{ category }}
                 </option>
@@ -129,25 +111,13 @@
               <select id="sort" name="sort">
                 <option
                   value="recent"
-                  {%
-                  if
-                  page.dashboard.selected_sort=""
-                  ="recent"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if page.dashboard.selected_sort == 'recent' %}selected{% endif %}
                 >
                   Сначала новые
                 </option>
                 <option
                   value="popular"
-                  {%
-                  if
-                  page.dashboard.selected_sort=""
-                  ="popular"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if page.dashboard.selected_sort == 'popular' %}selected{% endif %}
                 >
                   По популярности
                 </option>
@@ -170,12 +140,7 @@
                 type="checkbox"
                 name="include_spoilers"
                 value="1"
-                {%
-                if
-                page.dashboard.include_spoilers
-                %}checked{%
-                endif
-                %}
+                {% if page.dashboard.include_spoilers %}checked{% endif %}
               />
               <span>Показывать спойлеры</span>
             </label>

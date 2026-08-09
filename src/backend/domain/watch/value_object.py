@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List, Optional
 
 
 @dataclass
@@ -15,6 +14,8 @@ class DiscoveredWatchSource:
     language: str = "ru"
 
 
+
+
 @dataclass
 class WatchSourceCard:
     source_id: int
@@ -26,6 +27,8 @@ class WatchSourceCard:
     quality_label: str
     stream_url: str
     source_type: str
+
+
 
 
 @dataclass
@@ -43,6 +46,8 @@ class WatchHighlightCard:
     provider_name: str | None
 
 
+
+
 @dataclass
 class WatchedAnimeStat:
     anime_id: int
@@ -51,10 +56,14 @@ class WatchedAnimeStat:
     last_watched_at: str
 
 
+
+
 @dataclass
 class ViewingHeatmapPoint:
     date: str
     interactions: int
+
+
 
 
 @dataclass
@@ -65,14 +74,14 @@ class WatchPageData:
     anime_description: str
     anime_year: int | None
     anime_rating: float | None
-    genres: List[str]
+    genres: list[str]
     episode: int
     episode_total: int | None
-    episode_options: List[int]
-    selected_source_id: Optional[int]
-    selected_translation_id: Optional[int]
-    sources: List[WatchSourceCard]
-    highlights: List[WatchHighlightCard]
+    episode_options: list[int]
+    selected_source_id: int | None
+    selected_translation_id: int | None
+    sources: list[WatchSourceCard]
+    highlights: list[WatchHighlightCard]
     current_status: str | None
     last_position_seconds: float
     preferred_start_seconds: float

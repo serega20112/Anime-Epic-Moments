@@ -45,4 +45,3 @@ Contracts = [
         layer_output="terminal",
     ),
 ]
-</write_to_file>

@@ -1,8 +1,10 @@
 # Anime Epic Moments
 
-Anime Epic Moments — это Flask-приложение для поиска аниме, просмотра, сохранения избранного, создания хайлайтов и персональных рекомендаций на основе действий пользователя.
+Anime Epic Moments — это Flask-приложение для поиска аниме, просмотра, сохранения избранного, создания хайлайтов и
+персональных рекомендаций на основе действий пользователя.
 
-Проект организован как DDD-ориентированный backend с тонким delivery-слоем, явными use case, PostgreSQL, Redis, Alembic и серверным frontend-слоем в `src/frontend`.
+Проект организован как DDD-ориентированный backend с тонким delivery-слоем, явными use case, PostgreSQL, Redis, Alembic
+и серверным frontend-слоем в `src/frontend`.
 
 ## Быстрый старт
 
@@ -45,9 +47,9 @@ python -m src.main
 docker compose -f build/docker-compose.yml up --build
 ```
 
-`docker compose` поднимает `app`, `postgres`, `redis` и Redis GUI.
-По умолчанию Docker-запуск использует `DATABASE_AUTO_INIT=1` и `RUN_DB_MIGRATIONS=0`,
-потому что в репозитории нет revision-файлов Alembic в `build/alembic/versions`.
+`docker compose` поднимает `app`, `postgres`, `redis` и Redis GUI. По умолчанию Docker-запуск использует
+`DATABASE_AUTO_INIT=1` и `RUN_DB_MIGRATIONS=0`, потому что в репозитории нет revision-файлов Alembic в
+`build/alembic/versions`.
 
 Redis GUI после старта доступен в браузере:
 
@@ -114,7 +116,7 @@ src/frontend/               Шаблоны, статические файлы и
 
 ## Ключевые точки входа в коде
 
-- Bootstrap приложения: `src/main.py`
+- Bootstrap приложения: `src/backend/main.py`
 - Flask app factory: `src/backend/create_app.py`
 - Граф зависимостей: `src/backend/dependencies/container.py`
 - Runtime-настройки: `src/backend/dependencies/settings.py`
@@ -131,4 +133,5 @@ src/frontend/               Шаблоны, статические файлы и
 - Domain-объекты описывают продуктовые сущности, а не наборы словарей.
 - Infrastructure-слой содержит все побочные эффекты: БД, внешние API, кэш и auth-хелперы.
 - Build- и deployment-артефакты вынесены в `build/`, чтобы код приложения и окружение не были перемешаны.
-- Redis используется для кэшей, rate limiting и blacklist-а JWT, но при локальной деградации приложение умеет откатываться на in-memory fallback.
+- Redis используется для кэшей, rate limiting и blacklist-а JWT, но при локальной деградации приложение умеет
+  откатываться на in-memory fallback.

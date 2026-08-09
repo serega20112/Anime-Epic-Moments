@@ -81,13 +81,7 @@
               class="watch-video"
               preload="metadata"
               playsinline
-              {%
-              if
-              current_user
-              %}data-autosave="1"
-              {%
-              endif
-              %}
+              {% if current_user %}data-autosave="1"{% endif %}
             ></video>
             <iframe
               id="watch-embed-frame"
@@ -221,13 +215,7 @@
                         {% for episode_number in watch.episode_options %}
                         <option
                           value="{{ episode_number }}"
-                          {%
-                          if
-                          watch.episode=""
-                          ="episode_number"
-                          %}selected{%
-                          endif
-                          %}
+                          {% if watch.episode == episode_number %}selected{% endif %}
                         >
                           Серия {{ episode_number }}
                         </option>
@@ -252,13 +240,7 @@
                       {% for source in watch.sources %}
                       <option
                         value="{{ source.translation_id }}"
-                        {%
-                        if
-                        watch.selected_translation_id=""
-                        ="source.translation_id"
-                        %}selected{%
-                        endif
-                        %}
+                        {% if watch.selected_translation_id == source.translation_id %}selected{% endif %}
                       >
                         {{ source.translation_name }}
                       </option>

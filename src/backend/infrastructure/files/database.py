@@ -1,6 +1,4 @@
-"""
-Async SQLAlchemy engine/session bootstrap.
-"""
+"""Async SQLAlchemy engine/session bootstrap."""
 
 from __future__ import annotations
 
@@ -15,7 +13,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import declarative_base
 
-from src.backend.dependencies.settings import Settings
+from backend.config import Settings
 
 Base = declarative_base()
 engine: AsyncEngine | None = None
@@ -33,7 +31,7 @@ def create_db_engine(database_url: str) -> AsyncEngine:
 
 
 def create_session_factory(
-    db_engine: AsyncEngine,
+        db_engine: AsyncEngine,
 ) -> async_sessionmaker[AsyncSession]:
     """Create async session factory bound to the engine."""
     return async_sessionmaker(
@@ -63,26 +61,6 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
 
 async def init_db():
     """Initialize tables and backward-compatible columns."""
-    from src.backend.infrastructure.models.sqlalchemy_models import (
-        AnimeCollectionItemModel,
-        AnimeCollectionModel,
-        AnimeDiscussionCommentModel,
-        AnimeDiscussionLikeModel,
-        FavoriteModel,
-        HighlightCommentModel,
-        HighlightContextModel,
-        HighlightLikeModel,
-        HighlightModel,
-        SavedHighlightModel,
-        SupportTicketModel,
-        TranslationModel,
-        UserAnimeStatusModel,
-        UserFollowModel,
-        UserModel,
-        ViewingSessionModel,
-        WatchSourceModel,
-    )
-
     async_engine = get_engine()
     async with async_engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
@@ -109,8 +87,7 @@ def _ensure_watch_source_columns(connection):
     if "source_type" not in existing_columns:
         connection.execute(
             text(
-                "ALTER TABLE watch_sources "
-                "ADD COLUMN source_type VARCHAR NOT NULL DEFAULT 'stream'"
+                "ALTER TABLE watch_sources ADD COLUMN source_type VARCHAR NOT NULL DEFAULT 'stream'"
             )
         )
 
@@ -156,8 +133,7 @@ def _ensure_support_ticket_columns(connection):
     existing_columns = {column["name"] for column in inspector.get_columns("support_tickets")}
     missing_columns = {
         "channel": (
-            "ALTER TABLE support_tickets "
-            "ADD COLUMN channel VARCHAR NOT NULL DEFAULT 'telegram'"
+            "ALTER TABLE support_tickets ADD COLUMN channel VARCHAR NOT NULL DEFAULT 'telegram'"
         ),
     }
     for column_name, ddl in missing_columns.items():

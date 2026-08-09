@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 
 class InvalidHighlightTimeError(Exception):
@@ -7,13 +6,11 @@ class InvalidHighlightTimeError(Exception):
 
 
 class Highlight:
-    """
-    Агрегат Highlight
-    """
+    """Domain entity representing a user-created highlight."""
 
     def __init__(
         self,
-        user_id: Optional[int],
+        user_id: int | None,
         anime_id: int,
         episode: int,
         start_timestamp: float,
@@ -22,10 +19,10 @@ class Highlight:
         category: str | None = None,
         description: str = "",
         is_spoiler: bool = False,
-        emotion: Optional[str] = None,
-        created_at: Optional[datetime] = None,
+        emotion: str | None = None,
+        created_at: datetime | None = None,
     ):
-        self.id: Optional[int] = None
+        self.id: int | None = None
         self.user_id = user_id
         self.anime_id = anime_id
         self.episode = episode
@@ -67,16 +64,10 @@ class Highlight:
         self.emotion = self._normalize_optional_text(emotion)
         self._validate_times()
 
+
     def add_like(self):
         self.likes_count += 1
 
-    def remove_like(self):
-        if self.likes_count > 0:
-            self.likes_count -= 1
 
     def add_view(self):
         self.views_count += 1
-
-    def _normalize_optional_text(self, value: str | None) -> str | None:
-        text = str(value or "").strip()
-        return text or None

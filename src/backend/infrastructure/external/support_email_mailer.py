@@ -1,9 +1,9 @@
 import smtplib
 from email.message import EmailMessage
 
-from src.backend.infrastructure.external._async import external_method
-from src.backend.dependencies.settings import Settings
-from src.backend.domain.support.entity import SupportTicket
+from backend.config import Settings
+from backend.domain.support.entity import SupportTicket
+from backend.infrastructure.external._async import external_method
 
 
 class SupportEmailMailer:
@@ -14,11 +14,7 @@ class SupportEmailMailer:
 
     def is_enabled(self) -> bool:
         """Возвращает доступность email-канала поддержки по текущей конфигурации."""
-        return bool(
-            Settings.smtp_host
-            and Settings.smtp_from_email
-            and self.recipient_emails
-        )
+        return bool(Settings.smtp_host and Settings.smtp_from_email and self.recipient_emails)
 
     @external_method
     def send_ticket_created(self, ticket: SupportTicket) -> int:

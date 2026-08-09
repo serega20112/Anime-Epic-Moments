@@ -1,9 +1,10 @@
-from typing import Any, List
+from typing import Any
 
 import requests
-from src.backend.domain.anime.entity import Anime
-from src.backend.infrastructure.cache.key_value_store import KeyValueStore
-from src.backend.infrastructure.external._async import external_method
+
+from backend.domain.anime.entity import Anime
+from backend.infrastructure.cache.key_value_store import KeyValueStore
+from backend.infrastructure.external._async import external_method
 
 _CACHE_MISS = object()
 
@@ -21,14 +22,11 @@ class AnimeApiClient:
         self.session.trust_env = False
         self.store = store or KeyValueStore(redis_url=None, namespace="anime_api")
 
-    # ----------------- Jikan -----------------
     @external_method
     def search_by_title(
-        self, title: str, limit: int = 10, include_adult: bool = False
-    ) -> List[Anime]:
-        """
-        Поиск аниме по названию через Jikan.
-        """
+            self, title: str, limit: int = 10, include_adult: bool = False
+    ) -> list[Anime]:
+        """Поиск аниме по названию через Jikan."""
         sanitized_title = self._sanitize_query(title)
         if not sanitized_title:
             return []
@@ -72,9 +70,7 @@ class AnimeApiClient:
         return list(self._set_cached(cache_key, result, ttl_seconds=300))
 
     @external_method
-    def get_season_popular(
-        self, year: int, season: str, limit: int = 10
-    ) -> List[Anime]:
+    def get_season_popular(self, year: int, season: str, limit: int = 10) -> list[Anime]:
         """
         Получение популярных аниме сезона через Jikan.
         season: winter, spring, summer, fall
@@ -89,32 +85,32 @@ class AnimeApiClient:
         if cached is not _CACHE_MISS:
             return list(cached)
         url = f"{self.jikan_base}/seasons/{year}/{season}"
+        result = []
         try:
             resp = self.session.get(url, timeout=20)
             resp.raise_for_status()
             data = resp.json().get("data", [])[:limit]
+            for item in data:
+                result.append(self._build_anime_from_jikan_item(item))
         except (requests.RequestException, ValueError, KeyError, TypeError):
-            return list(self._set_cached(cache_key, [], ttl_seconds=900))
-
-        result = []
-        for item in data:
-            result.append(self._build_anime_from_jikan_item(item))
+            result = []
+        if not result:
+            result = self._get_season_popular_via_anilist(year=year, season=season, limit=limit)
+            ttl_seconds = 900 if result else 60
+            return list(self._set_cached(cache_key, result, ttl_seconds=ttl_seconds))
         return list(self._set_cached(cache_key, result, ttl_seconds=900))
 
-    # ----------------- AniList GraphQL -----------------
     @external_method
     def search_by_description(
-        self,
-        description: str,
-        year_from: int | None = None,
-        year_to: int | None = None,
-        min_rating: int | None = None,
-        include_adult: bool = False,
-        limit: int = 10,
-    ) -> List[Anime]:
-        """
-        Поиск аниме по описанию через AniList GraphQL.
-        """
+            self,
+            description: str,
+            year_from: int | None = None,
+            year_to: int | None = None,
+            min_rating: int | None = None,
+            include_adult: bool = False,
+            limit: int = 10,
+    ) -> list[Anime]:
+        """Поиск аниме по описанию через AniList GraphQL."""
         query = """
         query ($search: String, $perPage: Int, $isAdult: Boolean) {
           Page(perPage: $perPage) {
@@ -163,8 +159,7 @@ class AnimeApiClient:
             data = resp.json()["data"]["Page"]["media"]
         except (requests.RequestException, KeyError, TypeError, ValueError):
             fallback = self.__class__.search_by_title.__wrapped__(
-                self,
-                title=sanitized_description, limit=limit, include_adult=include_adult
+                self, title=sanitized_description, limit=limit, include_adult=include_adult
             )
             return list(self._set_cached(cache_key, fallback, ttl_seconds=300))
 
@@ -175,16 +170,14 @@ class AnimeApiClient:
             season_year = item.get("seasonYear")
             average_score = item.get("averageScore")
             normalized_score = (
-                (average_score / 10)
-                if isinstance(average_score, (int, float))
-                else None
+                (average_score / 10) if isinstance(average_score, (int, float)) else None
             )
             if not self._passes_filters(
-                season_year=season_year,
-                normalized_score=normalized_score,
-                year_from=year_from,
-                year_to=year_to,
-                min_rating=min_rating,
+                    season_year=season_year,
+                    normalized_score=normalized_score,
+                    year_from=year_from,
+                    year_to=year_to,
+                    min_rating=min_rating,
             ):
                 continue
             result.append(
@@ -244,7 +237,7 @@ class AnimeApiClient:
         )
 
     @external_method
-    def get_top_anime(self, limit: int = 25) -> List[Anime]:
+    def get_top_anime(self, limit: int = 25) -> list[Anime]:
         """Получает список популярных аниме через Jikan top."""
         cache_key = self._cache_key("top", int(limit))
         cached = self._get_cached(cache_key)
@@ -272,10 +265,10 @@ class AnimeApiClient:
         )
 
     def _get_by_anilist_media(
-        self,
-        variables: dict[str, int],
-        media_expression: str,
-        fallback_to_anilist_id: bool,
+            self,
+            variables: dict[str, int],
+            media_expression: str,
+            fallback_to_anilist_id: bool,
     ) -> Anime | None:
         query = """
         query ($id: Int, $idMal: Int) {
@@ -310,13 +303,75 @@ class AnimeApiClient:
             fallback_to_anilist_id=fallback_to_anilist_id,
         )
 
+    def _get_season_popular_via_anilist(
+            self,
+            *,
+            year: int,
+            season: str,
+            limit: int,
+    ) -> list[Anime]:
+        """Fallback: popular anime of a season via AniList when Jikan is unavailable."""
+        anilist_season = {
+            "winter": "WINTER",
+            "spring": "SPRING",
+            "summer": "SUMMER",
+            "fall": "FALL",
+        }.get(str(season).strip().lower())
+        if not anilist_season:
+            return []
+        query = """
+        query ($season: MediaSeason, $year: Int, $perPage: Int) {
+          Page(perPage: $perPage) {
+            media(
+              season: $season
+              seasonYear: $year
+              type: ANIME
+              isAdult: false
+              sort: SCORE_DESC
+            ) {
+              id
+              title { romaji english native }
+              seasonYear
+              coverImage { large }
+            }
+          }
+        }
+        """
+        try:
+            resp = self.session.post(
+                self.anilist_base,
+                json={
+                    "query": query,
+                    "variables": {
+                        "season": anilist_season,
+                        "year": int(year),
+                        "perPage": int(limit),
+                    },
+                },
+                timeout=20,
+            )
+            resp.raise_for_status()
+            data = resp.json().get("data", {}).get("Page", {}).get("media", [])
+        except (requests.RequestException, ValueError, KeyError, TypeError):
+            return []
+
+        result = []
+        for item in data:
+            result.append(
+                self._build_anime_from_anilist_item(
+                    item,
+                    fallback_to_anilist_id=True,
+                )
+            )
+        return result
+
     def _search_by_title_via_anilist(
-        self,
-        *,
-        title: str,
-        limit: int,
-        include_adult: bool,
-    ) -> List[Anime]:
+            self,
+            *,
+            title: str,
+            limit: int,
+            include_adult: bool,
+    ) -> list[Anime]:
         query = """
         query ($search: String, $perPage: Int, $isAdult: Boolean) {
           Page(perPage: $perPage) {
@@ -366,21 +421,19 @@ class AnimeApiClient:
         return result
 
     def _passes_filters(
-        self,
-        season_year: int | None,
-        normalized_score: float | None,
-        year_from: int | None,
-        year_to: int | None,
-        min_rating: int | None,
+            self,
+            season_year: int | None,
+            normalized_score: float | None,
+            year_from: int | None,
+            year_to: int | None,
+            min_rating: int | None,
     ) -> bool:
         """Проверяет, попадает ли аниме под фильтры года и минимального рейтинга."""
         if year_from is not None and (season_year is None or season_year < year_from):
             return False
         if year_to is not None and (season_year is None or season_year > year_to):
             return False
-        if min_rating is not None and (
-            normalized_score is None or normalized_score < min_rating
-        ):
+        if min_rating is not None and (normalized_score is None or normalized_score < min_rating):
             return False
         return True
 
@@ -409,17 +462,13 @@ class AnimeApiClient:
         )
 
     def _build_anime_from_anilist_item(
-        self,
-        item: dict[str, Any],
-        fallback_to_anilist_id: bool,
+            self,
+            item: dict[str, Any],
+            fallback_to_anilist_id: bool,
     ) -> Anime:
         title_data = item.get("title", {}) or {}
         average_score = item.get("averageScore")
-        normalized_score = (
-            (average_score / 10)
-            if isinstance(average_score, (int, float))
-            else None
-        )
+        normalized_score = (average_score / 10) if isinstance(average_score, (int, float)) else None
         mal_id = self._normalize_numeric_id(item.get("idMal"))
         anilist_id = self._normalize_numeric_id(item.get("id"))
         external_id = mal_id or (anilist_id if fallback_to_anilist_id else "")
@@ -428,9 +477,7 @@ class AnimeApiClient:
             external_id=external_id,
             title=self._pick_anilist_title(title_data),
             description=item.get("description"),
-            genres=[
-                str(genre).strip() for genre in (item.get("genres", []) or []) if genre
-            ],
+            genres=[str(genre).strip() for genre in (item.get("genres", []) or []) if genre],
             year=item.get("seasonYear"),
             rating=normalized_score,
             cover_url=item.get("coverImage", {}).get("large"),

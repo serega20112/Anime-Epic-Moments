@@ -1,27 +1,25 @@
 import re
 from datetime import datetime
-from typing import Optional
+
 from .exceptions import *
 
 
 class User:
-    """
-    Агрегат пользователя
-    """
+    """Агрегат пользователя"""
 
     def __init__(
         self,
         email: str,
         username: str,
         password_hash: str,
-        avatar_url: Optional[str] = None,
-        created_at: Optional[datetime] = None,
-        id: Optional[int] = None,
+        avatar_url: str | None = None,
+        created_at: datetime | None = None,
+        id: int | None = None,
     ):
         self._validate_email(email)
         self._validate_username(username)
 
-        self.id: Optional[int] = id
+        self.id: int | None = id
         self.email = email
         self.username = username
         self.avatar_url = avatar_url
@@ -46,8 +44,10 @@ class User:
             "Password verification must be performed in application layer via PasswordService"
         )
 
+
     def update_avatar(self, avatar_url: str):
         self.avatar_url = avatar_url
+
 
     def change_username(self, new_username: str):
         self._validate_username(new_username)

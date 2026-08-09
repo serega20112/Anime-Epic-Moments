@@ -1,5 +1,6 @@
 import re
-from src.backend.domain.anime.entity import Anime
+
+from backend.domain.anime.entity import Anime
 
 
 class AnimeSafetyPolicy:
@@ -30,14 +31,10 @@ class AnimeSafetyPolicy:
     )
 
     @staticmethod
-    def has_explicit_adult_intent(
-        description: str, genre_hint: str | None = None
-    ) -> bool:
+    def has_explicit_adult_intent(description: str, genre_hint: str | None = None) -> bool:
         """Возвращает True, если пользователь явно ищет 18+ контент."""
         haystack = f"{description or ''} {genre_hint or ''}".lower()
-        return any(
-            marker in haystack for marker in AnimeSafetyPolicy._ADULT_INTENT_MARKERS
-        )
+        return any(marker in haystack for marker in AnimeSafetyPolicy._ADULT_INTENT_MARKERS)
 
     @staticmethod
     def is_probably_nsfw(anime: Anime) -> bool:
@@ -45,14 +42,10 @@ class AnimeSafetyPolicy:
         genres = " ".join(anime.genres or []).lower()
         text = f"{anime.title or ''} {anime.description or ''}".lower()
         haystack = f"{genres} {text}"
-        return any(
-            marker in haystack for marker in AnimeSafetyPolicy._NSFW_CONTENT_MARKERS
-        )
+        return any(marker in haystack for marker in AnimeSafetyPolicy._NSFW_CONTENT_MARKERS)
 
     @staticmethod
-    def suggest_title_hints(
-        description: str, genre_hint: str | None = None
-    ) -> list[str]:
+    def suggest_title_hints(description: str, genre_hint: str | None = None) -> list[str]:
         """Извлекает явные подсказки названий из пользовательского текста."""
         text = f"{description or ''} {genre_hint or ''}"
         raw_hints = re.findall(r"[\"'«](.+?)[\"'»]", text)

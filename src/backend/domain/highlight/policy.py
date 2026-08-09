@@ -1,9 +1,6 @@
-"""
-HighlightPolicy — бизнес-правила для Highlight, например лимиты добавлений для гостей, проверка контента и спойлеров
-"""
+"""HighlightPolicy — бизнес-правила для Highlight, например лимиты добавлений для гостей, проверка контента и спойлеров"""
 
-from datetime import datetime, timedelta
-from src.backend.domain.highlight.entity import Highlight
+from backend.domain.highlight.entity import Highlight
 
 
 class HighlightPolicy:
@@ -37,7 +34,5 @@ class HighlightPolicy:
 
     @staticmethod
     def should_hide_spoiler(highlight: Highlight) -> bool:
-        """
-        Возвращает True, если спойлер нужно скрывать в UI
-        """
+        """Возвращает True, если спойлер нужно скрывать в UI"""
         return highlight.is_spoiler

@@ -1,16 +1,14 @@
-import base64
+﻿import base64
 import json
 import re
 from urllib.parse import urlencode, urljoin
 
 import requests
 
-from src.backend.infrastructure.external._async import external_method
-from src.backend.dependencies.settings import Settings
-from src.backend.domain.watch.value_object import DiscoveredWatchSource
-from src.backend.infrastructure.external.watch_source_provider import (
-    WatchSourceProvider,
-)
+from backend.config import Settings
+from backend.domain.watch.value_object import DiscoveredWatchSource
+from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
+from backend.infrastructure.external._async import external_method
 
 
 class KodikClient(WatchSourceProvider):
@@ -38,11 +36,11 @@ class KodikClient(WatchSourceProvider):
 
     @external_method
     def search_sources(
-        self,
-        title: str,
-        episode: int,
-        year: int | None = None,
-        limit: int = 24,
+            self,
+            title: str,
+            episode: int,
+            year: int | None = None,
+            limit: int = 24,
     ) -> list[DiscoveredWatchSource]:
         """Ищет источники эпизода через Kodik и возвращает доступные качества."""
         if not self.is_enabled():
@@ -79,7 +77,7 @@ class KodikClient(WatchSourceProvider):
         seen: set[tuple[str, str, str]] = set()
         for material in results:
             if not self._looks_relevant(
-                material=material, requested_title=title, requested_year=year
+                    material=material, requested_title=title, requested_year=year
             ):
                 continue
             material_link = self._extract_episode_link(
@@ -89,9 +87,7 @@ class KodikClient(WatchSourceProvider):
                 continue
 
             translation = material.get("translation") or {}
-            translation_name = (
-                str(translation.get("title") or "Unknown").strip() or "Unknown"
-            )
+            translation_name = str(translation.get("title") or "Unknown").strip() or "Unknown"
             translation_type = self._map_translation_type(
                 str(translation.get("type") or "voice").strip()
             )
@@ -123,16 +119,16 @@ class KodikClient(WatchSourceProvider):
         return discovered
 
     def _looks_relevant(
-        self,
-        material: dict,
-        requested_title: str,
-        requested_year: int | None,
+            self,
+            material: dict,
+            requested_title: str,
+            requested_year: int | None,
     ) -> bool:
         material_year = material.get("year")
         if (
-            requested_year
-            and isinstance(material_year, int)
-            and abs(material_year - requested_year) > 1
+                requested_year
+                and isinstance(material_year, int)
+                and abs(material_year - requested_year) > 1
         ):
             return False
 
@@ -153,8 +149,8 @@ class KodikClient(WatchSourceProvider):
         for candidate in candidates:
             normalized_candidate = self._normalize_title(candidate)
             if normalized_candidate and (
-                normalized_requested in normalized_candidate
-                or normalized_candidate in normalized_requested
+                    normalized_requested in normalized_candidate
+                    or normalized_candidate in normalized_requested
             ):
                 return True
 
@@ -196,11 +192,7 @@ class KodikClient(WatchSourceProvider):
 
         links = self._request_video_links(
             host=parsed["host"],
-            params={
-                key: value
-                for key, value in parsed.items()
-                if key not in {"host", "quality"}
-            },
+            params={key: value for key, value in parsed.items() if key not in {"host", "quality"}},
             endpoint=self.default_video_info_endpoint,
         )
         if not links:
@@ -243,10 +235,10 @@ class KodikClient(WatchSourceProvider):
         return decoded_links
 
     def _request_video_links(
-        self,
-        host: str,
-        params: dict[str, str],
-        endpoint: str,
+            self,
+            host: str,
+            params: dict[str, str],
+            endpoint: str,
     ) -> dict[str, list[dict[str, str]]] | None:
         video_info_url = f"https://{host}{endpoint}?{urlencode(params)}"
         try:
@@ -365,4 +357,4 @@ class KodikClient(WatchSourceProvider):
         try:
             return int(value), value
         except ValueError:
-            return 10**9, value
+            return 10 ** 9, value

@@ -1,6 +1,8 @@
-from src.backend.infrastructure.external._async import external_method
 import re
+
 import requests
+
+from backend.infrastructure.external._async import external_method
 
 
 class HuggingFaceLLMClient:
@@ -22,11 +24,11 @@ class HuggingFaceLLMClient:
     )
 
     def __init__(
-        self,
-        api_key: str | None,
-        model: str,
-        provider: str | None = None,
-        api_url: str = "https://router.huggingface.co/v1/chat/completions",
+            self,
+            api_key: str | None,
+            model: str,
+            provider: str | None = None,
+            api_url: str = "https://router.huggingface.co/v1/chat/completions",
     ):
         self.api_key = api_key
         self.model = model
@@ -36,14 +38,14 @@ class HuggingFaceLLMClient:
         self.session.trust_env = False
 
     def build_search_query(
-        self,
-        description: str,
-        genre_hint: str | None = None,
-        year_from: int | None = None,
-        year_to: int | None = None,
-        min_rating: int | None = None,
-        age_rating: str = "all",
-        allow_adult: bool = False,
+            self,
+            description: str,
+            genre_hint: str | None = None,
+            year_from: int | None = None,
+            year_to: int | None = None,
+            min_rating: int | None = None,
+            age_rating: str = "all",
+            allow_adult: bool = False,
     ) -> str:
         """Возвращает краткий англоязычный запрос для AniList по описанию пользователя."""
         query, _, _ = self.build_search_query_with_meta(
@@ -58,14 +60,14 @@ class HuggingFaceLLMClient:
         return query
 
     def build_search_query_with_meta(
-        self,
-        description: str,
-        genre_hint: str | None = None,
-        year_from: int | None = None,
-        year_to: int | None = None,
-        min_rating: int | None = None,
-        age_rating: str = "all",
-        allow_adult: bool = False,
+            self,
+            description: str,
+            genre_hint: str | None = None,
+            year_from: int | None = None,
+            year_to: int | None = None,
+            min_rating: int | None = None,
+            age_rating: str = "all",
+            allow_adult: bool = False,
     ) -> tuple[str, str, str | None]:
         """Возвращает запрос и метаданные режима: hf_llm или fallback_*."""
         queries, mode, error = self.__class__.build_search_queries_with_meta.__wrapped__(
@@ -83,14 +85,14 @@ class HuggingFaceLLMClient:
 
     @external_method
     def build_search_queries_with_meta(
-        self,
-        description: str,
-        genre_hint: str | None = None,
-        year_from: int | None = None,
-        year_to: int | None = None,
-        min_rating: int | None = None,
-        age_rating: str = "all",
-        allow_adult: bool = False,
+            self,
+            description: str,
+            genre_hint: str | None = None,
+            year_from: int | None = None,
+            year_to: int | None = None,
+            min_rating: int | None = None,
+            age_rating: str = "all",
+            allow_adult: bool = False,
     ) -> tuple[list[str], str, str | None]:
         """Возвращает несколько вариантов поискового запроса и метаданные режима."""
         base_description = description.strip()
@@ -131,9 +133,7 @@ class HuggingFaceLLMClient:
 
         try:
             model_route = self._resolve_model_route()
-            completion = self._create_completion(
-                model_route=model_route, messages=messages
-            )
+            completion = self._create_completion(model_route=model_route, messages=messages)
             message_content = self._extract_message_content(completion)
             if not message_content:
                 fallback_query = self._fallback_query(
@@ -160,9 +160,9 @@ class HuggingFaceLLMClient:
 
     @external_method
     def describe_taste_profile(
-        self,
-        profile_data: dict[str, object],
-        fallback: str,
+            self,
+            profile_data: dict[str, object],
+            fallback: str,
     ) -> str:
         """Возвращает краткое русскоязычное описание вкуса пользователя."""
         if not self.api_key:
@@ -199,12 +199,12 @@ class HuggingFaceLLMClient:
             return fallback
 
     def _fallback_query(
-        self,
-        description: str,
-        genre_hint: str | None = None,
-        year_from: int | None = None,
-        year_to: int | None = None,
-        min_rating: int | None = None,
+            self,
+            description: str,
+            genre_hint: str | None = None,
+            year_from: int | None = None,
+            year_to: int | None = None,
+            min_rating: int | None = None,
     ) -> str:
         """Собирает запасной поисковый запрос без использования LLM."""
         parts = [description.strip()]
@@ -213,14 +213,14 @@ class HuggingFaceLLMClient:
         return " ".join(parts).strip()
 
     def _build_user_payload(
-        self,
-        description: str,
-        genre_hint: str | None,
-        year_from: int | None,
-        year_to: int | None,
-        min_rating: int | None,
-        age_rating: str,
-        allow_adult: bool,
+            self,
+            description: str,
+            genre_hint: str | None,
+            year_from: int | None,
+            year_to: int | None,
+            min_rating: int | None,
+            age_rating: str,
+            allow_adult: bool,
     ) -> str:
         """Готовит компактный текстовый payload на русском без JSON-обертки."""
         parts = [
@@ -252,10 +252,10 @@ class HuggingFaceLLMClient:
         )
 
     def _create_completion_with_timeout(
-        self,
-        model_route: str,
-        messages: list[dict],
-        timeout_seconds: float | int,
+            self,
+            model_route: str,
+            messages: list[dict],
+            timeout_seconds: float | int,
     ) -> dict:
         """Отправляет запрос в Hugging Face Router и возвращает JSON-ответ."""
         headers = {

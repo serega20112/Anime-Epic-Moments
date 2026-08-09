@@ -1,3 +1,5 @@
+"""Template rendering utilities with Jinja2, session flash messages, and CSRF token injection."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,6 +10,7 @@ from urllib.parse import urlencode
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 TEMPLATES_ROOT = PROJECT_ROOT / "src" / "frontend" / "templates"
 
@@ -18,11 +21,25 @@ _environment = Environment(
 
 
 def _get_session(request: Request) -> dict[str, Any] | None:
+    """Retrieve session dictionary from request scope.
+
+    Args:
+        request: Current HTTP request.
+
+    Returns:
+        dict[str, Any] | None: Session data or None if not available.
+    """
     session = request.scope.get("session")
     return session if isinstance(session, dict) else None
 
 
 def flash(request: Request, message: str):
+    """Add a flash message to the session for display on the next page load.
+
+    Args:
+        request: Current HTTP request.
+        message: Message text to flash.
+    """
     session = _get_session(request)
     if session is None:
         return
@@ -32,6 +49,14 @@ def flash(request: Request, message: str):
 
 
 def pop_flashed_messages(request: Request) -> list[str]:
+    """Retrieve and clear all flash messages from the session.
+
+    Args:
+        request: Current HTTP request.
+
+    Returns:
+        list[str]: List of flashed messages.
+    """
     session = _get_session(request)
     if session is None:
         return []
@@ -43,22 +68,36 @@ def pop_flashed_messages(request: Request) -> list[str]:
 
 @dataclass(slots=True)
 class TemplateRequestProxy:
+    """Proxy object exposing request properties to Jinja2 templates."""
+
     request: Request
 
     @property
     def url(self) -> str:
+        """Full request URL."""
         return str(self.request.url)
 
     @property
     def path(self) -> str:
+        """Request path component."""
         return self.request.url.path
 
     @property
     def referrer(self) -> str | None:
+        """Referer header value."""
         value = self.request.headers.get("referer")
         return str(value).strip() if value else None
 
     def url_for(self, name: str, **params: Any) -> str:
+        """Generate a URL for a named route with path and query parameters.
+
+        Args:
+            name: Route name.
+            **params: Path and query parameters.
+
+        Returns:
+            str: Generated URL.
+        """
         if name == "static":
             path = str(params.pop("filename", params.pop("path", ""))).lstrip("/")
             return str(self.request.app.url_path_for("static", path=path))
@@ -79,13 +118,29 @@ class TemplateRequestProxy:
         return f"{path}?{urlencode(query_params, doseq=True)}"
 
     def _get_route_param_names(self, name: str) -> set[str]:
+        """Get parameter names for a named route.
+
+        Args:
+            name: Route name.
+
+        Returns:
+            set[str]: Set of path parameter names.
+        """
         for route in self.request.app.router.routes:
             if getattr(route, "name", None) != name:
                 continue
             return set(getattr(route, "param_convertors", {}).keys())
         return set()
 
-    def _normalize_query_value(self, value: Any):
+    def _normalize_query_value(self, value: Any) -> str | list[str]:
+        """Normalize a query parameter value for URL encoding.
+
+        Args:
+            value: Raw parameter value.
+
+        Returns:
+            str | list[str]: Normalized value.
+        """
         if isinstance(value, (list, tuple, set)):
             return [str(item) for item in value]
         return str(value)
@@ -99,16 +154,34 @@ def render_template(
     headers: dict[str, str] | None = None,
     **context: Any,
 ) -> HTMLResponse:
+    """Render a Jinja2 template with request context and flash messages.
+
+    Injects current_user, url_for, csrf_token, and get_flashed_messages
+    into the template context.
+
+    Args:
+        request: Current HTTP request.
+        template_name: Template file path relative to templates root.
+        status_code: HTTP status code for the response.
+        headers: Additional response headers.
+        **context: Additional template variables.
+
+    Returns:
+        HTMLResponse: Rendered HTML response.
+    """
     proxy = TemplateRequestProxy(request)
     messages = pop_flashed_messages(request)
 
     def get_flashed_messages() -> list[str]:
         return list(messages)
 
+
     def url_for(name: str, **params: Any) -> str:
         return proxy.url_for(name, **params)
 
+
     def csrf_token() -> str:
+        """Get the current CSRF token value for use in forms."""
         token_data = getattr(request.state, "csrf_token", None)
         if token_data and isinstance(token_data, dict):
             return token_data.get("value", "")

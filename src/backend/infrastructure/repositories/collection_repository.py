@@ -2,14 +2,13 @@ import json
 
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
-from src.backend.infrastructure.repositories._async import repository_method
-from src.backend.domain.collection.entity import AnimeCollection, AnimeCollectionItem
-from src.backend.infrastructure.models.sqlalchemy_models import (
+from backend.domain.collection.entity import AnimeCollection, AnimeCollectionItem
+from backend.infrastructure.models import (
     AnimeCollectionItemModel,
     AnimeCollectionModel,
 )
+from backend.infrastructure.repositories._async import repository_method
 
 
 class CollectionRepository:

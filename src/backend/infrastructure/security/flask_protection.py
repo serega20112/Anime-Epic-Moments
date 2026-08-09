@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Awaitable, Callable
 from functools import wraps
-import logging
 from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from src.backend.infrastructure.web.templating import flash
+from backend.infrastructure.security.rate_limiter import RateLimiter
+from backend.infrastructure.web import flash
 
 logger = logging.getLogger("anime_epic_moments")
 
@@ -24,13 +25,13 @@ def client_ip(request: Request) -> str:
 
 
 def rate_limit(
-    scope: str,
-    limit: int,
-    window_seconds: int,
-    key_builder: Callable[[Request], str] | None = None,
-    response_mode: str = "json",
-    redirect_endpoint: str | None = None,
-    message: str = "Слишком много запросов. Попробуйте позже.",
+        scope: str,
+        limit: int,
+        window_seconds: int,
+        key_builder: Callable[[Request], str] | None = None,
+        response_mode: str = "json",
+        redirect_endpoint: str | None = None,
+        message: str = "Слишком много запросов. Попробуйте позже.",
 ):
     """Limit async endpoint calls using request-scoped container rate limiter."""
 
@@ -38,7 +39,12 @@ def rate_limit(
         @wraps(view)
         async def wrapped(*args, **kwargs):
             request = _extract_request(args, kwargs)
-            limiter = getattr(getattr(request.state, "container", None), "rate_limiter", None)
+            dishka_container = getattr(request.state, "dishka_container", None)
+            if dishka_container is not None:
+                limiter = await dishka_container.get(RateLimiter)
+            else:
+                limiter = getattr(request.state, "container", None)
+                limiter = getattr(limiter, "rate_limiter", None)
             if limiter is None:
                 return await view(*args, **kwargs)
 

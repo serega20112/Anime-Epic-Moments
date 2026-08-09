@@ -1,6 +1,3 @@
-from typing import List, Optional
-
-
 class Anime:
     """
     Сущность Anime как external reference.
@@ -11,12 +8,12 @@ class Anime:
         self,
         external_id: str,
         title: str,
-        description: Optional[str] = None,
-        genres: Optional[List[str]] = None,
-        year: Optional[int] = None,
-        rating: Optional[float] = None,
-        cover_url: Optional[str] = None,
-        episode_count: Optional[int] = None,
+        description: str | None = None,
+        genres: list[str] | None = None,
+        year: int | None = None,
+        rating: float | None = None,
+        cover_url: str | None = None,
+        episode_count: int | None = None,
     ):
         self.external_id = external_id  # ID из Jikan/AniList
         self.title = title
@@ -30,6 +27,7 @@ class Anime:
     def add_genre(self, genre: str):
         if genre not in self.genres:
             self.genres.append(genre)
+
 
     def remove_genre(self, genre: str):
         if genre in self.genres:

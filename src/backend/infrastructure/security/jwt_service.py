@@ -1,14 +1,14 @@
+from datetime import UTC, datetime, timedelta
+
 import jwt
-from datetime import datetime, timedelta, timezone
-from src.backend.dependencies.settings import Settings
+
+from backend.config import Settings
 
 ALGORITHM = "HS256"
 
 
 class JWTService:
-    """
-    Создание и проверка JWT токенов
-    """
+    """Создание и проверка JWT токенов"""
 
     def create_token(self, user_id: int) -> str:
         return self.create_access_token(user_id)
@@ -28,9 +28,7 @@ class JWTService:
         )
 
     def decode_token(self, token: str) -> int:
-        """
-        Возвращает user_id если токен валиден, иначе кидает исключение
-        """
+        """Возвращает user_id если токен валиден, иначе кидает исключение"""
         return self._decode_typed_token(token=token, expected_type="access")
 
     def decode_refresh_token(self, token: str) -> int:
@@ -49,9 +47,7 @@ class JWTService:
         """Возвращает user_id из токена сброса пароля."""
         return self._decode_typed_token(token=token, expected_type="password_reset")
 
-    def get_token_ttl_seconds(
-        self, token: str, expected_type: str | None = None
-    ) -> int:
+    def get_token_ttl_seconds(self, token: str, expected_type: str | None = None) -> int:
         """Возвращает оставшийся TTL токена в секундах."""
         payload = self._decode_payload(token, verify_exp=False)
         if expected_type and payload.get("token_type") != expected_type:
@@ -59,16 +55,16 @@ class JWTService:
         exp = payload.get("exp")
         if exp is None:
             return 0
-        remaining = int(float(exp) - datetime.now(timezone.utc).timestamp())
+        remaining = int(float(exp) - datetime.now(UTC).timestamp())
         return max(remaining, 0)
 
     def _create_typed_token(
-        self,
-        user_id: int,
-        token_type: str,
-        expires_delta: timedelta,
+            self,
+            user_id: int,
+            token_type: str,
+            expires_delta: timedelta,
     ) -> str:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
         payload = {"user_id": user_id, "token_type": token_type, "exp": expire}
         return jwt.encode(payload, Settings.secret_key, algorithm=ALGORITHM)
 

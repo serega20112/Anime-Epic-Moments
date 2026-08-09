@@ -1,12 +1,9 @@
-from typing import Optional
-
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
-from src.backend.infrastructure.repositories._async import repository_method
-from src.backend.domain.user.entity import User
-from src.backend.infrastructure.models.sqlalchemy_models import UserFollowModel, UserModel
+from backend.domain import User
+from backend.infrastructure.models import UserFollowModel, UserModel
+from backend.infrastructure.repositories._async import repository_method
 
 
 class UserRepository:
@@ -28,14 +25,14 @@ class UserRepository:
         return user
 
     @repository_method
-    def get_by_id(self, user_id: int) -> Optional[User]:
+    def get_by_id(self, user_id: int) -> User | None:
         db_user = self.session.query(UserModel).filter_by(id=user_id).first()
         if not db_user:
             return None
         return self._to_entity(db_user)
 
     @repository_method
-    def get_by_email(self, email: str) -> Optional[User]:
+    def get_by_email(self, email: str) -> User | None:
         db_user = self.session.query(UserModel).filter_by(email=email).first()
         if not db_user:
             return None
@@ -45,11 +42,7 @@ class UserRepository:
     def get_by_ids(self, user_ids: list[int]) -> list[User]:
         if not user_ids:
             return []
-        rows = (
-            self.session.query(UserModel)
-            .filter(UserModel.id.in_(user_ids))
-            .all()
-        )
+        rows = self.session.query(UserModel).filter(UserModel.id.in_(user_ids)).all()
         return [self._to_entity(row) for row in rows]
 
     @repository_method
@@ -117,28 +110,36 @@ class UserRepository:
         if follower_user_id == followed_user_id:
             return False
         return (
-            self.session.query(UserFollowModel.id)
-            .filter_by(
-                follower_user_id=follower_user_id,
-                followed_user_id=followed_user_id,
-            )
-            .first()
-            is not None
+                self.session.query(UserFollowModel.id)
+                .filter_by(
+                    follower_user_id=follower_user_id,
+                    followed_user_id=followed_user_id,
+                )
+                .first()
+                is not None
         )
 
     @repository_method
     def get_follow_stats(self, user_id: int) -> tuple[int, int]:
+        """Return follower and following counts for a user.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            tuple[int, int]: (followers, following).
+        """
         followers_count = (
-            self.session.query(func.count(UserFollowModel.id))
-            .filter(UserFollowModel.followed_user_id == user_id)
-            .scalar()
-            or 0
+                self.session.query(func.count(UserFollowModel.id))
+                .filter(UserFollowModel.followed_user_id == user_id)
+                .scalar()
+                or 0
         )
         following_count = (
-            self.session.query(func.count(UserFollowModel.id))
-            .filter(UserFollowModel.follower_user_id == user_id)
-            .scalar()
-            or 0
+                self.session.query(func.count(UserFollowModel.id))
+                .filter(UserFollowModel.follower_user_id == user_id)
+                .scalar()
+                or 0
         )
         return int(followers_count), int(following_count)
 

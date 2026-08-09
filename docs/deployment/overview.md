@@ -2,9 +2,11 @@
 
 ## Описание
 
-Deployment-артефакты живут в `build/`. В этой директории находятся контейнеризация, compose-оркестрация, Alembic runtime и entrypoint, который используется контейнером приложения.
+Deployment-артефакты живут в `build/`. В этой директории находятся контейнеризация, compose-оркестрация, Alembic runtime
+и entrypoint, который используется контейнером приложения.
 
-Система может запускаться локально через Python-интерпретатор или в Docker вместе с контейнерами PostgreSQL, Redis и Redis GUI.
+Система может запускаться локально через Python-интерпретатор или в Docker вместе с контейнерами PostgreSQL, Redis и
+Redis GUI.
 
 ## Как это работает
 
@@ -118,7 +120,8 @@ http://localhost:8081
 - В контейнерах используется Gunicorn, а не debug-сервер Flask.
 - Миграции выполняются до старта web-процесса, чтобы не жить с schema drift.
 - PostgreSQL используется как единственная runtime-база, что убирает класс проблем, связанных с SQLite-only поведением.
-- Redis берет на себя кэши, rate limiting и JWT blocklist, а при локальной деградации код умеет откатываться на in-memory fallback.
+- Redis берет на себя кэши, rate limiting и JWT blocklist, а при локальной деградации код умеет откатываться на
+  in-memory fallback.
 
 ## Где в коде
 
@@ -127,7 +130,7 @@ http://localhost:8081
 - `build/scripts/entrypoint.sh`
 - `build/alembic/alembic.ini`
 - `build/alembic/env.py`
-- `src/main.py`
+- `../../src/backend/main.py`
 - `src/backend/dependencies/settings.py`
 
 ## Связанные документы

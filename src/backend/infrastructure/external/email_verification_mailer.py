@@ -2,8 +2,8 @@ import smtplib
 from email.message import EmailMessage
 from html import escape
 
-from src.backend.infrastructure.external._async import external_method
-from src.backend.dependencies.settings import Settings
+from backend.config import Settings
+from backend.infrastructure.external._async import external_method
 
 
 class EmailVerificationMailer:
@@ -11,10 +11,10 @@ class EmailVerificationMailer:
 
     @external_method
     def send_verification_code(
-        self,
-        email: str,
-        code: str,
-        theme: str = "neon",
+            self,
+            email: str,
+            code: str,
+            theme: str = "neon",
     ) -> None:
         """Отправляет одноразовый код подтверждения на email пользователя."""
         if not Settings.smtp_host or not Settings.smtp_from_email:
@@ -57,8 +57,8 @@ class EmailVerificationMailer:
         return (
             "<!doctype html>"
             "<html lang='ru'>"
-            "<body style=\"margin:0;padding:0;background:"
-            f"{palette['page_background']};font-family:Inter,Segoe UI,Arial,sans-serif;color:{palette['text']};\">"
+            '<body style="margin:0;padding:0;background:'
+            f'{palette["page_background"]};font-family:Inter,Segoe UI,Arial,sans-serif;color:{palette["text"]};">'
             "<div style='padding:32px 16px;'>"
             "<div style='max-width:560px;margin:0 auto;"
             f"background:{palette['card_background']};border:1px solid {palette['border']};"

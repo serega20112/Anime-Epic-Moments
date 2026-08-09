@@ -1,9 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
-from src.backend.infrastructure.repositories._async import repository_method
-from src.backend.domain.support.entity import SupportTicket
-from src.backend.infrastructure.models.sqlalchemy_models import SupportTicketModel
+from backend.domain.support.entity import SupportTicket
+from backend.infrastructure.models import SupportTicketModel
+from backend.infrastructure.repositories._async import repository_method
 
 
 class SupportRepository:

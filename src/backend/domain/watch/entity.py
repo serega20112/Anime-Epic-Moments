@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 
 class UserAnimeStatus:
@@ -8,14 +7,16 @@ class UserAnimeStatus:
         user_id: int,
         anime_id: int,
         status: str,
-        updated_at: Optional[datetime] = None,
-        id: Optional[int] = None,
+        updated_at: datetime | None = None,
+        id: int | None = None,
     ):
         self.id = id
         self.user_id = user_id
         self.anime_id = anime_id
         self.status = status
         self.updated_at = updated_at or datetime.utcnow()
+
+
 
 
 class Translation:
@@ -25,8 +26,8 @@ class Translation:
         name: str,
         translation_type: str,
         language: str = "ru",
-        id: Optional[int] = None,
-        created_at: Optional[datetime] = None,
+        id: int | None = None,
+        created_at: datetime | None = None,
     ):
         self.id = id
         self.anime_id = anime_id
@@ -34,6 +35,8 @@ class Translation:
         self.translation_type = translation_type
         self.language = language
         self.created_at = created_at or datetime.utcnow()
+
+
 
 
 class WatchSource:
@@ -47,8 +50,8 @@ class WatchSource:
         stream_url: str,
         quality_label: str,
         source_type: str = "stream",
-        id: Optional[int] = None,
-        created_at: Optional[datetime] = None,
+        id: int | None = None,
+        created_at: datetime | None = None,
     ):
         self.id = id
         self.anime_id = anime_id
@@ -62,6 +65,8 @@ class WatchSource:
         self.created_at = created_at or datetime.utcnow()
 
 
+
+
 class ViewingSession:
     def __init__(
         self,
@@ -73,8 +78,8 @@ class ViewingSession:
         volume: float,
         quality_label: str,
         is_paused: bool,
-        id: Optional[int] = None,
-        updated_at: Optional[datetime] = None,
+        id: int | None = None,
+        updated_at: datetime | None = None,
     ):
         self.id = id
         self.user_id = user_id
@@ -88,6 +93,8 @@ class ViewingSession:
         self.updated_at = updated_at or datetime.utcnow()
 
 
+
+
 class HighlightContext:
     def __init__(
         self,
@@ -95,8 +102,8 @@ class HighlightContext:
         watch_source_id: int,
         translation_id: int,
         title: str = "",
-        id: Optional[int] = None,
-        created_at: Optional[datetime] = None,
+        id: int | None = None,
+        created_at: datetime | None = None,
     ):
         self.id = id
         self.highlight_id = highlight_id

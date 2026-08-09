@@ -20,8 +20,6 @@ def repository_method(method: Callable[..., Any]):
             finally:
                 self.session = original_session
 
-        if not hasattr(async_session, "run_sync"):
-            return runner(async_session)
         return await async_session.run_sync(runner)
 
     return wrapped

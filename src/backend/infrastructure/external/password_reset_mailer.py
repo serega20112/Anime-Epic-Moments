@@ -1,7 +1,8 @@
 import smtplib
 from email.message import EmailMessage
-from src.backend.infrastructure.external._async import external_method
-from src.backend.dependencies.settings import Settings
+
+from backend.config import Settings
+from backend.infrastructure.external._async import external_method
 
 
 class PasswordResetMailer:

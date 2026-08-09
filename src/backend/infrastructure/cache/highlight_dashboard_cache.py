@@ -1,31 +1,31 @@
 from __future__ import annotations
 
-from src.backend.domain.highlight.value_object import HighlightDashboard
-from src.backend.infrastructure.cache.key_value_store import KeyValueStore
+from backend.domain import HighlightDashboard
+from backend.infrastructure.cache.key_value_store import KeyValueStore
 
 
 class HighlightDashboardCache:
     """Кэширует публичный дашборд хайлайтов на короткое время."""
 
     def __init__(
-        self,
-        store: KeyValueStore,
-        ttl_seconds: float = 120.0,
+            self,
+            store: KeyValueStore,
+            ttl_seconds: float = 120.0,
     ):
         self.store = store
         self.ttl_seconds = max(int(ttl_seconds), 1)
         self.prefix = "highlight_dashboard:public"
 
     async def get_public(
-        self,
-        limit: int,
-        anime_id: int | None,
-        emotion: str | None,
-        category: str | None,
-        sort_by: str,
-        created_date: str | None,
-        query: str | None,
-        include_spoilers: bool,
+            self,
+            limit: int,
+            anime_id: int | None,
+            emotion: str | None,
+            category: str | None,
+            sort_by: str,
+            created_date: str | None,
+            query: str | None,
+            include_spoilers: bool,
     ) -> HighlightDashboard | None:
         return await self.store.get(
             self._key(
@@ -41,16 +41,16 @@ class HighlightDashboardCache:
         )
 
     async def set_public(
-        self,
-        limit: int,
-        anime_id: int | None,
-        emotion: str | None,
-        category: str | None,
-        sort_by: str,
-        created_date: str | None,
-        query: str | None,
-        include_spoilers: bool,
-        value: HighlightDashboard,
+            self,
+            limit: int,
+            anime_id: int | None,
+            emotion: str | None,
+            category: str | None,
+            sort_by: str,
+            created_date: str | None,
+            query: str | None,
+            include_spoilers: bool,
+            value: HighlightDashboard,
     ) -> HighlightDashboard:
         return await self.store.set(
             self._key(

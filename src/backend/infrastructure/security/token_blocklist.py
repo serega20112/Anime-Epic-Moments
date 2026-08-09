@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 
-from src.backend.infrastructure.cache.key_value_store import KeyValueStore
+from backend.infrastructure.cache.key_value_store import KeyValueStore
 
 
 class TokenBlocklist:

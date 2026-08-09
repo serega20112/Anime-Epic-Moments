@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 
-from src.backend.domain.collection.value_object import CollectionCard
-from src.backend.domain.highlight.value_object import (
+from backend.domain.highlight.value_object import (
     HighlightActivityItem,
     HighlightCard,
     HighlightProfileSummary,
 )
+from backend.domain.collection.value_object import CollectionCard
 
 
 @dataclass

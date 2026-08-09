@@ -1,6 +1,4 @@
-"""
-SQLAlchemy модели для приложения
-"""
+"""SQLAlchemy модели для приложения"""
 
 from datetime import datetime
 
@@ -15,7 +13,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 
-from src.backend.infrastructure.files.database import Base
+from backend.infrastructure.files.database import Base
 
 
 class UserModel(Base):
@@ -29,20 +27,20 @@ class UserModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+
+
 class UserFollowModel(Base):
     __tablename__ = "user_follows"
     __table_args__ = (
-        UniqueConstraint(
-            "follower_user_id",
-            "followed_user_id",
-            name="uq_user_follow",
-        ),
+        UniqueConstraint("follower_user_id", "followed_user_id", name="uq_user_follow"),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     follower_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     followed_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 
 
 class SupportTicketModel(Base):
@@ -60,6 +58,8 @@ class SupportTicketModel(Base):
     delivery_status = Column(String(20), nullable=False, default="pending")
     delivery_error = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 
 
 class HighlightModel(Base):
@@ -81,16 +81,18 @@ class HighlightModel(Base):
     emotion = Column(String, nullable=True)
 
 
+
+
 class HighlightLikeModel(Base):
     __tablename__ = "highlight_likes"
-    __table_args__ = (
-        UniqueConstraint("highlight_id", "user_id", name="uq_highlight_like"),
-    )
+    __table_args__ = (UniqueConstraint("highlight_id", "user_id", name="uq_highlight_like"),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     highlight_id = Column(Integer, ForeignKey("highlights.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 
 
 class HighlightCommentModel(Base):
@@ -103,16 +105,18 @@ class HighlightCommentModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+
+
 class SavedHighlightModel(Base):
     __tablename__ = "saved_highlights"
-    __table_args__ = (
-        UniqueConstraint("highlight_id", "user_id", name="uq_saved_highlight"),
-    )
+    __table_args__ = (UniqueConstraint("highlight_id", "user_id", name="uq_saved_highlight"),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     highlight_id = Column(Integer, ForeignKey("highlights.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     saved_at = Column(DateTime, default=datetime.utcnow)
+
+
 
 
 class FavoriteModel(Base):
@@ -128,6 +132,8 @@ class FavoriteModel(Base):
     added_at = Column(DateTime, default=datetime.utcnow)
 
 
+
+
 class AnimeCollectionModel(Base):
     __tablename__ = "anime_collections"
 
@@ -137,6 +143,8 @@ class AnimeCollectionModel(Base):
     description = Column(String(400), nullable=True)
     is_public = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 
 
 class AnimeCollectionItemModel(Base):
@@ -155,6 +163,8 @@ class AnimeCollectionItemModel(Base):
     added_at = Column(DateTime, default=datetime.utcnow)
 
 
+
+
 class AnimeDiscussionCommentModel(Base):
     __tablename__ = "anime_discussion_comments"
 
@@ -163,6 +173,8 @@ class AnimeDiscussionCommentModel(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(String(600), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 
 
 class AnimeDiscussionLikeModel(Base):
@@ -177,6 +189,8 @@ class AnimeDiscussionLikeModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+
+
 class UserAnimeStatusModel(Base):
     __tablename__ = "user_anime_statuses"
 
@@ -185,6 +199,8 @@ class UserAnimeStatusModel(Base):
     anime_id = Column(Integer, nullable=False)
     status = Column(String, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+
 
 
 class TranslationModel(Base):
@@ -196,6 +212,8 @@ class TranslationModel(Base):
     translation_type = Column(String, nullable=False)
     language = Column(String, nullable=False, default="ru")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 
 
 class WatchSourceModel(Base):
@@ -213,6 +231,8 @@ class WatchSourceModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+
+
 class ViewingSessionModel(Base):
     __tablename__ = "viewing_sessions"
 
@@ -226,6 +246,8 @@ class ViewingSessionModel(Base):
     quality_label = Column(String, nullable=False)
     is_paused = Column(Boolean, nullable=False, default=False)
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+
 
 
 class HighlightContextModel(Base):

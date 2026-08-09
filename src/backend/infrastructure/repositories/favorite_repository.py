@@ -1,11 +1,10 @@
 import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
-from src.backend.infrastructure.repositories._async import repository_method
-from src.backend.infrastructure.models.sqlalchemy_models import FavoriteModel
-from src.backend.domain.favorite.entity import Favorite
-from typing import List
+
+from backend.domain import Favorite
+from backend.infrastructure.models import FavoriteModel
+from backend.infrastructure.repositories._async import repository_method
 
 
 class FavoriteRepository:
@@ -30,16 +29,14 @@ class FavoriteRepository:
     @repository_method
     def remove(self, user_id: int, anime_id: int):
         db_fav = (
-            self.session.query(FavoriteModel)
-            .filter_by(user_id=user_id, anime_id=anime_id)
-            .first()
+            self.session.query(FavoriteModel).filter_by(user_id=user_id, anime_id=anime_id).first()
         )
         if db_fav:
             self.session.delete(db_fav)
             self.session.commit()
 
     @repository_method
-    def get_by_user(self, user_id: int) -> List[Favorite]:
+    def get_by_user(self, user_id: int) -> list[Favorite]:
         rows = self.session.query(FavoriteModel).filter_by(user_id=user_id).all()
         return [
             Favorite(

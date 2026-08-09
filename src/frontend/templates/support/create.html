@@ -120,13 +120,7 @@
                     type="radio"
                     name="channel"
                     value="telegram"
-                    {%
-                    if
-                    support_form.channel
-                    !="email"
-                    %}checked{%
-                    endif
-                    %}
+                    {% if support_form.channel != 'email' %}checked{% endif %}
                   />
                   <span class="support-channel-body">
                     <strong>Telegram</strong>
@@ -138,13 +132,7 @@
                     type="radio"
                     name="channel"
                     value="email"
-                    {%
-                    if
-                    support_form.channel=""
-                    ="email"
-                    %}checked{%
-                    endif
-                    %}
+                    {% if support_form.channel == 'email' %}checked{% endif %}
                   />
                   <span class="support-channel-body">
                     <strong>Email</strong>

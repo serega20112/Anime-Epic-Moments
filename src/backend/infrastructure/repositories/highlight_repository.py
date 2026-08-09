@@ -1,22 +1,20 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import datetime
-from typing import Iterable, List
 
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
-from src.backend.infrastructure.repositories._async import repository_method
-from src.backend.domain.highlight.entity import Highlight
-from src.backend.domain.highlight.value_object import (
+from backend.domain import Highlight
+from backend.domain import (
     HighlightActivityItem,
     HighlightCommentItem,
     HighlightEngagement,
     HighlightLikeUser,
     HighlightProfileSummary,
 )
-from src.backend.infrastructure.models.sqlalchemy_models import (
+from backend.infrastructure.models import (
     HighlightCommentModel,
     HighlightContextModel,
     HighlightLikeModel,
@@ -24,6 +22,7 @@ from src.backend.infrastructure.models.sqlalchemy_models import (
     SavedHighlightModel,
     UserModel,
 )
+from backend.infrastructure.repositories._async import repository_method
 
 
 class HighlightRepository:
@@ -86,12 +85,12 @@ class HighlightRepository:
             self.session.commit()
 
     @repository_method
-    def get_by_user(self, user_id: int) -> List[Highlight]:
+    def get_by_user(self, user_id: int) -> list[Highlight]:
         rows = self.session.query(HighlightModel).filter_by(user_id=user_id).all()
         return [self._to_entity(row) for row in rows]
 
     @repository_method
-    def get_by_users(self, user_ids: List[int], limit: int | None = None) -> List[Highlight]:
+    def get_by_users(self, user_ids: list[int], limit: int | None = None) -> list[Highlight]:
         if not user_ids:
             return []
         query = (
@@ -105,12 +104,12 @@ class HighlightRepository:
         return [self._to_entity(row) for row in rows]
 
     @repository_method
-    def get_public_top(self, limit: int = 20) -> List[Highlight]:
+    def get_public_top(self, limit: int = 20) -> list[Highlight]:
         rows = self.session.query(HighlightModel).all()
         return self._order_by_popularity(rows, limit=limit)
 
     @repository_method
-    def get_public_recent(self, limit: int = 20) -> List[Highlight]:
+    def get_public_recent(self, limit: int = 20) -> list[Highlight]:
         rows = (
             self.session.query(HighlightModel)
             .order_by(HighlightModel.created_at.desc())
@@ -121,8 +120,8 @@ class HighlightRepository:
 
     @repository_method
     def get_by_anime_episode(
-        self, anime_id: int, episode: int, user_id: int | None = None
-    ) -> List[Highlight]:
+            self, anime_id: int, episode: int, user_id: int | None = None
+    ) -> list[Highlight]:
         query = self.session.query(HighlightModel).filter_by(
             anime_id=anime_id,
             episode=episode,
@@ -133,7 +132,7 @@ class HighlightRepository:
         return [self._to_entity(row) for row in rows]
 
     @repository_method
-    def get_saved_by_user(self, user_id: int, limit: int | None = None) -> List[Highlight]:
+    def get_saved_by_user(self, user_id: int, limit: int | None = None) -> list[Highlight]:
         query = (
             self.session.query(HighlightModel)
             .join(SavedHighlightModel, SavedHighlightModel.highlight_id == HighlightModel.id)
@@ -145,7 +144,7 @@ class HighlightRepository:
         return [self._to_entity(row) for row in query.all()]
 
     @repository_method
-    def get_liked_by_user(self, user_id: int, limit: int | None = None) -> List[Highlight]:
+    def get_liked_by_user(self, user_id: int, limit: int | None = None) -> list[Highlight]:
         query = (
             self.session.query(HighlightModel)
             .join(HighlightLikeModel, HighlightLikeModel.highlight_id == HighlightModel.id)
@@ -157,13 +156,11 @@ class HighlightRepository:
         return [self._to_entity(row) for row in query.all()]
 
     @repository_method
-    def get_from_anime_ids(self, anime_ids: List[int], limit: int = 20) -> List[Highlight]:
+    def get_from_anime_ids(self, anime_ids: list[int], limit: int = 20) -> list[Highlight]:
         if not anime_ids:
             return []
         rows = (
-            self.session.query(HighlightModel)
-            .filter(HighlightModel.anime_id.in_(anime_ids))
-            .all()
+            self.session.query(HighlightModel).filter(HighlightModel.anime_id.in_(anime_ids)).all()
         )
         return self._order_by_popularity(rows, limit=limit)
 
@@ -188,7 +185,7 @@ class HighlightRepository:
         return self._to_entity(db_highlight)
 
     @repository_method
-    def get_likers(self, highlight_id: int, limit: int = 20) -> List[HighlightLikeUser]:
+    def get_likers(self, highlight_id: int, limit: int = 20) -> list[HighlightLikeUser]:
         rows = (
             self.session.query(HighlightLikeModel, UserModel.username)
             .join(UserModel, UserModel.id == HighlightLikeModel.user_id)
@@ -207,9 +204,7 @@ class HighlightRepository:
         ]
 
     @repository_method
-    def add_comment(
-        self, highlight_id: int, user_id: int, content: str
-    ) -> HighlightCommentItem:
+    def add_comment(self, highlight_id: int, user_id: int, content: str) -> HighlightCommentItem:
         db_highlight = self.session.query(HighlightModel).filter_by(id=highlight_id).first()
         if db_highlight is None:
             raise ValueError("Highlight не найден")
@@ -222,10 +217,8 @@ class HighlightRepository:
         self.session.add(db_comment)
         self.session.commit()
         username = (
-            self.session.query(UserModel.username)
-            .filter(UserModel.id == user_id)
-            .scalar()
-            or f"user-{user_id}"
+                self.session.query(UserModel.username).filter(UserModel.id == user_id).scalar()
+                or f"user-{user_id}"
         )
         return HighlightCommentItem(
             id=db_comment.id,
@@ -236,9 +229,7 @@ class HighlightRepository:
         )
 
     @repository_method
-    def get_comments(
-        self, highlight_id: int, limit: int = 20
-    ) -> List[HighlightCommentItem]:
+    def get_comments(self, highlight_id: int, limit: int = 20) -> list[HighlightCommentItem]:
         rows = (
             self.session.query(HighlightCommentModel, UserModel.username)
             .join(UserModel, UserModel.id == HighlightCommentModel.user_id)
@@ -281,7 +272,7 @@ class HighlightRepository:
 
     @repository_method
     def get_engagement_map(
-        self, highlight_ids: List[int], viewer_user_id: int | None = None
+            self, highlight_ids: list[int], viewer_user_id: int | None = None
     ) -> dict[int, HighlightEngagement]:
         if not highlight_ids:
             return {}
@@ -327,32 +318,41 @@ class HighlightRepository:
 
     @repository_method
     def increment_views(self, highlight_id: int) -> Highlight:
+        """Increment the view count for a highlight.
+
+        Args:
+            highlight_id: Highlight identifier.
+
+        Returns:
+            Highlight: The updated highlight.
+        """
         db_highlight = self.session.query(HighlightModel).filter_by(id=highlight_id).first()
         if db_highlight is None:
             raise ValueError("Highlight не найден")
         db_highlight.views_count = int(db_highlight.views_count or 0) + 1
         self.session.commit()
-        return self._to_entity(db_highlight)
+
+        return db_highlight
 
     @repository_method
     def get_profile_summary(self, user_id: int) -> HighlightProfileSummary:
         highlight_count = (
-            self.session.query(func.count(HighlightModel.id))
-            .filter(HighlightModel.user_id == user_id)
-            .scalar()
-            or 0
+                self.session.query(func.count(HighlightModel.id))
+                .filter(HighlightModel.user_id == user_id)
+                .scalar()
+                or 0
         )
         like_count = (
-            self.session.query(func.count(HighlightLikeModel.id))
-            .filter(HighlightLikeModel.user_id == user_id)
-            .scalar()
-            or 0
+                self.session.query(func.count(HighlightLikeModel.id))
+                .filter(HighlightLikeModel.user_id == user_id)
+                .scalar()
+                or 0
         )
         saved_count = (
-            self.session.query(func.count(SavedHighlightModel.id))
-            .filter(SavedHighlightModel.user_id == user_id)
-            .scalar()
-            or 0
+                self.session.query(func.count(SavedHighlightModel.id))
+                .filter(SavedHighlightModel.user_id == user_id)
+                .scalar()
+                or 0
         )
         return HighlightProfileSummary(
             highlight_count=int(highlight_count),
@@ -361,9 +361,7 @@ class HighlightRepository:
         )
 
     @repository_method
-    def get_recent_activity(
-        self, user_id: int, limit: int = 10
-    ) -> List[HighlightActivityItem]:
+    def get_recent_activity(self, user_id: int, limit: int = 10) -> list[HighlightActivityItem]:
         own_highlight_ids = [
             int(value)
             for (value,) in self.session.query(HighlightModel.id)
@@ -431,7 +429,7 @@ class HighlightRepository:
         items.sort(key=lambda item: item.created_at, reverse=True)
         return items[:limit]
 
-    def _order_by_popularity(self, rows: Iterable[HighlightModel], limit: int) -> List[Highlight]:
+    def _order_by_popularity(self, rows: Iterable[HighlightModel], limit: int) -> list[Highlight]:
         ranked = sorted(
             rows,
             key=lambda row: self._popularity_score(row),
@@ -445,7 +443,9 @@ class HighlightRepository:
             0.0,
         )
         freshness_bonus = max(72.0 - age_hours, 0.0) / 12.0
-        return float(row.likes_count or 0) * 4.0 + float(row.views_count or 0) * 2.0 + freshness_bonus
+        return (
+                float(row.likes_count or 0) * 4.0 + float(row.views_count or 0) * 2.0 + freshness_bonus
+        )
 
     def _to_entity(self, row: HighlightModel | None) -> Highlight:
         if row is None:

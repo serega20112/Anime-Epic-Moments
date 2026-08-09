@@ -7,9 +7,9 @@ ENV PYTHONPATH=/app
 
 WORKDIR /app
 
-COPY requirements.txt /app/requirements.txt
+COPY requirements/base.txt /app/requirements/base.txt
 
-RUN pip install --upgrade pip && pip install -r /app/requirements.txt
+RUN pip install --upgrade pip && pip install -r /app/requirements/base.txt
 
 COPY src /app/src
 COPY build /app/build

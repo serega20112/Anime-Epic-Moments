@@ -4,9 +4,9 @@ from html import escape
 
 import requests
 
-from src.backend.infrastructure.external._async import external_method
-from src.backend.dependencies.settings import Settings
-from src.backend.domain.support.entity import SupportTicket
+from backend.config import Settings
+from backend.domain.support.entity import SupportTicket
+from backend.infrastructure.external._async import external_method
 
 
 class TelegramSupportNotifier:

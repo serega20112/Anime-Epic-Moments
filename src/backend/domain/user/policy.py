@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections import Counter
 
-from src.backend.domain.highlight.value_object import HighlightProfileSummary
-from src.backend.domain.user.value_object import (
+from backend.domain.highlight.value_object import HighlightProfileSummary
+from backend.domain.user.value_object import (
     AchievementBadge,
     GenreAffinity,
     ProfileMoodInsight,
@@ -12,11 +12,7 @@ from src.backend.domain.user.value_object import (
 
 def build_genre_affinities(genres: list[str], limit: int = 5) -> list[GenreAffinity]:
     """Возвращает топ жанров пользователя по частоте."""
-    counter = Counter(
-        str(genre).strip()
-        for genre in genres
-        if str(genre).strip()
-    )
+    counter = Counter(str(genre).strip() for genre in genres if str(genre).strip())
     return [
         GenreAffinity(name=name, count=count)
         for name, count in counter.most_common(max(int(limit), 1))
@@ -24,8 +20,8 @@ def build_genre_affinities(genres: list[str], limit: int = 5) -> list[GenreAffin
 
 
 def detect_profile_mood(
-    genres: list[str],
-    emotions: list[str],
+        genres: list[str],
+        emotions: list[str],
 ) -> ProfileMoodInsight:
     """Определяет доминирующий вайб пользователя по жанрам и эмоциям."""
     normalized_genres = {str(value).strip().lower() for value in genres if str(value).strip()}
@@ -96,11 +92,11 @@ def detect_profile_mood(
 
 
 def build_achievement_badges(
-    profile_summary: HighlightProfileSummary,
-    hours_watched: float,
-    favorite_genres: list[GenreAffinity],
-    highlight_likes_received: int,
-    top_mood: ProfileMoodInsight,
+        profile_summary: HighlightProfileSummary,
+        hours_watched: float,
+        favorite_genres: list[GenreAffinity],
+        highlight_likes_received: int,
+        top_mood: ProfileMoodInsight,
 ) -> list[AchievementBadge]:
     """Возвращает набор ачивок по статистике и вкусу пользователя."""
     badges: list[AchievementBadge] = []

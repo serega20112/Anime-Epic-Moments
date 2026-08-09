@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.backend.infrastructure.cache.key_value_store import KeyValueStore
+from backend.infrastructure.cache.key_value_store import KeyValueStore
 
 
 @dataclass
@@ -14,17 +14,17 @@ class RateLimitDecision:
 
 
 class RateLimiter:
-    """Ограничивает частоту действий по субъекту и окну времени."""
+    """Increments and checks windowed rate-limit counters."""
 
     def __init__(self, store: KeyValueStore):
         self.store = store
 
     async def hit(
-        self,
-        scope: str,
-        subject: str,
-        limit: int,
-        window_seconds: int,
+            self,
+            scope: str,
+            subject: str,
+            limit: int,
+            window_seconds: int,
     ) -> RateLimitDecision:
         normalized_scope = str(scope or "default").strip().lower()
         normalized_subject = str(subject or "anonymous").strip().lower()

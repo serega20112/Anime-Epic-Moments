@@ -9,12 +9,13 @@ from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy import engine_from_config, pool
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+SRC_PATH = PROJECT_ROOT / "src"
+if str(SRC_PATH) not in sys.path:
+    sys.path.insert(0, str(SRC_PATH))
 
-from src.backend.dependencies.settings import Settings
-from src.backend.infrastructure.files.database import Base
-from src.backend.infrastructure.models import sqlalchemy_models as sqlalchemy_models_module
+from backend.config import Settings
+from backend.infrastructure.files.database import Base
+from backend.infrastructure.models import sqlalchemy_models  # noqa: F401
 
 config = context.config
 

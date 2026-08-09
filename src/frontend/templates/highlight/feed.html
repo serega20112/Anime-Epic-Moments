@@ -89,13 +89,7 @@
                 {% for group in feed.anime_groups %}
                 <option
                   value="{{ group.anime_id }}"
-                  {%
-                  if
-                  feed.selected_anime_id=""
-                  ="group.anime_id"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if feed.selected_anime_id == group.anime_id %}selected{% endif %}
                 >
                   {{ group.anime_title }} ({{ group.count }})
                 </option>
@@ -110,13 +104,7 @@
                 {% for category in feed.categories %}
                 <option
                   value="{{ category }}"
-                  {%
-                  if
-                  feed.selected_category=""
-                  ="category"
-                  %}selected{%
-                  endif
-                  %}
+                  {% if feed.selected_category == category %}selected{% endif %}
                 >
                   {{ category }}
                 </option>
@@ -129,12 +117,7 @@
                 type="checkbox"
                 name="include_spoilers"
                 value="1"
-                {%
-                if
-                feed.include_spoilers
-                %}checked{%
-                endif
-                %}
+                {% if feed.include_spoilers %}checked{% endif %}
               />
               <span>Показывать спойлеры</span>
             </label>
