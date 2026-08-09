@@ -1,0 +1,75 @@
+from backend.application.dto import EditHighlightCommand
+from backend.application.use_cases.highlight.result import HighlightResult
+from backend.domain import Highlight
+from backend.domain import HighlightPolicy
+from backend.domain.repositories.highlight_repository import HighlightRepository
+from backend.domain.services import (
+    HighlightDashboardCacheInterface as HighlightDashboardCache,
+)
+from backend.domain.services import (
+    RecommendationServiceInterface as RecommendationService,
+)
+from backend.domain.services.profile_overview_cache import (
+    ProfileOverviewCacheInterface as ProfileOverviewCache,
+)
+
+
+class EditHighlightUseCase:
+    """Use case для редактирования Highlight"""
+
+    def __init__(
+            self,
+            repo: HighlightRepository,
+            recommendation_service: RecommendationService | None = None,
+            highlight_dashboard_cache: HighlightDashboardCache | None = None,
+            profile_overview_cache: ProfileOverviewCache | None = None,
+    ):
+        self.repo = repo
+        self.recommendation_service = recommendation_service
+        self.highlight_dashboard_cache = highlight_dashboard_cache
+        self.profile_overview_cache = profile_overview_cache
+
+    async def execute(self, command: EditHighlightCommand) -> HighlightResult:
+        """Edit a highlight.
+
+        Args:
+            command: Edit highlight command.
+
+        Returns:
+            HighlightResult: Result with the updated highlight.
+        """
+        highlight = await self.repo.get_by_id(command.highlight_id)
+        if not highlight:
+            return HighlightResult.failure("highlight_not_found", status_code=404)
+
+        if not HighlightPolicy.filter_spoiler_content(
+                f"{command.title} {command.description}"
+        ):
+            return HighlightResult.failure(
+                "Описание содержит запрещённый контент",
+                status_code=400,
+            )
+
+        highlight.edit(
+            start_timestamp=command.start_timestamp,
+            end_timestamp=command.end_timestamp,
+            title=command.title or highlight.title or f"Момент {highlight.episode} серии",
+            category=command.category,
+            description=command.description,
+            is_spoiler=command.is_spoiler,
+            emotion=command.emotion,
+        )
+        if command.episode is not None:
+            highlight.episode = int(command.episode)
+
+        result = await self.repo.update(highlight)
+        if self.recommendation_service and highlight.user_id is not None:
+            await self.recommendation_service.invalidate_user(int(highlight.user_id))
+        if self.highlight_dashboard_cache is not None:
+            await self.highlight_dashboard_cache.invalidate_public()
+        if self.profile_overview_cache is not None and highlight.user_id is not None:
+            await self.profile_overview_cache.invalidate_user(
+                int(highlight.user_id),
+                include_ai_summary=True,
+            )
+        return HighlightResult.success(result, status_code=204)

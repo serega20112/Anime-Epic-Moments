@@ -1,0 +1,41 @@
+"""SQLAlchemy models facade: re-exports all ORM model classes."""
+
+from backend.infrastructure.models.sqlalchemy_models import (
+    AnimeCollectionItemModel,
+    AnimeCollectionModel,
+    AnimeDiscussionCommentModel,
+    AnimeDiscussionLikeModel,
+    FavoriteModel,
+    HighlightCommentModel,
+    HighlightContextModel,
+    HighlightLikeModel,
+    HighlightModel,
+    SavedHighlightModel,
+    SupportTicketModel,
+    TranslationModel,
+    UserAnimeStatusModel,
+    UserFollowModel,
+    UserModel,
+    ViewingSessionModel,
+    WatchSourceModel,
+)
+
+__all__ = [
+    "AnimeCollectionItemModel",
+    "AnimeCollectionModel",
+    "AnimeDiscussionCommentModel",
+    "AnimeDiscussionLikeModel",
+    "FavoriteModel",
+    "HighlightCommentModel",
+    "HighlightContextModel",
+    "HighlightLikeModel",
+    "HighlightModel",
+    "SavedHighlightModel",
+    "SupportTicketModel",
+    "TranslationModel",
+    "UserAnimeStatusModel",
+    "UserFollowModel",
+    "UserModel",
+    "ViewingSessionModel",
+    "WatchSourceModel",
+]

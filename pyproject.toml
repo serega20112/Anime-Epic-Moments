@@ -1,0 +1,92 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src"]
+
+[tool.ruff.lint]
+strict = true
+select = [
+    "E", "W", "F", "I", "B", "C4", "UP", "RUF", "SIM", "PT", "ASYNC",
+    "A", "C90", "DTZ", "EM", "FA", "FBT", "ICN", "INP", "N", "PGH",
+    "PL", "PYI", "Q", "RET", "SLOT", "T20", "TID", "TRY", "YTT",
+    "D",
+]
+ignore = [
+    "PLR0913",
+    "PLR0917",
+    "PLR2901",
+    "PLW2901",
+    "TRY003",
+    "EM101",
+    "EM102",
+    "EM103",
+    "FA100",
+    "S101",
+    "S104",
+    "S311",
+    "S312",
+    "S403",
+    "S404",
+    "S603",
+    "TRY301",
+    "A003",
+    "A005",
+    "B008",
+    "B904",
+    "C901",
+    "FBT001",
+    "FBT002",
+    "PLR0912",
+    "PLW0603",
+    "PLW0602",
+    "RET504",
+    "SIM102",
+    "SIM105",
+    "SIM108",
+    "SIM117",
+    "T201",
+    "T203",
+    "TRY300",
+    "TRY400",
+    "TRY401",
+    "UP007",
+    "UP035",
+    "UP045",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "D104"]
+"tests/**" = ["S101", "S106", "PLR2004", "TRY003", "EM101", "EM102", "EM103", "PT009", "PT011", "PT012", "A002", "A003", "FBT001", "FBT002", "SLF001", "B017", "PLR0913", "PLR0917", "C901", "PLR0912", "PLR0915", "PLW0603", "PLW0602", "RET504", "SIM102", "SIM105", "SIM108", "SIM117", "T201", "T203", "TRY300", "TRY400", "TRY401", "UP007", "UP035", "UP045", "D100", "D101", "D102", "D103", "D104", "D105", "D107", "D203", "D211", "D212", "D213", "D400", "D401", "D403", "D404", "D406", "D407", "D408", "D409", "D410", "D411", "D412", "D413", "D414", "D415", "D416", "D417", "D418", "D419"]
+"src/domain/**" = ["TID252"]
+"src/infrastructure/di/**" = ["TID252"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short --cov=src --cov-report=term-missing"
+
+[tool.importlinter]
+root_package = "src"
+config_file = ".importlinter"
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

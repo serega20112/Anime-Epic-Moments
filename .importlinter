@@ -1,0 +1,55 @@
+[importlinter]
+root_package = src
+
+[importlinter:contract:1]
+name = Domain Isolation
+type = forbidden
+source_modules =
+    src.domain
+forbidden_modules =
+    src.application
+    src.infrastructure
+    src.presentation
+    src.config
+    src.events
+    fastapi
+    sqlalchemy
+    pydantic
+    redis
+
+[importlinter:contract:2]
+name = Application Isolation
+type = forbidden
+source_modules =
+    src.application
+forbidden_modules =
+    src.infrastructure
+    src.presentation
+    src.events
+
+[importlinter:contract:3]
+name = Presentation Isolation
+type = forbidden
+source_modules =
+    src.presentation
+forbidden_modules =
+    src.infrastructure.repositories
+    src.infrastructure.models
+    src.infrastructure.external
+    src.infrastructure.cache
+    src.infrastructure.files
+    src.infrastructure.security
+
+[importlinter:contract:4]
+name = Dependency Direction
+type = layers
+layers =
+    src.presentation
+    src.infrastructure
+    src.application
+    src.domain
+contain_objects =
+    src.presentation: *.py
+    src.infrastructure: *.py
+    src.application: *.py
+    src.domain: *.py
