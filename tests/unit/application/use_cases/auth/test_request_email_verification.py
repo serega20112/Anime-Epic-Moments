@@ -16,14 +16,10 @@ class TestRequestEmailVerification:
     """Юнит-тесты запроса кода подтверждения email при регистрации."""
 
     async def test_rejects_duplicate_email(self):
-        """Что тестируем: отказ при уже зарегистрированном email.
-        Что передаём: get_by_email возвращает существующего пользователя.
-        Что ожидаем: AuthResult.failure и mailer не вызывается.
-        """
         user_repo = AsyncMock()
         user_repo.get_by_email.return_value = object()
         mailer = AsyncMock()
-        use_case = RequestEmailVerificationUseCase(user_repo, Mock(), AsyncMock(), mailer)
+        use_case = RequestEmailVerificationUseCase(user_repo, AsyncMock(), AsyncMock(), mailer)
 
         result = await use_case.execute(
             email="user@example.com", password="password123", username="tester"
@@ -44,13 +40,9 @@ class TestRequestEmailVerification:
     async def test_normalizes_hashes_saves_and_sends_code(
             self, email, username, theme, expected_theme, monkeypatch
     ):
-        """Что тестируем: нормализацию данных, хеширование, сохранение и отправку кода.
-        Что передаём: вариации email/username/theme.
-        Что ожидаем: AuthResult.success с redirect_email и сохраненный PendingEmailVerification.
-        """
         user_repo = AsyncMock()
         user_repo.get_by_email.return_value = None
-        password_service = Mock()
+        password_service = AsyncMock()
         password_service.hash_password.return_value = "hashed-password"
         verification_store = AsyncMock()
         verification_store.save.side_effect = lambda payload: payload
@@ -69,7 +61,7 @@ class TestRequestEmailVerification:
         assert result.ok is True
         assert result.redirect_endpoint == "auth.verify_email_page"
         assert result.redirect_email == normalized_email
-        password_service.hash_password.assert_called_once_with("password123")
+        password_service.hash_password.assert_awaited_once_with("password123")
         saved_payload = verification_store.save.call_args.args[0]
         assert isinstance(saved_payload, PendingEmailVerification)
         assert saved_payload.email == normalized_email

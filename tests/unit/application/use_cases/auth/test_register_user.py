@@ -39,7 +39,7 @@ class TestRegisterUserUseCase:
         user_repo.add.side_effect = lambda user: SimpleNamespace(
             id=1, email=user.email, username=user.username, password_hash=user.password_hash
         )
-        password_service = Mock()
+        password_service = AsyncMock()
         password_service.hash_password.return_value = "hashed-password"
         use_case = RegisterUserUseCase(user_repo, password_service)
 

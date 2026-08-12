@@ -62,3 +62,31 @@ async def test_key_value_store_deletes_by_prefix():
     assert await store.get("group:1") is None
     assert await store.get("group:2") is None
     assert await store.get("single") == 3
+
+
+@pytest.mark.unit
+async def test_key_value_store_consume_claims_key_once():
+    """Проверяем, что KeyValueStore.consume атомарно забирает ключ только один раз."""
+    store = KeyValueStore(redis_url=None, namespace="test")
+
+    assert await store.consume("ticket", ttl_seconds=60) is True
+    assert await store.consume("ticket", ttl_seconds=60) is False
+    assert await store.consume("ticket", ttl_seconds=60) is False
+
+
+@pytest.mark.unit
+async def test_key_value_store_consume_rejects_zero_ttl():
+    """Проверяем, что KeyValueStore.consume не забирает ключ при TTL <= 0."""
+    store = KeyValueStore(redis_url=None, namespace="test")
+
+    assert await store.consume("ticket", ttl_seconds=0) is False
+    assert await store.contains("ticket") is False
+
+
+@pytest.mark.unit
+async def test_key_value_store_consume_respects_distinct_keys():
+    """Проверяем, что KeyValueStore.consume считает разные ключи независимыми."""
+    store = KeyValueStore(redis_url=None, namespace="test")
+
+    assert await store.consume("alpha", ttl_seconds=60) is True
+    assert await store.consume("beta", ttl_seconds=60) is True

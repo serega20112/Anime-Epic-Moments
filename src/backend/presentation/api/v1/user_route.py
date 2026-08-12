@@ -4,14 +4,19 @@ from __future__ import annotations
 
 from http import HTTPStatus
 
+from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
+from backend.application.use_cases import GetPublicProfileOverviewUseCase
+from backend.application.use_cases import SetUserFollowUseCase
+
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
 from backend.infrastructure.web import flash, render_template
-from backend.presentation.api.helpers import get_container, get_current_user, wants_json
+from backend.presentation.api.helpers import get_current_user, wants_json
 
-user_router = APIRouter(prefix="/users")
+user_router = APIRouter(prefix="/users", route_class=DishkaRoute)
 user_bp = user_router
 
 
@@ -50,19 +55,23 @@ def _profile_redirect(request: Request, user_id: int) -> RedirectResponse:
 
 
 @user_router.get("/{user_id}", name="user.public_profile_page")
-async def public_profile_page(request: Request, user_id: int):
+async def public_profile_page(
+        request: Request,
+        user_id: int,
+        use_case: FromDishka[GetPublicProfileOverviewUseCase],
+):
     """Render a user's public profile.
 
     Args:
         request: Incoming HTTP request.
         user_id: Profile user ID from path.
+        use_case: Get public profile overview use case.
 
     Returns:
         HTMLResponse: Rendered public profile or 404 modal.
     """
-    container = get_container(request)
     viewer = get_current_user(request)
-    result = await container.get_public_profile_overview_use_case().execute(
+    result = await use_case.execute(
         profile_user_id=user_id,
         viewer_user_id=viewer.id if viewer else None,
     )
@@ -88,18 +97,23 @@ async def public_profile_page(request: Request, user_id: int):
             f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
     ),
 )
-async def follow_user(request: Request, user_id: int):
+async def follow_user(
+        request: Request,
+        user_id: int,
+        use_case: FromDishka[SetUserFollowUseCase],
+):
     """Follow a user.
 
     Args:
         request: Incoming HTTP request.
         user_id: Profile user ID from path.
+        use_case: Set user follow use case.
 
     Returns:
         JSONResponse: Following state or an error.
         RedirectResponse: Redirect to the profile page.
     """
-    return await _set_follow(request, user_id, follow=True)
+    return await _set_follow(request, user_id, follow=True, use_case=use_case)
 
 
 @user_router.post("/{user_id}/unfollow", name="user.unfollow_user")
@@ -111,27 +125,39 @@ async def follow_user(request: Request, user_id: int):
             f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
     ),
 )
-async def unfollow_user(request: Request, user_id: int):
+async def unfollow_user(
+        request: Request,
+        user_id: int,
+        use_case: FromDishka[SetUserFollowUseCase],
+):
     """Unfollow a user.
 
     Args:
         request: Incoming HTTP request.
         user_id: Profile user ID from path.
+        use_case: Set user follow use case.
 
     Returns:
         JSONResponse: Following state or an error.
         RedirectResponse: Redirect to the profile page.
     """
-    return await _set_follow(request, user_id, follow=False)
+    return await _set_follow(request, user_id, follow=False, use_case=use_case)
 
 
-async def _set_follow(request: Request, user_id: int, *, follow: bool):
+async def _set_follow(
+        request: Request,
+        user_id: int,
+        *,
+        follow: bool,
+        use_case: SetUserFollowUseCase,
+):
     """Shared follow/unfollow handler.
 
     Args:
         request: Incoming HTTP request.
         user_id: Profile user ID.
         follow: True to follow, False to unfollow.
+        use_case: Set user follow use case.
 
     Returns:
         JSONResponse: Following state or an error.
@@ -140,8 +166,7 @@ async def _set_follow(request: Request, user_id: int, *, follow: bool):
     viewer = get_current_user(request)
     if not viewer:
         return _login_redirect(request)
-    container = get_container(request)
-    result = await container.set_user_follow_use_case().execute(
+    result = await use_case.execute(
         follower_user_id=viewer.id,
         followed_user_id=user_id,
         follow=follow,

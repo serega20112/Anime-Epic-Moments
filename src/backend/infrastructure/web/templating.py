@@ -182,6 +182,11 @@ def render_template(
 
     def csrf_token() -> str:
         """Get the current CSRF token value for use in forms."""
+        session = request.scope.get("session")
+        if isinstance(session, dict):
+            token = session.get("csrf_token")
+            if isinstance(token, str):
+                return token
         token_data = getattr(request.state, "csrf_token", None)
         if token_data and isinstance(token_data, dict):
             return token_data.get("value", "")

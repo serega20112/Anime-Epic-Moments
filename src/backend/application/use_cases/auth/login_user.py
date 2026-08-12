@@ -64,7 +64,10 @@ class LoginUserUseCase:
         if locked is not None:
             return locked
         user = await self.user_repository.get_by_email(email)
-        if not user or not self.password_service.verify_password(password, user.password_hash):
+        password_matches = await self.password_service.verify_password(
+            password, user.password_hash
+        ) if user else False
+        if not user or not password_matches:
             await self._record_failure(email)
             return AuthResult.failure(
                 _INVALID_CREDENTIALS_MESSAGE,

@@ -2,27 +2,29 @@
 
 from __future__ import annotations
 
+from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 
+from backend.application.use_cases.anime.get_home_page import GetHomePageUseCase
 from backend.infrastructure.web import render_template
-from backend.presentation.api.helpers import get_container
 
-index_router = APIRouter()
+index_router = APIRouter(route_class=DishkaRoute)
 index_bp = index_router
 
 
 @index_router.get("/", name="index.index")
-async def index(request: Request):
+async def index(request: Request, use_case: FromDishka[GetHomePageUseCase]):
     """Render the home page with the current anime season context.
 
     Args:
         request: Incoming HTTP request.
+        use_case: Home page use case.
 
     Returns:
         HTMLResponse: Rendered home page template.
     """
-    container = get_container(request)
-    current_season = container.get_home_page_use_case().execute()
+    current_season = await use_case.execute()
     return render_template(
         request,
         "index.html",

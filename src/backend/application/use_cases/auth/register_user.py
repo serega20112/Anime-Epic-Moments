@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from backend.domain import User
-from backend.domain import UserRepository
+from backend.domain import User, UserRepository
 from backend.domain.services import PasswordServiceInterface as PasswordService
 
 
@@ -43,6 +42,6 @@ class RegisterUserUseCase:
         """
         if await self.user_repository.get_by_email(email):
             raise EmailAlreadyExistsError(f"Пользователь с email {email} уже существует")
-        password_hash = self.password_service.hash_password(password)
+        password_hash = await self.password_service.hash_password(password)
         user = User(email=email, username=username, password_hash=password_hash)
         return await self.user_repository.add(user)

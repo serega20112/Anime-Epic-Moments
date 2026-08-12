@@ -6,20 +6,6 @@ from typing import Any
 
 from fastapi import Request
 
-from backend.infrastructure.di.request_container import RequestContainer
-
-
-def get_container(request: Request) -> RequestContainer:
-    """Return the request-scoped DI container adapter.
-
-    Args:
-        request: Incoming HTTP request.
-
-    Returns:
-        RequestContainer: Adapter over the Dishka container.
-    """
-    return RequestContainer(request.state.dishka_container)
-
 
 def get_current_user(request: Request):
     """Return the current authenticated user.

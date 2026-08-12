@@ -8,9 +8,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from backend.infrastructure.security.jwt_service import JWTService
-from backend.infrastructure.security.password_service import PasswordService
 
-password_service = PasswordService()
 jwt_service = JWTService()
 
 

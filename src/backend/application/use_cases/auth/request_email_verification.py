@@ -1,8 +1,7 @@
 from secrets import randbelow
 
 from backend.application.use_cases.auth.result import AuthResult
-from backend.domain import PendingEmailVerification
-from backend.domain import UserRepository
+from backend.domain import PendingEmailVerification, UserRepository
 from backend.domain.services import (
     EmailVerificationMailerInterface as EmailVerificationMailer,
 )
@@ -56,7 +55,7 @@ class RequestEmailVerificationUseCase:
         payload = PendingEmailVerification(
             email=normalized_email,
             username=normalized_username,
-            password_hash=self.password_service.hash_password(password),
+            password_hash=await self.password_service.hash_password(password),
             code=self._generate_code(),
             theme=self._normalize_theme(theme),
         )

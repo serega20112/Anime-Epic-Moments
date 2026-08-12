@@ -163,6 +163,47 @@ class KeyValueStore:
         return value
 
 
+    async def consume(
+        self,
+        key: str,
+        ttl_seconds: float | int | None = None,
+    ) -> bool:
+        """Atomically claim a key, succeeding only if it is not already present.
+
+        Redis uses SET NX; the memory fallback holds the store lock so a key
+        can be claimed exactly once across concurrent consumers.
+
+        Args:
+            key: Key to claim.
+            ttl_seconds: TTL for the claimed entry.
+
+        Returns:
+            bool: True if the key was claimed, False if it already existed.
+        """
+        normalized_key = self._normalize_key(key)
+        ttl_value = self._normalize_ttl(ttl_seconds)
+        if ttl_value == 0:
+            return False
+
+        if self._redis_async is not None:
+            payload = pickle.dumps(True)
+            if ttl_value is None:
+                claimed = await self._redis_async.set(normalized_key, payload, nx=True)
+            else:
+                claimed = await self._redis_async.set(
+                    normalized_key, payload, nx=True, ex=ttl_value
+                )
+            return bool(claimed)
+
+        expires_at = None if ttl_value is None else monotonic() + ttl_value
+        with self._lock:
+            self._prune_memory()
+            if normalized_key in self._items:
+                return False
+            self._items[normalized_key] = (expires_at, True)
+        return True
+
+
     def set_sync(
         self,
         key: str,

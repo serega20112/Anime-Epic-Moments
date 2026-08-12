@@ -34,9 +34,11 @@ def test_settings_use_expected_defaults(monkeypatch):
                 "EMAIL_VERIFICATION_EXPIRE_MINUTES",
         ):
             patch.delenv(name, raising=False)
+        patch.setenv("SECRET_KEY", "generated-in-debug")
         importlib.reload(settings_module)
 
-        assert settings_module.Settings.secret_key == "epic-anime-secret-key-123"
+        assert settings_module.Settings.secret_key == "generated-in-debug"
+        assert settings_module.Settings.secret_key != "epic-anime-secret-key-123"
         assert settings_module.Settings.database_url == (
             "postgresql+asyncpg://anime_epic_moments:anime_epic_moments@localhost:5432/anime_epic_moments"
         )
@@ -54,6 +56,23 @@ def test_settings_use_expected_defaults(monkeypatch):
         assert settings_module.Settings.refresh_token_expire_days == 30
         assert settings_module.Settings.smtp_use_tls is True
         assert settings_module.Settings.email_verification_expire_minutes == 10
+
+    importlib.reload(settings_module)
+
+
+def test_settings_require_secret_key_outside_debug(monkeypatch):
+    """Проверяем, что вне debug-режима отсутствие SECRET_KEY приводит к ошибке."""
+    with monkeypatch.context() as patch:
+        patch.setattr(dotenv, "load_dotenv", lambda *args, **kwargs: None)
+        patch.delenv("SECRET_KEY", raising=False)
+        patch.delenv("FLASK_DEBUG", raising=False)
+        try:
+            importlib.reload(settings_module)
+        except RuntimeError:
+            assert True
+        else:
+            assert False, "Expected RuntimeError when SECRET_KEY is missing in production"
+            assert False
 
     importlib.reload(settings_module)
 

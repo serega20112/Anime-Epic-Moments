@@ -11,8 +11,9 @@ class RefreshSessionUseCase:
     """Validate a refresh token and return the owning user id.
 
     The use case rejects missing, revoked, or malformed refresh tokens and
-    blocks the old token so it cannot be reused, preparing a fresh pair of
-    JWTs to be issued by the presentation layer.
+    atomically consumes the old token so it cannot be reused even under
+    concurrent requests, preparing a fresh pair of JWTs to be issued by the
+    presentation layer.
     """
 
     def __init__(self, jwt_service: JWTService, token_blocklist: TokenBlocklist):
@@ -37,14 +38,11 @@ class RefreshSessionUseCase:
         token = str(refresh_token or "").strip()
         if not token:
             return AuthResult.failure("auth_required", "auth.refresh_session")
-        if await self.token_blocklist.is_revoked(token):
-            return AuthResult.failure("invalid_token", "auth.refresh_session")
         try:
             user_id = self.jwt_service.decode_refresh_token(token)
         except Exception:
             return AuthResult.failure("invalid_token", "auth.refresh_session")
-        await self.token_blocklist.revoke(
-            token,
-            self.jwt_service.get_token_ttl_seconds(token, expected_type="refresh"),
-        )
+        ttl_seconds = self.jwt_service.get_token_ttl_seconds(token, expected_type="refresh")
+        if not await self.token_blocklist.consume(token, ttl_seconds):
+            return AuthResult.failure("invalid_token", "auth.refresh_session")
         return AuthResult.success(data=user_id)

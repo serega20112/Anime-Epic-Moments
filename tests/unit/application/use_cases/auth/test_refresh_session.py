@@ -22,11 +22,11 @@ class TestRefreshSessionUseCase:
         assert result.ok is False
         assert result.error_message == "auth_required"
 
-    async def test_rejects_revoked_token(self):
+    async def test_rejects_already_consumed_token(self):
         blocklist = AsyncMock()
-        blocklist.is_revoked = AsyncMock(return_value=True)
+        blocklist.consume = AsyncMock(return_value=False)
         use_case = _build(token_blocklist=blocklist)
-        result = await use_case.execute("revoked-token")
+        result = await use_case.execute("used-token")
         assert result.ok is False
         assert result.error_message == "invalid_token"
 
@@ -43,12 +43,11 @@ class TestRefreshSessionUseCase:
         jwt_service.decode_refresh_token.return_value = 42
         jwt_service.get_token_ttl_seconds.return_value = 3600
         blocklist = AsyncMock()
-        blocklist.is_revoked = AsyncMock(return_value=False)
-        blocklist.revoke = AsyncMock()
+        blocklist.consume = AsyncMock(return_value=True)
         use_case = _build(jwt_service=jwt_service, token_blocklist=blocklist)
 
         result = await use_case.execute("valid-token")
 
         assert result.ok is True
         assert result.data == 42
-        blocklist.revoke.assert_awaited_once_with("valid-token", 3600)
+        blocklist.consume.assert_awaited_once_with("valid-token", 3600)

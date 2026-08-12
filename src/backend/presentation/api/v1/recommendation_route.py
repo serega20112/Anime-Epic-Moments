@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+from backend.application.use_cases import AskAiRecommendationsUseCase
+from backend.application.use_cases import GenerateRecommendationsUseCase
+from backend.application.use_cases import RefreshRecommendationsUseCase
 from backend.presentation.api.requests.recommendation_mapper import map_ask_ai_command
 
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
-from backend.presentation.api.helpers import get_container, read_payload
+from backend.presentation.api.helpers import read_payload
 
-recommendation_router = APIRouter(prefix="/api/v1/recommendations")
+recommendation_router = APIRouter(prefix="/api/v1/recommendations", route_class=DishkaRoute)
 recommendation_bp = recommendation_router
 
 
@@ -20,18 +25,22 @@ recommendation_bp = recommendation_router
     window_seconds=60,
     key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
 )
-async def generate_recommendations(request: Request, user_id: int):
+async def generate_recommendations(
+        request: Request,
+        user_id: int,
+        use_case: FromDishka[GenerateRecommendationsUseCase],
+):
     """Generate personalized recommendations for a user.
 
     Args:
         request: Incoming HTTP request.
         user_id: User ID from path.
+        use_case: Generate recommendations use case.
 
     Returns:
         JSONResponse: Serialized recommendation results.
     """
-    container = get_container(request)
-    results = await container.generate_recommendations_use_case().execute(user_id=user_id)
+    results = await use_case.execute(user_id=user_id)
     return JSONResponse(content=[vars(item) for item in results])
 
 
@@ -42,18 +51,22 @@ async def generate_recommendations(request: Request, user_id: int):
     window_seconds=60,
     key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
 )
-async def refresh_recommendations(request: Request, user_id: int):
+async def refresh_recommendations(
+        request: Request,
+        user_id: int,
+        use_case: FromDishka[RefreshRecommendationsUseCase],
+):
     """Refresh recommendations for a user.
 
     Args:
         request: Incoming HTTP request.
         user_id: User ID from path.
+        use_case: Refresh recommendations use case.
 
     Returns:
         JSONResponse: Serialized refreshed recommendations.
     """
-    container = get_container(request)
-    results = await container.refresh_recommendations_use_case().execute(user_id=user_id)
+    results = await use_case.execute(user_id=user_id)
     return JSONResponse(content=[vars(item) for item in results])
 
 
@@ -64,19 +77,23 @@ async def refresh_recommendations(request: Request, user_id: int):
     window_seconds=60,
     key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
 )
-async def ask_ai_recommendations(request: Request, user_id: int):
+async def ask_ai_recommendations(
+        request: Request,
+        user_id: int,
+        use_case: FromDishka[AskAiRecommendationsUseCase],
+):
     """Recommend anime from a free-form AI query.
 
     Args:
         request: Incoming HTTP request.
         user_id: User ID from path.
+        use_case: Ask AI recommendations use case.
 
     Returns:
         JSONResponse: Serialized recommendations or an error payload.
     """
-    container = get_container(request)
     command = map_ask_ai_command(await read_payload(request), user_id=user_id)
-    result = await container.ask_ai_recommendations_use_case().execute(command)
+    result = await use_case.execute(command)
     if not result.ok:
         return JSONResponse({"error": result.error}, status_code=result.status_code)
     return JSONResponse(

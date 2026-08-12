@@ -4,22 +4,25 @@ from __future__ import annotations
 
 from http import HTTPStatus
 
+from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
+from backend.application.use_cases import CreateSupportTicketUseCase
 from backend.infrastructure.security.rate_limit_keys import support_ticket_subject
 from backend.presentation.api.requests.support_mapper import map_create_support_ticket_command
 
 from backend.config import Settings
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
 from backend.infrastructure.web import flash, render_template
-from backend.presentation.api.helpers import get_container, get_current_user
+from backend.presentation.api.helpers import get_current_user
 from backend.presentation.api.requests.support_form_builder import (
     build_default_support_form,
     build_support_form_data,
 )
 from backend.utils import log_business_event
 
-support_router = APIRouter(prefix="/support")
+support_router = APIRouter(prefix="/support", route_class=DishkaRoute)
 support_bp = support_router
 
 
@@ -48,16 +51,19 @@ async def support_page(request: Request):
     response_mode="redirect",
     redirect_endpoint="support.support_page",
 )
-async def create_support_ticket(request: Request):
+async def create_support_ticket(
+        request: Request,
+        use_case: FromDishka[CreateSupportTicketUseCase],
+):
     """Create a support ticket from form data.
 
     Args:
         request: Current HTTP request with form data.
+        use_case: Create support ticket use case.
 
     Returns:
         RedirectResponse: Redirect to support page after creation.
     """
-    container = get_container(request)
     user = get_current_user(request)
     user_id = getattr(user, "id", None)
     command = map_create_support_ticket_command(
@@ -67,7 +73,7 @@ async def create_support_ticket(request: Request):
         user_username=getattr(user, "username", None),
     )
 
-    result = await container.create_support_ticket_use_case().execute(command)
+    result = await use_case.execute(command)
 
     if not result.ok:
         flash(request, result.error_message or "Не удалось создать тикет поддержки")

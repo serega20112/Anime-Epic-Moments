@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import secrets
 from http import HTTPStatus
 from pathlib import Path
 from urllib.parse import urlparse
@@ -13,18 +14,12 @@ from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
-from backend.infrastructure.repositories.user_repository import UserRepository
-from backend.presentation.api.v1.favorite_route import favorite_router
-from backend.presentation.api.v1.highlight_route import highlight_router
-from backend.presentation.api.v1.user_route import user_router
-from backend.presentation.api.v1.watch_route import (
-    watch_router,
-)
 from starlette.middleware.sessions import SessionMiddleware
 
 from backend.config import Settings
 from backend.events.lifecycle import register_lifecycle_handlers
 from backend.infrastructure.di.providers import AppProvider, RequestProvider, UseCaseProvider
+from backend.infrastructure.repositories.user_repository import UserRepository
 from backend.infrastructure.security.csrf_service import csrf_service
 from backend.infrastructure.security.jwt_service import JWTService
 from backend.infrastructure.security.token_blocklist import TokenBlocklist
@@ -32,9 +27,15 @@ from backend.infrastructure.web import render_template
 from backend.presentation.api.v1.anime_route import anime_router
 from backend.presentation.api.v1.auth_route import auth_router
 from backend.presentation.api.v1.collection_route import collection_router
+from backend.presentation.api.v1.favorite_route import favorite_router
+from backend.presentation.api.v1.highlight_route import highlight_router
 from backend.presentation.api.v1.index_route import index_router
 from backend.presentation.api.v1.recommendation_route import recommendation_router
 from backend.presentation.api.v1.support_route import support_router
+from backend.presentation.api.v1.user_route import user_router
+from backend.presentation.api.v1.watch_route import (
+    watch_router,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 FRONTEND_ROOT = PROJECT_ROOT / "src" / "frontend"
@@ -108,11 +109,11 @@ def create_app() -> FastAPI:
         try:
             if not _is_scope_free_request(request):
                 await _load_user(request)
-                csrf_service.generate_token(request.state)
+                _prepare_csrf_token(request)
             if request.method in {"POST", "PUT", "PATCH", "DELETE"} and not _is_csrf_exempt(
                     request
             ):
-                if not _validate_csrf(request):
+                if not await _validate_csrf(request):
                     logger.warning("csrf_validation_failed path=%s", request.url.path)
                     if _wants_json(request):
                         return JSONResponse(
@@ -377,24 +378,50 @@ def _is_csrf_exempt(request: Request) -> bool:
     return any(path.startswith(prefix) for prefix in ("/auth", "/static", "/watch/proxy"))
 
 
-def _validate_csrf(request: Request) -> bool:
-    """Validate CSRF token from X-CSRF-Token header.
+def _prepare_csrf_token(request: Request) -> None:
+    """Create or load a session-persisted CSRF token for the request.
 
-    For JSON API clients the Origin check in _is_cross_origin_write_request
-    provides sufficient protection. Form submissions are validated in route handlers.
+    Stores the token in the session so the value rendered into a form during
+    a GET matches the one validated on a subsequent POST.
+
+    Args:
+        request: Current HTTP request.
+    """
+    session = request.scope.get("session")
+    if not isinstance(session, dict):
+        return
+    stored = session.get("csrf_token")
+    if isinstance(stored, str):
+        request.state.csrf_token = stored
+        return
+    token = csrf_service.generate_token(request.state)
+    session["csrf_token"] = token
+
+
+async def _validate_csrf(request: Request) -> bool:
+    """Validate a session CSRF token submitted via header or form field.
+
+    JSON clients are protected by the Origin check in
+    _is_cross_origin_write_request and only need a matching header token.
+    Form submissions must include the csrf_token field rendered by the template.
 
     Args:
         request: Current HTTP request.
 
     Returns:
-        bool: True if CSRF validation passes or is not required.
+        bool: True if CSRF validation passes.
     """
-    header_token = request.headers.get("X-CSRF-Token")
-    if header_token:
-        return csrf_service.validate_token(request.state, header_token)
+    session = request.scope.get("session")
+    session_token = session.get("csrf_token") if isinstance(session, dict) else None
+    if header_token := request.headers.get("X-CSRF-Token"):
+        return bool(session_token) and secrets.compare_digest(header_token, session_token)
     if _wants_json(request):
         return True
-    return True
+    form = await request.form()
+    form_token = form.get("csrf_token")
+    if isinstance(form_token, str) and session_token:
+        return secrets.compare_digest(form_token, session_token)
+    return False
 
 
 def _apply_security_headers(response):

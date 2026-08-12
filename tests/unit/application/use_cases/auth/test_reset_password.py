@@ -9,6 +9,13 @@ import pytest
 from backend.application.use_cases.auth.reset_password import ResetPasswordUseCase
 
 
+def _blocklist():
+    blocklist = Mock()
+    blocklist.is_revoked = AsyncMock(return_value=False)
+    blocklist.revoke = AsyncMock()
+    return blocklist
+
+
 @pytest.mark.unit
 class TestResetPasswordUseCase:
     """Юнит-тесты сценария сброса пароля через токен."""
@@ -22,12 +29,29 @@ class TestResetPasswordUseCase:
         jwt_service = Mock()
         jwt_service.decode_password_reset_token.side_effect = jwt.InvalidTokenError("bad token")
         password_service = Mock()
-        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service)
+        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, _blocklist())
 
         result = await use_case.execute("bad-token", "new-password")
 
         assert result.ok is False
         assert result.error_endpoint == "auth.password_reset_confirm_page"
+        user_repo.update_password.assert_not_awaited()
+
+    async def test_rejects_revoked_token(self):
+        """Что тестируем: отклонение уже использованного токена.
+        Что передаём: token_blocklist.is_revoked возвращает True.
+        Что ожидаем: результат failure, пароль не обновляется.
+        """
+        user_repo = AsyncMock()
+        jwt_service = Mock()
+        password_service = Mock()
+        blocklist = Mock()
+        blocklist.is_revoked = AsyncMock(return_value=True)
+        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, blocklist)
+
+        result = await use_case.execute("token", "new-password")
+
+        assert result.ok is False
         user_repo.update_password.assert_not_awaited()
 
     async def test_rejects_missing_user(self):
@@ -39,7 +63,7 @@ class TestResetPasswordUseCase:
         user_repo.get_by_id.return_value = None
         jwt_service = Mock()
         jwt_service.decode_password_reset_token.return_value = 17
-        use_case = ResetPasswordUseCase(user_repo, jwt_service, Mock())
+        use_case = ResetPasswordUseCase(user_repo, jwt_service, Mock(), _blocklist())
 
         result = await use_case.execute("token", "new-password")
 
@@ -55,15 +79,18 @@ class TestResetPasswordUseCase:
         user_repo.get_by_id.return_value = SimpleNamespace(id=17)
         jwt_service = Mock()
         jwt_service.decode_password_reset_token.return_value = 17
-        password_service = Mock()
+        jwt_service.get_token_ttl_seconds.return_value = 1800
+        password_service = AsyncMock()
         password_service.hash_password.return_value = "new-hash"
-        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service)
+        blocklist = _blocklist()
+        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, blocklist)
 
         result = await use_case.execute("token", "new-password")
 
         assert result.ok is True
         assert result.redirect_endpoint == "auth.login_page"
-        password_service.hash_password.assert_called_once_with("new-password")
+        password_service.hash_password.assert_awaited_once_with("new-password")
         user_repo.update_password.assert_awaited_once_with(
             user_id=17, password_hash="new-hash"
         )
+        blocklist.revoke.assert_awaited_once()

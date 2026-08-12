@@ -45,7 +45,7 @@ if [ "$1" = "web" ]; then
     --worker-class "uvicorn.workers.UvicornWorker" \
     --workers "${GUNICORN_WORKERS:-2}" \
     --timeout "${GUNICORN_TIMEOUT:-120}" \
-    src.main:app
+    backend.main:app
 fi
 
 exec "$@"

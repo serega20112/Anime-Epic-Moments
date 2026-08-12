@@ -14,25 +14,12 @@ from fastapi.responses import RedirectResponse
 
 from backend.application.use_cases.auth.result import AuthResult
 from backend.config import Settings
-from backend.infrastructure.di.request_container import RequestContainer
 from backend.infrastructure.security.jwt_service import JWTService
 from backend.infrastructure.web import flash
 
 SEE_OTHER = HTTPStatus.SEE_OTHER
 
 jwt_service = JWTService()
-
-
-def get_container(request: Request):
-    """Read the request-scoped container adapter.
-
-    Args:
-        request: Incoming HTTP request.
-
-    Returns:
-        RequestContainer: Adapter over the request-scoped Dishka container.
-    """
-    return RequestContainer(request.state.dishka_container)
 
 
 def resolve(request: Request, result: AuthResult) -> RedirectResponse:

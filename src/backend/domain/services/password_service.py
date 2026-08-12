@@ -9,7 +9,7 @@ class PasswordServiceInterface(ABC):
     """Interface for password hashing and verification."""
 
     @abstractmethod
-    def hash_password(self, plain_password: str) -> str:
+    async def hash_password(self, plain_password: str) -> str:
         """Hash a plain password.
 
         Args:
@@ -20,7 +20,7 @@ class PasswordServiceInterface(ABC):
         """
 
     @abstractmethod
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+    async def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash.
 
         Args:

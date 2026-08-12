@@ -4,6 +4,7 @@ from backend.application.use_cases.auth.result import AuthResult
 from backend.domain import UserRepository
 from backend.domain.services import PasswordServiceInterface as PasswordService
 from backend.domain.services.jwt_service import JWTServiceInterface as JWTService
+from backend.infrastructure.security.token_blocklist import TokenBlocklist
 
 
 class InvalidPasswordResetTokenError(Exception):
@@ -18,6 +19,7 @@ class ResetPasswordUseCase:
             user_repo: UserRepository,
             jwt_service: JWTService,
             password_service: PasswordService,
+            token_blocklist: TokenBlocklist,
     ):
         """Initialize the use case.
 
@@ -25,10 +27,12 @@ class ResetPasswordUseCase:
             user_repo: User repository port.
             jwt_service: JWT service.
             password_service: Password hashing service.
+            token_blocklist: Token blocklist.
         """
         self.user_repo = user_repo
         self.jwt_service = jwt_service
         self.password_service = password_service
+        self.token_blocklist = token_blocklist
 
     async def execute(self, token: str, new_password: str) -> AuthResult:
         """Сбросение пароля по токену.
@@ -40,8 +44,19 @@ class ResetPasswordUseCase:
         Returns:
             AuthResult: Success toward login or failure back to confirm page.
         """
+        normalized_token = str(token or "").strip()
+        if not normalized_token:
+            return AuthResult.failure(
+                "Ссылка для сброса пароля недействительна или устарела",
+                "auth.password_reset_confirm_page",
+            )
+        if await self.token_blocklist.is_revoked(normalized_token):
+            return AuthResult.failure(
+                "Ссылка для сброса пароля уже использована",
+                "auth.password_reset_confirm_page",
+            )
         try:
-            user_id = self.jwt_service.decode_password_reset_token(token)
+            user_id = self.jwt_service.decode_password_reset_token(normalized_token)
         except jwt.PyJWTError:
             return AuthResult.failure(
                 "Ссылка для сброса пароля недействительна или устарела",
@@ -55,8 +70,14 @@ class ResetPasswordUseCase:
                 "auth.password_reset_confirm_page",
             )
 
-        password_hash = self.password_service.hash_password(new_password)
+        password_hash = await self.password_service.hash_password(new_password)
         await self.user_repo.update_password(user_id=user_id, password_hash=password_hash)
+        await self.token_blocklist.revoke(
+            normalized_token,
+            self.jwt_service.get_token_ttl_seconds(
+                normalized_token, expected_type="password_reset"
+            ),
+        )
         return AuthResult.success(
             message="Пароль обновлен. Теперь можно войти.",
             redirect_endpoint="auth.login_page",

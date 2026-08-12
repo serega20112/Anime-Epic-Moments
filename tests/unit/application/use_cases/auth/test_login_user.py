@@ -29,7 +29,7 @@ class TestLoginUserUseCase:
         """
         user_repo = AsyncMock()
         user_repo.get_by_email.return_value = credentials
-        password_service = Mock()
+        password_service = AsyncMock()
         password_service.verify_password.return_value = password_matches
         use_case = LoginUserUseCase(user_repo, password_service)
 
@@ -45,7 +45,7 @@ class TestLoginUserUseCase:
         Что ожидаем: заблокированный аккаунт не проверяет пароль и возвращает failure.
         """
         user_repo = AsyncMock()
-        password_service = Mock()
+        password_service = AsyncMock()
         lock_service = AsyncMock()
         lock_service.is_account_locked.return_value = (is_locked, None)
 
@@ -67,7 +67,7 @@ class TestLoginUserUseCase:
         user = SimpleNamespace(id=1, username="tester", password_hash="hash")
         user_repo = AsyncMock()
         user_repo.get_by_email.return_value = user
-        password_service = Mock()
+        password_service = AsyncMock()
         password_service.verify_password.return_value = True
         use_case = LoginUserUseCase(user_repo, password_service)
 

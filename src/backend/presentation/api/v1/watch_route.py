@@ -4,12 +4,29 @@ from __future__ import annotations
 
 import logging
 
+from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
+
+from backend.application.use_cases import (
+    AddAnimeCommentUseCase,
+    GetAnimeDiscussionUseCase,
+    SetAnimeCommentLikeUseCase,
+    SyncWatchSourcesUseCase,
+    UpsertUserAnimeStatusUseCase,
+)
+from backend.application.use_cases.watch.create_watch_highlight import CreateWatchHighlightUseCase
+from backend.application.use_cases.watch.get_watch_page import GetWatchPageUseCase
+from backend.application.use_cases.watch.save_viewing_session import SaveViewingSessionUseCase
+from backend.infrastructure.media_proxy import MediaProxyClient
+from backend.infrastructure.security.flask_protection import client_ip, rate_limit
 from backend.infrastructure.security.rate_limit_keys import (
     watch_anime_subject,
     watch_user_subject,
 )
+from backend.infrastructure.web import render_template
+from backend.presentation.api.helpers import get_current_user, read_payload
 from backend.presentation.api.redirects.watch import discussion_redirect
 from backend.presentation.api.requests.watch_mapper import (
     _to_int,
@@ -21,12 +38,7 @@ from backend.presentation.api.requests.watch_mapper import (
     map_watch_page_query,
 )
 
-from backend.infrastructure.media_proxy import MediaProxyClient
-from backend.infrastructure.security.flask_protection import client_ip, rate_limit
-from backend.infrastructure.web import render_template
-from backend.presentation.api.helpers import get_container, get_current_user, read_payload
-
-watch_router = APIRouter(prefix="/watch")
+watch_router = APIRouter(prefix="/watch", route_class=DishkaRoute)
 watch_bp = watch_router
 logger = logging.getLogger("anime_epic_moments")
 _proxy_media_client = MediaProxyClient()
@@ -58,25 +70,31 @@ async def proxy_stream(request: Request):
 
 
 @watch_router.get("/{anime_id}", name="watch.watch_page")
-async def watch_page(request: Request, anime_id: int):
+async def watch_page(
+    request: Request,
+    anime_id: int,
+    watch_use_case: FromDishka[GetWatchPageUseCase],
+    discussion_use_case: FromDishka[GetAnimeDiscussionUseCase],
+):
     """Render the anime watch page.
 
     Args:
         request: Incoming HTTP request with query params.
         anime_id: Anime ID from path.
+        watch_use_case: Get watch page use case.
+        discussion_use_case: Get anime discussion use case.
 
     Returns:
         HTMLResponse: Rendered watch page template.
     """
-    container = get_container(request)
     user = get_current_user(request)
     query = map_watch_page_query(request)
-    data = await container.get_watch_page_use_case().execute(
+    data = await watch_use_case.execute(
         anime_id=anime_id,
         query=query,
         user_id=user.id if user else None,
     )
-    discussion_result = await container.get_anime_discussion_use_case().execute(
+    discussion_result = await discussion_use_case.execute(
         anime_id=anime_id,
         sort_by=query.discussion_sort,
         viewer_user_id=user.id if user else None,
@@ -87,17 +105,21 @@ async def watch_page(request: Request, anime_id: int):
 
 
 @watch_router.post("/{anime_id}/status", name="watch.update_status")
-async def update_status(request: Request, anime_id: int):
+async def update_status(
+    request: Request,
+    anime_id: int,
+    use_case: FromDishka[UpsertUserAnimeStatusUseCase],
+):
     """Update the user's watch status for an anime.
 
     Args:
         request: Incoming HTTP request with JSON payload.
         anime_id: Anime ID from path.
+        use_case: Upsert user anime status use case.
 
     Returns:
         JSONResponse: Updated status or an error.
     """
-    container = get_container(request)
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "auth_required"}, status_code=401)
@@ -106,7 +128,7 @@ async def update_status(request: Request, anime_id: int):
         user_id=user.id,
         anime_id=anime_id,
     )
-    result = await container.upsert_user_anime_status_use_case().execute(command)
+    result = await use_case.execute(command)
     if not result.ok:
         return JSONResponse({"error": result.error}, status_code=result.status_code)
     return {"status": result.data.status}
@@ -138,20 +160,24 @@ async def add_source(_request: Request, anime_id: int):
         anime_id=request.path_params.get("anime_id"),
     ),
 )
-async def discover_sources(request: Request, anime_id: int):
+async def discover_sources(
+    request: Request,
+    anime_id: int,
+    use_case: FromDishka[SyncWatchSourcesUseCase],
+):
     """Discover watch sources from the external provider.
 
     Args:
         request: Incoming HTTP request with JSON payload.
         anime_id: Anime ID from path.
+        use_case: Sync watch sources use case.
 
     Returns:
         JSONResponse: Sources payload or an error.
     """
-    container = get_container(request)
     payload = await read_payload(request)
     episode = _to_int(str(payload.get("episode") or "")) or 1
-    result = await container.sync_watch_sources_use_case().execute(
+    result = await use_case.execute(
         anime_id=anime_id,
         episode=episode,
         force=True,
@@ -162,17 +188,21 @@ async def discover_sources(request: Request, anime_id: int):
 
 
 @watch_router.post("/{anime_id}/session", name="watch.save_session")
-async def save_session(request: Request, anime_id: int):
+async def save_session(
+    request: Request,
+    anime_id: int,
+    use_case: FromDishka[SaveViewingSessionUseCase],
+):
     """Save the user's viewing session position.
 
     Args:
         request: Incoming HTTP request with JSON payload.
         anime_id: Anime ID from path.
+        use_case: Save viewing session use case.
 
     Returns:
         JSONResponse: Session ID or an error.
     """
-    container = get_container(request)
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "auth_required"}, status_code=401)
@@ -181,7 +211,7 @@ async def save_session(request: Request, anime_id: int):
         user_id=user.id,
         anime_id=anime_id,
     )
-    result = await container.save_viewing_session_use_case().execute(command)
+    result = await use_case.execute(command)
     if not result.ok:
         return JSONResponse({"error": result.error}, status_code=result.status_code)
     return {"session_id": result.data.id}
@@ -197,17 +227,21 @@ async def save_session(request: Request, anime_id: int):
         user_id=getattr(get_current_user(request), "id", None),
     ),
 )
-async def create_highlight(request: Request, anime_id: int):
+async def create_highlight(
+    request: Request,
+    anime_id: int,
+    use_case: FromDishka[CreateWatchHighlightUseCase],
+):
     """Create a highlight from the player.
 
     Args:
         request: Incoming HTTP request with JSON payload.
         anime_id: Anime ID from path.
+        use_case: Create watch highlight use case.
 
     Returns:
         JSONResponse: Highlight ID or an error.
     """
-    container = get_container(request)
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "auth_required"}, status_code=401)
@@ -216,25 +250,29 @@ async def create_highlight(request: Request, anime_id: int):
         user_id=user.id,
         anime_id=anime_id,
     )
-    result = await container.create_watch_highlight_use_case().execute(command)
+    result = await use_case.execute(command)
     if not result.ok:
         return JSONResponse({"error": result.error}, status_code=result.status_code)
     return JSONResponse({"highlight_id": result.data.id}, status_code=result.status_code)
 
 
 @watch_router.post("/{anime_id}/discussion", name="watch.add_anime_comment")
-async def add_anime_comment(request: Request, anime_id: int):
+async def add_anime_comment(
+    request: Request,
+    anime_id: int,
+    use_case: FromDishka[AddAnimeCommentUseCase],
+):
     """Add a comment to the anime discussion.
 
     Args:
         request: Incoming HTTP request with JSON payload.
         anime_id: Anime ID from path.
+        use_case: Add anime comment use case.
 
     Returns:
         JSONResponse: Created comment or an error.
         RedirectResponse: Redirect for non-JSON clients.
     """
-    container = get_container(request)
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "auth_required"}, status_code=401)
@@ -244,7 +282,7 @@ async def add_anime_comment(request: Request, anime_id: int):
         anime_id=anime_id,
         user_id=user.id,
     )
-    result = await container.add_anime_comment_use_case().execute(command)
+    result = await use_case.execute(command)
     if not result.ok:
         return JSONResponse({"error": result.error}, status_code=result.status_code)
     if _wants_json(request):
@@ -256,17 +294,21 @@ async def add_anime_comment(request: Request, anime_id: int):
 @watch_router.delete(
     "/discussion/comments/{comment_id}/likes", name="watch.remove_anime_comment_like"
 )
-async def set_anime_comment_like(request: Request, comment_id: int):
+async def set_anime_comment_like(
+    request: Request,
+    comment_id: int,
+    use_case: FromDishka[SetAnimeCommentLikeUseCase],
+):
     """Set or remove a like on a discussion comment.
 
     Args:
         request: Incoming HTTP request.
         comment_id: Comment ID from path.
+        use_case: Set anime comment like use case.
 
     Returns:
         JSONResponse: Updated comment or an error.
     """
-    container = get_container(request)
     user = get_current_user(request)
     if not user:
         return JSONResponse({"error": "auth_required"}, status_code=401)
@@ -275,7 +317,7 @@ async def set_anime_comment_like(request: Request, comment_id: int):
         comment_id=comment_id,
         user_id=user.id,
     )
-    result = await container.set_anime_comment_like_use_case().execute(command)
+    result = await use_case.execute(command)
     if not result.ok:
         return JSONResponse({"error": result.error}, status_code=result.status_code)
     return vars(result.data)
@@ -293,8 +335,9 @@ async def redirect_to_watch(request: Request, anime_id: int):
         RedirectResponse: SEE_OTHER redirect to the watch page.
     """
     episode = map_watch_page_query(request).episode
+    url = request.app.url_path_for("watch.watch_page", anime_id=str(anime_id))
     return RedirectResponse(
-        url=f"{request.app.url_path_for('watch.watch_page', anime_id=str(anime_id))}?episode={episode}",
+        url=f"{url}?episode={episode}",
         status_code=303,
     )
 

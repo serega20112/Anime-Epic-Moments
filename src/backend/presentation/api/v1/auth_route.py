@@ -5,11 +5,31 @@ from __future__ import annotations
 import logging
 from http import HTTPStatus
 
+from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+
+from backend.application.use_cases import LogoutUserUseCase, RefreshSessionUseCase
+from backend.application.use_cases.auth.get_profile_overview import GetProfileOverviewUseCase
+from backend.application.use_cases.auth.login_user import LoginUserUseCase
+from backend.application.use_cases.auth.request_email_verification import (
+    RequestEmailVerificationUseCase,
+)
+from backend.application.use_cases.auth.request_password_reset import (
+    RequestPasswordResetUseCase,
+)
+from backend.application.use_cases.auth.resend_email_verification import (
+    ResendEmailVerificationUseCase,
+)
+from backend.application.use_cases.auth.reset_password import ResetPasswordUseCase
+from backend.application.use_cases.auth.update_user_profile import UpdateUserProfileUseCase
+from backend.application.use_cases.auth.verify_email import VerifyEmailUseCase
+from backend.config import Settings
+from backend.infrastructure.security.flask_protection import client_ip, rate_limit
+from backend.infrastructure.web import flash, render_template
 from backend.presentation.api.auth_responses import (
     clear_auth_cookies,
-    get_container,
     redirect,
     redirect_confirm,
     redirect_verify,
@@ -28,13 +48,9 @@ from backend.presentation.api.requests.auth_mapper import (
     map_update_profile_command,
     map_verify_email_command,
 )
-
-from backend.config import Settings
-from backend.infrastructure.security.flask_protection import client_ip, rate_limit
-from backend.infrastructure.web import flash, render_template
 from backend.utils import log_security_event
 
-auth_router = APIRouter(prefix="/auth")
+auth_router = APIRouter(prefix="/auth", route_class=DishkaRoute)
 auth_bp = auth_router
 
 logger = logging.getLogger("anime_epic_moments")
@@ -121,11 +137,12 @@ async def password_reset_confirm_page(request: Request):
     response_mode="redirect",
     redirect_endpoint="auth.login_page",
 )
-async def login_user(request: Request):
+async def login_user(request: Request, use_case: FromDishka[LoginUserUseCase]):
     """Authenticate a user and set session cookies.
 
     Args:
         request: Incoming HTTP request.
+        use_case: Login user use case.
 
     Returns:
         RedirectResponse: Redirect to the index page or back to login.
@@ -136,9 +153,7 @@ async def login_user(request: Request):
     except FormValidationError as error:
         flash(request, str(error))
         return redirect(request, "auth.login_page")
-    result = await get_container(request).login_user_use_case().execute(
-        email=command.email, password=command.password
-    )
+    result = await use_case.execute(email=command.email, password=command.password)
     if result.ok:
         log_security_event(
             event="login_success",
@@ -164,11 +179,12 @@ async def login_user(request: Request):
     response_mode="redirect",
     redirect_endpoint="auth.register_page",
 )
-async def register_user(request: Request):
+async def register_user(request: Request, use_case: FromDishka[RequestEmailVerificationUseCase]):
     """Start registration by requesting an email verification code.
 
     Args:
         request: Incoming HTTP request.
+        use_case: Request email verification use case.
 
     Returns:
         RedirectResponse: Redirect to the verification page or back.
@@ -178,10 +194,8 @@ async def register_user(request: Request):
         command = map_register_command(form)
     except FormValidationError as error:
         return redirect_verify(request, str(error))
-    logger.info(
-        "register_verification_requested email=%s ip=%s", command.email, client_ip(request)
-    )
-    result = await get_container(request).request_email_verification_use_case().execute(
+    logger.info("register_verification_requested email=%s ip=%s", command.email, client_ip(request))
+    result = await use_case.execute(
         email=command.email,
         password=command.password,
         username=command.username,
@@ -191,11 +205,12 @@ async def register_user(request: Request):
 
 
 @auth_router.post("/verify-email", name="auth.verify_email")
-async def verify_email(request: Request):
+async def verify_email(request: Request, use_case: FromDishka[VerifyEmailUseCase]):
     """Verify an email verification code and complete registration.
 
     Args:
         request: Incoming HTTP request.
+        use_case: Verify email use case.
 
     Returns:
         RedirectResponse: Redirect to the index page on success.
@@ -205,18 +220,20 @@ async def verify_email(request: Request):
         command = map_verify_email_command(form)
     except FormValidationError as error:
         return redirect_verify(request, str(error))
-    result = await get_container(request).verify_email_use_case().execute(
-        email=command.email, code=command.code
-    )
+    result = await use_case.execute(email=command.email, code=command.code)
     return resolve_auth(request, result)
 
 
 @auth_router.post("/verify-email/resend", name="auth.resend_verification_email")
-async def resend_verification_email(request: Request):
+async def resend_verification_email(
+    request: Request,
+    use_case: FromDishka[ResendEmailVerificationUseCase],
+):
     """Resend the email verification code.
 
     Args:
         request: Incoming HTTP request.
+        use_case: Resend email verification use case.
 
     Returns:
         RedirectResponse: Redirect back to the verification page.
@@ -231,18 +248,20 @@ async def resend_verification_email(request: Request):
         email=command.email,
         ip_address=client_ip(request),
     )
-    result = await get_container(request).resend_email_verification_use_case().execute(
-        email=command.email
-    )
+    result = await use_case.execute(email=command.email)
     return resolve_verify(request, result)
 
 
 @auth_router.post("/password-reset", name="auth.request_password_reset")
-async def request_password_reset(request: Request):
+async def request_password_reset(
+    request: Request,
+    use_case: FromDishka[RequestPasswordResetUseCase],
+):
     """Request a password reset email for a user.
 
     Args:
         request: Incoming HTTP request.
+        use_case: Request password reset use case.
 
     Returns:
         RedirectResponse: Redirect back to the password reset request page.
@@ -259,18 +278,17 @@ async def request_password_reset(request: Request):
         email=command.email,
         ip_address=client_ip(request),
     )
-    await get_container(request).request_password_reset_use_case().execute(
-        email=command.email, base_url=command.base_url
-    )
+    await use_case.execute(email=command.email, base_url=command.base_url)
     return redirect(request, "auth.password_reset_request_page")
 
 
 @auth_router.post("/password-reset/confirm", name="auth.confirm_password_reset")
-async def confirm_password_reset(request: Request):
+async def confirm_password_reset(request: Request, use_case: FromDishka[ResetPasswordUseCase]):
     """Confirm a password reset with a token and new password.
 
     Args:
         request: Incoming HTTP request.
+        use_case: Reset password use case.
 
     Returns:
         RedirectResponse: Redirect to login on success.
@@ -281,23 +299,22 @@ async def confirm_password_reset(request: Request):
     except FormValidationError as error:
         return redirect_confirm(request, str(error))
     log_security_event(event="password_reset_success", ip_address=client_ip(request))
-    result = await get_container(request).reset_password_use_case().execute(
-        token=command.token, new_password=command.password
-    )
+    result = await use_case.execute(token=command.token, new_password=command.password)
     return resolve(request, result)
 
 
 @auth_router.post("/logout", name="auth.logout_user")
-async def logout_user(request: Request):
+async def logout_user(request: Request, use_case: FromDishka[LogoutUserUseCase]):
     """Clear the user session and revoke auth tokens.
 
     Args:
         request: Incoming HTTP request.
+        use_case: Logout user use case.
 
     Returns:
         RedirectResponse: Redirect to the index page.
     """
-    await get_container(request).logout_user_use_case().execute(
+    await use_case.execute(
         access_token=str(request.cookies.get("access_token") or "").strip(),
         refresh_token=str(request.cookies.get("refresh_token") or "").strip(),
     )
@@ -307,18 +324,17 @@ async def logout_user(request: Request):
 
 
 @auth_router.post("/refresh", name="auth.refresh_session")
-async def refresh_session(request: Request):
+async def refresh_session(request: Request, use_case: FromDishka[RefreshSessionUseCase]):
     """Rotate access and refresh tokens using a valid refresh cookie.
 
     Args:
         request: Incoming HTTP request.
+        use_case: Refresh session use case.
 
     Returns:
         JSONResponse: Ok status with refreshed auth cookies.
     """
-    result = await get_container(request).refresh_session_use_case().execute(
-        str(request.cookies.get("refresh_token") or "").strip()
-    )
+    result = await use_case.execute(str(request.cookies.get("refresh_token") or "").strip())
     if not result.ok:
         return JSONResponse({"error": result.error_message}, status_code=UNAUTHORIZED)
     response = JSONResponse({"status": "ok"})
@@ -327,11 +343,12 @@ async def refresh_session(request: Request):
 
 
 @auth_router.get("/profile", name="auth.profile_page")
-async def profile_page(request: Request):
+async def profile_page(request: Request, use_case: FromDishka[GetProfileOverviewUseCase]):
     """Render the authenticated user's profile page.
 
     Args:
         request: Incoming HTTP request.
+        use_case: Get profile overview use case.
 
     Returns:
         HTMLResponse: Rendered profile page.
@@ -339,7 +356,7 @@ async def profile_page(request: Request):
     user = getattr(request.state, "user", None)
     if not user:
         return redirect(request, "auth.login_page")
-    overview = await get_container(request).get_profile_overview_use_case().execute(user.id)
+    overview = await use_case.execute(user.id)
     return render_template(
         request,
         "auth/profile.html",
@@ -349,11 +366,12 @@ async def profile_page(request: Request):
 
 
 @auth_router.post("/profile", name="auth.update_profile")
-async def update_profile(request: Request):
+async def update_profile(request: Request, use_case: FromDishka[UpdateUserProfileUseCase]):
     """Update the authenticated user's profile.
 
     Args:
         request: Incoming HTTP request.
+        use_case: Update user profile use case.
 
     Returns:
         RedirectResponse: Redirect back to the profile page.
@@ -363,7 +381,7 @@ async def update_profile(request: Request):
         return redirect(request, "auth.login_page")
     form = await request.form()
     command = map_update_profile_command(form, user_id=user.id)
-    result = await get_container(request).update_user_profile_use_case().execute(
+    result = await use_case.execute(
         user_id=command.user_id,
         username=command.username,
         avatar_url=command.avatar_url,

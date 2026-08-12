@@ -729,6 +729,7 @@ class UseCaseProvider(Provider):
             user_repository: UserRepository,
             jwt_service: JWTService,
             password_service: PasswordService,
+            token_blocklist: TokenBlocklist,
     ) -> ResetPasswordUseCase:
         """Provide the reset password use case.
 
@@ -736,11 +737,14 @@ class UseCaseProvider(Provider):
             user_repository: User repository.
             jwt_service: JWT service.
             password_service: Password service.
+            token_blocklist: Token blocklist.
 
         Returns:
             ResetPasswordUseCase: Configured use case.
         """
-        return ResetPasswordUseCase(user_repository, jwt_service, password_service)
+        return ResetPasswordUseCase(
+            user_repository, jwt_service, password_service, token_blocklist
+        )
 
     @provide(scope=Scope.REQUEST)
     def create_highlight(
