@@ -354,7 +354,7 @@ def _build_placeholder(rule: str, endpoint: str, methods=("GET",)):
 @pytest.fixture
 def anime_factory():
     """Создает сущности Anime с переопределяемыми полями для тестов."""
-    from backend.domain import Anime
+    from backend.domain.anime.entity import Anime
 
     def _build(**overrides):
         payload = {
@@ -503,3 +503,28 @@ def db_session():
         session.close()
         Base.metadata.drop_all(bind=engine)
         engine.dispose()
+
+
+@pytest.fixture
+async def async_db_session():
+    """Создает изолированную async SQLAlchemy-сессию в памяти для async repository-тестов."""
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    from backend.infrastructure.files.database import Base
+
+    engine = create_async_engine(
+        "sqlite+aiosqlite://",
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False},
+    )
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+    SessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with SessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.drop_all)
+    await engine.dispose()

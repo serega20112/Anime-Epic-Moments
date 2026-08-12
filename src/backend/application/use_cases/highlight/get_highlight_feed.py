@@ -103,6 +103,7 @@ class GetHighlightFeedUseCase(GetUserHighlightsUseCase):
         categories = sorted({item.category for item in combined_items if item.category})
 
         return HighlightFeedPage(
+            items=combined_items,
             popular_items=popular_items,
             recent_items=recent_items,
             liked_items=liked_items,

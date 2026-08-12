@@ -71,3 +71,8 @@ class Highlight:
 
     def add_view(self):
         self.views_count += 1
+
+    def _normalize_optional_text(self, value: str | None) -> str | None:
+        """Приводит необязательный текст к нормализованному виду или None."""
+        text = str(value or "").strip()
+        return text or None

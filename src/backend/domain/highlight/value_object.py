@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -91,10 +91,17 @@ class HighlightAnimeGroup:
 @dataclass
 class HighlightFeedPage:
     items: list[HighlightCard]
+    popular_items: list[HighlightCard]
+    recent_items: list[HighlightCard]
+    liked_items: list[HighlightCard]
+    from_favorites_items: list[HighlightCard]
     anime_groups: list[HighlightAnimeGroup]
-    total: int
-    page: int
-    page_size: int
+    categories: list[str]
+    selected_anime_id: int | None
+    selected_category: str | None
+    include_spoilers: bool
+    profile: object | None = None
+    recent_activity: list = field(default_factory=list)
 
 
 @dataclass

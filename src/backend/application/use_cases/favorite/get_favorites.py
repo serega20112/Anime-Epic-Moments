@@ -42,3 +42,13 @@ class GetFavoritesUseCase:
                 )
             )
         return result
+
+    def _resolve_watch_id(
+            self, stored_anime_id: int, resolved_external_id: str | None
+    ) -> int:
+        """Выбирает id для построения watch-ссылки."""
+        try:
+            numeric_id = int(str(resolved_external_id or "").strip())
+            return numeric_id if numeric_id > 0 else int(stored_anime_id)
+        except (TypeError, ValueError):
+            return int(stored_anime_id)

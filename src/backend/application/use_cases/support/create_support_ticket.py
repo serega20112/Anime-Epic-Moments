@@ -17,6 +17,10 @@ from backend.domain.services.telegram_support_notifier import (
 from backend.domain.support.entity import SupportTicket
 
 
+class InvalidSupportTicketError(Exception):
+    """Ошибка валидации входных данных тикета поддержки."""
+
+
 class CreateSupportTicketUseCase:
     """Создает тикет поддержки и отправляет его через выбранный канал."""
 

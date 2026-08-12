@@ -388,6 +388,20 @@ class WatchRepository:
             viewer_user_id: int | None = None,
             limit: int = 20,
     ) -> list[AnimeDiscussionComment]:
+        return self._get_anime_comments_sync(
+            anime_id=anime_id,
+            sort_by=sort_by,
+            viewer_user_id=viewer_user_id,
+            limit=limit,
+        )
+
+    def _get_anime_comments_sync(
+            self,
+            anime_id: int,
+            sort_by: str = "popular",
+            viewer_user_id: int | None = None,
+            limit: int = 20,
+    ) -> list[AnimeDiscussionComment]:
         rows = (
             self.session.query(
                 AnimeDiscussionCommentModel,
@@ -460,8 +474,7 @@ class WatchRepository:
         elif not liked and existing is not None:
             self.session.delete(existing)
         self.session.commit()
-        refreshed = self.__class__.get_anime_comments.__wrapped__(
-            self,
+        refreshed = self._get_anime_comments_sync(
             anime_id=comment.anime_id,
             viewer_user_id=user_id,
             limit=200,

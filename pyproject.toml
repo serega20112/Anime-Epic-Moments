@@ -79,6 +79,11 @@ python_functions = ["test_*"]
 asyncio_mode = "auto"
 addopts = "-v --tb=short --cov=src --cov-report=term-missing"
 
+[tool.pytest.ini_options.markers]
+unit = "pure logic tests without external IO (domain, use cases with mocks)"
+integration = "tests exercising real components (DB, routers, repository + session)"
+e2e = "full application flows through HTTP"
+
 [tool.importlinter]
 root_package = "src"
 config_file = ".importlinter"

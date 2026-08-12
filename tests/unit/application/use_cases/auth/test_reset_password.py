@@ -1,0 +1,69 @@
+from __future__ import annotations
+
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock
+
+import jwt
+import pytest
+
+from backend.application.use_cases.auth.reset_password import ResetPasswordUseCase
+
+
+@pytest.mark.unit
+class TestResetPasswordUseCase:
+    """Юнит-тесты сценария сброса пароля через токен."""
+
+    async def test_rejects_invalid_token(self):
+        """Что тестируем: отклонение неверного или просроченного токена.
+        Что передаём: decode_password_reset_token бросает PyJWTError.
+        Что ожидаем: результат failure с указанием confirm-страницы, пароль не обновляется.
+        """
+        user_repo = AsyncMock()
+        jwt_service = Mock()
+        jwt_service.decode_password_reset_token.side_effect = jwt.InvalidTokenError("bad token")
+        password_service = Mock()
+        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service)
+
+        result = await use_case.execute("bad-token", "new-password")
+
+        assert result.ok is False
+        assert result.error_endpoint == "auth.password_reset_confirm_page"
+        user_repo.update_password.assert_not_awaited()
+
+    async def test_rejects_missing_user(self):
+        """Что тестируем: отклонение токена пользователя, которого нет в репозитории.
+        Что передаём: decode возвращает id, get_by_id=None.
+        Что ожидаем: результат failure, пароль не обновляется.
+        """
+        user_repo = AsyncMock()
+        user_repo.get_by_id.return_value = None
+        jwt_service = Mock()
+        jwt_service.decode_password_reset_token.return_value = 17
+        use_case = ResetPasswordUseCase(user_repo, jwt_service, Mock())
+
+        result = await use_case.execute("token", "new-password")
+
+        assert result.ok is False
+        user_repo.update_password.assert_not_awaited()
+
+    async def test_hashes_and_persists_new_password(self):
+        """Что тестируем: хеширование и сохранение нового пароля.
+        Что передаём: валидный токен и существующего пользователя.
+        Что ожидаем: пароль захеширован и сохранен, возвращается success.
+        """
+        user_repo = AsyncMock()
+        user_repo.get_by_id.return_value = SimpleNamespace(id=17)
+        jwt_service = Mock()
+        jwt_service.decode_password_reset_token.return_value = 17
+        password_service = Mock()
+        password_service.hash_password.return_value = "new-hash"
+        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service)
+
+        result = await use_case.execute("token", "new-password")
+
+        assert result.ok is True
+        assert result.redirect_endpoint == "auth.login_page"
+        password_service.hash_password.assert_called_once_with("new-password")
+        user_repo.update_password.assert_awaited_once_with(
+            user_id=17, password_hash="new-hash"
+        )
