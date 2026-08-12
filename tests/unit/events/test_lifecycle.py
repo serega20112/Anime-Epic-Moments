@@ -19,23 +19,15 @@ class TestResolveLogLevel:
 
 
 @pytest.mark.unit
-class TestRegisterLifecycleHandlers:
-    def test_registers_startup_and_shutdown(self):
-        app = FastAPI()
-        lifecycle.register_lifecycle_handlers(app)
-
-        assert len(app.router.on_startup) == 1
-        assert len(app.router.on_shutdown) == 1
-
+class TestLifespan:
     def test_startup_initializes_logging_and_db(self, monkeypatch):
         setup_calls = []
         init_calls = []
         monkeypatch.setattr(lifecycle, "setup_logging", lambda **kwargs: setup_calls.append(kwargs))
-        monkeypatch.setattr(lifecycle, "init_db", _init_db := _Recorder(init_calls))
+        monkeypatch.setattr(lifecycle, "init_db", _Recorder(init_calls))
         monkeypatch.setattr(lifecycle.Settings, "database_auto_init", True)
 
-        app = FastAPI()
-        lifecycle.register_lifecycle_handlers(app)
+        app = FastAPI(lifespan=lifecycle.lifespan)
         with TestClient(app):
             pass
 
@@ -48,8 +40,7 @@ class TestRegisterLifecycleHandlers:
         monkeypatch.setattr(lifecycle, "init_db", _Recorder(init_calls))
         monkeypatch.setattr(lifecycle.Settings, "database_auto_init", False)
 
-        app = FastAPI()
-        lifecycle.register_lifecycle_handlers(app)
+        app = FastAPI(lifespan=lifecycle.lifespan)
         with TestClient(app):
             pass
 
@@ -65,5 +56,5 @@ class _Recorder:
 
 
 @pytest.mark.unit
-def test_lifecycle_module_importable():
-    assert callable(lifecycle.register_lifecycle_handlers)
+def test_lifespan_module_importable():
+    assert callable(lifecycle.lifespan)

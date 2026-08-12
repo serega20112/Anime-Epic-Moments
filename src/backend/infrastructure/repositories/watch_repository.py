@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain import (
@@ -25,20 +25,31 @@ from backend.infrastructure.models import (
     ViewingSessionModel,
     WatchSourceModel,
 )
-from backend.infrastructure.repositories._async import repository_method
 
 
 class WatchRepository:
+    """Data access for watch-related domain objects."""
+
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    @repository_method
-    def get_status(self, user_id: int, anime_id: int) -> UserAnimeStatus | None:
-        row = (
-            self.session.query(UserAnimeStatusModel)
-            .filter_by(user_id=user_id, anime_id=anime_id)
-            .first()
+    async def get_status(self, user_id: int, anime_id: int) -> UserAnimeStatus | None:
+        """Fetch the anime status of a user.
+
+        Args:
+            user_id: User identifier.
+            anime_id: Anime identifier.
+
+        Returns:
+            UserAnimeStatus | None: The status or None when missing.
+        """
+        result = await self.session.execute(
+            select(UserAnimeStatusModel).where(
+                UserAnimeStatusModel.user_id == user_id,
+                UserAnimeStatusModel.anime_id == anime_id,
+            )
         )
+        row = result.scalar_one_or_none()
         if not row:
             return None
         return UserAnimeStatus(
@@ -49,20 +60,26 @@ class WatchRepository:
             updated_at=row.updated_at,
         )
 
-    @repository_method
-    def upsert_status(self, status: UserAnimeStatus) -> UserAnimeStatus:
-        row = (
-            self.session.query(UserAnimeStatusModel)
-            .filter_by(
-                user_id=status.user_id,
-                anime_id=status.anime_id,
+    async def upsert_status(self, status: UserAnimeStatus) -> UserAnimeStatus:
+        """Create or update an anime status.
+
+        Args:
+            status: Status aggregate to persist.
+
+        Returns:
+            UserAnimeStatus: The persisted status.
+        """
+        result = await self.session.execute(
+            select(UserAnimeStatusModel).where(
+                UserAnimeStatusModel.user_id == status.user_id,
+                UserAnimeStatusModel.anime_id == status.anime_id,
             )
-            .first()
         )
+        row = result.scalar_one_or_none()
         if row:
             row.status = status.status
             row.updated_at = datetime.utcnow()
-            self.session.commit()
+            await self.session.commit()
             status.id = row.id
             status.updated_at = row.updated_at
             return status
@@ -73,18 +90,24 @@ class WatchRepository:
             status=status.status,
         )
         self.session.add(row)
-        self.session.commit()
+        await self.session.commit()
         status.id = row.id
         status.updated_at = row.updated_at
         return status
 
-    @repository_method
-    def get_translations(self, anime_id: int) -> list[Translation]:
-        rows = (
-            self.session.query(TranslationModel)
-            .filter_by(anime_id=anime_id)
+    async def get_translations(self, anime_id: int) -> list[Translation]:
+        """Fetch translations for an anime.
+
+        Args:
+            anime_id: Anime identifier.
+
+        Returns:
+            list[Translation]: Matching translations.
+        """
+        result = await self.session.execute(
+            select(TranslationModel)
+            .where(TranslationModel.anime_id == anime_id)
             .order_by(TranslationModel.name.asc())
-            .all()
         )
         return [
             Translation(
@@ -95,21 +118,27 @@ class WatchRepository:
                 language=row.language,
                 created_at=row.created_at,
             )
-            for row in rows
+            for row in result.scalars().all()
         ]
 
-    @repository_method
-    def add_translation(self, translation: Translation) -> Translation:
-        existing = (
-            self.session.query(TranslationModel)
-            .filter_by(
-                anime_id=translation.anime_id,
-                name=translation.name,
-                translation_type=translation.translation_type,
-                language=translation.language,
+    async def add_translation(self, translation: Translation) -> Translation:
+        """Create a translation unless an identical one already exists.
+
+        Args:
+            translation: Translation aggregate to persist.
+
+        Returns:
+            Translation: The existing or newly created translation.
+        """
+        result = await self.session.execute(
+            select(TranslationModel).where(
+                TranslationModel.anime_id == translation.anime_id,
+                TranslationModel.name == translation.name,
+                TranslationModel.translation_type == translation.translation_type,
+                TranslationModel.language == translation.language,
             )
-            .first()
         )
+        existing = result.scalar_one_or_none()
         if existing:
             translation.id = existing.id
             translation.created_at = existing.created_at
@@ -122,19 +151,30 @@ class WatchRepository:
             language=translation.language,
         )
         self.session.add(row)
-        self.session.commit()
+        await self.session.commit()
         translation.id = row.id
         translation.created_at = row.created_at
         return translation
 
-    @repository_method
-    def get_sources(self, anime_id: int, episode: int | None = None) -> list[WatchSource]:
-        query = self.session.query(WatchSourceModel).filter_by(anime_id=anime_id)
+    async def get_sources(
+        self,
+        anime_id: int,
+        episode: int | None = None,
+    ) -> list[WatchSource]:
+        """Fetch watch sources for an anime.
+
+        Args:
+            anime_id: Anime identifier.
+            episode: Optional episode filter.
+
+        Returns:
+            list[WatchSource]: Matching watch sources.
+        """
+        stmt = select(WatchSourceModel).where(WatchSourceModel.anime_id == anime_id)
         if episode is not None:
-            query = query.filter_by(episode=episode)
-        rows = query.order_by(
-            WatchSourceModel.episode.asc(), WatchSourceModel.quality_label.desc()
-        ).all()
+            stmt = stmt.where(WatchSourceModel.episode == episode)
+        stmt = stmt.order_by(WatchSourceModel.episode.asc(), WatchSourceModel.quality_label.desc())
+        result = await self.session.execute(stmt)
         return [
             WatchSource(
                 id=row.id,
@@ -148,25 +188,31 @@ class WatchRepository:
                 source_type=row.source_type or "stream",
                 created_at=row.created_at,
             )
-            for row in rows
+            for row in result.scalars().all()
         ]
 
-    @repository_method
-    def add_source(self, source: WatchSource) -> WatchSource:
-        existing = (
-            self.session.query(WatchSourceModel)
-            .filter_by(
-                anime_id=source.anime_id,
-                episode=source.episode,
-                translation_id=source.translation_id,
-                provider_name=source.provider_name,
-                source_name=source.source_name,
-                stream_url=source.stream_url,
-                quality_label=source.quality_label,
-                source_type=source.source_type,
+    async def add_source(self, source: WatchSource) -> WatchSource:
+        """Create a watch source unless an identical one already exists.
+
+        Args:
+            source: Watch source aggregate to persist.
+
+        Returns:
+            WatchSource: The existing or newly created watch source.
+        """
+        result = await self.session.execute(
+            select(WatchSourceModel).where(
+                WatchSourceModel.anime_id == source.anime_id,
+                WatchSourceModel.episode == source.episode,
+                WatchSourceModel.translation_id == source.translation_id,
+                WatchSourceModel.provider_name == source.provider_name,
+                WatchSourceModel.source_name == source.source_name,
+                WatchSourceModel.stream_url == source.stream_url,
+                WatchSourceModel.quality_label == source.quality_label,
+                WatchSourceModel.source_type == source.source_type,
             )
-            .first()
         )
+        existing = result.scalar_one_or_none()
         if existing:
             source.id = existing.id
             source.created_at = existing.created_at
@@ -183,22 +229,35 @@ class WatchRepository:
             source_type=source.source_type,
         )
         self.session.add(row)
-        self.session.commit()
+        await self.session.commit()
         source.id = row.id
         source.created_at = row.created_at
         return source
 
-    @repository_method
-    def get_session(self, user_id: int, anime_id: int, episode: int) -> ViewingSession | None:
-        row = (
-            self.session.query(ViewingSessionModel)
-            .filter_by(
-                user_id=user_id,
-                anime_id=anime_id,
-                episode=episode,
+    async def get_session(
+        self,
+        user_id: int,
+        anime_id: int,
+        episode: int,
+    ) -> ViewingSession | None:
+        """Fetch a viewing session for a user and episode.
+
+        Args:
+            user_id: User identifier.
+            anime_id: Anime identifier.
+            episode: Episode number.
+
+        Returns:
+            ViewingSession | None: The session or None when missing.
+        """
+        result = await self.session.execute(
+            select(ViewingSessionModel).where(
+                ViewingSessionModel.user_id == user_id,
+                ViewingSessionModel.anime_id == anime_id,
+                ViewingSessionModel.episode == episode,
             )
-            .first()
         )
+        row = result.scalar_one_or_none()
         if not row:
             return None
         return ViewingSession(
@@ -214,17 +273,23 @@ class WatchRepository:
             updated_at=row.updated_at,
         )
 
-    @repository_method
-    def upsert_session(self, session: ViewingSession) -> ViewingSession:
-        row = (
-            self.session.query(ViewingSessionModel)
-            .filter_by(
-                user_id=session.user_id,
-                anime_id=session.anime_id,
-                episode=session.episode,
+    async def upsert_session(self, session: ViewingSession) -> ViewingSession:
+        """Create or update a viewing session.
+
+        Args:
+            session: Viewing session aggregate to persist.
+
+        Returns:
+            ViewingSession: The persisted session.
+        """
+        result = await self.session.execute(
+            select(ViewingSessionModel).where(
+                ViewingSessionModel.user_id == session.user_id,
+                ViewingSessionModel.anime_id == session.anime_id,
+                ViewingSessionModel.episode == session.episode,
             )
-            .first()
         )
+        row = result.scalar_one_or_none()
         if row:
             row.watch_source_id = session.watch_source_id
             row.position_seconds = session.position_seconds
@@ -232,7 +297,7 @@ class WatchRepository:
             row.quality_label = session.quality_label
             row.is_paused = session.is_paused
             row.updated_at = datetime.utcnow()
-            self.session.commit()
+            await self.session.commit()
             session.id = row.id
             session.updated_at = row.updated_at
             return session
@@ -248,13 +313,20 @@ class WatchRepository:
             is_paused=session.is_paused,
         )
         self.session.add(row)
-        self.session.commit()
+        await self.session.commit()
         session.id = row.id
         session.updated_at = row.updated_at
         return session
 
-    @repository_method
-    def add_highlight_context(self, context: HighlightContext) -> HighlightContext:
+    async def add_highlight_context(self, context: HighlightContext) -> HighlightContext:
+        """Create a highlight context.
+
+        Args:
+            context: Highlight context aggregate to persist.
+
+        Returns:
+            HighlightContext: The persisted context.
+        """
         row = HighlightContextModel(
             highlight_id=context.highlight_id,
             watch_source_id=context.watch_source_id,
@@ -262,19 +334,26 @@ class WatchRepository:
             title=context.title,
         )
         self.session.add(row)
-        self.session.commit()
+        await self.session.commit()
         context.id = row.id
         context.created_at = row.created_at
         return context
 
-    @repository_method
-    def get_highlight_contexts(self, highlight_ids: list[int]) -> list[HighlightContext]:
+    async def get_highlight_contexts(self, highlight_ids: list[int]) -> list[HighlightContext]:
+        """Fetch highlight contexts by highlight identifiers.
+
+        Args:
+            highlight_ids: Highlight identifiers.
+
+        Returns:
+            list[HighlightContext]: Matching contexts.
+        """
         if not highlight_ids:
             return []
-        rows = (
-            self.session.query(HighlightContextModel)
-            .filter(HighlightContextModel.highlight_id.in_(highlight_ids))
-            .all()
+        result = await self.session.execute(
+            select(HighlightContextModel).where(
+                HighlightContextModel.highlight_id.in_(highlight_ids)
+            )
         )
         return [
             HighlightContext(
@@ -285,32 +364,44 @@ class WatchRepository:
                 title=row.title,
                 created_at=row.created_at,
             )
-            for row in rows
+            for row in result.scalars().all()
         ]
 
-    @repository_method
-    def get_watched_anime_stats(
-            self,
-            user_id: int,
-            limit: int | None = None,
+    async def get_watched_anime_stats(
+        self,
+        user_id: int,
+        limit: int | None = None,
     ) -> list[WatchedAnimeStat]:
-        query = (
-            self.session.query(
+        """Compute watch statistics per anime for a user.
+
+        Args:
+            user_id: User identifier.
+            limit: Maximum number of results.
+
+        Returns:
+            list[WatchedAnimeStat]: Per-anime watch statistics.
+        """
+        watched_seconds_expr = func.sum(ViewingSessionModel.position_seconds).label(
+            "watched_seconds"
+        )
+        stmt = (
+            select(
                 ViewingSessionModel.anime_id,
-                func.sum(ViewingSessionModel.position_seconds).label("watched_seconds"),
+                watched_seconds_expr,
                 func.count(ViewingSessionModel.id).label("sessions_count"),
                 func.max(ViewingSessionModel.updated_at).label("last_watched_at"),
             )
-            .filter(ViewingSessionModel.user_id == user_id)
+            .where(ViewingSessionModel.user_id == user_id)
             .group_by(ViewingSessionModel.anime_id)
             .order_by(
-                func.sum(ViewingSessionModel.position_seconds).desc(),
+                watched_seconds_expr.desc(),
                 func.max(ViewingSessionModel.updated_at).desc(),
             )
         )
         if limit is not None:
-            query = query.limit(limit)
-        rows = query.all()
+            stmt = stmt.limit(limit)
+        result = await self.session.execute(stmt)
+        rows = result.all()
         return [
             WatchedAnimeStat(
                 anime_id=int(row.anime_id),
@@ -323,26 +414,36 @@ class WatchRepository:
             for row in rows
         ]
 
-    @repository_method
-    def get_viewing_heatmap(
-            self,
-            user_id: int,
-            days: int = 35,
+    async def get_viewing_heatmap(
+        self,
+        user_id: int,
+        days: int = 35,
     ) -> list[ViewingHeatmapPoint]:
+        """Compute daily viewing activity for a user.
+
+        Args:
+            user_id: User identifier.
+            days: Number of days to include.
+
+        Returns:
+            list[ViewingHeatmapPoint]: Daily activity points.
+        """
         since = datetime.utcnow() - timedelta(days=max(int(days), 1) - 1)
-        rows = (
-            self.session.query(
-                func.date(ViewingSessionModel.updated_at).label("activity_date"),
+        activity_date_expr = func.date(ViewingSessionModel.updated_at).label("activity_date")
+        stmt = (
+            select(
+                activity_date_expr,
                 func.count(ViewingSessionModel.id).label("interactions"),
             )
-            .filter(
+            .where(
                 ViewingSessionModel.user_id == user_id,
                 ViewingSessionModel.updated_at >= since,
             )
-            .group_by(func.date(ViewingSessionModel.updated_at))
-            .order_by(func.date(ViewingSessionModel.updated_at).asc())
-            .all()
+            .group_by(activity_date_expr)
+            .order_by(activity_date_expr.asc())
         )
+        result = await self.session.execute(stmt)
+        rows = result.all()
         return [
             ViewingHeatmapPoint(
                 date=str(row.activity_date),
@@ -351,24 +452,33 @@ class WatchRepository:
             for row in rows
         ]
 
-    @repository_method
-    def add_anime_comment(
-            self,
-            anime_id: int,
-            user_id: int,
-            content: str,
+    async def add_anime_comment(
+        self,
+        anime_id: int,
+        user_id: int,
+        content: str,
     ) -> AnimeDiscussionComment:
+        """Create an anime discussion comment.
+
+        Args:
+            anime_id: Anime identifier.
+            user_id: Author identifier.
+            content: Comment text.
+
+        Returns:
+            AnimeDiscussionComment: The created comment.
+        """
         row = AnimeDiscussionCommentModel(
             anime_id=anime_id,
             user_id=user_id,
             content=str(content or "").strip(),
         )
         self.session.add(row)
-        self.session.commit()
-        username = (
-                self.session.query(UserModel.username).filter(UserModel.id == user_id).scalar()
-                or f"user-{user_id}"
+        await self.session.commit()
+        username_result = await self.session.execute(
+            select(UserModel.username).where(UserModel.id == user_id)
         )
+        username = username_result.scalar() or f"user-{user_id}"
         return AnimeDiscussionComment(
             id=row.id,
             anime_id=row.anime_id,
@@ -380,66 +490,60 @@ class WatchRepository:
             is_liked=False,
         )
 
-    @repository_method
-    def get_anime_comments(
-            self,
-            anime_id: int,
-            sort_by: str = "popular",
-            viewer_user_id: int | None = None,
-            limit: int = 20,
+    async def get_anime_comments(
+        self,
+        anime_id: int,
+        sort_by: str = "popular",
+        viewer_user_id: int | None = None,
+        limit: int = 20,
     ) -> list[AnimeDiscussionComment]:
-        return self._get_anime_comments_sync(
-            anime_id=anime_id,
-            sort_by=sort_by,
-            viewer_user_id=viewer_user_id,
-            limit=limit,
-        )
+        """Fetch anime discussion comments.
 
-    def _get_anime_comments_sync(
-            self,
-            anime_id: int,
-            sort_by: str = "popular",
-            viewer_user_id: int | None = None,
-            limit: int = 20,
-    ) -> list[AnimeDiscussionComment]:
-        rows = (
-            self.session.query(
-                AnimeDiscussionCommentModel,
-                UserModel.username,
-                func.count(AnimeDiscussionLikeModel.id).label("likes_count"),
-            )
+        Args:
+            anime_id: Anime identifier.
+            sort_by: Sorting mode, either popular or recent.
+            viewer_user_id: Optional viewer for like flags.
+            limit: Maximum number of results.
+
+        Returns:
+            list[AnimeDiscussionComment]: Matching comments.
+        """
+        likes_count_expr = func.count(AnimeDiscussionLikeModel.id).label("likes_count")
+        stmt = (
+            select(AnimeDiscussionCommentModel, UserModel.username, likes_count_expr)
             .join(UserModel, UserModel.id == AnimeDiscussionCommentModel.user_id)
             .outerjoin(
                 AnimeDiscussionLikeModel,
                 AnimeDiscussionLikeModel.comment_id == AnimeDiscussionCommentModel.id,
             )
-            .filter(AnimeDiscussionCommentModel.anime_id == anime_id)
+            .where(AnimeDiscussionCommentModel.anime_id == anime_id)
             .group_by(AnimeDiscussionCommentModel.id, UserModel.username)
         )
         if str(sort_by).strip().lower() == "recent":
-            rows = rows.order_by(AnimeDiscussionCommentModel.created_at.desc())
+            stmt = stmt.order_by(AnimeDiscussionCommentModel.created_at.desc())
         else:
-            rows = rows.order_by(
-                func.count(AnimeDiscussionLikeModel.id).desc(),
+            stmt = stmt.order_by(
+                likes_count_expr.desc(),
                 AnimeDiscussionCommentModel.created_at.desc(),
             )
-        rows = rows.limit(limit).all()
+        stmt = stmt.limit(limit)
+        result = await self.session.execute(stmt)
+        rows = result.all()
 
         liked_ids: set[int] = set()
         if viewer_user_id is not None:
-            liked_ids = {
-                int(value)
-                for (value,) in self.session.query(AnimeDiscussionLikeModel.comment_id)
+            liked_result = await self.session.execute(
+                select(AnimeDiscussionLikeModel.comment_id)
                 .join(
                     AnimeDiscussionCommentModel,
                     AnimeDiscussionCommentModel.id == AnimeDiscussionLikeModel.comment_id,
                 )
-                .filter(
+                .where(
                     AnimeDiscussionLikeModel.user_id == viewer_user_id,
                     AnimeDiscussionCommentModel.anime_id == anime_id,
                 )
-                .all()
-            }
+            )
+            liked_ids = {int(value) for (value,) in liked_result.all()}
         return [
             AnimeDiscussionComment(
                 id=item.id,
@@ -454,27 +558,44 @@ class WatchRepository:
             for item, username, likes_count in rows
         ]
 
-    @repository_method
-    def set_anime_comment_like(
-            self,
-            comment_id: int,
-            user_id: int,
-            liked: bool,
+    async def set_anime_comment_like(
+        self,
+        comment_id: int,
+        user_id: int,
+        liked: bool,
     ) -> AnimeDiscussionComment:
-        comment = self.session.query(AnimeDiscussionCommentModel).filter_by(id=comment_id).first()
+        """Set or unset a like on an anime discussion comment.
+
+        Args:
+            comment_id: Comment identifier.
+            user_id: Actor identifier.
+            liked: Whether to like or unlike the comment.
+
+        Returns:
+            AnimeDiscussionComment: The updated comment.
+
+        Raises:
+            ValueError: When the comment does not exist.
+        """
+        result = await self.session.execute(
+            select(AnimeDiscussionCommentModel).where(AnimeDiscussionCommentModel.id == comment_id)
+        )
+        comment = result.scalar_one_or_none()
         if comment is None:
             raise ValueError("Комментарий не найден")
-        existing = (
-            self.session.query(AnimeDiscussionLikeModel)
-            .filter_by(comment_id=comment_id, user_id=user_id)
-            .first()
+        existing_result = await self.session.execute(
+            select(AnimeDiscussionLikeModel).where(
+                AnimeDiscussionLikeModel.comment_id == comment_id,
+                AnimeDiscussionLikeModel.user_id == user_id,
+            )
         )
+        existing = existing_result.scalar_one_or_none()
         if liked and existing is None:
             self.session.add(AnimeDiscussionLikeModel(comment_id=comment_id, user_id=user_id))
         elif not liked and existing is not None:
-            self.session.delete(existing)
-        self.session.commit()
-        refreshed = self._get_anime_comments_sync(
+            await self.session.delete(existing)
+        await self.session.commit()
+        refreshed = await self._get_anime_comments(
             anime_id=comment.anime_id,
             viewer_user_id=user_id,
             limit=200,

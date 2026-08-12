@@ -1,18 +1,24 @@
 import json
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain import Favorite
 from backend.infrastructure.models import FavoriteModel
-from backend.infrastructure.repositories._async import repository_method
 
 
 class FavoriteRepository:
+    """Data access for anime favorites."""
+
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    @repository_method
-    def add(self, favorite: Favorite):
+    async def add(self, favorite: Favorite):
+        """Persist a new favorite.
+
+        Args:
+            favorite: Favorite aggregate to persist.
+        """
         db_fav = FavoriteModel(
             user_id=favorite.user_id,
             anime_id=favorite.anime_id,
@@ -22,22 +28,40 @@ class FavoriteRepository:
             genres_json=self._dump_genres(favorite.genres),
         )
         self.session.add(db_fav)
-        self.session.commit()
+        await self.session.commit()
         favorite.added_at = db_fav.added_at
         return favorite
 
-    @repository_method
-    def remove(self, user_id: int, anime_id: int):
-        db_fav = (
-            self.session.query(FavoriteModel).filter_by(user_id=user_id, anime_id=anime_id).first()
-        )
-        if db_fav:
-            self.session.delete(db_fav)
-            self.session.commit()
+    async def remove(self, user_id: int, anime_id: int):
+        """Delete a favorite for a user and anime.
 
-    @repository_method
-    def get_by_user(self, user_id: int) -> list[Favorite]:
-        rows = self.session.query(FavoriteModel).filter_by(user_id=user_id).all()
+        Args:
+            user_id: User identifier.
+            anime_id: Anime identifier.
+        """
+        result = await self.session.execute(
+            select(FavoriteModel).where(
+                FavoriteModel.user_id == user_id,
+                FavoriteModel.anime_id == anime_id,
+            )
+        )
+        db_fav = result.scalar_one_or_none()
+        if db_fav:
+            await self.session.delete(db_fav)
+            await self.session.commit()
+
+    async def get_by_user(self, user_id: int) -> list[Favorite]:
+        """Return favorites for a user.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            list[Favorite]: User favorites.
+        """
+        result = await self.session.execute(
+            select(FavoriteModel).where(FavoriteModel.user_id == user_id)
+        )
         return [
             Favorite(
                 user_id=r.user_id,
@@ -48,7 +72,7 @@ class FavoriteRepository:
                 cover_url=r.cover_url,
                 genres=self._load_genres(r.genres_json),
             )
-            for r in rows
+            for r in result.scalars().all()
         ]
 
     def _dump_genres(self, genres: list[str] | None) -> str | None:

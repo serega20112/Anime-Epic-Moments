@@ -1,13 +1,15 @@
-"""Application lifecycle event handlers (startup/shutdown)."""
+"""Application lifecycle (startup/shutdown) via FastAPI lifespan."""
 
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from backend.infrastructure.files.database import init_db
 
 from backend.config import Settings
+from backend.infrastructure.files.database import init_db
 from backend.utils import setup_logging
 
 logger = logging.getLogger("anime_epic_moments")
@@ -25,22 +27,19 @@ def _resolve_log_level(level_name: str) -> int:
     return getattr(logging, str(level_name).upper(), logging.INFO)
 
 
-def register_lifecycle_handlers(app: FastAPI) -> None:
-    """Register startup and shutdown handlers on the FastAPI app.
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Run application startup and shutdown tasks.
 
     Args:
         app: FastAPI application instance.
+
+    Yields:
+        None: The lifespan body.
     """
-
-    @app.on_event("startup")
-    async def startup() -> None:
-        """Initialize logging and database when the app starts."""
-        setup_logging(level=_resolve_log_level(Settings.log_level))
-        if Settings.database_auto_init:
-            await init_db()
-        logger.info("application_started")
-
-    @app.on_event("shutdown")
-    async def shutdown() -> None:
-        """Clean up resources when the app shuts down."""
-        logger.info("application_stopped")
+    setup_logging(level=_resolve_log_level(Settings.log_level))
+    if Settings.database_auto_init:
+        await init_db()
+    logger.info("application_started")
+    yield
+    logger.info("application_stopped")

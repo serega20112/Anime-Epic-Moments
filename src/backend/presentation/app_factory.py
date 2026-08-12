@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from backend.config import Settings
-from backend.events.lifecycle import register_lifecycle_handlers
+from backend.events.lifecycle import lifespan
 from backend.infrastructure.di.providers import AppProvider, RequestProvider, UseCaseProvider
 from backend.infrastructure.repositories.user_repository import UserRepository
 from backend.infrastructure.security.csrf_service import csrf_service
@@ -51,7 +51,7 @@ def create_app() -> FastAPI:
     Returns:
         FastAPI: Configured application instance.
     """
-    app = FastAPI(debug=Settings.flask_debug)
+    app = FastAPI(debug=Settings.flask_debug, lifespan=lifespan)
     dishka_container = make_async_container(
         AppProvider(),
         RequestProvider(),
@@ -70,18 +70,9 @@ def create_app() -> FastAPI:
         session_cookie="aem_session",
     )
 
-    register_lifecycle_handlers(app)
-
     @app.middleware("http")
     async def app_context_middleware(request: Request, call_next):
         """Process each HTTP request through middleware pipeline.
-
-        Validates request size, sets up DI container, loads user,
-        generates CSRF token, validates CSRF for mutations.
-
-        Args:
-            request: Incoming HTTP request.
-            call_next: Next middleware or route handler.
 
         Returns:
             Response: HTTP response.
@@ -111,7 +102,7 @@ def create_app() -> FastAPI:
                 await _load_user(request)
                 _prepare_csrf_token(request)
             if request.method in {"POST", "PUT", "PATCH", "DELETE"} and not _is_csrf_exempt(
-                    request
+                request
             ):
                 if not await _validate_csrf(request):
                     logger.warning("csrf_validation_failed path=%s", request.url.path)

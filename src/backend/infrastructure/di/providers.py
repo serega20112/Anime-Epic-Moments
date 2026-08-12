@@ -6,72 +6,43 @@ from collections.abc import AsyncIterator
 
 from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.infrastructure.files.database import get_session_factory
-from backend.infrastructure.repositories.user_repository import UserRepository
-from backend.infrastructure.security.account_lock_service import AccountLockService
-from backend.infrastructure.security.password_service import PasswordService
-from backend.infrastructure.security.rate_limiter import RateLimiter
 
 from backend.application.services import WatchSourceSyncService
 from backend.application.services.recommendation_service import RecommendationService
-from backend.application.use_cases import AddAnimeCommentUseCase
-from backend.application.use_cases import AddCollectionItemUseCase
-from backend.application.use_cases import AddWatchSourceUseCase
 from backend.application.use_cases import (
+    AddAnimeCommentUseCase,
+    AddCollectionItemUseCase,
+    AddWatchSourceUseCase,
     AskAiRecommendationsUseCase,
-)
-from backend.application.use_cases import (
     CreateSupportTicketUseCase,
-)
-from backend.application.use_cases import DeleteHighlightUseCase
-from backend.application.use_cases import (
+    DeleteHighlightUseCase,
     GenerateRecommendationsUseCase,
-)
-from backend.application.use_cases import GetAnimeDiscussionUseCase
-from backend.application.use_cases import GetFavoritesUseCase
-from backend.application.use_cases import (
+    GetAnimeDiscussionUseCase,
+    GetFavoritesUseCase,
     GetLikedHighlightsUseCase,
-)
-from backend.application.use_cases import GetProfileOverviewUseCase
-from backend.application.use_cases import (
+    GetProfileOverviewUseCase,
     GetPublicProfileOverviewUseCase,
-)
-from backend.application.use_cases import (
     GetPublicTopHighlightsUseCase,
-)
-from backend.application.use_cases import GetSeasonPopularUseCase
-from backend.application.use_cases import (
+    GetSeasonPopularUseCase,
     GetUserCollectionsUseCase,
-)
-from backend.application.use_cases import GetWatchPageUseCase
-from backend.application.use_cases import LogoutUserUseCase
-from backend.application.use_cases import (
+    GetWatchPageUseCase,
+    LogoutUserUseCase,
     RefreshRecommendationsUseCase,
-)
-from backend.application.use_cases import RefreshSessionUseCase
-from backend.application.use_cases import RegisterUserUseCase
-from backend.application.use_cases import (
+    RefreshSessionUseCase,
+    RegisterUserUseCase,
     RemoveCollectionItemUseCase,
-)
-from backend.application.use_cases import (
     RequestEmailVerificationUseCase,
-)
-from backend.application.use_cases import RequestPasswordResetUseCase
-from backend.application.use_cases import (
+    RequestPasswordResetUseCase,
     ResendEmailVerificationUseCase,
-)
-from backend.application.use_cases import SearchAnimeUseCase
-from backend.application.use_cases import (
+    SearchAnimeUseCase,
     SetAnimeCommentLikeUseCase,
-)
-from backend.application.use_cases import SetHighlightLikeUseCase
-from backend.application.use_cases import SetUserFollowUseCase
-from backend.application.use_cases import SyncWatchSourcesUseCase
-from backend.application.use_cases import UpdateUserProfileUseCase
-from backend.application.use_cases import (
+    SetHighlightLikeUseCase,
+    SetUserFollowUseCase,
+    SyncWatchSourcesUseCase,
+    UpdateUserProfileUseCase,
     UpsertUserAnimeStatusUseCase,
+    VerifyEmailUseCase,
 )
-from backend.application.use_cases import VerifyEmailUseCase
 from backend.application.use_cases.anime.autocomplete_anime import AutocompleteAnimeUseCase
 from backend.application.use_cases.anime.get_home_page import GetHomePageUseCase
 from backend.application.use_cases.anime.search_anime_by_description import (
@@ -114,28 +85,34 @@ from backend.application.use_cases.watch.create_watch_highlight import (
 )
 from backend.application.use_cases.watch.save_viewing_session import SaveViewingSessionUseCase
 from backend.config import Settings
-from backend.infrastructure.cache import HighlightDashboardCache
-from backend.infrastructure.cache import RecommendationCache
+from backend.infrastructure.cache import HighlightDashboardCache, RecommendationCache
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
-from backend.infrastructure.external import AniLibriaClient
-from backend.infrastructure.external import AnimeApiClient
-from backend.infrastructure.external import JustWatchClient
-from backend.infrastructure.external import KodikClient
-from backend.infrastructure.external import PasswordResetMailer
-from backend.infrastructure.external import SupportEmailMailer
-from backend.infrastructure.external import TelegramSupportNotifier
+from backend.infrastructure.external import (
+    AniLibriaClient,
+    AnimeApiClient,
+    JustWatchClient,
+    KodikClient,
+    PasswordResetMailer,
+    SupportEmailMailer,
+    TelegramSupportNotifier,
+)
 from backend.infrastructure.external.email_verification_mailer import EmailVerificationMailer
 from backend.infrastructure.external.huggingface_llm_client import HuggingFaceLLMClient
 from backend.infrastructure.external.youtube_client import YouTubeClient
+from backend.infrastructure.files.database import get_session_factory
 from backend.infrastructure.repositories.collection_repository import CollectionRepository
 from backend.infrastructure.repositories.favorite_repository import FavoriteRepository
 from backend.infrastructure.repositories.highlight_repository import HighlightRepository
 from backend.infrastructure.repositories.support_repository import SupportRepository
+from backend.infrastructure.repositories.user_repository import UserRepository
 from backend.infrastructure.repositories.watch_repository import WatchRepository
+from backend.infrastructure.security.account_lock_service import AccountLockService
 from backend.infrastructure.security.csrf_service import CSRFService
 from backend.infrastructure.security.email_verification_store import EmailVerificationStore
 from backend.infrastructure.security.jwt_service import JWTService
+from backend.infrastructure.security.password_service import PasswordService
+from backend.infrastructure.security.rate_limiter import RateLimiter
 from backend.infrastructure.security.token_blocklist import TokenBlocklist
 
 
@@ -156,16 +133,18 @@ class AppProvider(Provider):
         )
 
     @provide(scope=Scope.APP)
-    def anime_api_client(self, store: KeyValueStore) -> AnimeApiClient:
+    async def anime_api_client(self, store: KeyValueStore) -> AsyncIterator[AnimeApiClient]:
         """Provide the anime API client.
 
         Args:
             store: Key-value store.
 
-        Returns:
+        Yields:
             AnimeApiClient: Configured client.
         """
-        return AnimeApiClient(store=store)
+        client = AnimeApiClient(store=store)
+        yield client
+        await client.aclose()
 
     @provide(scope=Scope.APP)
     def kodik_client(self) -> KodikClient:
@@ -456,11 +435,11 @@ class RequestProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def recommendation_service(
-            self,
-            favorite_repository: FavoriteRepository,
-            highlight_repository: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            recommendation_cache: RecommendationCache,
+        self,
+        favorite_repository: FavoriteRepository,
+        highlight_repository: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        recommendation_cache: RecommendationCache,
     ) -> RecommendationService:
         """Provide the recommendation service.
 
@@ -482,12 +461,12 @@ class RequestProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def watch_source_sync_service(
-            self,
-            watch_repository: WatchRepository,
-            kodik_client: KodikClient,
-            anilibria_client: AniLibriaClient,
-            youtube_client: YouTubeClient,
-            justwatch_client: JustWatchClient,
+        self,
+        watch_repository: WatchRepository,
+        kodik_client: KodikClient,
+        anilibria_client: AniLibriaClient,
+        youtube_client: YouTubeClient,
+        justwatch_client: JustWatchClient,
     ) -> WatchSourceSyncService:
         """Provide the watch source sync service.
 
@@ -517,9 +496,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def register_user(
-            self,
-            user_repository: UserRepository,
-            password_service: PasswordService,
+        self,
+        user_repository: UserRepository,
+        password_service: PasswordService,
     ) -> RegisterUserUseCase:
         """Provide the register user use case.
 
@@ -534,11 +513,11 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def request_email_verification(
-            self,
-            user_repository: UserRepository,
-            password_service: PasswordService,
-            email_verification_store: EmailVerificationStore,
-            email_verification_mailer: EmailVerificationMailer,
+        self,
+        user_repository: UserRepository,
+        password_service: PasswordService,
+        email_verification_store: EmailVerificationStore,
+        email_verification_mailer: EmailVerificationMailer,
     ) -> RequestEmailVerificationUseCase:
         """Provide the request email verification use case.
 
@@ -560,9 +539,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def resend_email_verification(
-            self,
-            email_verification_store: EmailVerificationStore,
-            email_verification_mailer: EmailVerificationMailer,
+        self,
+        email_verification_store: EmailVerificationStore,
+        email_verification_mailer: EmailVerificationMailer,
     ) -> ResendEmailVerificationUseCase:
         """Provide the resend email verification use case.
 
@@ -580,9 +559,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def verify_email(
-            self,
-            user_repository: UserRepository,
-            email_verification_store: EmailVerificationStore,
+        self,
+        user_repository: UserRepository,
+        email_verification_store: EmailVerificationStore,
     ) -> VerifyEmailUseCase:
         """Provide the verify email use case.
 
@@ -597,10 +576,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def login_user(
-            self,
-            user_repository: UserRepository,
-            password_service: PasswordService,
-            account_lock_service: AccountLockService,
+        self,
+        user_repository: UserRepository,
+        password_service: PasswordService,
+        account_lock_service: AccountLockService,
     ) -> LoginUserUseCase:
         """Provide the login user use case.
 
@@ -616,9 +595,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def logout_user(
-            self,
-            jwt_service: JWTService,
-            token_blocklist: TokenBlocklist,
+        self,
+        jwt_service: JWTService,
+        token_blocklist: TokenBlocklist,
     ) -> LogoutUserUseCase:
         """Provide the logout user use case.
 
@@ -633,9 +612,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def refresh_session(
-            self,
-            jwt_service: JWTService,
-            token_blocklist: TokenBlocklist,
+        self,
+        jwt_service: JWTService,
+        token_blocklist: TokenBlocklist,
     ) -> RefreshSessionUseCase:
         """Provide the refresh session use case.
 
@@ -650,9 +629,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def update_user_profile(
-            self,
-            user_repository: UserRepository,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        user_repository: UserRepository,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> UpdateUserProfileUseCase:
         """Provide the update user profile use case.
 
@@ -667,14 +646,14 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_profile_overview(
-            self,
-            user_repository: UserRepository,
-            highlight_repository: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            favorite_repository: FavoriteRepository,
-            watch_repository: WatchRepository,
-            hf_llm_client: HuggingFaceLLMClient,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        user_repository: UserRepository,
+        highlight_repository: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        favorite_repository: FavoriteRepository,
+        watch_repository: WatchRepository,
+        hf_llm_client: HuggingFaceLLMClient,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> GetProfileOverviewUseCase:
         """Provide the get profile overview use case.
 
@@ -702,10 +681,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def request_password_reset(
-            self,
-            user_repository: UserRepository,
-            jwt_service: JWTService,
-            password_reset_mailer: PasswordResetMailer,
+        self,
+        user_repository: UserRepository,
+        jwt_service: JWTService,
+        password_reset_mailer: PasswordResetMailer,
     ) -> RequestPasswordResetUseCase:
         """Provide the request password reset use case.
 
@@ -725,11 +704,11 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def reset_password(
-            self,
-            user_repository: UserRepository,
-            jwt_service: JWTService,
-            password_service: PasswordService,
-            token_blocklist: TokenBlocklist,
+        self,
+        user_repository: UserRepository,
+        jwt_service: JWTService,
+        password_service: PasswordService,
+        token_blocklist: TokenBlocklist,
     ) -> ResetPasswordUseCase:
         """Provide the reset password use case.
 
@@ -742,17 +721,15 @@ class UseCaseProvider(Provider):
         Returns:
             ResetPasswordUseCase: Configured use case.
         """
-        return ResetPasswordUseCase(
-            user_repository, jwt_service, password_service, token_blocklist
-        )
+        return ResetPasswordUseCase(user_repository, jwt_service, password_service, token_blocklist)
 
     @provide(scope=Scope.REQUEST)
     def create_highlight(
-            self,
-            highlight_repository: HighlightRepository,
-            recommendation_service: RecommendationService,
-            highlight_dashboard_cache: HighlightDashboardCache,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        highlight_repository: HighlightRepository,
+        recommendation_service: RecommendationService,
+        highlight_dashboard_cache: HighlightDashboardCache,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> CreateHighlightUseCase:
         """Provide the create highlight use case.
 
@@ -774,11 +751,11 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def delete_highlight(
-            self,
-            highlight_repository: HighlightRepository,
-            recommendation_service: RecommendationService,
-            highlight_dashboard_cache: HighlightDashboardCache,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        highlight_repository: HighlightRepository,
+        recommendation_service: RecommendationService,
+        highlight_dashboard_cache: HighlightDashboardCache,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> DeleteHighlightUseCase:
         """Provide the delete highlight use case.
 
@@ -800,11 +777,11 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def edit_highlight(
-            self,
-            highlight_repository: HighlightRepository,
-            recommendation_service: RecommendationService,
-            highlight_dashboard_cache: HighlightDashboardCache,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        highlight_repository: HighlightRepository,
+        recommendation_service: RecommendationService,
+        highlight_dashboard_cache: HighlightDashboardCache,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> EditHighlightUseCase:
         """Provide the edit highlight use case.
 
@@ -826,10 +803,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_user_highlights(
-            self,
-            highlight_repository: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            user_repository: UserRepository,
+        self,
+        highlight_repository: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        user_repository: UserRepository,
     ) -> GetUserHighlightsUseCase:
         """Provide the get user highlights use case.
 
@@ -849,11 +826,11 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_public_top_highlights(
-            self,
-            highlight_repository: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            highlight_dashboard_cache: HighlightDashboardCache,
-            user_repository: UserRepository,
+        self,
+        highlight_repository: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        highlight_dashboard_cache: HighlightDashboardCache,
+        user_repository: UserRepository,
     ) -> GetPublicTopHighlightsUseCase:
         """Provide the get public top highlights use case.
 
@@ -875,10 +852,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_saved_highlights(
-            self,
-            highlight_repository: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            user_repository: UserRepository,
+        self,
+        highlight_repository: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        user_repository: UserRepository,
     ) -> GetSavedHighlightsUseCase:
         """Provide the get saved highlights use case.
 
@@ -898,10 +875,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_liked_highlights(
-            self,
-            highlight_repository: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            user_repository: UserRepository,
+        self,
+        highlight_repository: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        user_repository: UserRepository,
     ) -> GetLikedHighlightsUseCase:
         """Provide the get liked highlights use case.
 
@@ -921,10 +898,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_shared_highlight(
-            self,
-            highlight_repository: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            user_repository: UserRepository,
+        self,
+        highlight_repository: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        user_repository: UserRepository,
     ) -> GetSharedHighlightUseCase:
         """Provide the get shared highlight use case.
 
@@ -944,11 +921,11 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_highlight_feed(
-            self,
-            highlight_repository: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            favorite_repository: FavoriteRepository,
-            user_repository: UserRepository,
+        self,
+        highlight_repository: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        favorite_repository: FavoriteRepository,
+        user_repository: UserRepository,
     ) -> GetHighlightFeedUseCase:
         """Provide the get highlight feed use case.
 
@@ -970,10 +947,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_following_highlights(
-            self,
-            highlight_repository: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            user_repository: UserRepository,
+        self,
+        highlight_repository: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        user_repository: UserRepository,
     ) -> GetFollowingHighlightsUseCase:
         """Provide the get following highlights use case.
 
@@ -993,9 +970,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def set_user_follow(
-            self,
-            user_repository: UserRepository,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        user_repository: UserRepository,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> SetUserFollowUseCase:
         """Provide the set user follow use case.
 
@@ -1010,10 +987,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_public_profile_overview(
-            self,
-            get_profile_overview: GetProfileOverviewUseCase,
-            user_repository: UserRepository,
-            collection_repository: CollectionRepository,
+        self,
+        get_profile_overview: GetProfileOverviewUseCase,
+        user_repository: UserRepository,
+        collection_repository: CollectionRepository,
     ) -> GetPublicProfileOverviewUseCase:
         """Provide the get public profile overview use case.
 
@@ -1033,10 +1010,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def set_highlight_like(
-            self,
-            highlight_repository: HighlightRepository,
-            highlight_dashboard_cache: HighlightDashboardCache,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        highlight_repository: HighlightRepository,
+        highlight_dashboard_cache: HighlightDashboardCache,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> SetHighlightLikeUseCase:
         """Provide the set highlight like use case.
 
@@ -1056,10 +1033,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def add_highlight_comment(
-            self,
-            highlight_repository: HighlightRepository,
-            highlight_dashboard_cache: HighlightDashboardCache,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        highlight_repository: HighlightRepository,
+        highlight_dashboard_cache: HighlightDashboardCache,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> AddHighlightCommentUseCase:
         """Provide the add highlight comment use case.
 
@@ -1079,8 +1056,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_highlight_comments(
-            self,
-            highlight_repository: HighlightRepository,
+        self,
+        highlight_repository: HighlightRepository,
     ) -> GetHighlightCommentsUseCase:
         """Provide the get highlight comments use case.
 
@@ -1094,8 +1071,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_highlight_likers(
-            self,
-            highlight_repository: HighlightRepository,
+        self,
+        highlight_repository: HighlightRepository,
     ) -> GetHighlightLikersUseCase:
         """Provide the get highlight likers use case.
 
@@ -1109,8 +1086,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_highlight_notifications(
-            self,
-            highlight_repository: HighlightRepository,
+        self,
+        highlight_repository: HighlightRepository,
     ) -> GetHighlightNotificationsUseCase:
         """Provide the get highlight notifications use case.
 
@@ -1124,9 +1101,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def set_saved_highlight(
-            self,
-            highlight_repository: HighlightRepository,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        highlight_repository: HighlightRepository,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> SetSavedHighlightUseCase:
         """Provide the set saved highlight use case.
 
@@ -1141,10 +1118,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def add_favorite(
-            self,
-            favorite_repository: FavoriteRepository,
-            recommendation_service: RecommendationService,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        favorite_repository: FavoriteRepository,
+        recommendation_service: RecommendationService,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> AddFavoriteUseCase:
         """Provide the add favorite use case.
 
@@ -1164,10 +1141,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def remove_favorite(
-            self,
-            favorite_repository: FavoriteRepository,
-            recommendation_service: RecommendationService,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        favorite_repository: FavoriteRepository,
+        recommendation_service: RecommendationService,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> RemoveFavoriteUseCase:
         """Provide the remove favorite use case.
 
@@ -1187,9 +1164,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_favorites(
-            self,
-            favorite_repository: FavoriteRepository,
-            anime_api_client: AnimeApiClient,
+        self,
+        favorite_repository: FavoriteRepository,
+        anime_api_client: AnimeApiClient,
     ) -> GetFavoritesUseCase:
         """Provide the get favorites use case.
 
@@ -1204,8 +1181,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def create_collection(
-            self,
-            collection_repository: CollectionRepository,
+        self,
+        collection_repository: CollectionRepository,
     ) -> CreateCollectionUseCase:
         """Provide the create collection use case.
 
@@ -1219,8 +1196,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def add_collection_item(
-            self,
-            collection_repository: CollectionRepository,
+        self,
+        collection_repository: CollectionRepository,
     ) -> AddCollectionItemUseCase:
         """Provide the add collection item use case.
 
@@ -1234,8 +1211,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def remove_collection_item(
-            self,
-            collection_repository: CollectionRepository,
+        self,
+        collection_repository: CollectionRepository,
     ) -> RemoveCollectionItemUseCase:
         """Provide the remove collection item use case.
 
@@ -1249,8 +1226,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_user_collections(
-            self,
-            collection_repository: CollectionRepository,
+        self,
+        collection_repository: CollectionRepository,
     ) -> GetUserCollectionsUseCase:
         """Provide the get user collections use case.
 
@@ -1264,8 +1241,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_shared_collection(
-            self,
-            collection_repository: CollectionRepository,
+        self,
+        collection_repository: CollectionRepository,
     ) -> GetSharedCollectionUseCase:
         """Provide the get shared collection use case.
 
@@ -1291,9 +1268,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def search_anime_by_description(
-            self,
-            anime_api_client: AnimeApiClient,
-            hf_llm_client: HuggingFaceLLMClient,
+        self,
+        anime_api_client: AnimeApiClient,
+        hf_llm_client: HuggingFaceLLMClient,
     ) -> SearchAnimeByDescriptionUseCase:
         """Provide the search by description use case.
 
@@ -1308,8 +1285,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def autocomplete_anime(
-            self,
-            anime_api_client: AnimeApiClient,
+        self,
+        anime_api_client: AnimeApiClient,
     ) -> AutocompleteAnimeUseCase:
         """Provide the autocomplete use case.
 
@@ -1332,8 +1309,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_season_popular(
-            self,
-            anime_api_client: AnimeApiClient,
+        self,
+        anime_api_client: AnimeApiClient,
     ) -> GetSeasonPopularUseCase:
         """Provide the season popular use case.
 
@@ -1347,8 +1324,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def generate_recommendations(
-            self,
-            recommendation_service: RecommendationService,
+        self,
+        recommendation_service: RecommendationService,
     ) -> GenerateRecommendationsUseCase:
         """Provide the generate recommendations use case.
 
@@ -1362,10 +1339,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def ask_ai_recommendations(
-            self,
-            favorite_repository: FavoriteRepository,
-            anime_api_client: AnimeApiClient,
-            hf_llm_client: HuggingFaceLLMClient,
+        self,
+        favorite_repository: FavoriteRepository,
+        anime_api_client: AnimeApiClient,
+        hf_llm_client: HuggingFaceLLMClient,
     ) -> AskAiRecommendationsUseCase:
         """Provide the ask AI recommendations use case.
 
@@ -1385,8 +1362,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def refresh_recommendations(
-            self,
-            recommendation_service: RecommendationService,
+        self,
+        recommendation_service: RecommendationService,
     ) -> RefreshRecommendationsUseCase:
         """Provide the refresh recommendations use case.
 
@@ -1400,10 +1377,10 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def create_support_ticket(
-            self,
-            support_repository: SupportRepository,
-            telegram_support_notifier: TelegramSupportNotifier,
-            support_email_mailer: SupportEmailMailer,
+        self,
+        support_repository: SupportRepository,
+        telegram_support_notifier: TelegramSupportNotifier,
+        support_email_mailer: SupportEmailMailer,
     ) -> CreateSupportTicketUseCase:
         """Provide the create support ticket use case.
 
@@ -1423,11 +1400,11 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_watch_page(
-            self,
-            watch_repository: WatchRepository,
-            highlight_repository: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            watch_source_sync_service: WatchSourceSyncService,
+        self,
+        watch_repository: WatchRepository,
+        highlight_repository: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        watch_source_sync_service: WatchSourceSyncService,
     ) -> GetWatchPageUseCase:
         """Provide the get watch page use case.
 
@@ -1449,8 +1426,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def add_watch_source(
-            self,
-            watch_repository: WatchRepository,
+        self,
+        watch_repository: WatchRepository,
     ) -> AddWatchSourceUseCase:
         """Provide the add watch source use case.
 
@@ -1464,9 +1441,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def sync_watch_sources(
-            self,
-            anime_api_client: AnimeApiClient,
-            watch_source_sync_service: WatchSourceSyncService,
+        self,
+        anime_api_client: AnimeApiClient,
+        watch_source_sync_service: WatchSourceSyncService,
     ) -> SyncWatchSourcesUseCase:
         """Provide the sync watch sources use case.
 
@@ -1481,9 +1458,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def upsert_user_anime_status(
-            self,
-            watch_repository: WatchRepository,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        watch_repository: WatchRepository,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> UpsertUserAnimeStatusUseCase:
         """Provide the upsert user anime status use case.
 
@@ -1498,9 +1475,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def save_viewing_session(
-            self,
-            watch_repository: WatchRepository,
-            profile_overview_cache: ProfileOverviewCache,
+        self,
+        watch_repository: WatchRepository,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> SaveViewingSessionUseCase:
         """Provide the save viewing session use case.
 
@@ -1515,8 +1492,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def add_anime_comment(
-            self,
-            watch_repository: WatchRepository,
+        self,
+        watch_repository: WatchRepository,
     ) -> AddAnimeCommentUseCase:
         """Provide the add anime comment use case.
 
@@ -1530,8 +1507,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def get_anime_discussion(
-            self,
-            watch_repository: WatchRepository,
+        self,
+        watch_repository: WatchRepository,
     ) -> GetAnimeDiscussionUseCase:
         """Provide the get anime discussion use case.
 
@@ -1545,8 +1522,8 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def set_anime_comment_like(
-            self,
-            watch_repository: WatchRepository,
+        self,
+        watch_repository: WatchRepository,
     ) -> SetAnimeCommentLikeUseCase:
         """Provide the set anime comment like use case.
 
@@ -1560,9 +1537,9 @@ class UseCaseProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def create_watch_highlight(
-            self,
-            create_highlight: CreateHighlightUseCase,
-            watch_repository: WatchRepository,
+        self,
+        create_highlight: CreateHighlightUseCase,
+        watch_repository: WatchRepository,
     ) -> CreateWatchHighlightUseCase:
         """Provide the create watch highlight use case.
 

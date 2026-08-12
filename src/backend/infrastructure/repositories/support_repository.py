@@ -1,19 +1,25 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain.support.entity import SupportTicket
 from backend.infrastructure.models import SupportTicketModel
-from backend.infrastructure.repositories._async import repository_method
 
 
 class SupportRepository:
-    """SQLAlchemy-репозиторий тикетов поддержки."""
+    """Асинхронный SQLAlchemy-репозиторий тикетов поддержки."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    @repository_method
-    def add(self, ticket: SupportTicket) -> SupportTicket:
-        """Сохраняет новый тикет поддержки в базе."""
+    async def add(self, ticket: SupportTicket) -> SupportTicket:
+        """Сохраняет новый тикет поддержки в базе.
+
+        Args:
+            ticket: Domен-сущность тикета для сохранения.
+
+        Returns:
+            SupportTicket: Сохранённый тикет.
+        """
         db_ticket = SupportTicketModel(
             user_id=ticket.user_id,
             email=ticket.email,
@@ -27,13 +33,22 @@ class SupportRepository:
             delivery_error=ticket.delivery_error,
         )
         self.session.add(db_ticket)
-        self.session.commit()
+        await self.session.commit()
         return self._to_entity(db_ticket)
 
-    @repository_method
-    def update(self, ticket: SupportTicket) -> SupportTicket:
-        """Обновляет статус доставки существующего тикета."""
-        db_ticket = self.session.query(SupportTicketModel).filter_by(id=ticket.id).first()
+    async def update(self, ticket: SupportTicket) -> SupportTicket:
+        """Обновляет статус доставки существующего тикета.
+
+        Args:
+            ticket: Тикет с обновлёнными полями.
+
+        Returns:
+            SupportTicket: Обновлённый тикет.
+        """
+        result = await self.session.execute(
+            select(SupportTicketModel).where(SupportTicketModel.id == ticket.id)
+        )
+        db_ticket = result.scalar_one_or_none()
         if not db_ticket:
             raise ValueError("Тикет поддержки для обновления не найден")
 
@@ -42,11 +57,18 @@ class SupportRepository:
         db_ticket.delivery_status = ticket.delivery_status
         db_ticket.delivery_error = ticket.delivery_error
         db_ticket.page_url = ticket.page_url
-        self.session.commit()
+        await self.session.commit()
         return self._to_entity(db_ticket)
 
     def _to_entity(self, db_ticket: SupportTicketModel) -> SupportTicket:
-        """Преобразует SQLAlchemy-модель в доменную сущность."""
+        """Преобразует SQLAlchemy-модель в доменную сущность.
+
+        Args:
+            db_ticket: SQLAlchemy-модель.
+
+        Returns:
+            SupportTicket: Доменная сущность.
+        """
         return SupportTicket(
             id=db_ticket.id,
             user_id=db_ticket.user_id,
