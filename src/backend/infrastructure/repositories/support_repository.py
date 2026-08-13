@@ -33,7 +33,7 @@ class SupportRepository:
             delivery_error=ticket.delivery_error,
         )
         self.session.add(db_ticket)
-        await self.session.commit()
+        await self.session.flush()
         return self._to_entity(db_ticket)
 
     async def update(self, ticket: SupportTicket) -> SupportTicket:
@@ -57,7 +57,7 @@ class SupportRepository:
         db_ticket.delivery_status = ticket.delivery_status
         db_ticket.delivery_error = ticket.delivery_error
         db_ticket.page_url = ticket.page_url
-        await self.session.commit()
+        await self.session.flush()
         return self._to_entity(db_ticket)
 
     def _to_entity(self, db_ticket: SupportTicketModel) -> SupportTicket:

@@ -4,7 +4,7 @@ set -e
 cd /app
 
 if [ "$1" = "web" ]; then
-  public_port="${APP_PUBLIC_PORT:-${APP_PORT:-${FLASK_PORT:-5000}}}"
+  public_port="${APP_PUBLIC_PORT:-${APP_PORT:-5000}}"
   public_origin=""
 
   if [ -n "${APP_PUBLIC_HOST:-}" ]; then
@@ -41,7 +41,7 @@ if [ "$1" = "web" ]; then
     echo "Enabled DATABASE_AUTO_INIT because RUN_DB_MIGRATIONS=0" >&2
   fi
   exec gunicorn \
-    --bind "0.0.0.0:${FLASK_PORT:-5000}" \
+    --bind "0.0.0.0:${APP_PORT:-5000}" \
     --worker-class "uvicorn.workers.UvicornWorker" \
     --workers "${GUNICORN_WORKERS:-2}" \
     --timeout "${GUNICORN_TIMEOUT:-120}" \

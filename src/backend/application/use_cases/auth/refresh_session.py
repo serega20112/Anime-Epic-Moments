@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import jwt
+
 from backend.application.use_cases.auth.result import AuthResult
-from backend.infrastructure.security.jwt_service import JWTService
-from backend.infrastructure.security.token_blocklist import TokenBlocklist
+from backend.domain.services.jwt_service import JWTServiceInterface as JWTService
+from backend.domain.services.token_blocklist import TokenBlocklistInterface
 
 
 class RefreshSessionUseCase:
@@ -16,7 +18,7 @@ class RefreshSessionUseCase:
     presentation layer.
     """
 
-    def __init__(self, jwt_service: JWTService, token_blocklist: TokenBlocklist):
+    def __init__(self, jwt_service: JWTService, token_blocklist: TokenBlocklistInterface):
         """Initialize the use case.
 
         Args:
@@ -40,7 +42,7 @@ class RefreshSessionUseCase:
             return AuthResult.failure("auth_required", "auth.refresh_session")
         try:
             user_id = self.jwt_service.decode_refresh_token(token)
-        except Exception:
+        except jwt.PyJWTError:
             return AuthResult.failure("invalid_token", "auth.refresh_session")
         ttl_seconds = self.jwt_service.get_token_ttl_seconds(token, expected_type="refresh")
         if not await self.token_blocklist.consume(token, ttl_seconds):

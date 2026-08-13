@@ -9,6 +9,7 @@ from backend.domain.services import (
 from backend.domain.services.profile_overview_cache import (
     ProfileOverviewCacheInterface as ProfileOverviewCache,
 )
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class RemoveFavoriteUseCase:
@@ -19,6 +20,7 @@ class RemoveFavoriteUseCase:
             repo: FavoriteRepository,
             recommendation_service: RecommendationService | None = None,
             profile_overview_cache: ProfileOverviewCache | None = None,
+            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         """Initialize the use case.
 
@@ -26,12 +28,22 @@ class RemoveFavoriteUseCase:
             repo: Favorite repository.
             recommendation_service: Optional recommendation cache invalidator.
             profile_overview_cache: Optional profile overview cache invalidator.
+            unit_of_work: Optional transaction boundary.
         """
         self.repo = repo
         self.recommendation_service = recommendation_service
         self.profile_overview_cache = profile_overview_cache
+        self.unit_of_work = unit_of_work
 
     async def execute(self, user_id: int, anime_id: int):
+        """Remove a favorite within a transaction if configured."""
+        if self.unit_of_work is None:
+            await self._execute(user_id, anime_id)
+            return
+        async with self.unit_of_work:
+            await self._execute(user_id, anime_id)
+
+    async def _execute(self, user_id: int, anime_id: int):
         """Remove a favorite and invalidate dependent caches.
 
         Args:

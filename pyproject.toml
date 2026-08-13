@@ -85,8 +85,13 @@ integration = "tests exercising real components (DB, routers, repository + sessi
 e2e = "full application flows through HTTP"
 
 [tool.importlinter]
-root_package = "src"
-config_file = ".importlinter"
+root_package = "backend"
+
+[[tool.importlinter.contracts]]
+name = "Layer Boundaries"
+type = "layers"
+containers = ["backend"]
+layers = ["presentation", "infrastructure", "application", "domain"]
 
 [tool.coverage.run]
 source = ["src"]

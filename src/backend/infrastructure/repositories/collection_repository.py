@@ -32,7 +32,7 @@ class CollectionRepository:
             is_public=collection.is_public,
         )
         self.session.add(row)
-        await self.session.commit()
+        await self.session.flush()
         collection.id = row.id
         collection.created_at = row.created_at
         return collection
@@ -118,7 +118,7 @@ class CollectionRepository:
             genres_json=self._dump_genres(item.genres),
         )
         self.session.add(row)
-        await self.session.commit()
+        await self.session.flush()
         item.id = row.id
         item.added_at = row.added_at
         return item
@@ -139,7 +139,7 @@ class CollectionRepository:
         row = result.scalar_one_or_none()
         if row is not None:
             await self.session.delete(row)
-            await self.session.commit()
+            await self.session.flush()
 
     async def get_items(self, collection_id: int) -> list[AnimeCollectionItem]:
         """Return items of a collection.

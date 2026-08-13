@@ -3,6 +3,7 @@ from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
 from backend.domain.services import (
     WatchSourceSyncServiceInterface as WatchSourceSyncService,
 )
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class SyncWatchSourcesUseCase:
@@ -12,11 +13,20 @@ class SyncWatchSourcesUseCase:
             self,
             anime_api_client: AnimeApiClient,
             watch_source_sync_service: WatchSourceSyncService,
+            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.anime_api_client = anime_api_client
         self.watch_source_sync_service = watch_source_sync_service
+        self.unit_of_work = unit_of_work
 
     async def execute(self, anime_id: int, episode: int, force: bool = False) -> WatchResult:
+        """Sync watch sources within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(anime_id, episode, force)
+        async with self.unit_of_work:
+            return await self._execute(anime_id, episode, force)
+
+    async def _execute(self, anime_id: int, episode: int, force: bool = False) -> WatchResult:
         if not await self.watch_source_sync_service.is_enabled():
             return WatchResult.failure("provider_not_configured", status_code=400)
         anime = await self.anime_api_client.get_by_id(anime_id)

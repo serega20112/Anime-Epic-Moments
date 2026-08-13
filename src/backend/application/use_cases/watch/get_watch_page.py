@@ -13,6 +13,7 @@ from backend.domain.watch.value_object import (
     WatchPageData,
     WatchSourceCard,
 )
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class GetWatchPageUseCase:
@@ -24,13 +25,27 @@ class GetWatchPageUseCase:
             highlight_repo: HighlightRepository,
             anime_api_client: AnimeApiClient,
             watch_source_sync_service: WatchSourceSyncService,
+            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.watch_repo = watch_repo
         self.highlight_repo = highlight_repo
         self.anime_api_client = anime_api_client
         self.watch_source_sync_service = watch_source_sync_service
+        self.unit_of_work = unit_of_work
 
     async def execute(
+            self,
+            anime_id: int,
+            query: WatchPageQuery,
+            user_id: int | None = None,
+    ) -> WatchPageData:
+        """Build the watch page within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(anime_id, query, user_id)
+        async with self.unit_of_work:
+            return await self._execute(anime_id, query, user_id)
+
+    async def _execute(
             self,
             anime_id: int,
             query: WatchPageQuery,

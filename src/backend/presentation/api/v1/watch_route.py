@@ -41,16 +41,19 @@ from backend.presentation.api.requests.watch_mapper import (
 watch_router = APIRouter(prefix="/watch", route_class=DishkaRoute)
 watch_bp = watch_router
 logger = logging.getLogger("anime_epic_moments")
-_proxy_media_client = MediaProxyClient()
 
 
 @watch_router.get("/proxy", name="watch.proxy_stream")
 @watch_router.head("/proxy", name="watch.proxy_stream_head")
-async def proxy_stream(request: Request):
+async def proxy_stream(
+    request: Request,
+    media_proxy_client: FromDishka[MediaProxyClient],
+):
     """Proxy media streams with URL allowlist and HLS rewriting.
 
     Args:
         request: Incoming HTTP request with the target URL query param.
+        media_proxy_client: Media proxy client.
 
     Returns:
         Response: Proxied media or an error response.
@@ -59,10 +62,10 @@ async def proxy_stream(request: Request):
     if not upstream_url:
         return Response(status_code=400)
 
-    proxy_url_builder = lambda absolute_url: (  # noqa: E731
-        f"{request.app.url_path_for('watch.proxy_stream')}?url={absolute_url}"
-    )
-    return await _proxy_media_client.proxy(
+    def proxy_url_builder(absolute_url: str) -> str:
+        return f"{request.app.url_path_for('watch.proxy_stream')}?url={absolute_url}"
+
+    return await media_proxy_client.proxy(
         request,
         upstream_url=upstream_url,
         proxy_url_builder=proxy_url_builder,

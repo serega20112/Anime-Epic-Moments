@@ -11,8 +11,7 @@ from backend.application.use_cases.auth.reset_password import ResetPasswordUseCa
 
 def _blocklist():
     blocklist = Mock()
-    blocklist.is_revoked = AsyncMock(return_value=False)
-    blocklist.revoke = AsyncMock()
+    blocklist.consume = AsyncMock(return_value=True)
     return blocklist
 
 
@@ -39,14 +38,14 @@ class TestResetPasswordUseCase:
 
     async def test_rejects_revoked_token(self):
         """Что тестируем: отклонение уже использованного токена.
-        Что передаём: token_blocklist.is_revoked возвращает True.
+        Что передаём: token_blocklist.consume возвращает False.
         Что ожидаем: результат failure, пароль не обновляется.
         """
         user_repo = AsyncMock()
         jwt_service = Mock()
         password_service = Mock()
         blocklist = Mock()
-        blocklist.is_revoked = AsyncMock(return_value=True)
+        blocklist.consume = AsyncMock(return_value=False)
         use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, blocklist)
 
         result = await use_case.execute("token", "new-password")
@@ -93,4 +92,4 @@ class TestResetPasswordUseCase:
         user_repo.update_password.assert_awaited_once_with(
             user_id=17, password_hash="new-hash"
         )
-        blocklist.revoke.assert_awaited_once()
+        blocklist.consume.assert_awaited_once()

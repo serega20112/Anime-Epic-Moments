@@ -15,6 +15,7 @@ from backend.domain.services.telegram_support_notifier import (
     TelegramSupportNotifierInterface as TelegramSupportNotifier,
 )
 from backend.domain.support.entity import SupportTicket
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class InvalidSupportTicketError(Exception):
@@ -31,12 +32,21 @@ class CreateSupportTicketUseCase:
             support_repo: SupportRepository,
             telegram_notifier: TelegramSupportNotifier,
             email_mailer: SupportEmailMailer,
+            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.support_repo = support_repo
         self.telegram_notifier = telegram_notifier
         self.email_mailer = email_mailer
+        self.unit_of_work = unit_of_work
 
     async def execute(self, command: CreateSupportTicketCommand) -> CreateSupportTicketResult:
+        """Create a support ticket within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(command)
+        async with self.unit_of_work:
+            return await self._execute(command)
+
+    async def _execute(self, command: CreateSupportTicketCommand) -> CreateSupportTicketResult:
         """Валидирует тикет, сохраняет его и отправляет через один выбранный канал.
 
         Args:

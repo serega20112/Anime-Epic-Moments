@@ -1,4 +1,4 @@
-"""Flask application factory with middleware, security headers, and CSRF protection."""
+"""FastAPI application factory with middleware, security headers, and CSRF protection."""
 
 from __future__ import annotations
 
@@ -18,7 +18,18 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from backend.config import Settings
 from backend.events.lifecycle import lifespan
-from backend.infrastructure.di.providers import AppProvider, RequestProvider, UseCaseProvider
+from backend.infrastructure.di.providers import (
+    AnimeUseCaseProvider,
+    AppProvider,
+    AuthUseCaseProvider,
+    CollectionUseCaseProvider,
+    FavoriteUseCaseProvider,
+    HighlightUseCaseProvider,
+    RequestProvider,
+    SupportUseCaseProvider,
+    UserUseCaseProvider,
+    WatchUseCaseProvider,
+)
 from backend.infrastructure.repositories.user_repository import UserRepository
 from backend.infrastructure.security.csrf_service import csrf_service
 from backend.infrastructure.security.jwt_service import JWTService
@@ -51,11 +62,18 @@ def create_app() -> FastAPI:
     Returns:
         FastAPI: Configured application instance.
     """
-    app = FastAPI(debug=Settings.flask_debug, lifespan=lifespan)
+    app = FastAPI(debug=Settings.app_debug, lifespan=lifespan)
     dishka_container = make_async_container(
         AppProvider(),
         RequestProvider(),
-        UseCaseProvider(),
+        AuthUseCaseProvider(),
+        HighlightUseCaseProvider(),
+        FavoriteUseCaseProvider(),
+        CollectionUseCaseProvider(),
+        WatchUseCaseProvider(),
+        AnimeUseCaseProvider(),
+        UserUseCaseProvider(),
+        SupportUseCaseProvider(),
     )
     app.mount(
         "/static",

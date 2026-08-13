@@ -21,8 +21,8 @@ def test_settings_use_expected_defaults(monkeypatch):
                 "POSTGRES_PORT",
                 "HF_PROVIDER",
                 "YOUTUBE_ALLOWED_CHANNEL_IDS",
-                "FLASK_PORT",
-                "FLASK_DEBUG",
+                "APP_PORT",
+                "APP_DEBUG",
                 "REDIS_ENABLED",
                 "REDIS_URL",
                 "COOKIE_SECURE",
@@ -47,8 +47,8 @@ def test_settings_use_expected_defaults(monkeypatch):
         assert settings_module.Settings.redis_url == "redis://localhost:6379/0"
         assert settings_module.Settings.hf_provider == "fireworks-ai"
         assert settings_module.Settings.youtube_allowed_channel_ids == []
-        assert settings_module.Settings.flask_port == 5000
-        assert settings_module.Settings.flask_debug is False
+        assert settings_module.Settings.app_port == 5000
+        assert settings_module.Settings.app_debug is False
         assert settings_module.Settings.max_request_bytes == 1048576
         assert settings_module.Settings.cookie_secure is False
         assert settings_module.Settings.cookie_samesite == "Lax"
@@ -65,7 +65,7 @@ def test_settings_require_secret_key_outside_debug(monkeypatch):
     with monkeypatch.context() as patch:
         patch.setattr(dotenv, "load_dotenv", lambda *args, **kwargs: None)
         patch.delenv("SECRET_KEY", raising=False)
-        patch.delenv("FLASK_DEBUG", raising=False)
+        patch.delenv("APP_DEBUG", raising=False)
         try:
             importlib.reload(settings_module)
         except RuntimeError:
@@ -85,8 +85,8 @@ def test_settings_parse_env_values(monkeypatch):
         patch.setenv("DATABASE_URL", "postgres://user:pass@db:5432/app")
         patch.setenv("HF_PROVIDER", "hf-provider")
         patch.setenv("YOUTUBE_ALLOWED_CHANNEL_IDS", " channel-1 , channel-2 ")
-        patch.setenv("FLASK_PORT", "7001")
-        patch.setenv("FLASK_DEBUG", "1")
+        patch.setenv("APP_PORT", "7001")
+        patch.setenv("APP_DEBUG", "1")
         patch.setenv("REDIS_URL", "redis://redis:6379/1")
         patch.setenv("COOKIE_SECURE", "1")
         patch.setenv("COOKIE_SAMESITE", "Strict")
@@ -103,8 +103,8 @@ def test_settings_parse_env_values(monkeypatch):
         assert settings_module.Settings.database_auto_init is False
         assert settings_module.Settings.hf_provider == "hf-provider"
         assert settings_module.Settings.youtube_allowed_channel_ids == ["channel-1", "channel-2"]
-        assert settings_module.Settings.flask_port == 7001
-        assert settings_module.Settings.flask_debug is True
+        assert settings_module.Settings.app_port == 7001
+        assert settings_module.Settings.app_debug is True
         assert settings_module.Settings.redis_url == "redis://redis:6379/1"
         assert settings_module.Settings.cookie_secure is True
         assert settings_module.Settings.cookie_samesite == "Strict"

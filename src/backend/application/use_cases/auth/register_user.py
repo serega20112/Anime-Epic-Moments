@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from backend.domain import User, UserRepository
 from backend.domain.services import PasswordServiceInterface as PasswordService
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class EmailAlreadyExistsError(Exception):
@@ -13,17 +14,37 @@ class EmailAlreadyExistsError(Exception):
 class RegisterUserUseCase:
     """Create a new user when the email is not yet registered."""
 
-    def __init__(self, user_repository: UserRepository, password_service: PasswordService):
+    def __init__(
+            self,
+            user_repository: UserRepository,
+            password_service: PasswordService,
+            unit_of_work: UnitOfWorkInterface | None = None,
+    ):
         """Initialize the use case.
 
         Args:
             user_repository: User repository port.
             password_service: Password hashing service.
+            unit_of_work: Optional transaction boundary.
         """
         self.user_repository = user_repository
         self.password_service = password_service
+        self.unit_of_work = unit_of_work
 
     async def execute(
+            self, *, email: str, password: str, username: str,             theme: str = "neon"
+    ) -> User:
+        """Register a user within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(
+                email=email, password=password, username=username, theme=theme
+            )
+        async with self.unit_of_work:
+            return await self._execute(
+                email=email, password=password, username=username, theme=theme
+            )
+
+    async def _execute(
             self, *, email: str, password: str, username: str, theme: str = "neon"
     ) -> User:
         """Register a user and return the persisted aggregate.

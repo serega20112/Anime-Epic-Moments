@@ -40,11 +40,14 @@ class MediaProxyClient:
     def __init__(
             self,
             *,
-            follow_redirects: bool = True,
+            follow_redirects: bool = False,
             trust_env: bool = False,
             timeout: float = 30.0,
     ) -> None:
         """Initialize the proxy client.
+
+        Redirects are not followed so a vetted URL cannot silently bounce to
+        an unvetted host (SSRF hardening).
 
         Args:
             follow_redirects: Whether to follow upstream redirects.
@@ -83,8 +86,12 @@ class MediaProxyClient:
             logger.exception("watch_stream_proxy_failed url=%s", upstream_url)
             return JSONResponse({"error": "stream_unavailable"}, status_code=502)
 
-        content_type = str(upstream_response.headers.get("Content-Type") or "").lower()
         upstream_status = int(upstream_response.status_code or 200)
+        if 300 <= upstream_status < 400:
+            logger.warning("watch_stream_redirect_blocked url=%s", upstream_url)
+            return JSONResponse({"error": "stream_unavailable"}, status_code=502)
+
+        content_type = str(upstream_response.headers.get("Content-Type") or "").lower()
         if is_hls_manifest(upstream_url=upstream_url, content_type=content_type):
             proxied_manifest = rewrite_hls_manifest(
                 upstream_response.text,

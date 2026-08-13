@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from hashlib import sha256
 
+from backend.domain.services import TokenBlocklistInterface
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 
 
-class TokenBlocklist:
+class TokenBlocklist(TokenBlocklistInterface):
     """Хранит отозванные JWT в Redis или локальном fallback-хранилище."""
 
     def __init__(self, store: KeyValueStore):

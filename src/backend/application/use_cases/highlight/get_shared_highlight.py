@@ -3,6 +3,7 @@ from backend.application.use_cases.highlight.get_user_highlights import GetUserH
 from backend.domain import UserRepository
 from backend.domain.repositories.highlight_repository import HighlightRepository
 from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class GetSharedHighlightUseCase(GetUserHighlightsUseCase):
@@ -13,10 +14,19 @@ class GetSharedHighlightUseCase(GetUserHighlightsUseCase):
             repo: HighlightRepository,
             anime_api_client: AnimeApiClient,
             user_repo: UserRepository | None = None,
+            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         super().__init__(repo, anime_api_client, user_repo=user_repo)
+        self.unit_of_work = unit_of_work
 
     async def execute(self, highlight_id: int, viewer_user_id: int | None = None):
+        """Return a shared highlight within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(highlight_id, viewer_user_id)
+        async with self.unit_of_work:
+            return await self._execute(highlight_id, viewer_user_id)
+
+    async def _execute(self, highlight_id: int, viewer_user_id: int | None = None):
         highlight = await self.repo.get_by_id(highlight_id)
         if not highlight:
             return HighlightResult.failure("highlight_not_found", status_code=404)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, Mock
 
+import jwt
 import pytest
 
 from backend.application.use_cases.auth.refresh_session import RefreshSessionUseCase
@@ -32,7 +33,7 @@ class TestRefreshSessionUseCase:
 
     async def test_rejects_malformed_token(self):
         jwt_service = Mock()
-        jwt_service.decode_refresh_token.side_effect = ValueError("bad token")
+        jwt_service.decode_refresh_token.side_effect = jwt.InvalidTokenError("bad token")
         use_case = _build(jwt_service=jwt_service)
         result = await use_case.execute("bad-token")
         assert result.ok is False

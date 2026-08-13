@@ -3,15 +3,15 @@ from statistics import mean
 from backend.application.use_cases.highlight.get_liked_highlights import GetLikedHighlightsUseCase
 from backend.application.use_cases.highlight.get_saved_highlights import GetSavedHighlightsUseCase
 from backend.application.use_cases.highlight.get_user_highlights import GetUserHighlightsUseCase
-from backend.domain import FavoriteRepository
 from backend.domain import (
+    FavoriteRepository,
     ProfileOverview,
     SmartProfile,
     TopAnimeEntry,
+    UserRepository,
     ViewingHeatmapCell,
+    WatchRepository,
 )
-from backend.domain import UserRepository
-from backend.domain import WatchRepository
 from backend.domain.repositories.highlight_repository import HighlightRepository
 from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
 from backend.domain.services import LLMClientInterface as HuggingFaceLLMClient

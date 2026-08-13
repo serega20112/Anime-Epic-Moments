@@ -1,15 +1,28 @@
 from backend.application.dto import AddCollectionItemCommand
 from backend.domain.collection.entity import AnimeCollectionItem
 from backend.domain.repositories.collection_repository import CollectionRepository
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class AddCollectionItemUseCase:
     """Добавляет аниме в пользовательскую коллекцию."""
 
-    def __init__(self, collection_repo: CollectionRepository):
+    def __init__(
+            self,
+            collection_repo: CollectionRepository,
+            unit_of_work: UnitOfWorkInterface | None = None,
+    ):
         self.collection_repo = collection_repo
+        self.unit_of_work = unit_of_work
 
     async def execute(self, command: AddCollectionItemCommand) -> AnimeCollectionItem:
+        """Add an anime item to a collection within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(command)
+        async with self.unit_of_work:
+            return await self._execute(command)
+
+    async def _execute(self, command: AddCollectionItemCommand) -> AnimeCollectionItem:
         """Add an anime item to a collection.
 
         Args:

@@ -54,7 +54,7 @@ class HighlightRepository:
             views_count=highlight.views_count,
         )
         self.session.add(db_highlight)
-        await self.session.commit()
+        await self.session.flush()
         return self._to_entity(db_highlight)
 
     async def get_by_id(self, highlight_id: int) -> Highlight | None:
@@ -98,7 +98,7 @@ class HighlightRepository:
         db_highlight.emotion = highlight.emotion
         db_highlight.likes_count = highlight.likes_count
         db_highlight.views_count = highlight.views_count
-        await self.session.commit()
+        await self.session.flush()
         return self._to_entity(db_highlight)
 
     async def delete(self, highlight_id: int):
@@ -125,7 +125,7 @@ class HighlightRepository:
         db_highlight = result.scalar_one_or_none()
         if db_highlight:
             await self.session.delete(db_highlight)
-            await self.session.commit()
+            await self.session.flush()
 
     async def get_by_user(self, user_id: int) -> list[Highlight]:
         """Return highlights created by a user.
@@ -301,7 +301,7 @@ class HighlightRepository:
         elif not liked and existing is not None:
             await self.session.delete(existing)
             db_highlight.likes_count = max(int(db_highlight.likes_count or 0) - 1, 0)
-        await self.session.commit()
+        await self.session.flush()
         return self._to_entity(db_highlight)
 
     async def get_likers(self, highlight_id: int, limit: int = 20) -> list[HighlightLikeUser]:
@@ -355,7 +355,7 @@ class HighlightRepository:
             content=str(content or "").strip(),
         )
         self.session.add(db_comment)
-        await self.session.commit()
+        await self.session.flush()
         username_result = await self.session.execute(
             select(UserModel.username).where(UserModel.id == user_id)
         )
@@ -422,11 +422,11 @@ class HighlightRepository:
         existing = saved_result.scalar_one_or_none()
         if saved and existing is None:
             self.session.add(SavedHighlightModel(highlight_id=highlight_id, user_id=user_id))
-            await self.session.commit()
+            await self.session.flush()
             return True
         if not saved and existing is not None:
             await self.session.delete(existing)
-            await self.session.commit()
+            await self.session.flush()
             return False
         return bool(saved and existing is not None)
 
@@ -493,7 +493,7 @@ class HighlightRepository:
         if db_highlight is None:
             raise ValueError("Highlight не найден")
         db_highlight.views_count = int(db_highlight.views_count or 0) + 1
-        await self.session.commit()
+        await self.session.flush()
 
         return self._to_entity(db_highlight)
 

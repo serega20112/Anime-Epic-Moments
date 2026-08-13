@@ -18,6 +18,7 @@ from backend.domain.services.recommendation_cache import RecommendationCacheInte
 from backend.domain.services.recommendation_service import RecommendationServiceInterface
 from backend.domain.services.support_email_mailer import SupportEmailMailerInterface
 from backend.domain.services.telegram_support_notifier import TelegramSupportNotifierInterface
+from backend.domain.services.token_blocklist import TokenBlocklistInterface
 from backend.domain.services.watch_source_provider import WatchSourceProviderInterface
 from backend.domain.services.watch_source_sync_service import WatchSourceSyncServiceInterface
 
@@ -35,6 +36,7 @@ __all__ = [
     "RecommendationServiceInterface",
     "SupportEmailMailerInterface",
     "TelegramSupportNotifierInterface",
+    "TokenBlocklistInterface",
     "WatchSourceProviderInterface",
     "WatchSourceSyncServiceInterface",
 ]

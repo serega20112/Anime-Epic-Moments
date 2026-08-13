@@ -21,7 +21,7 @@ def _as_bool(value: str) -> bool:
 def secret_key() -> str:
     """Return the application secret key.
 
-    A value must be supplied explicitly in production (FLASK_DEBUG=0). In debug
+    A value must be supplied explicitly in production (APP_DEBUG=0). In debug
     mode a random key is generated per process, which is fine for local
     development but never stable across restarts.
 
@@ -34,18 +34,18 @@ def secret_key() -> str:
     value = os.getenv("SECRET_KEY")
     if value:
         return value
-    if not flask_debug():
-        raise RuntimeError("SECRET_KEY must be set when FLASK_DEBUG=0")
+    if not app_debug():
+        raise RuntimeError("SECRET_KEY must be set when APP_DEBUG=0")
     return secrets.token_urlsafe(48)
 
 
-def flask_debug() -> bool:
+def app_debug() -> bool:
     """Return whether debug mode is enabled.
 
     Returns:
-        bool: True when FLASK_DEBUG is enabled.
+        bool: True when APP_DEBUG is enabled.
     """
-    return os.getenv("FLASK_DEBUG", "0") == "1"
+    return os.getenv("APP_DEBUG", "0") == "1"
 
 
 def csrf_token_name() -> str:

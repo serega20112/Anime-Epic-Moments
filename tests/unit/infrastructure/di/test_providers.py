@@ -7,9 +7,16 @@ from backend.infrastructure.cache import HighlightDashboardCache, Recommendation
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from backend.infrastructure.di.providers import (
+    AnimeUseCaseProvider,
     AppProvider,
+    AuthUseCaseProvider,
+    CollectionUseCaseProvider,
+    FavoriteUseCaseProvider,
+    HighlightUseCaseProvider,
     RequestProvider,
-    UseCaseProvider,
+    SupportUseCaseProvider,
+    UserUseCaseProvider,
+    WatchUseCaseProvider,
 )
 from backend.infrastructure.external import AnimeApiClient
 from backend.infrastructure.security.csrf_service import CSRFService
@@ -50,7 +57,18 @@ async def test_app_provider_resolves_caches(app_container):
 
 
 def test_providers_are_instances_of_dishka_provider():
-    for provider in (AppProvider(), RequestProvider(), UseCaseProvider()):
+    for provider in (
+        AppProvider(),
+        RequestProvider(),
+        AuthUseCaseProvider(),
+        HighlightUseCaseProvider(),
+        FavoriteUseCaseProvider(),
+        CollectionUseCaseProvider(),
+        WatchUseCaseProvider(),
+        AnimeUseCaseProvider(),
+        UserUseCaseProvider(),
+        SupportUseCaseProvider(),
+    ):
         from dishka import Provider
 
         assert isinstance(provider, Provider)

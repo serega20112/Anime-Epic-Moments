@@ -28,7 +28,7 @@ class FavoriteRepository:
             genres_json=self._dump_genres(favorite.genres),
         )
         self.session.add(db_fav)
-        await self.session.commit()
+        await self.session.flush()
         favorite.added_at = db_fav.added_at
         return favorite
 
@@ -48,7 +48,7 @@ class FavoriteRepository:
         db_fav = result.scalar_one_or_none()
         if db_fav:
             await self.session.delete(db_fav)
-            await self.session.commit()
+            await self.session.flush()
 
     async def get_by_user(self, user_id: int) -> list[Favorite]:
         """Return favorites for a user.

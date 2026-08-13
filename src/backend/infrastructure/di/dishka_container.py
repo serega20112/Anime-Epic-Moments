@@ -4,7 +4,18 @@ from __future__ import annotations
 
 from dishka import AsyncContainer, make_async_container
 
-from backend.infrastructure.di.providers import AppProvider, RequestProvider, UseCaseProvider
+from backend.infrastructure.di.providers import (
+    AnimeUseCaseProvider,
+    AppProvider,
+    AuthUseCaseProvider,
+    CollectionUseCaseProvider,
+    FavoriteUseCaseProvider,
+    HighlightUseCaseProvider,
+    RequestProvider,
+    SupportUseCaseProvider,
+    UserUseCaseProvider,
+    WatchUseCaseProvider,
+)
 
 
 def build_dishka_container() -> AsyncContainer:
@@ -16,5 +27,12 @@ def build_dishka_container() -> AsyncContainer:
     return make_async_container(
         AppProvider(),
         RequestProvider(),
-        UseCaseProvider(),
+        AuthUseCaseProvider(),
+        HighlightUseCaseProvider(),
+        FavoriteUseCaseProvider(),
+        CollectionUseCaseProvider(),
+        WatchUseCaseProvider(),
+        AnimeUseCaseProvider(),
+        UserUseCaseProvider(),
+        SupportUseCaseProvider(),
     )

@@ -5,31 +5,31 @@ from __future__ import annotations
 import os
 
 
-def flask_host() -> str:
+def app_host() -> str:
     """Return the bind host for the web server.
 
     Returns:
         str: Bind host.
     """
-    return os.getenv("FLASK_HOST", "0.0.0.0")
+    return os.getenv("APP_HOST", "0.0.0.0")
 
 
-def flask_port() -> int:
+def app_port() -> int:
     """Return the bind port for the web server.
 
     Returns:
         int: Bind port.
     """
-    return int(os.getenv("FLASK_PORT", "5000"))
+    return int(os.getenv("APP_PORT", "5000"))
 
 
-def flask_debug() -> bool:
+def app_debug() -> bool:
     """Return whether debug mode is enabled.
 
     Returns:
-        bool: True when FLASK_DEBUG is enabled.
+        bool: True when APP_DEBUG is enabled.
     """
-    return os.getenv("FLASK_DEBUG", "0") == "1"
+    return os.getenv("APP_DEBUG", "0") == "1"
 
 
 def log_level() -> str:

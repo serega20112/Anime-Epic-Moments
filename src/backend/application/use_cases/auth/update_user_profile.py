@@ -5,6 +5,7 @@ from backend.domain import UserRepository
 from backend.domain.services.profile_overview_cache import (
     ProfileOverviewCacheInterface as ProfileOverviewCache,
 )
+from backend.domain.unit_of_work import UnitOfWorkInterface
 from backend.domain.user.exceptions import InvalidUsernameError
 
 
@@ -23,17 +24,27 @@ class UpdateUserProfileUseCase:
             self,
             user_repo: UserRepository,
             profile_overview_cache: ProfileOverviewCache | None = None,
+            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         """Initialize the use case.
 
         Args:
             user_repo: User repository port.
             profile_overview_cache: Optional profile cache.
+            unit_of_work: Optional transaction boundary.
         """
         self.user_repo = user_repo
         self.profile_overview_cache = profile_overview_cache
+        self.unit_of_work = unit_of_work
 
     async def execute(self, user_id: int, username: str, avatar_url: str | None) -> AuthResult:
+        """Update the user profile within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(user_id, username, avatar_url)
+        async with self.unit_of_work:
+            return await self._execute(user_id, username, avatar_url)
+
+    async def _execute(self, user_id: int, username: str, avatar_url: str | None) -> AuthResult:
         """Обновляет имя и аватар текущего пользователя.
 
         Args:

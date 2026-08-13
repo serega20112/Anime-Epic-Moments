@@ -7,6 +7,7 @@ from backend.domain.services import (
 from backend.domain.services.profile_overview_cache import (
     ProfileOverviewCacheInterface as ProfileOverviewCache,
 )
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class SetHighlightLikeUseCase:
@@ -17,12 +18,21 @@ class SetHighlightLikeUseCase:
             repo: HighlightRepository,
             highlight_dashboard_cache: HighlightDashboardCache | None = None,
             profile_overview_cache: ProfileOverviewCache | None = None,
+            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.repo = repo
         self.highlight_dashboard_cache = highlight_dashboard_cache
         self.profile_overview_cache = profile_overview_cache
+        self.unit_of_work = unit_of_work
 
     async def execute(self, command: SetHighlightLikeCommand) -> HighlightResult:
+        """Set a highlight like within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(command)
+        async with self.unit_of_work:
+            return await self._execute(command)
+
+    async def _execute(self, command: SetHighlightLikeCommand) -> HighlightResult:
         """Set or remove a highlight like.
 
         Args:

@@ -5,6 +5,7 @@ from backend.domain import WatchRepository
 from backend.domain.services.profile_overview_cache import (
     ProfileOverviewCacheInterface as ProfileOverviewCache,
 )
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class UpsertUserAnimeStatusUseCase:
@@ -14,11 +15,20 @@ class UpsertUserAnimeStatusUseCase:
             self,
             watch_repo: WatchRepository,
             profile_overview_cache: ProfileOverviewCache | None = None,
+            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.watch_repo = watch_repo
         self.profile_overview_cache = profile_overview_cache
+        self.unit_of_work = unit_of_work
 
     async def execute(self, command: UpsertUserAnimeStatusCommand) -> WatchResult:
+        """Upsert an anime status within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(command)
+        async with self.unit_of_work:
+            return await self._execute(command)
+
+    async def _execute(self, command: UpsertUserAnimeStatusCommand) -> WatchResult:
         normalized_status = str(command.status or "").strip()
         if not normalized_status:
             return WatchResult.failure("status_required", status_code=400)

@@ -87,7 +87,7 @@ class UserRepository:
             raise ValueError("Пользователь для обновления не найден")
         db_user.username = user.username
         db_user.avatar_url = user.avatar_url
-        await self.session.commit()
+        await self.session.flush()
         return user
 
     async def update_password(self, user_id: int, password_hash: str) -> User:
@@ -105,7 +105,7 @@ class UserRepository:
         if not db_user:
             raise ValueError("Пользователь для обновления не найден")
         db_user.password_hash = password_hash
-        await self.session.commit()
+        await self.session.flush()
         return self._to_entity(db_user)
 
     async def follow(self, follower_user_id: int, followed_user_id: int) -> bool:
@@ -133,7 +133,7 @@ class UserRepository:
                     followed_user_id=followed_user_id,
                 )
             )
-            await self.session.commit()
+            await self.session.flush()
         return True
 
     async def unfollow(self, follower_user_id: int, followed_user_id: int) -> bool:
@@ -157,7 +157,7 @@ class UserRepository:
         existing = result.scalar_one_or_none()
         if existing is not None:
             await self.session.delete(existing)
-            await self.session.commit()
+            await self.session.flush()
         return False
 
     async def is_following(self, follower_user_id: int, followed_user_id: int) -> bool:

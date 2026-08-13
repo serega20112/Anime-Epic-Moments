@@ -4,6 +4,7 @@ from backend.application.use_cases.watch.result import WatchResult
 from backend.application.use_cases.highlight.create_highlight import CreateHighlightUseCase
 from backend.domain import HighlightContext
 from backend.domain import WatchRepository
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class CreateWatchHighlightUseCase:
@@ -13,11 +14,20 @@ class CreateWatchHighlightUseCase:
             self,
             create_highlight_use_case: CreateHighlightUseCase,
             watch_repo: WatchRepository,
+            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.create_highlight_use_case = create_highlight_use_case
         self.watch_repo = watch_repo
+        self.unit_of_work = unit_of_work
 
     async def execute(self, command: CreateWatchHighlightCommand) -> WatchResult:
+        """Create a watch highlight within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(command)
+        async with self.unit_of_work:
+            return await self._execute(command)
+
+    async def _execute(self, command: CreateWatchHighlightCommand) -> WatchResult:
         if (
                 command.episode is None
                 or command.watch_source_id is None

@@ -1,18 +1,17 @@
 import asyncio
 import re
 
-from backend.domain import Translation, WatchSource
-from backend.domain import WatchRepository
+from backend.domain import Translation, WatchRepository, WatchSource
 from backend.domain.anime.entity import Anime
 from backend.domain.services import (
     WatchSourceProviderInterface as WatchSourceProvider,
 )
-from backend.infrastructure.cache.ttl_cache import TTLCache
 from backend.domain.watch.policy import (
     canonicalize_translation_name,
     get_translation_priority,
 )
 from backend.domain.watch.value_object import DiscoveredWatchSource
+from backend.utils.ttl_cache import TTLCache
 
 
 class WatchSourceSyncService:

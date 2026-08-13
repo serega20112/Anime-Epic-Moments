@@ -79,7 +79,7 @@ class WatchRepository:
         if row:
             row.status = status.status
             row.updated_at = datetime.utcnow()
-            await self.session.commit()
+            await self.session.flush()
             status.id = row.id
             status.updated_at = row.updated_at
             return status
@@ -90,7 +90,7 @@ class WatchRepository:
             status=status.status,
         )
         self.session.add(row)
-        await self.session.commit()
+        await self.session.flush()
         status.id = row.id
         status.updated_at = row.updated_at
         return status
@@ -151,7 +151,7 @@ class WatchRepository:
             language=translation.language,
         )
         self.session.add(row)
-        await self.session.commit()
+        await self.session.flush()
         translation.id = row.id
         translation.created_at = row.created_at
         return translation
@@ -229,7 +229,7 @@ class WatchRepository:
             source_type=source.source_type,
         )
         self.session.add(row)
-        await self.session.commit()
+        await self.session.flush()
         source.id = row.id
         source.created_at = row.created_at
         return source
@@ -297,7 +297,7 @@ class WatchRepository:
             row.quality_label = session.quality_label
             row.is_paused = session.is_paused
             row.updated_at = datetime.utcnow()
-            await self.session.commit()
+            await self.session.flush()
             session.id = row.id
             session.updated_at = row.updated_at
             return session
@@ -313,7 +313,7 @@ class WatchRepository:
             is_paused=session.is_paused,
         )
         self.session.add(row)
-        await self.session.commit()
+        await self.session.flush()
         session.id = row.id
         session.updated_at = row.updated_at
         return session
@@ -334,7 +334,7 @@ class WatchRepository:
             title=context.title,
         )
         self.session.add(row)
-        await self.session.commit()
+        await self.session.flush()
         context.id = row.id
         context.created_at = row.created_at
         return context
@@ -474,7 +474,7 @@ class WatchRepository:
             content=str(content or "").strip(),
         )
         self.session.add(row)
-        await self.session.commit()
+        await self.session.flush()
         username_result = await self.session.execute(
             select(UserModel.username).where(UserModel.id == user_id)
         )
@@ -594,7 +594,7 @@ class WatchRepository:
             self.session.add(AnimeDiscussionLikeModel(comment_id=comment_id, user_id=user_id))
         elif not liked and existing is not None:
             await self.session.delete(existing)
-        await self.session.commit()
+        await self.session.flush()
         refreshed = await self._get_anime_comments(
             anime_id=comment.anime_id,
             viewer_user_id=user_id,

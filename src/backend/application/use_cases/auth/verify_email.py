@@ -1,9 +1,9 @@
 from backend.application.use_cases.auth.result import AuthResult
-from backend.domain import User
-from backend.domain import UserRepository
+from backend.domain import User, UserRepository
 from backend.domain.services import (
     EmailVerificationStoreInterface as EmailVerificationStore,
 )
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class EmailVerificationExpiredError(Exception):
@@ -21,17 +21,27 @@ class VerifyEmailUseCase:
             self,
             user_repo: UserRepository,
             verification_store: EmailVerificationStore,
+            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         """Initialize the use case.
 
         Args:
             user_repo: User repository port.
             verification_store: Verification code store.
+            unit_of_work: Optional transaction boundary.
         """
         self.user_repo = user_repo
         self.verification_store = verification_store
+        self.unit_of_work = unit_of_work
 
     async def execute(self, email: str, code: str) -> AuthResult:
+        """Verify an email code and create a user within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(email, code)
+        async with self.unit_of_work:
+            return await self._execute(email, code)
+
+    async def _execute(self, email: str, code: str) -> AuthResult:
         """Confirm an email code and create a user.
 
         Args:

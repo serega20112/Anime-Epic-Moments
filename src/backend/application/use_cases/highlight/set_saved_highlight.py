@@ -4,6 +4,7 @@ from backend.domain.repositories.highlight_repository import HighlightRepository
 from backend.domain.services.profile_overview_cache import (
     ProfileOverviewCacheInterface as ProfileOverviewCache,
 )
+from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class SetSavedHighlightUseCase:
@@ -13,11 +14,20 @@ class SetSavedHighlightUseCase:
             self,
             repo: HighlightRepository,
             profile_overview_cache: ProfileOverviewCache | None = None,
+            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.repo = repo
         self.profile_overview_cache = profile_overview_cache
+        self.unit_of_work = unit_of_work
 
     async def execute(self, command: SetSavedHighlightCommand) -> HighlightResult:
+        """Save or unsave a highlight within a transaction if configured."""
+        if self.unit_of_work is None:
+            return await self._execute(command)
+        async with self.unit_of_work:
+            return await self._execute(command)
+
+    async def _execute(self, command: SetSavedHighlightCommand) -> HighlightResult:
         """Save or unsave a highlight.
 
         Args:

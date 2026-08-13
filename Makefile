@@ -8,7 +8,7 @@ lint:
 	ruff format --check src
 
 check-imports:
-	lint-imports
+	PYTHONPATH=src lint-imports
 
 test:
 	python -m pytest
