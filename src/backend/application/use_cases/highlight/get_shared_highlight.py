@@ -13,16 +13,14 @@ class GetSharedHighlightUseCase(GetUserHighlightsUseCase):
             self,
             repo: HighlightRepository,
             anime_api_client: AnimeApiClient,
+            unit_of_work: UnitOfWorkInterface,
             user_repo: UserRepository | None = None,
-            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         super().__init__(repo, anime_api_client, user_repo=user_repo)
         self.unit_of_work = unit_of_work
 
     async def execute(self, highlight_id: int, viewer_user_id: int | None = None):
-        """Return a shared highlight within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(highlight_id, viewer_user_id)
+        """Return a shared highlight within a transaction."""
         async with self.unit_of_work:
             return await self._execute(highlight_id, viewer_user_id)
 

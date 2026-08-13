@@ -10,15 +10,13 @@ class SetAnimeCommentLikeUseCase:
     def __init__(
             self,
             watch_repo: WatchRepository,
-            unit_of_work: UnitOfWorkInterface | None = None,
+            unit_of_work: UnitOfWorkInterface,
     ):
         self.watch_repo = watch_repo
         self.unit_of_work = unit_of_work
 
     async def execute(self, command: SetAnimeCommentLikeCommand) -> WatchResult:
-        """Set an anime comment like within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(command)
+        """Set an anime comment like within a transaction."""
         async with self.unit_of_work:
             return await self._execute(command)
 

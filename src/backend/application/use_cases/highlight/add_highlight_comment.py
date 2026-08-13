@@ -16,9 +16,9 @@ class AddHighlightCommentUseCase:
     def __init__(
             self,
             repo: HighlightRepository,
+            unit_of_work: UnitOfWorkInterface,
             highlight_dashboard_cache: HighlightDashboardCache | None = None,
             profile_overview_cache: ProfileOverviewCache | None = None,
-            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.repo = repo
         self.highlight_dashboard_cache = highlight_dashboard_cache
@@ -26,9 +26,7 @@ class AddHighlightCommentUseCase:
         self.unit_of_work = unit_of_work
 
     async def execute(self, command: AddHighlightCommentCommand) -> HighlightResult:
-        """Add a highlight comment within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(command)
+        """Add a highlight comment within a transaction."""
         async with self.unit_of_work:
             return await self._execute(command)
 

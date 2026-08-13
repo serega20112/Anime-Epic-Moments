@@ -34,7 +34,7 @@ class TestAddWatchSourceUseCase:
             stream_url="https://example.com/stream.m3u8",
             quality_label="1080",
         )
-        use_case = AddWatchSourceUseCase(watch_repo)
+        use_case = AddWatchSourceUseCase(watch_repo, AsyncMock())
 
         result = await use_case.execute(
             anime_id=7,

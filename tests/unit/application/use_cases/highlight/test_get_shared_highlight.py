@@ -25,7 +25,7 @@ class TestGetSharedHighlightUseCase:
 
         repo = AsyncMock()
         repo.get_by_id.return_value = highlight
-        use_case = StubShared(repo, AsyncMock())
+        use_case = StubShared(repo, AsyncMock(), AsyncMock())
 
         result = await use_case.execute(highlight_id=5, viewer_user_id=3)
 
@@ -42,7 +42,7 @@ class TestGetSharedHighlightUseCase:
         """
         repo = AsyncMock()
         repo.get_by_id.return_value = None
-        use_case = GetSharedHighlightUseCase(repo, AsyncMock())
+        use_case = GetSharedHighlightUseCase(repo, AsyncMock(), AsyncMock())
 
         result = await use_case.execute(highlight_id=999, viewer_user_id=3)
 

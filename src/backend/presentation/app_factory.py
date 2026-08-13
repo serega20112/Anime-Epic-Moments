@@ -9,7 +9,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import jwt
-from dishka import make_async_container
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -18,18 +17,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from backend.config import Settings
 from backend.events.lifecycle import lifespan
-from backend.infrastructure.di.providers import (
-    AnimeUseCaseProvider,
-    AppProvider,
-    AuthUseCaseProvider,
-    CollectionUseCaseProvider,
-    FavoriteUseCaseProvider,
-    HighlightUseCaseProvider,
-    RequestProvider,
-    SupportUseCaseProvider,
-    UserUseCaseProvider,
-    WatchUseCaseProvider,
-)
+from backend.infrastructure.di.dishka_container import build_dishka_container
 from backend.infrastructure.repositories.user_repository import UserRepository
 from backend.infrastructure.security.csrf_service import csrf_service
 from backend.infrastructure.security.jwt_service import JWTService
@@ -63,18 +51,7 @@ def create_app() -> FastAPI:
         FastAPI: Configured application instance.
     """
     app = FastAPI(debug=Settings.app_debug, lifespan=lifespan)
-    dishka_container = make_async_container(
-        AppProvider(),
-        RequestProvider(),
-        AuthUseCaseProvider(),
-        HighlightUseCaseProvider(),
-        FavoriteUseCaseProvider(),
-        CollectionUseCaseProvider(),
-        WatchUseCaseProvider(),
-        AnimeUseCaseProvider(),
-        UserUseCaseProvider(),
-        SupportUseCaseProvider(),
-    )
+    dishka_container = build_dishka_container()
     app.mount(
         "/static",
         StaticFiles(directory=str(FRONTEND_ROOT / "static")),

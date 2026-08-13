@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from backend.infrastructure.security.rate_limiter import RateLimiter
 
@@ -62,7 +62,7 @@ class AccountLockService:
             await self._lock_account(normalized_email)
             return AccountStatus(
                 is_locked=True,
-                unlock_at=datetime.now(UTC).isoformat(),
+                unlock_at=(datetime.now(UTC) + timedelta(seconds=LOCK_DURATION_SECONDS)).isoformat(),
                 failed_attempts=decision.current_count,
                 remaining_attempts=0,
             )
@@ -139,7 +139,7 @@ class AccountLockService:
         """
         normalized_email = email.strip().lower()
         lock_key = f"{LOCK_PREFIX}{normalized_email}"
-        unlock_at = datetime.now(UTC).isoformat()
+        unlock_at = (datetime.now(UTC) + timedelta(seconds=LOCK_DURATION_SECONDS)).isoformat()
         await self.store.set(
             lock_key,
             {"unlock_at": unlock_at, "reason": "too_many_failed_attempts"},

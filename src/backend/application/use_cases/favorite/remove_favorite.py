@@ -18,9 +18,9 @@ class RemoveFavoriteUseCase:
     def __init__(
             self,
             repo: FavoriteRepository,
+            unit_of_work: UnitOfWorkInterface,
             recommendation_service: RecommendationService | None = None,
             profile_overview_cache: ProfileOverviewCache | None = None,
-            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         """Initialize the use case.
 
@@ -28,7 +28,7 @@ class RemoveFavoriteUseCase:
             repo: Favorite repository.
             recommendation_service: Optional recommendation cache invalidator.
             profile_overview_cache: Optional profile overview cache invalidator.
-            unit_of_work: Optional transaction boundary.
+            unit_of_work: Transaction boundary.
         """
         self.repo = repo
         self.recommendation_service = recommendation_service
@@ -36,10 +36,7 @@ class RemoveFavoriteUseCase:
         self.unit_of_work = unit_of_work
 
     async def execute(self, user_id: int, anime_id: int):
-        """Remove a favorite within a transaction if configured."""
-        if self.unit_of_work is None:
-            await self._execute(user_id, anime_id)
-            return
+        """Remove a favorite within a transaction."""
         async with self.unit_of_work:
             await self._execute(user_id, anime_id)
 

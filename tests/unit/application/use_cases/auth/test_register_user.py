@@ -22,7 +22,7 @@ class TestRegisterUserUseCase:
         """
         user_repo = AsyncMock()
         user_repo.get_by_email.return_value = object()
-        use_case = RegisterUserUseCase(user_repo, Mock())
+        use_case = RegisterUserUseCase(user_repo, Mock(), AsyncMock())
 
         with pytest.raises(EmailAlreadyExistsError):
             await use_case.execute(email="user@example.com", password="password", username="tester")
@@ -41,7 +41,7 @@ class TestRegisterUserUseCase:
         )
         password_service = AsyncMock()
         password_service.hash_password.return_value = "hashed-password"
-        use_case = RegisterUserUseCase(user_repo, password_service)
+        use_case = RegisterUserUseCase(user_repo, password_service, AsyncMock())
 
         result = await use_case.execute(
             email="user@example.com", password="password", username="tester"

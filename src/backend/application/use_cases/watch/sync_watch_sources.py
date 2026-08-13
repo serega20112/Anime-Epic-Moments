@@ -13,16 +13,14 @@ class SyncWatchSourcesUseCase:
             self,
             anime_api_client: AnimeApiClient,
             watch_source_sync_service: WatchSourceSyncService,
-            unit_of_work: UnitOfWorkInterface | None = None,
+            unit_of_work: UnitOfWorkInterface,
     ):
         self.anime_api_client = anime_api_client
         self.watch_source_sync_service = watch_source_sync_service
         self.unit_of_work = unit_of_work
 
     async def execute(self, anime_id: int, episode: int, force: bool = False) -> WatchResult:
-        """Sync watch sources within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(anime_id, episode, force)
+        """Sync watch sources within a transaction."""
         async with self.unit_of_work:
             return await self._execute(anime_id, episode, force)
 

@@ -11,6 +11,9 @@ _ACCOUNT_LOCKED_MESSAGE = (
     "попыток входа. Попробуйте позже."
 )
 _INVALID_CREDENTIALS_MESSAGE = "Неверный email или пароль"
+_DUMMY_PASSWORD_HASH = (
+    "$2b$12$YkpE4gT/crtJTugOQ0Uh5ObWVyl1NJXIXc/xc4MbchXOi4R2JXns2"
+)
 
 
 def _welcome_message(username: str) -> str:
@@ -64,9 +67,8 @@ class LoginUserUseCase:
         if locked is not None:
             return locked
         user = await self.user_repository.get_by_email(email)
-        password_matches = await self.password_service.verify_password(
-            password, user.password_hash
-        ) if user else False
+        stored_hash = user.password_hash if user else _DUMMY_PASSWORD_HASH
+        password_matches = await self.password_service.verify_password(password, stored_hash)
         if not user or not password_matches:
             await self._record_failure(email)
             return AuthResult.failure(

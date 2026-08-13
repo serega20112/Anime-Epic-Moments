@@ -21,10 +21,10 @@ class EditHighlightUseCase:
     def __init__(
             self,
             repo: HighlightRepository,
+            unit_of_work: UnitOfWorkInterface,
             recommendation_service: RecommendationService | None = None,
             highlight_dashboard_cache: HighlightDashboardCache | None = None,
             profile_overview_cache: ProfileOverviewCache | None = None,
-            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.repo = repo
         self.recommendation_service = recommendation_service
@@ -33,9 +33,7 @@ class EditHighlightUseCase:
         self.unit_of_work = unit_of_work
 
     async def execute(self, command: EditHighlightCommand) -> HighlightResult:
-        """Edit a highlight within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(command)
+        """Edit a highlight within a transaction."""
         async with self.unit_of_work:
             return await self._execute(command)
 

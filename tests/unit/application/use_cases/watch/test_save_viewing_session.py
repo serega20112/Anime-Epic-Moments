@@ -22,7 +22,7 @@ class TestSaveViewingSessionUseCase:
         watch_repo = AsyncMock()
         profile_cache = AsyncMock()
         watch_repo.upsert_session.return_value = "saved"
-        use_case = SaveViewingSessionUseCase(watch_repo, profile_cache)
+        use_case = SaveViewingSessionUseCase(watch_repo, AsyncMock(), profile_cache)
 
         result = await use_case.execute(
             SaveViewingSessionCommand(
@@ -51,7 +51,7 @@ class TestSaveViewingSessionUseCase:
         Что ожидаем: результат failure со статусом 400, репозиторий не вызывается.
         """
         watch_repo = AsyncMock()
-        use_case = SaveViewingSessionUseCase(watch_repo)
+        use_case = SaveViewingSessionUseCase(watch_repo, AsyncMock())
 
         result = await use_case.execute(
             SaveViewingSessionCommand(

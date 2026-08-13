@@ -23,7 +23,7 @@ class TestSetHighlightLikeUseCase:
         repo.set_like.return_value = SimpleNamespace(user_id=8)
         dashboard_cache = AsyncMock()
         profile_cache = AsyncMock()
-        use_case = SetHighlightLikeUseCase(repo, dashboard_cache, profile_cache)
+        use_case = SetHighlightLikeUseCase(repo, AsyncMock(), dashboard_cache, profile_cache)
 
         result = await use_case.execute(
             SetHighlightLikeCommand(highlight_id=4, user_id=3, liked=True)
@@ -47,7 +47,7 @@ class TestSetHighlightLikeUseCase:
         """
         repo = AsyncMock()
         repo.get_by_id.return_value = None
-        use_case = SetHighlightLikeUseCase(repo)
+        use_case = SetHighlightLikeUseCase(repo, AsyncMock())
 
         result = await use_case.execute(
             SetHighlightLikeCommand(highlight_id=999, user_id=3, liked=True)

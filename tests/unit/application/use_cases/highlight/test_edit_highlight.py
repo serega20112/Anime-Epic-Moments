@@ -34,7 +34,7 @@ class TestEditHighlightUseCase:
         repo.update.side_effect = lambda item: item
         recommendation_service = AsyncMock()
         dashboard_cache = AsyncMock()
-        use_case = EditHighlightUseCase(repo, recommendation_service, dashboard_cache)
+        use_case = EditHighlightUseCase(repo, AsyncMock(), recommendation_service, dashboard_cache)
 
         result = await use_case.execute(
             EditHighlightCommand(
@@ -78,7 +78,7 @@ class TestEditHighlightUseCase:
         highlight.id = 1
         repo = AsyncMock()
         repo.get_by_id.return_value = highlight
-        use_case = EditHighlightUseCase(repo, AsyncMock(), AsyncMock())
+        use_case = EditHighlightUseCase(repo, AsyncMock(), AsyncMock(), AsyncMock())
 
         result = await use_case.execute(
             EditHighlightCommand(
@@ -104,7 +104,7 @@ class TestEditHighlightUseCase:
         """
         repo = AsyncMock()
         repo.get_by_id.return_value = None
-        use_case = EditHighlightUseCase(repo, AsyncMock(), AsyncMock())
+        use_case = EditHighlightUseCase(repo, AsyncMock(), AsyncMock(), AsyncMock())
 
         result = await use_case.execute(
             EditHighlightCommand(

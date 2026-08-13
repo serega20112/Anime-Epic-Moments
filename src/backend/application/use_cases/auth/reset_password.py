@@ -21,7 +21,7 @@ class ResetPasswordUseCase:
             jwt_service: JWTService,
             password_service: PasswordService,
             token_blocklist: TokenBlocklistInterface,
-            unit_of_work: UnitOfWorkInterface | None = None,
+            unit_of_work: UnitOfWorkInterface,
     ):
         """Initialize the use case.
 
@@ -30,7 +30,7 @@ class ResetPasswordUseCase:
             jwt_service: JWT service.
             password_service: Password hashing service.
             token_blocklist: Token blocklist.
-            unit_of_work: Optional transaction boundary.
+            unit_of_work: Transaction boundary.
         """
         self.user_repo = user_repo
         self.jwt_service = jwt_service
@@ -39,9 +39,7 @@ class ResetPasswordUseCase:
         self.unit_of_work = unit_of_work
 
     async def execute(self, token: str, new_password: str) -> AuthResult:
-        """Reset the user password within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(token, new_password)
+        """Reset the user password within a transaction."""
         async with self.unit_of_work:
             return await self._execute(token, new_password)
 

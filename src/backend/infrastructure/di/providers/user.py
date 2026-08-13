@@ -19,20 +19,20 @@ class UserUseCaseProvider(Provider):
     def set_user_follow(
         self,
         user_repository: UserRepository,
-        profile_overview_cache: ProfileOverviewCache,
         unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> SetUserFollowUseCase:
         """Provide the set user follow use case.
 
         Args:
             user_repository: User repository.
-            profile_overview_cache: Profile overview cache.
             unit_of_work: Transaction boundary.
+            profile_overview_cache: Profile overview cache.
 
         Returns:
             SetUserFollowUseCase: Configured use case.
         """
-        return SetUserFollowUseCase(user_repository, profile_overview_cache, unit_of_work)
+        return SetUserFollowUseCase(user_repository, unit_of_work, profile_overview_cache)
 
     @provide(scope=Scope.REQUEST)
     def get_public_profile_overview(

@@ -108,6 +108,7 @@ class TestGetWatchPageUseCase:
             highlight_repo,
             anime_api_client,
             sync_service,
+            AsyncMock(),
         )
 
         page = await use_case.execute(
@@ -152,6 +153,7 @@ class TestGetWatchPageUseCase:
             highlight_repo,
             anime_api_client,
             sync_service,
+            AsyncMock(),
         )
 
         page = await use_case.execute(

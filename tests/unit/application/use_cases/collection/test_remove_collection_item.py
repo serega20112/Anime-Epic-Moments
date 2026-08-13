@@ -20,7 +20,7 @@ class TestRemoveCollectionItemUseCase:
         Что ожидаем: remove_item вызвана с ожидаемыми аргументами.
         """
         repo = AsyncMock()
-        use_case = RemoveCollectionItemUseCase(repo)
+        use_case = RemoveCollectionItemUseCase(repo, AsyncMock())
 
         await use_case.execute(RemoveCollectionItemCommand(collection_id=3, anime_id=7))
 

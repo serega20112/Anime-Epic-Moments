@@ -30,7 +30,7 @@ class TestDeleteHighlightUseCase:
         repo = AsyncMock()
         repo.get_by_id.return_value = highlight
         recommendation_service = AsyncMock()
-        use_case = DeleteHighlightUseCase(repo, recommendation_service)
+        use_case = DeleteHighlightUseCase(repo, AsyncMock(), recommendation_service)
 
         result = await use_case.execute(DeleteHighlightCommand(highlight_id=55))
 
@@ -47,7 +47,7 @@ class TestDeleteHighlightUseCase:
         """
         repo = AsyncMock()
         repo.get_by_id.return_value = None
-        use_case = DeleteHighlightUseCase(repo, AsyncMock())
+        use_case = DeleteHighlightUseCase(repo, AsyncMock(), AsyncMock())
 
         result = await use_case.execute(DeleteHighlightCommand(highlight_id=highlight_id))
 

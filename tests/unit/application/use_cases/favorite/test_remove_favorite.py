@@ -20,7 +20,7 @@ class TestRemoveFavoriteUseCase:
         repo = AsyncMock()
         recommendation_service = AsyncMock()
         profile_cache = AsyncMock()
-        use_case = RemoveFavoriteUseCase(repo, recommendation_service, profile_cache)
+        use_case = RemoveFavoriteUseCase(repo, AsyncMock(), recommendation_service, profile_cache)
 
         await use_case.execute(user_id=user_id, anime_id=anime_id)
 

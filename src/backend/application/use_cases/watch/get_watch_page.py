@@ -25,7 +25,7 @@ class GetWatchPageUseCase:
             highlight_repo: HighlightRepository,
             anime_api_client: AnimeApiClient,
             watch_source_sync_service: WatchSourceSyncService,
-            unit_of_work: UnitOfWorkInterface | None = None,
+            unit_of_work: UnitOfWorkInterface,
     ):
         self.watch_repo = watch_repo
         self.highlight_repo = highlight_repo
@@ -39,9 +39,7 @@ class GetWatchPageUseCase:
             query: WatchPageQuery,
             user_id: int | None = None,
     ) -> WatchPageData:
-        """Build the watch page within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(anime_id, query, user_id)
+        """Build the watch page within a transaction."""
         async with self.unit_of_work:
             return await self._execute(anime_id, query, user_id)
 

@@ -9,7 +9,7 @@ class AddWatchSourceUseCase:
     def __init__(
             self,
             watch_repo: WatchRepository,
-            unit_of_work: UnitOfWorkInterface | None = None,
+            unit_of_work: UnitOfWorkInterface,
     ):
         self.watch_repo = watch_repo
         self.unit_of_work = unit_of_work
@@ -27,20 +27,7 @@ class AddWatchSourceUseCase:
             language: str = "ru",
             source_type: str = "stream",
     ) -> WatchSource:
-        """Create a translation and watch source within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(
-                anime_id,
-                episode,
-                translation_name,
-                translation_type,
-                provider_name,
-                source_name,
-                stream_url,
-                quality_label,
-                language,
-                source_type,
-            )
+        """Create a translation and watch source within a transaction."""
         async with self.unit_of_work:
             return await self._execute(
                 anime_id,

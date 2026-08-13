@@ -15,9 +15,9 @@ class AddFavoriteUseCase:
     def __init__(
             self,
             repo: FavoriteRepository,
+            unit_of_work: UnitOfWorkInterface,
             recommendation_service: RecommendationService | None = None,
             profile_overview_cache: ProfileOverviewCache | None = None,
-            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.repo = repo
         self.recommendation_service = recommendation_service
@@ -33,11 +33,7 @@ class AddFavoriteUseCase:
             cover_url: str | None = None,
             genres: list[str] | str | None = None,
     ) -> Favorite:
-        """Add an anime to favorites within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(
-                user_id, anime_id, title, description, cover_url, genres
-            )
+        """Add an anime to favorites within a transaction."""
         async with self.unit_of_work:
             return await self._execute(
                 user_id, anime_id, title, description, cover_url, genres

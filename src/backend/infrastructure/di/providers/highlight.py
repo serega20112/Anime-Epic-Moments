@@ -51,87 +51,87 @@ class HighlightUseCaseProvider(Provider):
     def create_highlight(
         self,
         highlight_repository: HighlightRepository,
+        unit_of_work: UnitOfWorkInterface,
         recommendation_service: RecommendationService,
         highlight_dashboard_cache: HighlightDashboardCache,
         profile_overview_cache: ProfileOverviewCache,
-        unit_of_work: UnitOfWorkInterface,
     ) -> CreateHighlightUseCase:
         """Provide the create highlight use case.
 
         Args:
             highlight_repository: Highlight repository.
+            unit_of_work: Transaction boundary.
             recommendation_service: Recommendation service.
             highlight_dashboard_cache: Dashboard cache.
             profile_overview_cache: Profile overview cache.
-            unit_of_work: Transaction boundary.
 
         Returns:
             CreateHighlightUseCase: Configured use case.
         """
         return CreateHighlightUseCase(
             highlight_repository,
+            unit_of_work,
             recommendation_service,
             highlight_dashboard_cache,
             profile_overview_cache,
-            unit_of_work,
         )
 
     @provide(scope=Scope.REQUEST)
     def delete_highlight(
         self,
         highlight_repository: HighlightRepository,
+        unit_of_work: UnitOfWorkInterface,
         recommendation_service: RecommendationService,
         highlight_dashboard_cache: HighlightDashboardCache,
         profile_overview_cache: ProfileOverviewCache,
-        unit_of_work: UnitOfWorkInterface,
     ) -> DeleteHighlightUseCase:
         """Provide the delete highlight use case.
 
         Args:
             highlight_repository: Highlight repository.
+            unit_of_work: Transaction boundary.
             recommendation_service: Recommendation service.
             highlight_dashboard_cache: Dashboard cache.
             profile_overview_cache: Profile overview cache.
-            unit_of_work: Transaction boundary.
 
         Returns:
             DeleteHighlightUseCase: Configured use case.
         """
         return DeleteHighlightUseCase(
             highlight_repository,
+            unit_of_work,
             recommendation_service,
             highlight_dashboard_cache,
             profile_overview_cache,
-            unit_of_work,
         )
 
     @provide(scope=Scope.REQUEST)
     def edit_highlight(
         self,
         highlight_repository: HighlightRepository,
+        unit_of_work: UnitOfWorkInterface,
         recommendation_service: RecommendationService,
         highlight_dashboard_cache: HighlightDashboardCache,
         profile_overview_cache: ProfileOverviewCache,
-        unit_of_work: UnitOfWorkInterface,
     ) -> EditHighlightUseCase:
         """Provide the edit highlight use case.
 
         Args:
             highlight_repository: Highlight repository.
+            unit_of_work: Transaction boundary.
             recommendation_service: Recommendation service.
             highlight_dashboard_cache: Dashboard cache.
             profile_overview_cache: Profile overview cache.
-            unit_of_work: Transaction boundary.
 
         Returns:
             EditHighlightUseCase: Configured use case.
         """
         return EditHighlightUseCase(
             highlight_repository,
+            unit_of_work,
             recommendation_service,
             highlight_dashboard_cache,
             profile_overview_cache,
-            unit_of_work,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -234,16 +234,16 @@ class HighlightUseCaseProvider(Provider):
         self,
         highlight_repository: HighlightRepository,
         anime_api_client: AnimeApiClient,
-        user_repository: UserRepository,
         unit_of_work: UnitOfWorkInterface,
+        user_repository: UserRepository,
     ) -> GetSharedHighlightUseCase:
         """Provide the get shared highlight use case.
 
         Args:
             highlight_repository: Highlight repository.
             anime_api_client: Anime API client.
-            user_repository: User repository.
             unit_of_work: Transaction boundary.
+            user_repository: User repository.
 
         Returns:
             GetSharedHighlightUseCase: Configured use case.
@@ -251,8 +251,8 @@ class HighlightUseCaseProvider(Provider):
         return GetSharedHighlightUseCase(
             highlight_repository,
             anime_api_client,
-            user_repository,
             unit_of_work,
+            user_repository,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -308,52 +308,52 @@ class HighlightUseCaseProvider(Provider):
     def set_highlight_like(
         self,
         highlight_repository: HighlightRepository,
+        unit_of_work: UnitOfWorkInterface,
         highlight_dashboard_cache: HighlightDashboardCache,
         profile_overview_cache: ProfileOverviewCache,
-        unit_of_work: UnitOfWorkInterface,
     ) -> SetHighlightLikeUseCase:
         """Provide the set highlight like use case.
 
         Args:
             highlight_repository: Highlight repository.
+            unit_of_work: Transaction boundary.
             highlight_dashboard_cache: Dashboard cache.
             profile_overview_cache: Profile overview cache.
-            unit_of_work: Transaction boundary.
 
         Returns:
             SetHighlightLikeUseCase: Configured use case.
         """
         return SetHighlightLikeUseCase(
             highlight_repository,
+            unit_of_work,
             highlight_dashboard_cache,
             profile_overview_cache,
-            unit_of_work,
         )
 
     @provide(scope=Scope.REQUEST)
     def add_highlight_comment(
         self,
         highlight_repository: HighlightRepository,
+        unit_of_work: UnitOfWorkInterface,
         highlight_dashboard_cache: HighlightDashboardCache,
         profile_overview_cache: ProfileOverviewCache,
-        unit_of_work: UnitOfWorkInterface,
     ) -> AddHighlightCommentUseCase:
         """Provide the add highlight comment use case.
 
         Args:
             highlight_repository: Highlight repository.
+            unit_of_work: Transaction boundary.
             highlight_dashboard_cache: Dashboard cache.
             profile_overview_cache: Profile overview cache.
-            unit_of_work: Transaction boundary.
 
         Returns:
             AddHighlightCommentUseCase: Configured use case.
         """
         return AddHighlightCommentUseCase(
             highlight_repository,
+            unit_of_work,
             highlight_dashboard_cache,
             profile_overview_cache,
-            unit_of_work,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -405,17 +405,17 @@ class HighlightUseCaseProvider(Provider):
     def set_saved_highlight(
         self,
         highlight_repository: HighlightRepository,
-        profile_overview_cache: ProfileOverviewCache,
         unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> SetSavedHighlightUseCase:
         """Provide the set saved highlight use case.
 
         Args:
             highlight_repository: Highlight repository.
-            profile_overview_cache: Profile overview cache.
             unit_of_work: Transaction boundary.
+            profile_overview_cache: Profile overview cache.
 
         Returns:
             SetSavedHighlightUseCase: Configured use case.
         """
-        return SetSavedHighlightUseCase(highlight_repository, profile_overview_cache, unit_of_work)
+        return SetSavedHighlightUseCase(highlight_repository, unit_of_work, profile_overview_cache)

@@ -26,7 +26,7 @@ class TestCreateHighlightUseCase:
         repo = AsyncMock()
         repo.add.side_effect = lambda highlight: highlight
         recommendation_service = AsyncMock()
-        use_case = CreateHighlightUseCase(repo, recommendation_service)
+        use_case = CreateHighlightUseCase(repo, AsyncMock(), recommendation_service)
 
         result = await use_case.execute(
             CreateHighlightCommand(
@@ -55,7 +55,7 @@ class TestCreateHighlightUseCase:
         Что ожидаем: результат failure со статусом 400, repo.add не вызывается.
         """
         repo = AsyncMock()
-        use_case = CreateHighlightUseCase(repo)
+        use_case = CreateHighlightUseCase(repo, AsyncMock())
 
         result = await use_case.execute(
             CreateHighlightCommand(
@@ -78,7 +78,7 @@ class TestCreateHighlightUseCase:
         Что ожидаем: результат failure со статусом 403, repo.add не вызывается.
         """
         repo = AsyncMock()
-        use_case = CreateHighlightUseCase(repo)
+        use_case = CreateHighlightUseCase(repo, AsyncMock())
 
         result = await use_case.execute(
             CreateHighlightCommand(

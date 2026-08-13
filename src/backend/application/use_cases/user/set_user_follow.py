@@ -12,8 +12,8 @@ class SetUserFollowUseCase:
     def __init__(
             self,
             user_repo: UserRepository,
+            unit_of_work: UnitOfWorkInterface,
             profile_overview_cache: ProfileOverviewCache | None = None,
-            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.user_repo = user_repo
         self.profile_overview_cache = profile_overview_cache
@@ -25,9 +25,7 @@ class SetUserFollowUseCase:
             followed_user_id: int,
             follow: bool,
     ) -> UserResult:
-        """Set a user follow within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(follower_user_id, followed_user_id, follow)
+        """Set a user follow within a transaction."""
         async with self.unit_of_work:
             return await self._execute(follower_user_id, followed_user_id, follow)
 

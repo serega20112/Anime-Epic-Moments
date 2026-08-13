@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -15,18 +15,18 @@ from backend.application.use_cases.favorite.add_favorite import AddFavoriteUseCa
         ("Action, Comedy", ["Action", "Comedy"]),
     ],
 )
-def test_add_favorite_use_case_normalizes_payload_and_invalidates_cache(
+async def test_add_favorite_use_case_normalizes_payload_and_invalidates_cache(
         genres_input,
         expected_genres,
 ):
     """Проверяем, что add_favorite нормализует snapshot-данные и сбрасывает рекомендации."""
-    repo = Mock()
-    recommendation_service = Mock()
-    profile_cache = Mock()
-    use_case = AddFavoriteUseCase(repo, recommendation_service, profile_cache)
+    repo = AsyncMock()
+    recommendation_service = AsyncMock()
+    profile_cache = AsyncMock()
+    use_case = AddFavoriteUseCase(repo, AsyncMock(), recommendation_service, profile_cache)
     repo.add.side_effect = lambda favorite: favorite
 
-    result = use_case.execute(
+    result = await use_case.execute(
         user_id="5",
         anime_id="10",
         title="  Initial D  ",

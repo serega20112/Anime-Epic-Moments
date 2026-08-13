@@ -9,16 +9,13 @@ class RemoveCollectionItemUseCase:
     def __init__(
             self,
             collection_repo: CollectionRepository,
-            unit_of_work: UnitOfWorkInterface | None = None,
+            unit_of_work: UnitOfWorkInterface,
     ):
         self.collection_repo = collection_repo
         self.unit_of_work = unit_of_work
 
     async def execute(self, command: RemoveCollectionItemCommand) -> None:
-        """Remove an anime item from a collection within a transaction if configured."""
-        if self.unit_of_work is None:
-            await self._execute(command)
-            return
+        """Remove an anime item from a collection within a transaction."""
         async with self.unit_of_work:
             await self._execute(command)
 

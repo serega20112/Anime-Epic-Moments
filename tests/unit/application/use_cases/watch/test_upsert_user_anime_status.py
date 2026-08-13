@@ -20,7 +20,7 @@ class TestUpsertUserAnimeStatusUseCase:
         watch_repo = AsyncMock()
         profile_cache = AsyncMock()
         watch_repo.upsert_status.return_value = "saved"
-        use_case = UpsertUserAnimeStatusUseCase(watch_repo, profile_cache)
+        use_case = UpsertUserAnimeStatusUseCase(watch_repo, AsyncMock(), profile_cache)
 
         result = await use_case.execute(
             UpsertUserAnimeStatusCommand(user_id=1, anime_id=9, status="watching")
@@ -40,7 +40,7 @@ class TestUpsertUserAnimeStatusUseCase:
         Что ожидаем: результат failure со статусом 400, репозиторий не вызывается.
         """
         watch_repo = AsyncMock()
-        use_case = UpsertUserAnimeStatusUseCase(watch_repo)
+        use_case = UpsertUserAnimeStatusUseCase(watch_repo, AsyncMock())
 
         result = await use_case.execute(
             UpsertUserAnimeStatusCommand(user_id=1, anime_id=9, status="   ")

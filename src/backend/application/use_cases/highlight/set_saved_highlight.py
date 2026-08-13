@@ -13,17 +13,15 @@ class SetSavedHighlightUseCase:
     def __init__(
             self,
             repo: HighlightRepository,
+            unit_of_work: UnitOfWorkInterface,
             profile_overview_cache: ProfileOverviewCache | None = None,
-            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.repo = repo
         self.profile_overview_cache = profile_overview_cache
         self.unit_of_work = unit_of_work
 
     async def execute(self, command: SetSavedHighlightCommand) -> HighlightResult:
-        """Save or unsave a highlight within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(command)
+        """Save or unsave a highlight within a transaction."""
         async with self.unit_of_work:
             return await self._execute(command)
 

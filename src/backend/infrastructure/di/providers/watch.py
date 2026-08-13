@@ -101,46 +101,46 @@ class WatchUseCaseProvider(Provider):
     def upsert_user_anime_status(
         self,
         watch_repository: WatchRepository,
-        profile_overview_cache: ProfileOverviewCache,
         unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> UpsertUserAnimeStatusUseCase:
         """Provide the upsert user anime status use case.
 
         Args:
             watch_repository: Watch repository.
-            profile_overview_cache: Profile overview cache.
             unit_of_work: Transaction boundary.
+            profile_overview_cache: Profile overview cache.
 
         Returns:
             UpsertUserAnimeStatusUseCase: Configured use case.
         """
         return UpsertUserAnimeStatusUseCase(
             watch_repository,
-            profile_overview_cache,
             unit_of_work,
+            profile_overview_cache,
         )
 
     @provide(scope=Scope.REQUEST)
     def save_viewing_session(
         self,
         watch_repository: WatchRepository,
-        profile_overview_cache: ProfileOverviewCache,
         unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> SaveViewingSessionUseCase:
         """Provide the save viewing session use case.
 
         Args:
             watch_repository: Watch repository.
-            profile_overview_cache: Profile overview cache.
             unit_of_work: Transaction boundary.
+            profile_overview_cache: Profile overview cache.
 
         Returns:
             SaveViewingSessionUseCase: Configured use case.
         """
         return SaveViewingSessionUseCase(
             watch_repository,
-            profile_overview_cache,
             unit_of_work,
+            profile_overview_cache,
         )
 
     @provide(scope=Scope.REQUEST)

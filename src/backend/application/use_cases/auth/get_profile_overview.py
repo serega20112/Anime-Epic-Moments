@@ -1,3 +1,4 @@
+import asyncio
 from statistics import mean
 
 from backend.application.use_cases.highlight.get_liked_highlights import GetLikedHighlightsUseCase
@@ -183,8 +184,14 @@ class GetProfileOverviewUseCase:
         anime_ids.update(int(item.anime_id) for item in own_highlights)
         anime_ids.update(int(item.anime_id) for item in watched_stats)
         anime_map: dict[int, object | None] = {}
-        for anime_id in anime_ids:
-            anime_map[anime_id] = await self.anime_api_client.get_by_id(anime_id)
+        for anime_id, anime in zip(
+            anime_ids,
+            await asyncio.gather(
+                *(self.anime_api_client.get_by_id(anime_id) for anime_id in anime_ids),
+                return_exceptions=True,
+            ),
+        ):
+            anime_map[anime_id] = None if isinstance(anime, BaseException) else anime
         return anime_map
 
     def _collect_genres(self, favorites, anime_map: dict[int, object | None]) -> list[str]:

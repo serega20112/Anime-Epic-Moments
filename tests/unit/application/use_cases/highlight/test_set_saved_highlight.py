@@ -22,7 +22,7 @@ class TestSetSavedHighlightUseCase:
         repo.get_by_id.return_value = SimpleNamespace(user_id=8)
         repo.set_saved.return_value = True
         profile_cache = AsyncMock()
-        use_case = SetSavedHighlightUseCase(repo, profile_cache)
+        use_case = SetSavedHighlightUseCase(repo, AsyncMock(), profile_cache)
 
         result = await use_case.execute(
             SetSavedHighlightCommand(highlight_id=4, user_id=3, saved=True)
@@ -39,7 +39,7 @@ class TestSetSavedHighlightUseCase:
         """
         repo = AsyncMock()
         repo.get_by_id.return_value = None
-        use_case = SetSavedHighlightUseCase(repo)
+        use_case = SetSavedHighlightUseCase(repo, AsyncMock())
 
         result = await use_case.execute(
             SetSavedHighlightCommand(highlight_id=999, user_id=3, saved=True)

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain import (
@@ -297,11 +297,23 @@ class HighlightRepository:
         existing = like_result.scalar_one_or_none()
         if liked and existing is None:
             self.session.add(HighlightLikeModel(highlight_id=highlight_id, user_id=user_id))
-            db_highlight.likes_count = int(db_highlight.likes_count or 0) + 1
+            await self.session.execute(
+                update(HighlightModel)
+                .where(HighlightModel.id == highlight_id)
+                .values(likes_count=HighlightModel.likes_count + 1)
+            )
         elif not liked and existing is not None:
             await self.session.delete(existing)
-            db_highlight.likes_count = max(int(db_highlight.likes_count or 0) - 1, 0)
+            await self.session.execute(
+                update(HighlightModel)
+                .where(
+                    HighlightModel.id == highlight_id,
+                    HighlightModel.likes_count > 0,
+                )
+                .values(likes_count=HighlightModel.likes_count - 1)
+            )
         await self.session.flush()
+        await self.session.refresh(db_highlight)
         return self._to_entity(db_highlight)
 
     async def get_likers(self, highlight_id: int, limit: int = 20) -> list[HighlightLikeUser]:
@@ -492,8 +504,13 @@ class HighlightRepository:
         db_highlight = result.scalar_one_or_none()
         if db_highlight is None:
             raise ValueError("Highlight не найден")
-        db_highlight.views_count = int(db_highlight.views_count or 0) + 1
+        await self.session.execute(
+            update(HighlightModel)
+            .where(HighlightModel.id == highlight_id)
+            .values(views_count=HighlightModel.views_count + 1)
+        )
         await self.session.flush()
+        await self.session.refresh(db_highlight)
 
         return self._to_entity(db_highlight)
 

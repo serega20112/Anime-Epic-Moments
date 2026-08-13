@@ -14,17 +14,15 @@ class SaveViewingSessionUseCase:
     def __init__(
             self,
             watch_repo: WatchRepository,
+            unit_of_work: UnitOfWorkInterface,
             profile_overview_cache: ProfileOverviewCache | None = None,
-            unit_of_work: UnitOfWorkInterface | None = None,
     ):
         self.watch_repo = watch_repo
         self.profile_overview_cache = profile_overview_cache
         self.unit_of_work = unit_of_work
 
     async def execute(self, command: SaveViewingSessionCommand) -> WatchResult:
-        """Save a viewing session within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(command)
+        """Save a viewing session within a transaction."""
         async with self.unit_of_work:
             return await self._execute(command)
 

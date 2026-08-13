@@ -32,7 +32,7 @@ class CreateSupportTicketUseCase:
             support_repo: SupportRepository,
             telegram_notifier: TelegramSupportNotifier,
             email_mailer: SupportEmailMailer,
-            unit_of_work: UnitOfWorkInterface | None = None,
+            unit_of_work: UnitOfWorkInterface,
     ):
         self.support_repo = support_repo
         self.telegram_notifier = telegram_notifier
@@ -40,9 +40,7 @@ class CreateSupportTicketUseCase:
         self.unit_of_work = unit_of_work
 
     async def execute(self, command: CreateSupportTicketCommand) -> CreateSupportTicketResult:
-        """Create a support ticket within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(command)
+        """Create a support ticket within a transaction."""
         async with self.unit_of_work:
             return await self._execute(command)
 

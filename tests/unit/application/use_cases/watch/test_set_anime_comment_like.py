@@ -19,7 +19,7 @@ class TestSetAnimeCommentLikeUseCase:
         """
         repo = AsyncMock()
         repo.set_anime_comment_like.return_value = "comment"
-        use_case = SetAnimeCommentLikeUseCase(repo)
+        use_case = SetAnimeCommentLikeUseCase(repo, AsyncMock())
 
         result = await use_case.execute(SetAnimeCommentLikeCommand(comment_id=3, user_id=4, liked=True))
 
@@ -36,7 +36,7 @@ class TestSetAnimeCommentLikeUseCase:
         """
         repo = AsyncMock()
         repo.set_anime_comment_like.side_effect = ValueError("missing")
-        use_case = SetAnimeCommentLikeUseCase(repo)
+        use_case = SetAnimeCommentLikeUseCase(repo, AsyncMock())
 
         result = await use_case.execute(SetAnimeCommentLikeCommand(comment_id=99, user_id=4, liked=True))
 

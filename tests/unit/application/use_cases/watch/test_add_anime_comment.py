@@ -19,7 +19,7 @@ class TestAddAnimeCommentUseCase:
         Что ожидаем: результат failure со статусом 400, репозиторий не вызывается.
         """
         repo = AsyncMock()
-        use_case = AddAnimeCommentUseCase(repo)
+        use_case = AddAnimeCommentUseCase(repo, AsyncMock())
 
         result = await use_case.execute(
             AddAnimeCommentCommand(anime_id=7, user_id=4, content=content)
@@ -36,7 +36,7 @@ class TestAddAnimeCommentUseCase:
         """
         repo = AsyncMock()
         repo.add_anime_comment.return_value = "comment"
-        use_case = AddAnimeCommentUseCase(repo)
+        use_case = AddAnimeCommentUseCase(repo, AsyncMock())
 
         result = await use_case.execute(
             AddAnimeCommentCommand(anime_id=7, user_id=4, content="  Отличный эпизод  ")

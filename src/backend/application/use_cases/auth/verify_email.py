@@ -21,23 +21,21 @@ class VerifyEmailUseCase:
             self,
             user_repo: UserRepository,
             verification_store: EmailVerificationStore,
-            unit_of_work: UnitOfWorkInterface | None = None,
+            unit_of_work: UnitOfWorkInterface,
     ):
         """Initialize the use case.
 
         Args:
             user_repo: User repository port.
             verification_store: Verification code store.
-            unit_of_work: Optional transaction boundary.
+            unit_of_work: Transaction boundary.
         """
         self.user_repo = user_repo
         self.verification_store = verification_store
         self.unit_of_work = unit_of_work
 
     async def execute(self, email: str, code: str) -> AuthResult:
-        """Verify an email code and create a user within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(email, code)
+        """Verify an email code and create a user within a transaction."""
         async with self.unit_of_work:
             return await self._execute(email, code)
 

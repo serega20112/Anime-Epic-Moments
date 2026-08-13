@@ -18,14 +18,14 @@ class RegisterUserUseCase:
             self,
             user_repository: UserRepository,
             password_service: PasswordService,
-            unit_of_work: UnitOfWorkInterface | None = None,
+            unit_of_work: UnitOfWorkInterface,
     ):
         """Initialize the use case.
 
         Args:
             user_repository: User repository port.
             password_service: Password hashing service.
-            unit_of_work: Optional transaction boundary.
+            unit_of_work: Transaction boundary.
         """
         self.user_repository = user_repository
         self.password_service = password_service
@@ -34,11 +34,7 @@ class RegisterUserUseCase:
     async def execute(
             self, *, email: str, password: str, username: str,             theme: str = "neon"
     ) -> User:
-        """Register a user within a transaction if configured."""
-        if self.unit_of_work is None:
-            return await self._execute(
-                email=email, password=password, username=username, theme=theme
-            )
+        """Register a user within a transaction."""
         async with self.unit_of_work:
             return await self._execute(
                 email=email, password=password, username=username, theme=theme

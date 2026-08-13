@@ -28,7 +28,7 @@ class TestResetPasswordUseCase:
         jwt_service = Mock()
         jwt_service.decode_password_reset_token.side_effect = jwt.InvalidTokenError("bad token")
         password_service = Mock()
-        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, _blocklist())
+        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, _blocklist(), AsyncMock())
 
         result = await use_case.execute("bad-token", "new-password")
 
@@ -46,7 +46,7 @@ class TestResetPasswordUseCase:
         password_service = Mock()
         blocklist = Mock()
         blocklist.consume = AsyncMock(return_value=False)
-        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, blocklist)
+        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, blocklist, AsyncMock())
 
         result = await use_case.execute("token", "new-password")
 
@@ -62,7 +62,7 @@ class TestResetPasswordUseCase:
         user_repo.get_by_id.return_value = None
         jwt_service = Mock()
         jwt_service.decode_password_reset_token.return_value = 17
-        use_case = ResetPasswordUseCase(user_repo, jwt_service, Mock(), _blocklist())
+        use_case = ResetPasswordUseCase(user_repo, jwt_service, Mock(), _blocklist(), AsyncMock())
 
         result = await use_case.execute("token", "new-password")
 
@@ -82,7 +82,7 @@ class TestResetPasswordUseCase:
         password_service = AsyncMock()
         password_service.hash_password.return_value = "new-hash"
         blocklist = _blocklist()
-        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, blocklist)
+        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, blocklist, AsyncMock())
 
         result = await use_case.execute("token", "new-password")
 

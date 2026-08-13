@@ -25,7 +25,7 @@ class TestCreateWatchHighlightUseCase:
             ok=True, data=SimpleNamespace(id=33, error=None, status_code=201)
         )
         watch_repo = AsyncMock()
-        use_case = CreateWatchHighlightUseCase(create_highlight_use_case, watch_repo)
+        use_case = CreateWatchHighlightUseCase(create_highlight_use_case, watch_repo, AsyncMock())
 
         result = await use_case.execute(
             CreateWatchHighlightCommand(
@@ -61,7 +61,7 @@ class TestCreateWatchHighlightUseCase:
         """
         create_highlight_use_case = AsyncMock()
         watch_repo = AsyncMock()
-        use_case = CreateWatchHighlightUseCase(create_highlight_use_case, watch_repo)
+        use_case = CreateWatchHighlightUseCase(create_highlight_use_case, watch_repo, AsyncMock())
 
         result = await use_case.execute(
             CreateWatchHighlightCommand(

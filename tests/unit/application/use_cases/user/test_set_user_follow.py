@@ -28,7 +28,7 @@ class TestSetUserFollowUseCase:
         user_repo.get_by_id.return_value = SimpleNamespace(id=7)
         getattr(user_repo, expected_method).return_value = follow
         profile_cache = AsyncMock()
-        use_case = SetUserFollowUseCase(user_repo, profile_cache)
+        use_case = SetUserFollowUseCase(user_repo, AsyncMock(), profile_cache)
 
         result = await use_case.execute(
             follower_user_id=3,
@@ -49,7 +49,7 @@ class TestSetUserFollowUseCase:
         """
         user_repo = AsyncMock()
         user_repo.get_by_id.return_value = None
-        use_case = SetUserFollowUseCase(user_repo)
+        use_case = SetUserFollowUseCase(user_repo, AsyncMock())
 
         result = await use_case.execute(
             follower_user_id=3, followed_user_id=99, follow=True

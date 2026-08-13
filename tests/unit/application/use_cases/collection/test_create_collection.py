@@ -19,7 +19,7 @@ class TestCreateCollectionUseCase:
         """
         repo = AsyncMock()
         repo.create_collection.side_effect = lambda collection: collection
-        use_case = CreateCollectionUseCase(repo)
+        use_case = CreateCollectionUseCase(repo, AsyncMock())
 
         result = await use_case.execute(
             CreateCollectionCommand(

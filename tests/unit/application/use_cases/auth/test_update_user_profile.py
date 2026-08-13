@@ -21,7 +21,7 @@ class TestUpdateUserProfileUseCase:
         """
         user_repo = AsyncMock()
         user_repo.get_by_id.return_value = None
-        use_case = UpdateUserProfileUseCase(user_repo)
+        use_case = UpdateUserProfileUseCase(user_repo, AsyncMock())
 
         result = await use_case.execute(user_id=900, username="NewName", avatar_url="http://a/x.png")
 
@@ -36,7 +36,7 @@ class TestUpdateUserProfileUseCase:
         """
         user_repo = AsyncMock()
         user_repo.get_by_id.return_value = self._make_user()
-        use_case = UpdateUserProfileUseCase(user_repo)
+        use_case = UpdateUserProfileUseCase(user_repo, AsyncMock())
 
         result = await use_case.execute(user_id=1, username="   ", avatar_url=None)
 
@@ -60,7 +60,7 @@ class TestUpdateUserProfileUseCase:
         user_repo.get_by_id.return_value = self._make_user()
         user_repo.update.side_effect = lambda user: user
         cache = AsyncMock()
-        use_case = UpdateUserProfileUseCase(user_repo, cache)
+        use_case = UpdateUserProfileUseCase(user_repo, AsyncMock(), cache)
 
         result = await use_case.execute(user_id=1, username=username, avatar_url=avatar_url)
 

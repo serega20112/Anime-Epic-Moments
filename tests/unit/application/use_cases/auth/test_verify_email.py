@@ -21,7 +21,7 @@ class TestVerifyEmailUseCase:
         verification_store = AsyncMock()
         verification_store.get.return_value = None
         user_repo = AsyncMock()
-        use_case = VerifyEmailUseCase(user_repo, verification_store)
+        use_case = VerifyEmailUseCase(user_repo, verification_store, AsyncMock())
 
         result = await use_case.execute(email=" User@Example.com ", code="123456")
 
@@ -57,7 +57,7 @@ class TestVerifyEmailUseCase:
         user_repo.add.side_effect = lambda user: SimpleNamespace(
             id=1, email=user.email, username=user.username, password_hash=user.password_hash
         )
-        use_case = VerifyEmailUseCase(user_repo, verification_store)
+        use_case = VerifyEmailUseCase(user_repo, verification_store, AsyncMock())
 
         result = await use_case.execute(email="user@example.com", code=submitted_code)
 
@@ -94,7 +94,7 @@ class TestVerifyEmailUseCase:
         user_repo.get_by_email.return_value = existing_email is not None and User(
             email="user@example.com", username="other", password_hash="x"
         )
-        use_case = VerifyEmailUseCase(user_repo, verification_store)
+        use_case = VerifyEmailUseCase(user_repo, verification_store, AsyncMock())
 
         result = await use_case.execute(email="user@example.com", code="123456")
 

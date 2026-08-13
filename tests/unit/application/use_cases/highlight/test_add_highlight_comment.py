@@ -22,7 +22,7 @@ class TestAddHighlightCommentUseCase:
         repo.get_by_id.return_value = SimpleNamespace(user_id=7)
         repo.add_comment.return_value = SimpleNamespace(id=1)
         dashboard_cache = AsyncMock()
-        use_case = AddHighlightCommentUseCase(repo, dashboard_cache)
+        use_case = AddHighlightCommentUseCase(repo, AsyncMock(), dashboard_cache)
 
         result = await use_case.execute(
             AddHighlightCommentCommand(
@@ -43,7 +43,7 @@ class TestAddHighlightCommentUseCase:
         Что ожидаем: результат failure со статусом 400, add_comment не вызывается.
         """
         repo = AsyncMock()
-        use_case = AddHighlightCommentUseCase(repo)
+        use_case = AddHighlightCommentUseCase(repo, AsyncMock())
 
         result = await use_case.execute(
             AddHighlightCommentCommand(highlight_id=5, user_id=7, content="   ")
@@ -60,7 +60,7 @@ class TestAddHighlightCommentUseCase:
         """
         repo = AsyncMock()
         repo.get_by_id.return_value = None
-        use_case = AddHighlightCommentUseCase(repo)
+        use_case = AddHighlightCommentUseCase(repo, AsyncMock())
 
         result = await use_case.execute(
             AddHighlightCommentCommand(highlight_id=999, user_id=7, content="nice")

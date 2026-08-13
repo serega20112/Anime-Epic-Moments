@@ -21,52 +21,52 @@ class FavoriteUseCaseProvider(Provider):
     def add_favorite(
         self,
         favorite_repository: FavoriteRepository,
+        unit_of_work: UnitOfWorkInterface,
         recommendation_service: RecommendationService,
         profile_overview_cache: ProfileOverviewCache,
-        unit_of_work: UnitOfWorkInterface,
     ) -> AddFavoriteUseCase:
         """Provide the add favorite use case.
 
         Args:
             favorite_repository: Favorite repository.
+            unit_of_work: Transaction boundary.
             recommendation_service: Recommendation service.
             profile_overview_cache: Profile overview cache.
-            unit_of_work: Transaction boundary.
 
         Returns:
             AddFavoriteUseCase: Configured use case.
         """
         return AddFavoriteUseCase(
             favorite_repository,
+            unit_of_work,
             recommendation_service,
             profile_overview_cache,
-            unit_of_work,
         )
 
     @provide(scope=Scope.REQUEST)
     def remove_favorite(
         self,
         favorite_repository: FavoriteRepository,
+        unit_of_work: UnitOfWorkInterface,
         recommendation_service: RecommendationService,
         profile_overview_cache: ProfileOverviewCache,
-        unit_of_work: UnitOfWorkInterface,
     ) -> RemoveFavoriteUseCase:
         """Provide the remove favorite use case.
 
         Args:
             favorite_repository: Favorite repository.
+            unit_of_work: Transaction boundary.
             recommendation_service: Recommendation service.
             profile_overview_cache: Profile overview cache.
-            unit_of_work: Transaction boundary.
 
         Returns:
             RemoveFavoriteUseCase: Configured use case.
         """
         return RemoveFavoriteUseCase(
             favorite_repository,
+            unit_of_work,
             recommendation_service,
             profile_overview_cache,
-            unit_of_work,
         )
 
     @provide(scope=Scope.REQUEST)

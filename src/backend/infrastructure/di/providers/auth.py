@@ -172,20 +172,20 @@ class AuthUseCaseProvider(Provider):
     def update_user_profile(
         self,
         user_repository: UserRepository,
-        profile_overview_cache: ProfileOverviewCache,
         unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache,
     ) -> UpdateUserProfileUseCase:
         """Provide the update user profile use case.
 
         Args:
             user_repository: User repository.
-            profile_overview_cache: Profile overview cache.
             unit_of_work: Transaction boundary.
+            profile_overview_cache: Profile overview cache.
 
         Returns:
             UpdateUserProfileUseCase: Configured use case.
         """
-        return UpdateUserProfileUseCase(user_repository, profile_overview_cache, unit_of_work)
+        return UpdateUserProfileUseCase(user_repository, unit_of_work, profile_overview_cache)
 
     @provide(scope=Scope.REQUEST)
     def request_password_reset(

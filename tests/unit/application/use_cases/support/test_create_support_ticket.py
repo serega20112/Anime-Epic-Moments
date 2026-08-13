@@ -21,6 +21,7 @@ class TestCreateSupportTicketUseCase:
             support_repo=support_repo,
             telegram_notifier=telegram or AsyncMock(),
             email_mailer=email or AsyncMock(),
+            unit_of_work=AsyncMock(),
         ), support_repo
 
     @pytest.mark.parametrize("channel", ["telegram", "email"])
@@ -34,7 +35,7 @@ class TestCreateSupportTicketUseCase:
         repo = AsyncMock()
         repo.add.side_effect = lambda ticket: self._with_id(ticket, 7)
         repo.update.side_effect = lambda ticket: ticket
-        use_case = CreateSupportTicketUseCase(repo, telegram, email_mailer)
+        use_case = CreateSupportTicketUseCase(repo, telegram, email_mailer, AsyncMock())
 
         result = await use_case.execute(
             CreateSupportTicketCommand(
@@ -74,7 +75,7 @@ class TestCreateSupportTicketUseCase:
         repo = AsyncMock()
         repo.add.side_effect = lambda ticket: self._with_id(ticket, 8)
         repo.update.side_effect = lambda ticket: ticket
-        use_case = CreateSupportTicketUseCase(repo, telegram, email_mailer)
+        use_case = CreateSupportTicketUseCase(repo, telegram, email_mailer, AsyncMock())
 
         result = await use_case.execute(
             CreateSupportTicketCommand(
