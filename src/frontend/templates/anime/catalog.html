@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Каталог аниме — фильтры — Anime Epic Moments{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="search-hero">
+  <div class="container">
+    <h1>Каталог аниме</h1>
+    <p>Не знаете, что посмотреть? Подберите по жанру, формату, статусу и рейтингу.</p>
+
+    <div class="filter-panel glass">
+      <div class="filter-group">
+        <span class="filter-label">Жанр</span>
+        <div class="filter-chips" id="genre-chips">
+          <button type="button" class="filter-chip active" data-value="">Любой</button>
+          <button type="button" class="filter-chip" data-value="Action">Экшен</button>
+          <button type="button" class="filter-chip" data-value="Adventure">Приключения</button>
+          <button type="button" class="filter-chip" data-value="Comedy">Комедия</button>
+          <button type="button" class="filter-chip" data-value="Drama">Драма</button>
+          <button type="button" class="filter-chip" data-value="Fantasy">Фэнтези</button>
+          <button type="button" class="filter-chip" data-value="Horror">Ужасы</button>
+          <button type="button" class="filter-chip" data-value="Mystery">Детектив</button>
+          <button type="button" class="filter-chip" data-value="Psychological">Психологическое</button>
+          <button type="button" class="filter-chip" data-value="Romance">Романтика</button>
+          <button type="button" class="filter-chip" data-value="Sci-Fi">Фантастика</button>
+          <button type="button" class="filter-chip" data-value="Slice of Life">Повседневность</button>
+          <button type="button" class="filter-chip" data-value="Sports">Спорт</button>
+          <button type="button" class="filter-chip" data-value="Supernatural">Сверхъестественное</button>
+          <button type="button" class="filter-chip" data-value="Thriller">Триллер</button>
+          <button type="button" class="filter-chip" data-value="Mecha">Меха</button>
+          <button type="button" class="filter-chip" data-value="School">Школа</button>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-field">
+          <span class="filter-label">Формат</span>
+          <select id="filter-type" class="filter-select">
+            <option value="">Любой</option>
+            <option value="tv">ТВ-сериал</option>
+            <option value="movie">Фильм</option>
+            <option value="ova">OVA</option>
+            <option value="ona">ONA</option>
+            <option value="special">Спецвыпуск</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <span class="filter-label">Статус</span>
+          <select id="filter-status" class="filter-select">
+            <option value="">Любой</option>
+            <option value="airing">Онгоинг</option>
+            <option value="complete">Завершено</option>
+            <option value="upcoming">Анонс</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <span class="filter-label">Рейтинг</span>
+          <select id="filter-score" class="filter-select">
+            <option value="">Любой</option>
+            <option value="9">9+</option>
+            <option value="8">8+</option>
+            <option value="7">7+</option>
+            <option value="6">6+</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <span class="filter-label">Сортировка</span>
+          <select id="filter-sort" class="filter-select">
+            <option value="rating">По рейтингу</option>
+            <option value="popularity">По популярности</option>
+            <option value="newest">По новизне</option>
+            <option value="title">По алфавиту</option>
+          </select>
+        </div>
+
+        <div class="filter-field filter-submit">
+          <button type="button" class="btn btn-primary" id="filter-apply">Применить</button>
+          <button type="button" class="btn btn-ghost" id="filter-reset">Сбросить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="results-section">
+  <div class="container">
+    <div class="results-header">
+      <h2 class="section-title" style="margin:0">Подборка</h2>
+      <span class="results-count" id="results-count"></span>
+    </div>
+    <div class="loading-state hidden" id="results-loading">
+      <div class="spinner"></div>
+      <span>Подбираем аниме…</span>
+    </div>
+    <div class="results-grid" id="results-grid"></div>
+    <div class="empty-state hidden" id="results-empty">
+      <span class="empty-emoji">🎬</span>
+      <h3>Ничего не нашлось</h3>
+      <p>Попробуйте смягчить фильтры — например, убрать рейтинг или выбрать жанр «Любой».</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.AEMCatalogPage = {
+    initial: {{ initial_filters|tojson }},
+  };
+</script>
+<script src="{{ url_for('static', filename='js/anime_catalog_ui.js') }}"></script>
+{% endblock %}
