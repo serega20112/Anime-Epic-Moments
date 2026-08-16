@@ -13,30 +13,30 @@ class TestCurrentSeason:
 
 
 class TestGetHomePageUseCase:
-    def _season(self, *args, **kwargs):
-        return GetHomePageUseCase().execute(now=datetime(*args, **kwargs))
+    async def _season(self, *args, **kwargs):
+        return await GetHomePageUseCase().execute(now=datetime(*args, **kwargs))
 
-    def test_winter_from_december(self):
-        result = self._season(2024, 12, 15)
+    async def test_winter_from_december(self):
+        result = await self._season(2024, 12, 15)
         assert result.year == 2024
         assert result.season == "winter"
 
-    def test_winter_from_january(self):
-        result = self._season(2025, 1, 10)
+    async def test_winter_from_january(self):
+        result = await self._season(2025, 1, 10)
         assert result.year == 2025
         assert result.season == "winter"
 
-    def test_winter_from_february(self):
-        assert self._season(2025, 2, 1).season == "winter"
+    async def test_winter_from_february(self):
+        assert (await self._season(2025, 2, 1)).season == "winter"
 
-    def test_spring(self):
-        assert self._season(2025, 3, 1).season == "spring"
-        assert self._season(2025, 5, 31).season == "spring"
+    async def test_spring(self):
+        assert (await self._season(2025, 3, 1)).season == "spring"
+        assert (await self._season(2025, 5, 31)).season == "spring"
 
-    def test_summer(self):
-        assert self._season(2025, 6, 1).season == "summer"
-        assert self._season(2025, 8, 31).season == "summer"
+    async def test_summer(self):
+        assert (await self._season(2025, 6, 1)).season == "summer"
+        assert (await self._season(2025, 8, 31)).season == "summer"
 
-    def test_fall(self):
-        assert self._season(2025, 9, 1).season == "fall"
-        assert self._season(2025, 11, 30).season == "fall"
+    async def test_fall(self):
+        assert (await self._season(2025, 9, 1)).season == "fall"
+        assert (await self._season(2025, 11, 30)).season == "fall"

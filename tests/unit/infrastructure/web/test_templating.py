@@ -8,15 +8,12 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.testclient import TestClient
 
 from backend.infrastructure.web.templating import (
-    TemplateRequestProxy,
     flash,
     pop_flashed_messages,
     render_template,
 )
 
-_STATIC_DIR = (
-    Path(__file__).resolve().parents[4] / "src" / "frontend" / "static"
-)
+_STATIC_DIR = Path(__file__).resolve().parents[4] / "src" / "frontend" / "static"
 
 
 def _build_app() -> FastAPI:

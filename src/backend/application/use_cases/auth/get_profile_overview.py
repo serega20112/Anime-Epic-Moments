@@ -30,14 +30,14 @@ class GetProfileOverviewUseCase:
     """Собирает профиль пользователя с social-статистикой и быстрыми подборками."""
 
     def __init__(
-            self,
-            user_repo: UserRepository,
-            highlight_repo: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            favorite_repo: FavoriteRepository,
-            watch_repo: WatchRepository,
-            hf_llm_client: HuggingFaceLLMClient | None = None,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        user_repo: UserRepository,
+        highlight_repo: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        favorite_repo: FavoriteRepository,
+        watch_repo: WatchRepository,
+        hf_llm_client: HuggingFaceLLMClient | None = None,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.user_repo = user_repo
         self.highlight_repo = highlight_repo
@@ -175,10 +175,10 @@ class GetProfileOverviewUseCase:
         return overview
 
     async def _load_anime_map(
-            self,
-            favorites,
-            own_highlights,
-            watched_stats,
+        self,
+        favorites,
+        own_highlights,
+        watched_stats,
     ) -> dict[int, object | None]:
         anime_ids = {int(item.anime_id) for item in favorites}
         anime_ids.update(int(item.anime_id) for item in own_highlights)
@@ -209,7 +209,7 @@ class GetProfileOverviewUseCase:
         return genres
 
     def _build_top_anime(
-            self, favorites, own_highlights, watched_stats, anime_map
+        self, favorites, own_highlights, watched_stats, anime_map
     ) -> list[TopAnimeEntry]:
         weights: dict[int, float] = {}
         for item in watched_stats:
@@ -241,16 +241,16 @@ class GetProfileOverviewUseCase:
         return result
 
     async def _build_taste_summary(
-            self,
-            user_id: int,
-            favorite_genres,
-            mood,
-            average_rating: float | None,
-            hours_watched: float,
-            top_anime,
+        self,
+        user_id: int,
+        favorite_genres,
+        mood,
+        average_rating: float | None,
+        hours_watched: float,
+        top_anime,
     ) -> str:
         top_genres = (
-                ", ".join(item.name for item in favorite_genres[:3]) or "жанры еще не определились"
+            ", ".join(item.name for item in favorite_genres[:3]) or "жанры еще не определились"
         )
         top_titles = ", ".join(item.title for item in top_anime[:3]) or "топ аниме еще не собран"
         fallback = (

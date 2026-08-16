@@ -7,6 +7,7 @@ from dishka import Provider, Scope, provide
 from backend.application.services.recommendation_service import RecommendationService
 from backend.application.use_cases import (
     AskAiRecommendationsUseCase,
+    FilterAnimeCatalogUseCase,
     GenerateRecommendationsUseCase,
     GetProfileOverviewUseCase,
     GetSeasonPopularUseCase,
@@ -20,7 +21,7 @@ from backend.application.use_cases.anime.search_anime_by_description import (
 )
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from backend.infrastructure.external import AnimeApiClient
-from backend.infrastructure.external.huggingface_llm_client import HuggingFaceLLMClient
+from backend.infrastructure.external.failover_llm_client import FailoverLLMClient
 from backend.infrastructure.repositories.favorite_repository import FavoriteRepository
 from backend.infrastructure.repositories.highlight_repository import HighlightRepository
 from backend.infrastructure.repositories.user_repository import UserRepository
@@ -38,7 +39,7 @@ class AnimeUseCaseProvider(Provider):
         anime_api_client: AnimeApiClient,
         favorite_repository: FavoriteRepository,
         watch_repository: WatchRepository,
-        hf_llm_client: HuggingFaceLLMClient,
+        llm_client: FailoverLLMClient,
         profile_overview_cache: ProfileOverviewCache,
     ) -> GetProfileOverviewUseCase:
         """Provide the get profile overview use case.
@@ -49,7 +50,7 @@ class AnimeUseCaseProvider(Provider):
             anime_api_client: Anime API client.
             favorite_repository: Favorite repository.
             watch_repository: Watch repository.
-            hf_llm_client: LLM client.
+            llm_client: LLM client.
             profile_overview_cache: Profile overview cache.
 
         Returns:
@@ -61,7 +62,7 @@ class AnimeUseCaseProvider(Provider):
             anime_api_client,
             favorite_repository,
             watch_repository,
-            hf_llm_client,
+            llm_client,
             profile_overview_cache,
         )
 
@@ -81,18 +82,18 @@ class AnimeUseCaseProvider(Provider):
     def search_anime_by_description(
         self,
         anime_api_client: AnimeApiClient,
-        hf_llm_client: HuggingFaceLLMClient,
+        llm_client: FailoverLLMClient,
     ) -> SearchAnimeByDescriptionUseCase:
         """Provide the search by description use case.
 
         Args:
             anime_api_client: Anime API client.
-            hf_llm_client: LLM client.
+            llm_client: LLM client.
 
         Returns:
             SearchAnimeByDescriptionUseCase: Configured use case.
         """
-        return SearchAnimeByDescriptionUseCase(anime_api_client, hf_llm_client)
+        return SearchAnimeByDescriptionUseCase(anime_api_client, llm_client)
 
     @provide(scope=Scope.REQUEST)
     def autocomplete_anime(
@@ -117,6 +118,21 @@ class AnimeUseCaseProvider(Provider):
             GetHomePageUseCase: Configured use case.
         """
         return GetHomePageUseCase()
+
+    @provide(scope=Scope.REQUEST)
+    def filter_anime_catalog(
+        self,
+        anime_api_client: AnimeApiClient,
+    ) -> FilterAnimeCatalogUseCase:
+        """Provide the anime catalog filter use case.
+
+        Args:
+            anime_api_client: Anime API client.
+
+        Returns:
+            FilterAnimeCatalogUseCase: Configured use case.
+        """
+        return FilterAnimeCatalogUseCase(anime_api_client)
 
     @provide(scope=Scope.REQUEST)
     def get_season_popular(
@@ -153,14 +169,14 @@ class AnimeUseCaseProvider(Provider):
         self,
         favorite_repository: FavoriteRepository,
         anime_api_client: AnimeApiClient,
-        hf_llm_client: HuggingFaceLLMClient,
+        llm_client: FailoverLLMClient,
     ) -> AskAiRecommendationsUseCase:
         """Provide the ask AI recommendations use case.
 
         Args:
             favorite_repository: Favorite repository.
             anime_api_client: Anime API client.
-            hf_llm_client: LLM client.
+            llm_client: LLM client.
 
         Returns:
             AskAiRecommendationsUseCase: Configured use case.
@@ -168,7 +184,7 @@ class AnimeUseCaseProvider(Provider):
         return AskAiRecommendationsUseCase(
             favorite_repository,
             anime_api_client,
-            hf_llm_client,
+            llm_client,
         )
 
     @provide(scope=Scope.REQUEST)

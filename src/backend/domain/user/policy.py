@@ -20,8 +20,8 @@ def build_genre_affinities(genres: list[str], limit: int = 5) -> list[GenreAffin
 
 
 def detect_profile_mood(
-        genres: list[str],
-        emotions: list[str],
+    genres: list[str],
+    emotions: list[str],
 ) -> ProfileMoodInsight:
     """Определяет доминирующий вайб пользователя по жанрам и эмоциям."""
     normalized_genres = {str(value).strip().lower() for value in genres if str(value).strip()}
@@ -92,11 +92,11 @@ def detect_profile_mood(
 
 
 def build_achievement_badges(
-        profile_summary: HighlightProfileSummary,
-        hours_watched: float,
-        favorite_genres: list[GenreAffinity],
-        highlight_likes_received: int,
-        top_mood: ProfileMoodInsight,
+    profile_summary: HighlightProfileSummary,
+    hours_watched: float,
+    favorite_genres: list[GenreAffinity],
+    highlight_likes_received: int,
+    top_mood: ProfileMoodInsight,
 ) -> list[AchievementBadge]:
     """Возвращает набор ачивок по статистике и вкусу пользователя."""
     badges: list[AchievementBadge] = []

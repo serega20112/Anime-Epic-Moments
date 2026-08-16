@@ -4,8 +4,7 @@ from datetime import datetime
 
 import pytest
 
-from backend.domain import Highlight
-from backend.domain import User
+from backend.domain import Highlight, User
 from backend.infrastructure.models import HighlightModel
 from backend.infrastructure.repositories.highlight_repository import HighlightRepository
 from backend.infrastructure.repositories.user_repository import UserRepository
@@ -63,10 +62,14 @@ class TestHighlightRepository:
         )
         repo = HighlightRepository(async_db_session)
         first = await repo.add(
-            Highlight(user_id=user.id, anime_id=1, episode=1, start_timestamp=1.0, end_timestamp=2.0)
+            Highlight(
+                user_id=user.id, anime_id=1, episode=1, start_timestamp=1.0, end_timestamp=2.0
+            )
         )
         second = await repo.add(
-            Highlight(user_id=user.id, anime_id=2, episode=1, start_timestamp=1.0, end_timestamp=2.0)
+            Highlight(
+                user_id=user.id, anime_id=2, episode=1, start_timestamp=1.0, end_timestamp=2.0
+            )
         )
 
         def _set_popularity(sync_session):
@@ -119,9 +122,9 @@ class TestHighlightRepository:
             sync_session.query(HighlightModel).filter_by(id=first.id).first().created_at = datetime(
                 2026, 3, 28, 10, 0, 0
             )
-            sync_session.query(HighlightModel).filter_by(id=second.id).first().created_at = datetime(
-                2026, 3, 28, 11, 0, 0
-            )
+            sync_session.query(HighlightModel).filter_by(
+                id=second.id
+            ).first().created_at = datetime(2026, 3, 28, 11, 0, 0)
             sync_session.commit()
 
         await async_db_session.run_sync(_set_dates)
@@ -135,8 +138,12 @@ class TestHighlightRepository:
     async def test_supports_likes_comments_saves_and_profile_summary(self, async_db_session):
         """Проверяем, что репозиторий умеет работать с social-сценариями хайлайтов."""
         user_repo = UserRepository(async_db_session)
-        owner = await user_repo.add(User(email="owner@example.com", username="owner", password_hash="hash"))
-        viewer = await user_repo.add(User(email="viewer@example.com", username="viewer", password_hash="hash"))
+        owner = await user_repo.add(
+            User(email="owner@example.com", username="owner", password_hash="hash")
+        )
+        viewer = await user_repo.add(
+            User(email="viewer@example.com", username="viewer", password_hash="hash")
+        )
         repo = HighlightRepository(async_db_session)
         highlight = await repo.add(
             Highlight(

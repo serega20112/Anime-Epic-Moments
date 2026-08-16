@@ -11,7 +11,9 @@ _ASK_LIMIT_MIN = 1
 _ASK_LIMIT_MAX = 10
 
 
-def map_ask_ai_command(payload: dict[str, Any] | None, *, user_id: int) -> AskAiRecommendationsCommand:
+def map_ask_ai_command(
+    payload: dict[str, Any] | None, *, user_id: int
+) -> AskAiRecommendationsCommand:
     """Build an ask AI command from a JSON payload.
 
     The query value is normalized (trimmed) here but empty/invalid queries are

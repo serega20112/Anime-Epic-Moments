@@ -21,13 +21,13 @@ class TestSetAnimeCommentLikeUseCase:
         repo.set_anime_comment_like.return_value = "comment"
         use_case = SetAnimeCommentLikeUseCase(repo, AsyncMock())
 
-        result = await use_case.execute(SetAnimeCommentLikeCommand(comment_id=3, user_id=4, liked=True))
+        result = await use_case.execute(
+            SetAnimeCommentLikeCommand(comment_id=3, user_id=4, liked=True)
+        )
 
         assert result.ok is True
         assert result.data == "comment"
-        repo.set_anime_comment_like.assert_awaited_once_with(
-            comment_id=3, user_id=4, liked=True
-        )
+        repo.set_anime_comment_like.assert_awaited_once_with(comment_id=3, user_id=4, liked=True)
 
     async def test_returns_404_when_comment_not_found(self):
         """Что тестируем: обработку отсутствующего комментария.
@@ -38,7 +38,9 @@ class TestSetAnimeCommentLikeUseCase:
         repo.set_anime_comment_like.side_effect = ValueError("missing")
         use_case = SetAnimeCommentLikeUseCase(repo, AsyncMock())
 
-        result = await use_case.execute(SetAnimeCommentLikeCommand(comment_id=99, user_id=4, liked=True))
+        result = await use_case.execute(
+            SetAnimeCommentLikeCommand(comment_id=99, user_id=4, liked=True)
+        )
 
         assert result.ok is False
         assert result.status_code == 404

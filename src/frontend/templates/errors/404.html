@@ -1,37 +1,19 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Страница не найдена - AEM</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/404.css') }}" />
-  </head>
-  <body>
-    <div class="error-container">
-      <div class="error-card">
-        <div class="error-icon">🔍</div>
-        <h1 class="error-code">404</h1>
-        <h2 class="error-title">Страница не найдена</h2>
-        <p class="error-description">
-          Кажется, вы потерялись в киберпространстве. Та страница, которую вы ищете, 
-          либо была перемещена, либо никогда не существовала.
-        </p>
-        <div class="error-actions">
-          <a href="/" class="btn btn-neon-blue">
-            <span>🏠</span>
-            <span>На главную</span>
-          </a>
-          <button onclick="window.history.back()" class="btn btn-neon-pink">
-            <span>⬅️</span>
-            <span>Назад</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}404 — Страница не найдена{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/404.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="error-page">
+  <div class="error-glitch" aria-hidden="true">404</div>
+  <h1 class="page-title">Потерялись во вселенной…</h1>
+  <p class="muted">Такой страницы нет или она перенесена.</p>
+  <div class="error-actions">
+    <a class="btn btn-primary btn-lg" href="{{ url_for('index.index') }}">На главную</a>
+    <a class="btn btn-ghost btn-lg" href="{{ url_for('anime.search_anime_page') }}">Поиск аниме</a>
+  </div>
+</section>
+{% endblock %}

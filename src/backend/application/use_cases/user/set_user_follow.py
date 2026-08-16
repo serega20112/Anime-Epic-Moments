@@ -10,30 +10,30 @@ class SetUserFollowUseCase:
     """Создает или удаляет подписку между пользователями."""
 
     def __init__(
-            self,
-            user_repo: UserRepository,
-            unit_of_work: UnitOfWorkInterface,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        user_repo: UserRepository,
+        unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.user_repo = user_repo
         self.profile_overview_cache = profile_overview_cache
         self.unit_of_work = unit_of_work
 
     async def execute(
-            self,
-            follower_user_id: int,
-            followed_user_id: int,
-            follow: bool,
+        self,
+        follower_user_id: int,
+        followed_user_id: int,
+        follow: bool,
     ) -> UserResult:
         """Set a user follow within a transaction."""
         async with self.unit_of_work:
             return await self._execute(follower_user_id, followed_user_id, follow)
 
     async def _execute(
-            self,
-            follower_user_id: int,
-            followed_user_id: int,
-            follow: bool,
+        self,
+        follower_user_id: int,
+        followed_user_id: int,
+        follow: bool,
     ) -> UserResult:
         target_user = await self.user_repo.get_by_id(followed_user_id)
         if target_user is None:

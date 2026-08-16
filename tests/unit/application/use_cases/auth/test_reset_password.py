@@ -28,7 +28,9 @@ class TestResetPasswordUseCase:
         jwt_service = Mock()
         jwt_service.decode_password_reset_token.side_effect = jwt.InvalidTokenError("bad token")
         password_service = Mock()
-        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, _blocklist(), AsyncMock())
+        use_case = ResetPasswordUseCase(
+            user_repo, jwt_service, password_service, _blocklist(), AsyncMock()
+        )
 
         result = await use_case.execute("bad-token", "new-password")
 
@@ -46,7 +48,9 @@ class TestResetPasswordUseCase:
         password_service = Mock()
         blocklist = Mock()
         blocklist.consume = AsyncMock(return_value=False)
-        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, blocklist, AsyncMock())
+        use_case = ResetPasswordUseCase(
+            user_repo, jwt_service, password_service, blocklist, AsyncMock()
+        )
 
         result = await use_case.execute("token", "new-password")
 
@@ -82,14 +86,14 @@ class TestResetPasswordUseCase:
         password_service = AsyncMock()
         password_service.hash_password.return_value = "new-hash"
         blocklist = _blocklist()
-        use_case = ResetPasswordUseCase(user_repo, jwt_service, password_service, blocklist, AsyncMock())
+        use_case = ResetPasswordUseCase(
+            user_repo, jwt_service, password_service, blocklist, AsyncMock()
+        )
 
         result = await use_case.execute("token", "new-password")
 
         assert result.ok is True
         assert result.redirect_endpoint == "auth.login_page"
         password_service.hash_password.assert_awaited_once_with("new-password")
-        user_repo.update_password.assert_awaited_once_with(
-            user_id=17, password_hash="new-hash"
-        )
+        user_repo.update_password.assert_awaited_once_with(user_id=17, password_hash="new-hash")
         blocklist.consume.assert_awaited_once()

@@ -1,32 +1,44 @@
-﻿import re
+import re
+from urllib.parse import urlparse
 
 import requests
 
 from backend.config import Settings
 from backend.domain.watch.value_object import DiscoveredWatchSource
-from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 from backend.infrastructure.external._async import external_method
+from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 
 
 class AniLibriaClient(WatchSourceProvider):
     """Ищет релизы AniLibria и извлекает HLS по эпизодам."""
 
-    def __init__(self):
-        self.api_url = Settings.anilibria_api_url.rstrip("/")
-        self.provider_name = "AniLibria"
+    def __init__(
+        self,
+        api_url: str | None = None,
+        provider_name: str | None = None,
+    ):
+        self.api_url = (api_url or Settings.anilibria_api_url).rstrip("/")
+        self.provider_name = provider_name or "AniLibria"
+        self.asset_origin = self._origin(self.api_url)
         self.session = requests.Session()
         self.session.trust_env = False
+
+    @staticmethod
+    def _origin(url: str) -> str:
+        """Возвращает схему и хост (origin) для построения относительных доменов."""
+        parsed = urlparse(url)
+        return f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else ""
 
     def is_enabled(self) -> bool:
         return bool(self.api_url)
 
     @external_method
     def search_sources(
-            self,
-            title: str,
-            episode: int,
-            year: int | None = None,
-            limit: int = 6,
+        self,
+        title: str,
+        episode: int,
+        year: int | None = None,
+        limit: int = 6,
     ) -> list[DiscoveredWatchSource]:
         if not self.is_enabled():
             return []
@@ -39,7 +51,7 @@ class AniLibriaClient(WatchSourceProvider):
         seen: set[tuple[str, str, str]] = set()
         for release in search_payload:
             if not self._looks_relevant(
-                    release=release, requested_title=title, requested_year=year
+                release=release, requested_title=title, requested_year=year
             ):
                 continue
 
@@ -68,9 +80,9 @@ class AniLibriaClient(WatchSourceProvider):
             translation_name = self.provider_name
             source_name = str(release.get("alias") or f"anilibria-{release_id}")
             for quality_label, field_name in (
-                    ("1080", "hls_1080"),
-                    ("720", "hls_720"),
-                    ("480", "hls_480"),
+                ("1080", "hls_1080"),
+                ("720", "hls_720"),
+                ("480", "hls_480"),
             ):
                 stream_url = self._normalize_link(target_episode.get(field_name))
                 if not stream_url:
@@ -98,7 +110,7 @@ class AniLibriaClient(WatchSourceProvider):
             response = self.session.get(
                 f"{self.api_url}/app/search/releases",
                 params={"query": title, "limit": max(int(limit), 1)},
-                timeout=25,
+                timeout=6,
             )
             response.raise_for_status()
             payload = response.json()
@@ -111,7 +123,7 @@ class AniLibriaClient(WatchSourceProvider):
             response = self.session.get(
                 f"{self.api_url}/anime/releases/{release_id}",
                 params={"include": "episodes"},
-                timeout=25,
+                timeout=6,
             )
             response.raise_for_status()
             payload = response.json()
@@ -120,13 +132,13 @@ class AniLibriaClient(WatchSourceProvider):
         return payload if isinstance(payload, dict) else None
 
     def _looks_relevant(
-            self, release: dict, requested_title: str, requested_year: int | None
+        self, release: dict, requested_title: str, requested_year: int | None
     ) -> bool:
         release_year = release.get("year")
         if (
-                requested_year
-                and isinstance(release_year, int)
-                and abs(release_year - requested_year) > 1
+            requested_year
+            and isinstance(release_year, int)
+            and abs(release_year - requested_year) > 1
         ):
             return False
 
@@ -141,7 +153,7 @@ class AniLibriaClient(WatchSourceProvider):
         for candidate in candidates:
             normalized_candidate = self._normalize_title(candidate)
             if normalized_candidate and (
-                    requested in normalized_candidate or normalized_candidate in requested
+                requested in normalized_candidate or normalized_candidate in requested
             ):
                 return True
 
@@ -158,6 +170,6 @@ class AniLibriaClient(WatchSourceProvider):
         text = str(value).strip()
         if text.startswith("//"):
             return f"https:{text}"
-        if text.startswith("/"):
-            return f"https://anilibria.top{text}"
+        if text.startswith("/") and self.asset_origin:
+            return f"{self.asset_origin}{text}"
         return text

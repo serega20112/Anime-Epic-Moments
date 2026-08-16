@@ -1,11 +1,11 @@
-﻿import re
+import re
 
 import requests
 
 from backend.config import Settings
 from backend.domain.watch.value_object import DiscoveredWatchSource
-from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 from backend.infrastructure.external._async import external_method
+from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 
 
 class JustWatchClient(WatchSourceProvider):
@@ -26,11 +26,11 @@ class JustWatchClient(WatchSourceProvider):
 
     @external_method
     def search_sources(
-            self,
-            title: str,
-            episode: int,
-            year: int | None = None,
-            limit: int = 8,
+        self,
+        title: str,
+        episode: int,
+        year: int | None = None,
+        limit: int = 8,
     ) -> list[DiscoveredWatchSource]:
         """Возвращает внешние офферы просмотра для тайтла."""
         if not self.is_enabled() or not year:
@@ -92,7 +92,7 @@ class JustWatchClient(WatchSourceProvider):
                     "title": title,
                     "release_year": int(year),
                 },
-                timeout=25,
+                timeout=6,
             )
             response.raise_for_status()
             payload = response.json()
@@ -109,7 +109,7 @@ class JustWatchClient(WatchSourceProvider):
             response = self.session.get(
                 f"{self.api_url}/providers/locale/{self.locale}",
                 params={"token": self.partner_token or ""},
-                timeout=25,
+                timeout=6,
             )
             response.raise_for_status()
             payload = response.json()
@@ -124,8 +124,8 @@ class JustWatchClient(WatchSourceProvider):
                 ).strip()
                 for item in payload
                 if isinstance(item, dict)
-                   and item.get("id") is not None
-                   and str(item.get("clear_name") or item.get("short_name") or "").strip()
+                and item.get("id") is not None
+                and str(item.get("clear_name") or item.get("short_name") or "").strip()
             }
         else:
             self._provider_cache = {}

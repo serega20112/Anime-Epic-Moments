@@ -16,7 +16,9 @@ class TestAnimeEntity:
             (["Comedy"], "Comedy", ["Comedy"]),
         ],
     )
-    def test_anime_add_genre_avoids_duplicates(self, anime_factory, initial_genres, genre, expected):
+    def test_anime_add_genre_avoids_duplicates(
+        self, anime_factory, initial_genres, genre, expected
+    ):
         """Что тестируем: поведение метода add_genre.
 
         Что передаём: начальный список жанров и новый жанр (включая дубликат уже имеющегося).

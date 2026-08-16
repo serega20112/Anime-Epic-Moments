@@ -4,18 +4,17 @@ from backend.domain.highlight.entity import Highlight
 
 
 class HighlightPolicy:
-    """
-    Правила для Highlight:
-    - лимит для гостей
-    - проверка на запрещённый контент
+    """Правила для Highlight.
+
+    Включают лимит для гостей и проверку на запрещённый контент.
     """
 
     GUEST_MAX_PER_HOUR = 5
 
     @staticmethod
     def can_add_highlight(user_id: int, highlights_this_hour: int) -> bool:
-        """
-        Проверяет, можно ли добавить хайлайт для данного пользователя.
+        """Проверяет, можно ли добавить хайлайт.
+
         Если user_id=None → гость.
         """
         if user_id is None:
@@ -24,8 +23,8 @@ class HighlightPolicy:
 
     @staticmethod
     def filter_spoiler_content(description: str) -> bool:
-        """
-        Проверка описания на запрещённый контент.
+        """Проверяет описание на запрещённый контент.
+
         Возвращает True, если описание безопасно.
         """
         banned_words = ["мат", "спам", "вред"]  # пример

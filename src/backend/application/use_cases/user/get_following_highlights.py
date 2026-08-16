@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 
 from backend.application.use_cases.highlight.get_user_highlights import GetUserHighlightsUseCase
-from backend.domain import FollowUserCard
-from backend.domain import UserRepository
+from backend.domain import FollowUserCard, UserRepository
 from backend.domain.repositories.highlight_repository import HighlightRepository
 from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
 
@@ -20,25 +19,25 @@ class GetFollowingHighlightsUseCase(GetUserHighlightsUseCase):
     """Собирает ленту хайлайтов пользователей, на которых подписан зритель."""
 
     def __init__(
-            self,
-            repo: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            user_repo: UserRepository,
+        self,
+        repo: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        user_repo: UserRepository,
     ):
         super().__init__(repo, anime_api_client, user_repo=user_repo)
         self.user_repo = user_repo
 
     async def execute(
-            self,
-            follower_user_id: int,
-            anime_id: int | None = None,
-            emotion: str | None = None,
-            category: str | None = None,
-            sort_by: str = "recent",
-            created_date: str | None = None,
-            query: str | None = None,
-            include_spoilers: bool = False,
-            limit: int = 24,
+        self,
+        follower_user_id: int,
+        anime_id: int | None = None,
+        emotion: str | None = None,
+        category: str | None = None,
+        sort_by: str = "recent",
+        created_date: str | None = None,
+        query: str | None = None,
+        include_spoilers: bool = False,
+        limit: int = 24,
     ) -> FollowingHighlightsPage:
         followed_users = await self.user_repo.get_followed_users(follower_user_id, limit=12)
         followed_ids = [user.id for user in followed_users if user.id is not None]

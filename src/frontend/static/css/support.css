@@ -1,247 +1,94 @@
+/* ============================================================
+   Anime Epic Moments — support.css
+   Страница поддержки.
+   ============================================================ */
+
 .support-page {
-  min-height: 100vh;
-  padding: 118px 20px 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-4) var(--space-8);
 }
 
-.support-shell {
-  width: min(1180px, 100%);
-  margin: 0 auto;
+.support-hero {
+  text-align: center;
+  margin-bottom: var(--space-7);
+}
+
+.support-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 0.92fr) minmax(320px, 1.08fr);
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-6);
   align-items: start;
 }
 
-.support-intro,
-.support-panel {
-  border-radius: 28px;
-  border: 1px solid var(--border-color);
-  background: var(--page-surface);
-  box-shadow: var(--shadow-md);
-  backdrop-filter: blur(18px);
-}
-
-.support-intro {
-  padding: 34px;
-}
-
-.support-panel {
-  padding: 30px;
-}
-
-.support-kicker {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 0.3rem 0.8rem;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.support-intro h1 {
-  margin: 1rem 0 0.75rem;
-  font-family: "Orbitron", sans-serif;
-  font-size: clamp(2rem, 4vw, 3.2rem);
-  line-height: 1.08;
-}
-
-.support-copy {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 1rem;
-}
-
-.support-facts {
-  margin-top: 1.5rem;
-  display: grid;
-  gap: 14px;
-}
-
-.support-fact-card,
-.support-user-card {
-  border-radius: 20px;
-  border: 1px solid var(--border-color);
-  background: var(--page-surface-soft);
-  padding: 18px;
-}
-
-.support-fact-card strong,
-.support-user-card strong {
-  display: block;
-  margin-bottom: 0.35rem;
-  font-size: 1rem;
-}
-
-.support-fact-card p,
-.support-user-card p {
-  margin: 0;
-  color: var(--text-muted);
-}
-
-.support-user-label {
-  display: inline-flex;
-  margin-bottom: 0.55rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.support-alerts {
-  margin-bottom: 1rem;
-  display: grid;
-  gap: 10px;
-}
-
-.support-alerts p {
-  margin: 0;
-  padding: 0.9rem 1rem;
-  border-radius: 16px;
-  background: var(--accent-soft);
-  border: 1px solid var(--border-strong);
-  color: var(--text-primary);
-}
-
 .support-form {
-  display: grid;
-  gap: 16px;
-}
-
-.support-channel-fieldset {
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.support-channel-fieldset legend {
-  margin-bottom: 0.75rem;
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-.support-channel-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.support-channel-card {
-  display: block;
-}
-
-.support-channel-card input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.support-channel-body {
-  display: grid;
-  gap: 0.4rem;
-  min-height: 112px;
-  padding: 1rem 1.05rem;
-  border-radius: 20px;
-  border: 1px solid var(--input-border);
-  background: var(--input-background);
-  transition:
-    border-color 0.18s ease,
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.support-channel-body strong {
-  font-size: 1rem;
-  color: var(--text-primary);
-}
-
-.support-channel-body small {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.45;
-}
-
-.support-channel-card input:checked + .support-channel-body {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-soft);
-  transform: translateY(-1px);
-}
-
-.support-channel-card input:focus-visible + .support-channel-body {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.support-form label {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.support-form span {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-.support-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.support-form input,
-.support-form textarea {
-  width: 100%;
-  border-radius: 18px;
-  border: 1px solid var(--input-border);
-  background: var(--input-background);
-  color: var(--text-primary);
-  padding: 0.95rem 1rem;
-}
-
-.support-form textarea {
-  resize: vertical;
-  min-height: 220px;
-}
-
-.support-actions {
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
   display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
-@media (max-width: 900px) {
-  .support-shell {
+.support-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  position: sticky;
+  top: calc(var(--header-height) + 20px);
+}
+
+.support-channels,
+.support-faq {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.support-channels li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.support-faq li {
+  font-size: var(--text-sm);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.support-faq li:last-child {
+  border-bottom: none;
+}
+
+.support-faq b {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.support-faq span {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 860px) {
+  .support-layout {
     grid-template-columns: 1fr;
+  }
+  .support-side {
+    position: static;
   }
 }
 
-@media (max-width: 640px) {
-  .support-page {
-    padding: 134px 14px 32px;
-  }
-
-  .support-intro,
-  .support-panel {
-    padding: 22px;
-    border-radius: 22px;
-  }
-
-  .support-grid {
+@media (max-width: 560px) {
+  .form-row {
     grid-template-columns: 1fr;
-  }
-
-  .support-channel-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .support-actions .btn {
-    width: 100%;
   }
 }

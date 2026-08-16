@@ -9,12 +9,7 @@ def _proxy(url: str) -> str:
 
 class TestRewriteHlsManifest:
     def test_rewrites_plain_segment_lines(self):
-        manifest = (
-            "#EXTM3U\n"
-            "#EXT-X-TARGETDURATION:10\n"
-            "seg1.ts\n"
-            "https://cdn.libria.fun/seg2.ts\n"
-        )
+        manifest = "#EXTM3U\n#EXT-X-TARGETDURATION:10\nseg1.ts\nhttps://cdn.libria.fun/seg2.ts\n"
         base = "https://cdn.libria.fun/master.m3u8"
         result = rewrite_hls_manifest(manifest, base, _proxy)
         lines = result.splitlines()
@@ -23,7 +18,7 @@ class TestRewriteHlsManifest:
         assert lines[3] == _proxy("https://cdn.libria.fun/seg2.ts")
 
     def test_rewrites_uri_attributes(self):
-        manifest = '#EXT-X-STREAM-INF:BANDWIDTH=800\nindex_480.m3u8'
+        manifest = "#EXT-X-STREAM-INF:BANDWIDTH=800\nindex_480.m3u8"
         base = "https://cdn.libria.fun/master.m3u8"
         result = rewrite_hls_manifest(manifest, base, _proxy)
         assert _proxy("https://cdn.libria.fun/index_480.m3u8") in result

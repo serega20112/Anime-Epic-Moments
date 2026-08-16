@@ -21,10 +21,10 @@ class UpdateUserProfileUseCase:
     """Обновляет имя и аватар текущего пользователя."""
 
     def __init__(
-            self,
-            user_repo: UserRepository,
-            unit_of_work: UnitOfWorkInterface,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        user_repo: UserRepository,
+        unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         """Initialize the use case.
 

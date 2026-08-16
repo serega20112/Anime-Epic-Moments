@@ -7,25 +7,25 @@ from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
 from backend.domain.services import (
     WatchSourceSyncServiceInterface as WatchSourceSyncService,
 )
+from backend.domain.unit_of_work import UnitOfWorkInterface
 from backend.domain.watch.policy import get_translation_priority
 from backend.domain.watch.value_object import (
     WatchHighlightCard,
     WatchPageData,
     WatchSourceCard,
 )
-from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class GetWatchPageUseCase:
     """Собирает данные для страницы просмотра аниме."""
 
     def __init__(
-            self,
-            watch_repo: WatchRepository,
-            highlight_repo: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            watch_source_sync_service: WatchSourceSyncService,
-            unit_of_work: UnitOfWorkInterface,
+        self,
+        watch_repo: WatchRepository,
+        highlight_repo: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        watch_source_sync_service: WatchSourceSyncService,
+        unit_of_work: UnitOfWorkInterface,
     ):
         self.watch_repo = watch_repo
         self.highlight_repo = highlight_repo
@@ -34,20 +34,20 @@ class GetWatchPageUseCase:
         self.unit_of_work = unit_of_work
 
     async def execute(
-            self,
-            anime_id: int,
-            query: WatchPageQuery,
-            user_id: int | None = None,
+        self,
+        anime_id: int,
+        query: WatchPageQuery,
+        user_id: int | None = None,
     ) -> WatchPageData:
         """Build the watch page within a transaction."""
         async with self.unit_of_work:
             return await self._execute(anime_id, query, user_id)
 
     async def _execute(
-            self,
-            anime_id: int,
-            query: WatchPageQuery,
-            user_id: int | None = None,
+        self,
+        anime_id: int,
+        query: WatchPageQuery,
+        user_id: int | None = None,
     ) -> WatchPageData:
         anime = await self.anime_api_client.get_by_id(anime_id)
         sources = await self.watch_source_sync_service.sync_for_anime(
@@ -71,6 +71,7 @@ class GetWatchPageUseCase:
                 item.provider_name.lower(),
             ),
         )
+        sources = self._dedupe_by_quality(sources)
         session = (
             await self.watch_repo.get_session(
                 user_id=user_id, anime_id=anime_id, episode=query.episode
@@ -85,9 +86,9 @@ class GetWatchPageUseCase:
         )
 
         active_source_id = (
-                query.selected_source_id
-                or (session.watch_source_id if session else None)
-                or (sources[0].id if sources else None)
+            query.selected_source_id
+            or (session.watch_source_id if session else None)
+            or (sources[0].id if sources else None)
         )
         active_source = next((item for item in sources if item.id == active_source_id), None)
         source_cards = [
@@ -220,6 +221,26 @@ class GetWatchPageUseCase:
         }
         return priorities.get(str(value or "").strip().lower(), 3)
 
+    def _dedupe_by_quality(self, sources: list) -> list:
+        """Оставляет один источник на озвучку и качество (дубли качества убирает).
+
+        Из-за нескольких релизов одного провайдера в БД может оказаться
+        несколько источников с одинаковым качеством (например, «1080, 1080»).
+        Здесь оставляем только первый — он лучший по приоритету/сортировке.
+        """
+        deduped: list = []
+        seen: set[tuple[int, str]] = set()
+        for item in sources:
+            key = (
+                int(item.translation_id),
+                str(item.quality_label or "").strip().lower(),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(item)
+        return deduped
+
     def _resolve_episode_total(self, anime, sources, episode: int) -> int | None:
         """Определяет диапазон эпизодов для episode dropdown."""
         candidates = [max(int(episode), 1)]
@@ -230,9 +251,9 @@ class GetWatchPageUseCase:
         return episode_total if episode_total > 0 else None
 
     def _build_episode_options(
-            self,
-            total: int | None,
-            current_episode: int,
+        self,
+        total: int | None,
+        current_episode: int,
     ) -> list[int]:
         """Строит список эпизодов для select, если размер диапазона разумный."""
         if total is None:

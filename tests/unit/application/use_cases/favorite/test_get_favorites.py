@@ -43,12 +43,12 @@ class TestGetFavoritesUseCase:
         ],
     )
     async def test_prefers_snapshot_and_falls_back_to_api(
-            self,
-            favorite_payload,
-            expected_title,
-            expected_watch_url,
-            expected_calls,
-            anime_factory,
+        self,
+        favorite_payload,
+        expected_title,
+        expected_watch_url,
+        expected_calls,
+        anime_factory,
     ):
         """Что тестируем: favorites берут snapshot из БД и только при необходимости идут в API.
         Что передаём: favorite с заполненными/пустыми snapshot-полями.

@@ -6,10 +6,10 @@ class ProfileOverviewCache:
     """Кэширует profile overview и AI-сводку вкуса пользователя."""
 
     def __init__(
-            self,
-            store: KeyValueStore,
-            overview_ttl_seconds: int = 180,
-            ai_summary_ttl_seconds: int = 1800,
+        self,
+        store: KeyValueStore,
+        overview_ttl_seconds: int = 180,
+        ai_summary_ttl_seconds: int = 1800,
     ):
         self.store = store
         self.overview_ttl_seconds = int(overview_ttl_seconds)

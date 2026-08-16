@@ -25,13 +25,13 @@ def client_ip(request: Request) -> str:
 
 
 def rate_limit(
-        scope: str,
-        limit: int,
-        window_seconds: int,
-        key_builder: Callable[[Request], str] | None = None,
-        response_mode: str = "json",
-        redirect_endpoint: str | None = None,
-        message: str = "Слишком много запросов. Попробуйте позже.",
+    scope: str,
+    limit: int,
+    window_seconds: int,
+    key_builder: Callable[[Request], str] | None = None,
+    response_mode: str = "json",
+    redirect_endpoint: str | None = None,
+    message: str = "Слишком много запросов. Попробуйте позже.",
 ):
     """Limit async endpoint calls using request-scoped container rate limiter."""
 

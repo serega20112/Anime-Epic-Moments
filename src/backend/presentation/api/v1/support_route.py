@@ -8,18 +8,18 @@ from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
-from backend.application.use_cases import CreateSupportTicketUseCase
-from backend.infrastructure.security.rate_limit_keys import support_ticket_subject
-from backend.presentation.api.requests.support_mapper import map_create_support_ticket_command
 
+from backend.application.use_cases import CreateSupportTicketUseCase
 from backend.config import Settings
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
+from backend.infrastructure.security.rate_limit_keys import support_ticket_subject
 from backend.infrastructure.web import flash, render_template
 from backend.presentation.api.helpers import get_current_user
 from backend.presentation.api.requests.support_form_builder import (
     build_default_support_form,
     build_support_form_data,
 )
+from backend.presentation.api.requests.support_mapper import map_create_support_ticket_command
 from backend.utils import log_business_event
 
 support_router = APIRouter(prefix="/support", route_class=DishkaRoute)
@@ -52,8 +52,8 @@ async def support_page(request: Request):
     redirect_endpoint="support.support_page",
 )
 async def create_support_ticket(
-        request: Request,
-        use_case: FromDishka[CreateSupportTicketUseCase],
+    request: Request,
+    use_case: FromDishka[CreateSupportTicketUseCase],
 ):
     """Create a support ticket from form data.
 
@@ -105,9 +105,9 @@ async def create_support_ticket(
 
 
 def _render_support_page(
-        request: Request,
-        form_data: dict[str, str] | None = None,
-        status_code: int = HTTPStatus.OK,
+    request: Request,
+    form_data: dict[str, str] | None = None,
+    status_code: int = HTTPStatus.OK,
 ):
     """Render the support page with optional form data.
 

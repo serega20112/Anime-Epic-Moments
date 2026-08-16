@@ -1,3 +1,5 @@
+import asyncio
+
 from backend.application.use_cases.watch.result import WatchResult
 from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
 from backend.domain.services import (
@@ -10,10 +12,10 @@ class SyncWatchSourcesUseCase:
     """Подтягивает источники просмотра из внешнего провайдера."""
 
     def __init__(
-            self,
-            anime_api_client: AnimeApiClient,
-            watch_source_sync_service: WatchSourceSyncService,
-            unit_of_work: UnitOfWorkInterface,
+        self,
+        anime_api_client: AnimeApiClient,
+        watch_source_sync_service: WatchSourceSyncService,
+        unit_of_work: UnitOfWorkInterface,
     ):
         self.anime_api_client = anime_api_client
         self.watch_source_sync_service = watch_source_sync_service
@@ -28,12 +30,20 @@ class SyncWatchSourcesUseCase:
         if not await self.watch_source_sync_service.is_enabled():
             return WatchResult.failure("provider_not_configured", status_code=400)
         anime = await self.anime_api_client.get_by_id(anime_id)
-        sources = await self.watch_source_sync_service.sync_for_anime(
-            anime_id=anime_id,
-            anime=anime,
-            episode=episode,
-            force=force,
-        )
+        try:
+            sources = await asyncio.wait_for(
+                self.watch_source_sync_service.sync_for_anime(
+                    anime_id=anime_id,
+                    anime=anime,
+                    episode=episode,
+                    force=force,
+                ),
+                timeout=10,
+            )
+        except TimeoutError:
+            return WatchResult.failure("provider_timeout", status_code=504)
+        if len(sources) == 0:
+            return WatchResult.failure("no_sources_found", status_code=404)
         return WatchResult.success(
             {
                 "enabled": True,

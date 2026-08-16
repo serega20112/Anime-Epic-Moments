@@ -16,11 +16,11 @@ class RemoveFavoriteUseCase:
     """Remove an anime from the user's favorites."""
 
     def __init__(
-            self,
-            repo: FavoriteRepository,
-            unit_of_work: UnitOfWorkInterface,
-            recommendation_service: RecommendationService | None = None,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        repo: FavoriteRepository,
+        unit_of_work: UnitOfWorkInterface,
+        recommendation_service: RecommendationService | None = None,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         """Initialize the use case.
 

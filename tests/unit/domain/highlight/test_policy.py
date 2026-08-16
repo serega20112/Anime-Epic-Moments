@@ -19,10 +19,10 @@ class TestHighlightPolicy:
         ],
     )
     def test_can_add_highlight_applies_guest_limit(
-            self,
-            user_id,
-            highlights_this_hour,
-            expected,
+        self,
+        user_id,
+        highlights_this_hour,
+        expected,
     ):
         """Что тестируем: метод can_add_highlight.
 

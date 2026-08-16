@@ -80,10 +80,10 @@ class TestHighlightCounters:
         ],
     )
     def test_counters_update_for_likes_and_views(
-            self,
-            operations,
-            expected_likes,
-            expected_views,
+        self,
+        operations,
+        expected_likes,
+        expected_views,
     ):
         """Что тестируем: методы add_like и add_view.
 

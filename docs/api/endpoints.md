@@ -89,14 +89,18 @@
 
 ## Где в коде
 
-- `src/backend/create_app.py`
-- `src/backend/delivery/api/v1/index_route.py`
-- `src/backend/delivery/api/v1/auth_route.py`
-- `src/backend/delivery/api/v1/anime_route.py`
-- `src/backend/delivery/api/v1/favorite_route.py`
-- `src/backend/delivery/api/v1/highlight_route.py`
-- `src/backend/delivery/api/v1/watch_route.py`
-- `src/backend/delivery/api/v1/recommendation_route.py`
+- `src/backend/presentation/app_factory.py`
+- `src/backend/presentation/api/v1/index_route.py`
+- `src/backend/presentation/api/v1/auth_route.py`
+- `src/backend/presentation/api/v1/anime_route.py`
+- `src/backend/presentation/api/v1/favorite_route.py`
+- `src/backend/presentation/api/v1/highlight_route.py`
+- `src/backend/presentation/api/v1/watch_route.py`
+- `src/backend/presentation/api/v1/recommendation_route.py`
+- `src/backend/presentation/api/v1/collection_route.py`
+- `src/backend/presentation/api/v1/user_route.py`
+- `src/backend/presentation/api/v1/support_route.py`
+- `src/backend/presentation/api/v1/health_route.py`
 - `src/frontend/templates`
 - `src/frontend/static/js`
 

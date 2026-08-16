@@ -16,12 +16,12 @@ class ResetPasswordUseCase:
     """Сбрасывает пароль пользователя по валидному токену."""
 
     def __init__(
-            self,
-            user_repo: UserRepository,
-            jwt_service: JWTService,
-            password_service: PasswordService,
-            token_blocklist: TokenBlocklistInterface,
-            unit_of_work: UnitOfWorkInterface,
+        self,
+        user_repo: UserRepository,
+        jwt_service: JWTService,
+        password_service: PasswordService,
+        token_blocklist: TokenBlocklistInterface,
+        unit_of_work: UnitOfWorkInterface,
     ):
         """Initialize the use case.
 

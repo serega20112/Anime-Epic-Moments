@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 import pytest
 
 from backend.application.dto import CreateSupportTicketCommand
 from backend.application.use_cases.support.create_support_ticket import (
     CreateSupportTicketUseCase,
-    InvalidSupportTicketError,
 )
 
 
@@ -102,7 +101,7 @@ class TestCreateSupportTicketUseCase:
         [("telegram", "Telegram"), ("email", "email")],
     )
     async def test_delivers_failure_when_unknown_channel_does_not_reach_repo(
-            self, subject, expected_message
+        self, subject, expected_message
     ):
         """Что тестируем: отказ при неизвестном канале доставки без сохранения.
         Что передаём: команду с channel=discord.

@@ -21,7 +21,11 @@ class TestGetSharedHighlightUseCase:
 
         class StubShared(GetSharedHighlightUseCase):
             async def _build_dashboard(self, **kwargs):
-                return {"highlights": [highlight], "sort_by": "recent", "viewer_user_id": kwargs["viewer_user_id"]}
+                return {
+                    "highlights": [highlight],
+                    "sort_by": "recent",
+                    "viewer_user_id": kwargs["viewer_user_id"],
+                }
 
         repo = AsyncMock()
         repo.get_by_id.return_value = highlight

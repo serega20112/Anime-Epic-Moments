@@ -5,7 +5,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.use_cases.collection.get_shared_collection import GetSharedCollectionUseCase
+from backend.application.use_cases.collection.get_shared_collection import (
+    GetSharedCollectionUseCase,
+)
 from backend.domain.collection.entity import AnimeCollection, AnimeCollectionItem
 
 

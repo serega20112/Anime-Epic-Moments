@@ -7,6 +7,11 @@ import requests
 from backend.config import Settings
 from backend.domain.support.entity import SupportTicket
 from backend.infrastructure.external._async import external_method
+from backend.infrastructure.external.errors import (
+    ExternalServiceConfigurationError,
+    ExternalServiceInvalidResponseError,
+    ExternalServiceUnavailableError,
+)
 
 
 class TelegramSupportNotifier:
@@ -27,7 +32,9 @@ class TelegramSupportNotifier:
     def send_ticket_created(self, ticket: SupportTicket) -> int:
         """Отправляет уведомление о новом тикете хотя бы в один admin chat."""
         if not self.bot_token or not self.admin_chat_ids:
-            raise RuntimeError("Telegram support bot is not configured")
+            raise ExternalServiceConfigurationError(
+                "Telegram support bot is not configured", service_name="telegram"
+            )
 
         delivered_count = 0
         errors: list[str] = []
@@ -41,14 +48,22 @@ class TelegramSupportNotifier:
                 response = self.session.post(
                     f"{self.api_url}/bot{self.bot_token}/sendMessage",
                     json={**payload, "chat_id": chat_id},
-                    timeout=25,
+                    timeout=6,
                 )
                 response.raise_for_status()
                 body = response.json()
                 if not body.get("ok"):
-                    raise RuntimeError(str(body.get("description") or "telegram_api_error"))
+                    raise ExternalServiceInvalidResponseError(
+                        str(body.get("description") or "telegram_api_error"),
+                        service_name="telegram",
+                    )
                 delivered_count += 1
-            except (requests.RequestException, ValueError, TypeError, RuntimeError) as error:
+            except (
+                requests.RequestException,
+                ValueError,
+                TypeError,
+                ExternalServiceInvalidResponseError,
+            ) as error:
                 errors.append(str(error))
 
         if delivered_count > 0:
@@ -56,8 +71,13 @@ class TelegramSupportNotifier:
 
         detail = "; ".join(errors[:2]).strip()
         if detail:
-            raise RuntimeError(f"Не удалось отправить тикет в Telegram: {detail}")
-        raise RuntimeError("Не удалось отправить тикет в Telegram")
+            raise ExternalServiceUnavailableError(
+                f"Не удалось отправить тикет в Telegram: {detail}",
+                service_name="telegram",
+            )
+        raise ExternalServiceUnavailableError(
+            "Не удалось отправить тикет в Telegram", service_name="telegram"
+        )
 
     def _build_message(self, ticket: SupportTicket) -> str:
         """Формирует HTML-сообщение Telegram для нового тикета."""

@@ -6,9 +6,9 @@ class EmailVerificationStore:
     """Хранит ожидающие подтверждения email регистрации с TTL."""
 
     def __init__(
-            self,
-            store: KeyValueStore,
-            ttl_seconds: int = 600,
+        self,
+        store: KeyValueStore,
+        ttl_seconds: int = 600,
     ):
         self.store = store
         self.ttl_seconds = max(int(ttl_seconds), 60)

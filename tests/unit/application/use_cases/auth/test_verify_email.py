@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.use_cases.auth.verify_email import VerifyEmailUseCase
-from backend.domain import User, PendingEmailVerification
+from backend.domain import PendingEmailVerification, User
 
 
 @pytest.mark.unit
@@ -38,7 +38,9 @@ class TestVerifyEmailUseCase:
             ("123456", "", False),
         ],
     )
-    async def test_accepts_code_only_when_it_matches(self, stored_code, submitted_code, expected_ok):
+    async def test_accepts_code_only_when_it_matches(
+        self, stored_code, submitted_code, expected_ok
+    ):
         """Что тестируем: сверку кода подтверждения.
         Что передаём: пары значений сохраненного и введенного кода.
         Что ожидаем: успех только при совпадении кодов.
@@ -73,9 +75,7 @@ class TestVerifyEmailUseCase:
         else:
             user_repo.add.assert_not_awaited()
 
-    @pytest.mark.parametrize(
-        "existing_email", ["user@example.com", None]
-    )
+    @pytest.mark.parametrize("existing_email", ["user@example.com", None])
     async def test_reuses_existing_email(self, existing_email):
         """Что тестируем: обработку повторной регистрации email.
         Что передаём: get_by_email возвращает/не возвращает пользователя.

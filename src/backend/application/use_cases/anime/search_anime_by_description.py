@@ -1,3 +1,4 @@
+import logging
 import re
 
 from backend.application.dto.anime_queries import SearchAnimeByDescriptionQuery
@@ -7,23 +8,25 @@ from backend.domain.anime.value_object import SearchAnimeByDescriptionResult
 from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
 from backend.domain.services import LLMClientInterface as HuggingFaceLLMClient
 
+logger = logging.getLogger("anime_epic_moments")
+
 
 class SearchAnimeByDescriptionUseCase:
     """Поиск аниме по описанию через AniList GraphQL"""
 
     def __init__(
-            self,
-            api_client: AnimeApiClient,
-            llm_client: HuggingFaceLLMClient,
-            safety_policy: AnimeSafetyPolicy | None = None,
+        self,
+        api_client: AnimeApiClient,
+        llm_client: HuggingFaceLLMClient,
+        safety_policy: AnimeSafetyPolicy | None = None,
     ):
         self.api_client = api_client
         self.llm_client = llm_client
         self.safety_policy = safety_policy or AnimeSafetyPolicy()
 
     async def execute(
-            self,
-            query: SearchAnimeByDescriptionQuery,
+        self,
+        query: SearchAnimeByDescriptionQuery,
     ) -> SearchAnimeByDescriptionResult:
         """Return anime matching a natural language description.
 
@@ -73,9 +76,14 @@ class SearchAnimeByDescriptionUseCase:
         )
         query_preview = " | ".join(llm_queries[:3])
         if llm_error:
-            print(f"[AI_SEARCH] mode={llm_mode} queries='{query_preview}' error='{llm_error}'")
+            logger.warning(
+                "ai_search_failed mode=%s queries=%s error=%s",
+                llm_mode,
+                query_preview,
+                llm_error,
+            )
         else:
-            print(f"[AI_SEARCH] mode={llm_mode} queries='{query_preview}'")
+            logger.info("ai_search mode=%s queries=%s", llm_mode, query_preview)
 
         queries = self._build_queries(llm_queries, base_description)
         title_queries = self._build_title_queries(base_description, llm_queries, genre_hint)
@@ -133,7 +141,7 @@ class SearchAnimeByDescriptionUseCase:
         return variants
 
     def _build_title_queries(
-            self, raw_description: str, optimized_queries: list[str], genre_hint: str | None
+        self, raw_description: str, optimized_queries: list[str], genre_hint: str | None
     ) -> list[str]:
         """Собирает кандидаты названий для прямого title-поиска."""
         variants: list[str] = []
@@ -173,12 +181,12 @@ class SearchAnimeByDescriptionUseCase:
         return merged
 
     def _sort_results(
-            self,
-            items: list[Anime],
-            sort_by: str,
-            description: str,
-            genre_hint: str | None,
-            llm_title_hints: list[str],
+        self,
+        items: list[Anime],
+        sort_by: str,
+        description: str,
+        genre_hint: str | None,
+        llm_title_hints: list[str],
     ) -> list[Anime]:
         """Сортирует выдачу по рейтингу, году или релевантности."""
         if sort_by == "rating":
@@ -194,7 +202,7 @@ class SearchAnimeByDescriptionUseCase:
         )
 
     def _match_score(
-            self, anime: Anime, query_tokens: list[str], normalized_hints: list[str]
+        self, anime: Anime, query_tokens: list[str], normalized_hints: list[str]
     ) -> float:
         """Считает score релевантности: токены описания + совпадения с LLM-подсказками."""
         base_rating = float(anime.rating or 0)

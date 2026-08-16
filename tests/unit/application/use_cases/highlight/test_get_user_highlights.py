@@ -44,7 +44,9 @@ def test_get_user_highlights_builds_dashboard_with_filters_stats_and_sort(anime_
     repo.get_engagement_map.return_value = {}
     anime_api_client = Mock()
     anime_api_client.get_by_id.side_effect = lambda anime_id: {
-        10: anime_factory(external_id="185", title="Initial D", cover_url="https://example.com/cover.jpg"),
+        10: anime_factory(
+            external_id="185", title="Initial D", cover_url="https://example.com/cover.jpg"
+        ),
     }[anime_id]
     use_case = GetUserHighlightsUseCase(repo, anime_api_client)
 

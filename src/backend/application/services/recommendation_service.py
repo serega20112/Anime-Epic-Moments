@@ -1,7 +1,6 @@
 from collections import Counter
 
-from backend.domain import FavoriteRepository
-from backend.domain import RecommendationResult
+from backend.domain import FavoriteRepository, RecommendationResult
 from backend.domain.anime.entity import Anime
 from backend.domain.repositories.highlight_repository import HighlightRepository
 from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
@@ -11,19 +10,17 @@ from backend.domain.services import (
 
 
 class RecommendationService:
-    """
-    Генерация рекомендаций на основе:
-    - Favorites (жанры)
-    - Highlight descriptions (ключевые слова)
+    """Генерация рекомендаций на основе Favorites (жанры) и Highlight descriptions.
+
     Исключает уже добавленные аниме.
     """
 
     def __init__(
-            self,
-            fav_repo: FavoriteRepository,
-            highlight_repo: HighlightRepository,
-            anime_client: AnimeApiClient,
-            recommendation_cache: RecommendationCache,
+        self,
+        fav_repo: FavoriteRepository,
+        highlight_repo: HighlightRepository,
+        anime_client: AnimeApiClient,
+        recommendation_cache: RecommendationCache,
     ):
         self.fav_repo = fav_repo
         self.highlight_repo = highlight_repo
@@ -31,7 +28,7 @@ class RecommendationService:
         self.recommendation_cache = recommendation_cache
 
     async def generate(
-            self, user_id: int, limit: int = 5, force_refresh: bool = False
+        self, user_id: int, limit: int = 5, force_refresh: bool = False
     ) -> list[RecommendationResult]:
         """Возвращает топ limit рекомендаций для пользователя"""
         if not force_refresh:

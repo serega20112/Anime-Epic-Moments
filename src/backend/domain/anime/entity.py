@@ -1,6 +1,6 @@
 class Anime:
-    """
-    Сущность Anime как external reference.
+    """Сущность Anime как external reference.
+
     Не хранит обложки в БД, только URL.
     """
 
@@ -27,7 +27,6 @@ class Anime:
     def add_genre(self, genre: str):
         if genre not in self.genres:
             self.genres.append(genre)
-
 
     def remove_genre(self, genre: str):
         if genre in self.genres:

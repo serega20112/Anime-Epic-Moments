@@ -21,10 +21,10 @@ class TestSearchAnimeByDescriptionResult:
         ],
     )
     def test_to_dict_serializes_payload(
-            self,
-            anime_factory,
-            requires_age_confirmation,
-            message,
+        self,
+        anime_factory,
+        requires_age_confirmation,
+        message,
     ):
         """Что тестируем: метод to_dict.
 

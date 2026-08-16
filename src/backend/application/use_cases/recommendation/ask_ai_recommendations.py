@@ -5,8 +5,7 @@ from collections import Counter
 
 from backend.application.dto import AskAiRecommendationsCommand
 from backend.application.use_cases.recommendation.result import RecommendationUseCaseResult
-from backend.domain import FavoriteRepository
-from backend.domain import RecommendationResult
+from backend.domain import FavoriteRepository, RecommendationResult
 from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
 from backend.domain.services import LLMClientInterface as HuggingFaceLLMClient
 
@@ -99,18 +98,18 @@ class AskAiRecommendationsUseCase:
     )
 
     def __init__(
-            self,
-            favorite_repo: FavoriteRepository,
-            anime_api_client: AnimeApiClient,
-            hf_llm_client: HuggingFaceLLMClient,
+        self,
+        favorite_repo: FavoriteRepository,
+        anime_api_client: AnimeApiClient,
+        hf_llm_client: HuggingFaceLLMClient,
     ):
         self.favorite_repo = favorite_repo
         self.anime_api_client = anime_api_client
         self.hf_llm_client = hf_llm_client
 
     async def execute(
-            self,
-            command: AskAiRecommendationsCommand,
+        self,
+        command: AskAiRecommendationsCommand,
     ) -> RecommendationUseCaseResult:
         normalized_query = str(command.query or "").strip()
         if not normalized_query:
@@ -127,10 +126,10 @@ class AskAiRecommendationsUseCase:
         )
 
     async def _build_recommendations(
-            self,
-            user_id: int,
-            normalized_query: str,
-            limit: int = 6,
+        self,
+        user_id: int,
+        normalized_query: str,
+        limit: int = 6,
     ) -> list[RecommendationResult]:
         favorites = await self.favorite_repo.get_by_user(user_id)
         queries, mode, _error = await self.hf_llm_client.build_search_queries_with_meta(
@@ -187,12 +186,12 @@ class AskAiRecommendationsUseCase:
                     float(subject_hits),
                 )
                 score = (
-                        max(0.25, 1.35 - index * 0.12)
-                        + variant_relevance * 1.55
-                        + query_relevance * 0.7
-                        + subject_hits * 1.4
-                        + genre_overlap * 0.14
-                        + float(anime.rating or 0) / 25
+                    max(0.25, 1.35 - index * 0.12)
+                    + variant_relevance * 1.55
+                    + query_relevance * 0.7
+                    + subject_hits * 1.4
+                    + genre_overlap * 0.14
+                    + float(anime.rating or 0) / 25
                 )
                 current = scored_candidates.get(anime_id)
                 if current and float(current["score"]) >= score:
@@ -223,7 +222,7 @@ class AskAiRecommendationsUseCase:
                 }
         filtered_candidates = list(scored_candidates.values())
         if has_explicit_subject and any(
-                float(item["topical_relevance"]) > 0 for item in filtered_candidates
+            float(item["topical_relevance"]) > 0 for item in filtered_candidates
         ):
             filtered_candidates = [
                 item for item in filtered_candidates if float(item["topical_relevance"]) > 0
@@ -239,9 +238,9 @@ class AskAiRecommendationsUseCase:
         return recommendations[: max(int(limit), 1)]
 
     def _build_search_plan(
-            self,
-            normalized_query: str,
-            generated_queries: list[str],
+        self,
+        normalized_query: str,
+        generated_queries: list[str],
     ) -> list[dict[str, str]]:
         unique: list[dict[str, str]] = []
         seen: set[str] = set()
@@ -280,46 +279,46 @@ class AskAiRecommendationsUseCase:
     def _normalize_term(self, value: str) -> str:
         term = str(value or "").strip().lower()
         for suffix in (
-                "ами",
-                "ями",
-                "ого",
-                "ему",
-                "ому",
-                "ыми",
-                "ими",
-                "ах",
-                "ях",
-                "ов",
-                "ев",
-                "ей",
-                "ам",
-                "ям",
-                "ом",
-                "ем",
-                "ой",
-                "ий",
-                "ый",
-                "ая",
-                "ое",
-                "ые",
-                "ть",
-                "ти",
-                "ing",
-                "ers",
-                "ies",
-                "es",
-                "ed",
-                "er",
-                "ly",
-                "s",
-                "а",
-                "я",
-                "ы",
-                "и",
-                "е",
-                "у",
-                "ю",
-                "о",
+            "ами",
+            "ями",
+            "ого",
+            "ему",
+            "ому",
+            "ыми",
+            "ими",
+            "ах",
+            "ях",
+            "ов",
+            "ев",
+            "ей",
+            "ам",
+            "ям",
+            "ом",
+            "ем",
+            "ой",
+            "ий",
+            "ый",
+            "ая",
+            "ое",
+            "ые",
+            "ть",
+            "ти",
+            "ing",
+            "ers",
+            "ies",
+            "es",
+            "ed",
+            "er",
+            "ly",
+            "s",
+            "а",
+            "я",
+            "ы",
+            "и",
+            "е",
+            "у",
+            "ю",
+            "о",
         ):
             if len(term) > len(suffix) + 2 and term.endswith(suffix):
                 return term[: -len(suffix)]
@@ -363,17 +362,19 @@ class AskAiRecommendationsUseCase:
         return sum(1 for term in subject_terms if term in anime_terms)
 
     def _build_reason(
-            self,
-            prompt: str,
-            anime_title: str,
-            genres: list[str],
-            mode: str,
-            query_source: str,
-            subject_hits: int,
-            genre_overlap: int,
+        self,
+        prompt: str,
+        anime_title: str,
+        genres: list[str],
+        mode: str,
+        query_source: str,
+        subject_hits: int,
+        genre_overlap: int,
     ) -> str:
         genre_part = f" Жанровый профиль: {', '.join(genres[:3])}." if genres else ""
-        mode_part = " Запрос разобран через AI." if mode == "hf_llm_text" else ""
+        mode_part = (
+            " Запрос разобран через AI." if mode in {"hf_llm_text", "gemini_llm_text"} else ""
+        )
         source_part = (
             " Сначала учтен прямой запрос пользователя."
             if query_source == "user_query"

@@ -6,13 +6,15 @@ from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from backend.application.use_cases import AskAiRecommendationsUseCase
-from backend.application.use_cases import GenerateRecommendationsUseCase
-from backend.application.use_cases import RefreshRecommendationsUseCase
-from backend.presentation.api.requests.recommendation_mapper import map_ask_ai_command
 
+from backend.application.use_cases import (
+    AskAiRecommendationsUseCase,
+    GenerateRecommendationsUseCase,
+    RefreshRecommendationsUseCase,
+)
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
 from backend.presentation.api.helpers import read_payload
+from backend.presentation.api.requests.recommendation_mapper import map_ask_ai_command
 
 recommendation_router = APIRouter(prefix="/api/v1/recommendations", route_class=DishkaRoute)
 recommendation_bp = recommendation_router
@@ -26,9 +28,9 @@ recommendation_bp = recommendation_router
     key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
 )
 async def generate_recommendations(
-        request: Request,
-        user_id: int,
-        use_case: FromDishka[GenerateRecommendationsUseCase],
+    request: Request,
+    user_id: int,
+    use_case: FromDishka[GenerateRecommendationsUseCase],
 ):
     """Generate personalized recommendations for a user.
 
@@ -52,9 +54,9 @@ async def generate_recommendations(
     key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
 )
 async def refresh_recommendations(
-        request: Request,
-        user_id: int,
-        use_case: FromDishka[RefreshRecommendationsUseCase],
+    request: Request,
+    user_id: int,
+    use_case: FromDishka[RefreshRecommendationsUseCase],
 ):
     """Refresh recommendations for a user.
 
@@ -78,9 +80,9 @@ async def refresh_recommendations(
     key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
 )
 async def ask_ai_recommendations(
-        request: Request,
-        user_id: int,
-        use_case: FromDishka[AskAiRecommendationsUseCase],
+    request: Request,
+    user_id: int,
+    use_case: FromDishka[AskAiRecommendationsUseCase],
 ):
     """Recommend anime from a free-form AI query.
 

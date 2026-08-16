@@ -1,5 +1,4 @@
-from backend.domain import Translation, WatchSource
-from backend.domain import WatchRepository
+from backend.domain import Translation, WatchRepository, WatchSource
 from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
@@ -7,25 +6,25 @@ class AddWatchSourceUseCase:
     """Создает озвучку и источник просмотра для аниме."""
 
     def __init__(
-            self,
-            watch_repo: WatchRepository,
-            unit_of_work: UnitOfWorkInterface,
+        self,
+        watch_repo: WatchRepository,
+        unit_of_work: UnitOfWorkInterface,
     ):
         self.watch_repo = watch_repo
         self.unit_of_work = unit_of_work
 
     async def execute(
-            self,
-            anime_id: int,
-            episode: int,
-            translation_name: str,
-            translation_type: str,
-            provider_name: str,
-            source_name: str,
-            stream_url: str,
-            quality_label: str,
-            language: str = "ru",
-            source_type: str = "stream",
+        self,
+        anime_id: int,
+        episode: int,
+        translation_name: str,
+        translation_type: str,
+        provider_name: str,
+        source_name: str,
+        stream_url: str,
+        quality_label: str,
+        language: str = "ru",
+        source_type: str = "stream",
     ) -> WatchSource:
         """Create a translation and watch source within a transaction."""
         async with self.unit_of_work:
@@ -43,17 +42,17 @@ class AddWatchSourceUseCase:
             )
 
     async def _execute(
-            self,
-            anime_id: int,
-            episode: int,
-            translation_name: str,
-            translation_type: str,
-            provider_name: str,
-            source_name: str,
-            stream_url: str,
-            quality_label: str,
-            language: str = "ru",
-            source_type: str = "stream",
+        self,
+        anime_id: int,
+        episode: int,
+        translation_name: str,
+        translation_type: str,
+        provider_name: str,
+        source_name: str,
+        stream_url: str,
+        quality_label: str,
+        language: str = "ru",
+        source_type: str = "stream",
     ) -> WatchSource:
         """Создает озвучку и источник просмотра для аниме."""
         translation = await self.watch_repo.add_translation(

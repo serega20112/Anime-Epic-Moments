@@ -1,145 +1,103 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Найти аниме по описанию - AEM</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/anime.css') }}"
-    />
-  </head>
-  <body data-current-user-id="{{ current_user.id if current_user else '' }}">
-    <header class="header">
-      <div class="logo">AEM <span class="logo-icon">👁️‍🗨️</span></div>
-      <form
-        class="search-container global-search-form"
-        action="{{ url_for('anime.search_anime_page') }}"
-        method="get"
-        autocomplete="off"
-      >
-        <input
-          type="text"
-          name="title"
-          class="global-search-input"
-          placeholder="Найди аниме по названию, жанру или эмоции…"
-        />
-        <button type="submit">🔍</button>
-        <div class="search-autocomplete" hidden></div>
-      </form>
-      <nav class="header-nav">
-        <a href="{{ url_for('index.index') }}">Главная</a>
-        <a href="{{ url_for('highlight.get_public_top_highlights') }}"
-          >Хайлайты</a
-        >
-      </nav>
-    </header>
-    <main class="search-page">
-      <section class="search-shell">
-        <aside class="filters-panel">
-          <h1>Поиск аниме по описанию</h1>
-          <p class="filters-subtitle">
-            Опиши атмосферу, сюжет и эмоции, а фильтры помогут сузить выдачу.
-          </p>
-          <form id="description-search-form" class="description-search-form">
-            <label for="description" class="filter-label">Описание</label>
-            <textarea
-              id="description"
-              name="description"
-              placeholder="Например: путешествие по подземельям, сильная магия, взросление героя, минимум романтики"
-              required
-            ></textarea>
+{% extends "base.html" %}
 
-            <div class="filter-grid">
-              <div class="filter-control">
-                <label for="year_from">Год от</label>
-                <input
-                  id="year_from"
-                  type="number"
-                  name="year_from"
-                  min="1917"
-                  max="2026"
-                  value="1990"
-                />
-              </div>
-              <div class="filter-control">
-                <label for="year_to">Год до</label>
-                <input
-                  id="year_to"
-                  type="number"
-                  name="year_to"
-                  min="1917"
-                  max="2026"
-                  value="2026"
-                />
-              </div>
-            </div>
+{% block title %}Поиск по описанию — Anime Epic Moments{% endblock %}
 
-            <div class="filter-grid">
-              <div class="filter-control">
-                <label for="rating"
-                  >Мин. рейтинг: <span id="rating-value">7</span></label
-                >
-                <input
-                  id="rating"
-                  type="range"
-                  name="rating"
-                  min="1"
-                  max="10"
-                  value="7"
-                />
-              </div>
-              <div class="filter-control"></div>
-            </div>
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}">
+{% endblock %}
 
-            <div class="filter-grid">
-              <div class="filter-control">
-                <label for="age_rating">Возрастной рейтинг</label>
-                <select id="age_rating" name="age_rating">
-                  <option value="all">Любой</option>
-                  <option value="13+">13+</option>
-                  <option value="16+">16+</option>
-                  <option value="18+">18+</option>
-                </select>
-              </div>
-              <div class="filter-control">
-                <label for="sort">Сортировка</label>
-                <select id="sort" name="sort">
-                  <option value="match">Лучшее совпадение</option>
-                  <option value="rating">По рейтингу</option>
-                  <option value="year">По году</option>
-                </select>
-              </div>
-            </div>
+{% block content %}
+<section class="search-hero">
+  <div class="container">
+    <h1>Поиск по описанию</h1>
+    <p>Опишите своими словами: жанр, атмосферу, эмоцию — подберём аниме, которое вам подойдёт.</p>
 
-            <div class="search-actions">
-              <button type="submit" class="btn neon-pink">Найти</button>
-              <button type="reset" class="btn neon-blue" id="reset-filters">
-                Сбросить
-              </button>
-            </div>
-          </form>
-        </aside>
+    <form class="search-panel glass" method="get" action="{{ url_for('anime.search_by_description_page') }}" id="description-search-form">
+      <div class="search-bar">
+        <textarea name="description" id="description-input" required
+                  placeholder="Например: школьник открывает тайную параллельную школу магии и объединяет учеников вокруг общего дела"> </textarea>
+        <button type="submit" class="btn btn-primary">Подобрать</button>
+      </div>
 
-        <section class="results-panel">
-          <div class="results-head">
-            <h2>Результаты</h2>
-            <p id="results-meta">Опиши аниме и запусти поиск</p>
-          </div>
-          <div id="results" class="results-grid"></div>
-        </section>
-      </section>
-    </main>
-    <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/search.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  </body>
-</html>
+      <div class="filters-panel">
+        <div class="filter-field">
+          <label for="genre_hint">Намёк на жанр</label>
+          <input type="text" id="genre_hint" name="genre_hint" placeholder="drama, fantasy…">
+        </div>
+        <div class="filter-field">
+          <label for="sort">Сортировка</label>
+          <select id="sort" name="sort">
+            <option value="match">По совпадению</option>
+            <option value="rating">По рейтингу</option>
+            <option value="year">По году</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="year_from">Год от</label>
+          <input type="number" id="year_from" name="year_from" min="1960" max="2027" placeholder="2015">
+        </div>
+        <div class="filter-field">
+          <label for="year_to">Год до</label>
+          <input type="number" id="year_to" name="year_to" min="1960" max="2027" placeholder="2026">
+        </div>
+        <div class="filter-field">
+          <label for="rating">Мин. рейтинг</label>
+          <input type="number" id="rating" name="rating" min="0" max="10" step="0.1" placeholder="7">
+        </div>
+        <div class="filter-field">
+          <label for="age_rating">Возрастной рейтинг</label>
+          <select id="age_rating" name="age_rating">
+            <option value="all">Любой</option>
+            <option value="safe">Без 18+</option>
+            <option value="adult">18+</option>
+          </select>
+        </div>
+      </div>
+    </form>
+
+    <div class="search-hints">
+      <span>Идеи:</span>
+      <button type="button" class="search-hint-chip" data-desc-hint="История о юноше, который попадает в мир, где люди охотятся на титанов и живут за стенами">Титаны, стены</button>
+      <button type="button" class="search-hint-chip" data-desc-hint="Учёный влюбляется в юношу и случайно активирует древнюю магию воскрешения">Магия, романтика</button>
+      <button type="button" class="search-hint-chip" data-desc-hint="Подросток получает устройство, которое позволяет возвращать время на несколько секунд назад и предотвращать смерть людей">Петля времени</button>
+    </div>
+  </div>
+</section>
+
+<section class="results-section">
+  <div class="container">
+    <div class="results-header">
+      <h2 class="section-title" style="margin:0">Подборка</h2>
+      <span class="results-count" id="results-count"></span>
+    </div>
+    <div class="loading-state hidden" id="results-loading">
+      <div class="spinner"></div>
+      <span>Анализируем описание…</span>
+    </div>
+    <div class="results-grid" id="results-grid"></div>
+    <div class="empty-state hidden" id="results-empty">
+      <span class="empty-emoji">🔮</span>
+      <h3>Подборка пуста</h3>
+      <p>Попробуйте описать идею чуть подробнее или поменять фильтры.</p>
+    </div>
+  </div>
+</section>
+
+<div class="modal-overlay" id="age-modal">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h3>Возрастное ограничение</h3>
+      <button class="modal-close" id="age-modal-close" aria-label="Закрыть">&times;</button>
+    </div>
+    <div id="age-modal-body" style="font-size:var(--text-sm);color:var(--color-text-muted)"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="age-cancel">Отмена</button>
+      <button class="btn btn-primary" id="age-confirm">Мне есть 18 лет</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
+{% endblock %}

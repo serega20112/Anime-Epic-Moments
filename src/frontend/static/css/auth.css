@@ -1,116 +1,220 @@
+/* ============================================================
+   Anime Epic Moments — auth.css
+   Страницы входа, регистрации, верификации, сброса пароля.
+   ============================================================ */
+
 .auth-page {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--header-height));
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #0d0d1a 0%, #181828 100%);
-  padding: 1rem;
+  padding: var(--space-6) var(--space-4);
 }
 
 .auth-card {
-  background: rgba(20, 20, 40, 0.95);
-  border-radius: 18px;
-  box-shadow:
-    0 0 32px #ff00aa,
-    0 0 64px #00f0ff;
-  padding: 2.5rem 2rem;
-  width: 420px;
-  max-width: 95vw;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  width: min(460px, 100%);
+  padding: var(--space-6);
+  animation: fadeSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.auth-card h1 {
-  font-family: "Orbitron", sans-serif;
-  font-size: 2.2rem;
-  margin-bottom: 1.5rem;
-  background: linear-gradient(90deg, #ff00aa, #00f0ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.auth-card .auth-logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-align: center;
+  font-size: 22px;
+  margin-bottom: var(--space-1);
+}
+
+html[data-theme="neon"] .auth-logo,
+html[data-theme="rose"] .auth-logo {
+  color: var(--color-accent);
+  text-shadow: 0 0 16px var(--accent-glow-color);
+}
+
+.auth-card .auth-sub {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-5);
 }
 
 .auth-form {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: var(--space-4);
 }
 
-.form-group {
+.auth-form .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
 
-.form-group label {
-  font-size: 1rem;
-  color: #ccc;
+.auth-form .form-group label {
+  margin-bottom: 0;
 }
 
-.form-group input {
-  padding: 0.7rem 1rem;
-  border-radius: 10px;
-  border: 1px solid #444;
-  background: #181828;
-  color: #fff;
-  font-size: 1.1rem;
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
 }
 
-#password-strength {
-  font-size: 0.95rem;
-  color: #ff00aa;
-  margin-top: 0.2rem;
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-5);
+  font-size: var(--text-sm);
 }
 
-.btn-large {
-  width: 100%;
-  font-size: 1.2rem;
-  padding: 1rem 0;
-  margin-top: 1rem;
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-faint);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: var(--space-4) 0 0;
 }
 
-.auth-switch {
-  margin-top: 1.2rem;
-  color: #aaa;
-  font-size: 1rem;
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
 }
 
-.auth-switch a {
-  color: #00f0ff;
-  text-decoration: underline;
+/* Выбор темы при регистрации */
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
 }
 
-.auth-page {
-  background: var(--page-background);
+.theme-option {
+  position: relative;
 }
 
-.auth-card {
-  background: var(--page-surface-strong);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-md);
-  color: var(--text-primary);
+.theme-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.auth-card h1 {
-  background: none;
-  -webkit-text-fill-color: initial;
-  color: var(--text-primary);
+.theme-option .theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--button-ghost-bg);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
-.form-group label,
-.auth-switch {
-  color: var(--text-muted);
+.theme-option .theme-swatch:hover {
+  transform: translateY(-2px);
 }
 
-.form-group input {
-  border: 1px solid var(--input-border);
-  background: var(--input-background);
-  color: var(--text-primary);
+.theme-option .theme-swatch .swatch-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
-#password-strength,
-.auth-switch a {
-  color: var(--accent);
+.theme-option input:checked + .theme-swatch {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 14px var(--accent-glow-color);
+  color: var(--color-text);
+}
+
+.swatch-neon { background: linear-gradient(135deg, #f472b6, #22d3ee); }
+.swatch-dark { background: linear-gradient(135deg, #0b0d12, #333a4d); }
+.swatch-light { background: linear-gradient(135deg, #eef3fa, #2563eb); }
+.swatch-rose { background: linear-gradient(135deg, #f9a8d4, #5eead4); }
+
+/* Индикатор надёжности пароля */
+.password-strength {
+  display: flex;
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+
+.password-strength .pw-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+  transition: background var(--transition-fast);
+}
+
+.password-strength .pw-bar.filled {
+  background: var(--pw-color, var(--color-accent));
+  box-shadow: 0 0 8px var(--pw-color, var(--color-accent));
+}
+
+.password-strength .pw-label {
+  flex: 1;
+  text-align: right;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+/* Код верификации */
+.code-input {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.55em;
+  text-align: center;
+  font-weight: 700;
+  padding: 14px 10px;
+}
+
+.verify-note {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-4);
+}
+
+.verify-note strong {
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+.resend-box {
+  margin-top: var(--space-4);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.resend-timer {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+
+@media (max-width: 480px) {
+  .theme-picker {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

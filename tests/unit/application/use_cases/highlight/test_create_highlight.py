@@ -17,7 +17,7 @@ class TestCreateHighlightUseCase:
         [(1, 0, True), (None, 0, False)],
     )
     async def test_persists_highlight_and_invalidates_cache(
-            self, user_id, highlights_this_hour, should_invalidate
+        self, user_id, highlights_this_hour, should_invalidate
     ):
         """Что тестируем: сохранение хайлайта и инвалидацию только для авторизованного.
         Что передаём: user_id/количество за час.

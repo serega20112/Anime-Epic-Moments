@@ -46,14 +46,14 @@ def test_ttl_cache_expires_entries_with_time(monkeypatch):
     ("keys", "predicate", "expected_keys"),
     [
         (
-                [("rec:1", 1), ("rec:2", 2), ("search:1", 3)],
-                lambda key: key.startswith("rec:"),
-                {"search:1"},
+            [("rec:1", 1), ("rec:2", 2), ("search:1", 3)],
+            lambda key: key.startswith("rec:"),
+            {"search:1"},
         ),
         (
-                [("watch:1", 1), ("watch:2", 2), ("favorite:1", 3)],
-                lambda key: key.endswith(":2"),
-                {"watch:1", "favorite:1"},
+            [("watch:1", 1), ("watch:2", 2), ("favorite:1", 3)],
+            lambda key: key.endswith(":2"),
+            {"watch:1", "favorite:1"},
         ),
     ],
 )

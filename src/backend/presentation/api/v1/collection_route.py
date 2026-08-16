@@ -8,22 +8,24 @@ from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, Response
-from backend.application.use_cases import AddCollectionItemUseCase
-from backend.application.use_cases import CreateCollectionUseCase
-from backend.application.use_cases import GetFavoritesUseCase
-from backend.application.use_cases import GetUserCollectionsUseCase
-from backend.application.use_cases import RemoveCollectionItemUseCase
+
+from backend.application.use_cases import (
+    AddCollectionItemUseCase,
+    CreateCollectionUseCase,
+    GetFavoritesUseCase,
+    GetUserCollectionsUseCase,
+    RemoveCollectionItemUseCase,
+)
 from backend.application.use_cases.collection.get_shared_collection import (
     GetSharedCollectionUseCase,
 )
+from backend.infrastructure.web import render_template
+from backend.presentation.api.helpers import get_current_user
 from backend.presentation.api.requests.collection_mapper import (
     map_add_collection_item_command,
     map_create_collection_command,
     map_remove_collection_item_command,
 )
-
-from backend.infrastructure.web import render_template
-from backend.presentation.api.helpers import get_current_user
 
 collection_router = APIRouter(prefix="/collections", route_class=DishkaRoute)
 collection_bp = collection_router
@@ -31,9 +33,9 @@ collection_bp = collection_router
 
 @collection_router.get("", name="collection.collections_page")
 async def collections_page(
-        request: Request,
-        collections_use_case: FromDishka[GetUserCollectionsUseCase],
-        favorites_use_case: FromDishka[GetFavoritesUseCase],
+    request: Request,
+    collections_use_case: FromDishka[GetUserCollectionsUseCase],
+    favorites_use_case: FromDishka[GetFavoritesUseCase],
 ):
     """Render the user's collections and favorites page.
 
@@ -81,9 +83,9 @@ async def create_collection(request: Request, use_case: FromDishka[CreateCollect
 
 @collection_router.post("/{collection_id}/items", name="collection.add_collection_item")
 async def add_collection_item(
-        request: Request,
-        collection_id: int,
-        use_case: FromDishka[AddCollectionItemUseCase],
+    request: Request,
+    collection_id: int,
+    use_case: FromDishka[AddCollectionItemUseCase],
 ):
     """Add an anime item to a collection.
 
@@ -99,9 +101,7 @@ async def add_collection_item(
     user = get_current_user(request)
     if not user:
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
-    command = map_add_collection_item_command(
-        await request.form(), collection_id=collection_id
-    )
+    command = map_add_collection_item_command(await request.form(), collection_id=collection_id)
     await use_case.execute(command)
     return redirect_collections(request)
 
@@ -111,9 +111,9 @@ async def add_collection_item(
     name="collection.remove_collection_item",
 )
 async def remove_collection_item(
-        request: Request,
-        collection_id: int,
-        use_case: FromDishka[RemoveCollectionItemUseCase],
+    request: Request,
+    collection_id: int,
+    use_case: FromDishka[RemoveCollectionItemUseCase],
 ):
     """Remove an anime item from a collection.
 
@@ -129,18 +129,16 @@ async def remove_collection_item(
     user = get_current_user(request)
     if not user:
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
-    command = map_remove_collection_item_command(
-        await request.form(), collection_id=collection_id
-    )
+    command = map_remove_collection_item_command(await request.form(), collection_id=collection_id)
     await use_case.execute(command)
     return redirect_collections(request)
 
 
 @collection_router.get("/share/{collection_id}", name="collection.shared_collection_page")
 async def shared_collection_page(
-        request: Request,
-        collection_id: int,
-        use_case: FromDishka[GetSharedCollectionUseCase],
+    request: Request,
+    collection_id: int,
+    use_case: FromDishka[GetSharedCollectionUseCase],
 ):
     """Render a shared collection page.
 

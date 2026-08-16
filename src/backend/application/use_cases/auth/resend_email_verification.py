@@ -18,9 +18,9 @@ class ResendEmailVerificationUseCase:
     """Перевыпускает код подтверждения для ожидающей регистрации."""
 
     def __init__(
-            self,
-            verification_store: EmailVerificationStore,
-            mailer: EmailVerificationMailer,
+        self,
+        verification_store: EmailVerificationStore,
+        mailer: EmailVerificationMailer,
     ):
         """Initialize the use case.
 

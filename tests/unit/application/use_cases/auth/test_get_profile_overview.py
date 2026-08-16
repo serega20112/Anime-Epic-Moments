@@ -5,9 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from backend.application.use_cases import GetProfileOverviewUseCase
-from backend.domain import Favorite
-from backend.domain import HighlightProfileSummary
-from backend.domain import User
+from backend.domain import Favorite, HighlightProfileSummary, User
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 
@@ -79,7 +77,9 @@ def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
     )
 
     use_case.recent_highlights_use_case = SimpleNamespace(
-        execute=lambda **kwargs: SimpleNamespace(items=["recent-1", "recent-2", "recent-3", "recent-4", "recent-5"])
+        execute=lambda **kwargs: SimpleNamespace(
+            items=["recent-1", "recent-2", "recent-3", "recent-4", "recent-5"]
+        )
     )
     use_case.liked_highlights_use_case = SimpleNamespace(
         execute=lambda **kwargs: SimpleNamespace(items=["liked-1", "liked-2"])
@@ -99,7 +99,9 @@ def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
     assert overview.smart_profile.favorite_genres[0].name == "Action"
     assert overview.smart_profile.hours_watched == 3.0
     assert overview.smart_profile.top_anime[0].title == "Gintama"
-    assert overview.smart_profile.ai_taste_summary == "Тебя тянет к экшен-комедиям с хорошим темпом."
+    assert (
+        overview.smart_profile.ai_taste_summary == "Тебя тянет к экшен-комедиям с хорошим темпом."
+    )
     assert overview.followers_count == 11
     assert overview.following_count == 6
 

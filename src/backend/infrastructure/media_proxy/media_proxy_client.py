@@ -38,11 +38,11 @@ class MediaProxyClient:
     """
 
     def __init__(
-            self,
-            *,
-            follow_redirects: bool = False,
-            trust_env: bool = False,
-            timeout: float = 30.0,
+        self,
+        *,
+        follow_redirects: bool = False,
+        trust_env: bool = False,
+        timeout: float = 30.0,
     ) -> None:
         """Initialize the proxy client.
 
@@ -110,7 +110,9 @@ class MediaProxyClient:
             status_code=upstream_status,
         )
 
-    async def _stream(self, upstream_url: str, request_headers: dict[str, str]) -> AsyncIterator[bytes]:
+    async def _stream(
+        self, upstream_url: str, request_headers: dict[str, str]
+    ) -> AsyncIterator[bytes]:
         """Stream upstream body in chunks.
 
         Args:
@@ -121,9 +123,9 @@ class MediaProxyClient:
             bytes: Upstream body chunks.
         """
         async with self._client.stream(
-                "GET",
-                upstream_url,
-                headers=request_headers,
+            "GET",
+            upstream_url,
+            headers=request_headers,
         ) as stream_response:
             async for chunk in stream_response.aiter_bytes(chunk_size=_CHUNK_SIZE):
                 if chunk:

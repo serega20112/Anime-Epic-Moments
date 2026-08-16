@@ -56,14 +56,15 @@
 
 ## Где в коде
 
-- `src/backend/use_case/auth`
-- `src/backend/use_case/anime`
-- `src/backend/use_case/favorite`
-- `src/backend/use_case/highlight`
-- `src/backend/use_case/watch`
-- `src/backend/use_case/recommendation`
-- `src/backend/services/recommendation_service.py`
-- `src/backend/services/watch_source_sync_service.py`
+- `src/backend/application/use_cases/auth`
+- `src/backend/application/use_cases/anime`
+- `src/backend/application/use_cases/favorite`
+- `src/backend/application/use_cases/highlight`
+- `src/backend/application/use_cases/watch`
+- `src/backend/application/use_cases/recommendation`
+- `src/backend/application/use_cases/collection`
+- `src/backend/application/services/recommendation_service.py`
+- `src/backend/application/services/watch_source_sync_service.py`
 
 ## Связанные документы
 

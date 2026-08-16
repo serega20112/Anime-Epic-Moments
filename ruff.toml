@@ -3,24 +3,28 @@ line-length = 100
 
 [lint]
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "N",   # pep8-naming
-    "D",   # pydocstyle
-    "UP",  # pyupgrade
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "N",  # pep8-naming
+    "D",  # pydocstyle
+    "UP", # pyupgrade
 ]
 ignore = [
-    "D100",  # Missing docstring in public module — too verbose
-    "D104",  # Missing docstring in public package
-    "D107",  # Missing docstring in __init__
-    "D203",  # 1 blank line required before class docstring (inconsistent)
-    "D212",  # Multi-line docstring summary should start at first line
-    "D213",  # Multi-line docstring summary should start at second line
-    "D401",  # First line should be in imperative mood
-    "D413",  # Missing blank line after last section
-    "D415",  # First line should end with a period
+    "D100", # Missing docstring in public module — too verbose
+    "D101", # Missing docstring in public class — legacy debt, новые классы пишутся с docstring (см. docs/styleguide.md)
+    "D102", # Missing docstring in public method — legacy debt, новые методы пишутся с docstring
+    "D103", # Missing docstring in public function — legacy debt, новые функции пишутся с docstring
+    "D104", # Missing docstring in public package
+    "D107", # Missing docstring in __init__
+    "D203", # 1 blank line required before class docstring (inconsistent)
+    "D212", # Multi-line docstring summary should start at first line
+    "D213", # Multi-line docstring summary should start at second line
+    "D401", # First line should be in imperative mood
+    "D413", # Missing blank line after last section
+    "D415", # First line should end with a period
+    "E501", # Line too long — legacy debt, длина строк контролируется ревью и ruff format
 ]
 
 [lint.pydocstyle]
@@ -28,7 +32,7 @@ convention = "google"
 
 [lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"src/backend/tests/**" = ["D"]
+"tests/**" = ["D"]
 
 [format]
 quote-style = "double"

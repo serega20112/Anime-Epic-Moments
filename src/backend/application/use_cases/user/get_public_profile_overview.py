@@ -3,8 +3,8 @@ from backend.application.use_cases.user.result import UserResult
 from backend.domain import (
     FollowUserCard,
     PublicProfileOverview,
+    UserRepository,
 )
-from backend.domain import UserRepository
 from backend.domain.collection.value_object import CollectionCard
 from backend.domain.repositories.collection_repository import CollectionRepository
 
@@ -13,19 +13,19 @@ class GetPublicProfileOverviewUseCase:
     """Собирает публичный профиль пользователя с коллекциями и social-статистикой."""
 
     def __init__(
-            self,
-            profile_overview_use_case: GetProfileOverviewUseCase,
-            user_repo: UserRepository,
-            collection_repo: CollectionRepository,
+        self,
+        profile_overview_use_case: GetProfileOverviewUseCase,
+        user_repo: UserRepository,
+        collection_repo: CollectionRepository,
     ):
         self.profile_overview_use_case = profile_overview_use_case
         self.user_repo = user_repo
         self.collection_repo = collection_repo
 
     async def execute(
-            self,
-            profile_user_id: int,
-            viewer_user_id: int | None = None,
+        self,
+        profile_user_id: int,
+        viewer_user_id: int | None = None,
     ) -> UserResult:
         try:
             profile = await self.profile_overview_use_case.execute(profile_user_id)
@@ -70,9 +70,9 @@ class GetPublicProfileOverviewUseCase:
             if user.id is not None
         ]
         is_following = (
-                viewer_user_id is not None
-                and viewer_user_id != profile_user_id
-                and await self.user_repo.is_following(viewer_user_id, profile_user_id)
+            viewer_user_id is not None
+            and viewer_user_id != profile_user_id
+            and await self.user_repo.is_following(viewer_user_id, profile_user_id)
         )
         return UserResult.success(
             PublicProfileOverview(

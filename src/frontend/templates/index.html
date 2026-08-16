@@ -1,208 +1,109 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AEM - Anime Epic Moments</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/anime.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/index.css') }}"
-    />
-  </head>
-  <body>
-    <div id="particles-js"></div>
-    <header class="header">
-      <div class="header-left">
-        <div class="logo">AEM <span class="logo-icon">👁️‍🗨️</span></div>
-        <div class="auth-buttons">
-          {% if not current_user %}
-          <a
-            href="{{ url_for('auth.register_page') }}"
-            class="btn neon-pink btn-auth"
-            >Регистрация</a
-          >
-          <a
-            href="{{ url_for('auth.login_page') }}"
-            class="btn neon-blue btn-auth"
-            >Вход</a
-          >
-          {% endif %}
-        </div>
-      </div>
-      <form
-        class="search-container global-search-form"
-        action="{{ url_for('anime.search_anime_page') }}"
-        method="get"
-        autocomplete="off"
-      >
-        <input
-          type="text"
-          name="title"
-          class="global-search-input"
-          placeholder="Найди аниме по названию, жанру или эмоции…"
-        />
-        <button type="submit">🔍</button>
-        <div class="search-autocomplete" hidden></div>
-      </form>
-      <nav class="header-nav">
-        <div class="nav-buttons">
-          <a
-            href="{{ url_for('support.support_page', page=request.url) }}"
-            class="btn neon-blue"
-            >Поддержка</a
-          >
-          {% if current_user %}
-          <a
-            href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}"
-            class="btn neon-blue"
-            >Мои хайлайты</a
-          >
-          <a
-            href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}"
-            class="btn neon-pink"
-            >Избранное</a
-          >
-          <a
-            href="{{ url_for('highlight.get_public_top_highlights') }}"
-            class="btn neon-blue"
-            >Топ хайлайты</a
-          >
-          <a
-            href="{{ url_for('anime.search_by_description_page') }}"
-            class="btn neon-pink"
-            >Поиск по описанию</a
-          >
-          <div class="avatar-dropdown">
-            <img
-              src="{{ current_user.avatar_url or '/static/images/default-avatar.png' }}"
-              alt="Avatar"
-              class="avatar"
-            />
-            <div class="dropdown-menu">
-              <a href="{{ url_for('auth.profile_page') }}">Мой профиль</a>
-              <a href="{{ url_for('support.support_page', page=request.url) }}"
-                >Поддержка</a
-              >
-              <form
-                action="{{ url_for('auth.logout_user') }}"
-                method="post"
-                style="display: inline"
-              >
-                <button type="submit" class="btn logout-btn">Выход</button>
-              </form>
-            </div>
-          </div>
-          {% endif %}
-        </div>
-      </nav>
-    </header>
-    <main class="hero scrollable-main">
-      <section class="hero-block">
-        <h1>Сохрани момент, который тронул душу</h1>
-        <p>Твои эпичные сцены. Твои эмоции. Твоё аниме.</p>
-        <div class="hero-buttons">
-          <a
-            href="{{ url_for('anime.search_by_description_page') }}"
-            class="btn neon-pink btn-large"
-            >Найти аниме по описанию</a
-          >
-          <a
-            href="{{ url_for('highlight.get_public_top_highlights') }}"
-            class="btn neon-blue btn-large"
-            >Хайлайты</a
-          >
-        </div>
-      </section>
-      {% if current_user %}
-      <div class="recommendations">
-        <h2>Рекомендации для тебя</h2>
-        <div
-          id="index-recommendation-grid"
-          class="results-grid index-results-grid"
-          data-user-id="{{ current_user.id }}"
-        >
-          <section class="empty-state index-recommendation-state">
-            <h2>Загружаем рекомендации</h2>
-            <p>
-              Главная уже открыта. Подборка подтянется отдельно, без блокировки
-              входа.
-            </p>
-          </section>
-        </div>
-      </div>
-      {% endif %}
-      <section class="popular-section">
-        <h2>Популярные аниме сезона</h2>
-        <div
-          id="index-popular-grid"
-          class="carousel"
-          data-season="{{ home_season }}"
-          data-year="{{ home_year }}"
-        >
-          <section class="empty-state index-recommendation-state">
-            <h2>Загружаем сезонные тайтлы</h2>
-            <p>
-              Подборка сезона подтянется отдельно, без блокировки главной
-              страницы.
-            </p>
-          </section>
-        </div>
-      </section>
-      {% if not current_user %}
-      <div class="guest-warning">
-        <p>Залогинься, чтобы сохранить хайлайты и получить рекомендации!</p>
-      </div>
-      {% endif %}
-    </main>
-    <script src="{{ url_for('static', filename='js/particles.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/index_recommendations.js') }}"></script>
-    <script>
-      window.AEMIndexPage = {
-        currentUserId: '{{ current_user.id if current_user else "" }}',
-        season: "{{ home_season }}",
-        year: "{{ home_year }}",
-      };
-    </script>
-    {% with messages = get_flashed_messages() %} {% if messages %}
-    <div id="welcomeModal" class="modal" style="display: flex">
-      <div class="modal-content">
-        <button type="button" class="close" onclick="closeWelcomeModal()">
-          &times;
-        </button>
-        <h2 class="modal-title">Уведомление</h2>
-        <ul class="modal-error-list">
-          {% for message in messages %}
-          <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-        <div class="modal-actions">
-          <button type="button" class="btn-modal" onclick="closeWelcomeModal()">
-            Понятно
-          </button>
-        </div>
-      </div>
+{% extends "base.html" %}
+
+{% block title %}Anime Epic Moments — твои эпичные сцены{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-inner container">
+    <p class="hero-kicker">✦ anime epic moments</p>
+    <h1 class="hero-title">Сохрани момент,<br>который тронул душу</h1>
+    <p class="hero-subtitle">Твои эпичные сцены. Твои эмоции. Твоё аниме.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary btn-lg" href="{{ url_for('anime.search_by_description_page') }}">Найти аниме по описанию</a>
+      <a class="btn btn-ghost btn-lg" href="{{ url_for('highlight.get_public_top_highlights') }}">Хайлайты</a>
     </div>
-    <script>
-      function closeWelcomeModal() {
-        const modal = document.getElementById("welcomeModal");
-        if (!modal) return;
-        modal.style.display = "none";
-      }
-    </script>
-    {% endif %} {% endwith %}
-  </body>
-</html>
+    {% if not current_user %}
+    <div class="hero-guest glass">
+      <span class="guest-emoji">👋</span>
+      <p><strong>Залогиньтесь, чтобы сохранять хайлайты</strong> и получать персональные рекомендации.</p>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('auth.login_page') }}">Войти</a>
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('auth.register_page') }}">Создать профиль</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<div class="container">
+  {% if current_user %}
+  <section class="section" id="recommendations-section">
+    <div class="section-title"><span class="emoji">🎯</span> Рекомендации для вас</div>
+    <div class="carousel" data-carousel>
+      <div class="loading-state" id="recommendations-loading">
+        <div class="spinner"></div>
+        <span>Подбираем аниме под ваш вкус…</span>
+      </div>
+      <div class="carousel-track" id="recommendations-track" hidden></div>
+      <button class="carousel-nav prev" data-carousel-prev aria-label="Назад">‹</button>
+      <button class="carousel-nav next" data-carousel-next aria-label="Вперёд">›</button>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="section" id="season-section">
+    <div class="section-title">
+      <span class="emoji">🍥</span> Популярные аниме сезона
+      <span class="season-chip" id="season-chip">{{ home_season|capitalize }} {{ home_year }}</span>
+    </div>
+    <div class="carousel" data-carousel>
+      <div class="loading-state" id="season-loading">
+        <div class="spinner"></div>
+        <span>Загружаем сезонные тайтлы…</span>
+      </div>
+      <div class="carousel-track" id="season-track" hidden></div>
+      <button class="carousel-nav prev" data-carousel-prev aria-label="Назад">‹</button>
+      <button class="carousel-nav next" data-carousel-next aria-label="Вперёд">›</button>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title"><span class="emoji">💎</span> Хайлайты сообщества</div>
+    <div class="community-links">
+      <a class="community-card glass" href="{{ url_for('highlight.get_public_top_highlights') }}">
+        <span class="cc-emoji">🏆</span>
+        <div>
+          <div class="cc-title">Топ хайлайтов</div>
+          <div class="cc-desc">Самые залайканные моменты сообщества</div>
+        </div>
+        <span class="cc-arrow">→</span>
+      </a>
+      <a class="community-card glass" href="{{ url_for('highlight.get_highlight_feed') }}">
+        <span class="cc-emoji">🌊</span>
+        <div>
+          <div class="cc-title">Лента</div>
+          <div class="cc-desc">Свежие моменты и эмоции зрителей</div>
+        </div>
+        <span class="cc-arrow">→</span>
+      </a>
+      <a class="community-card glass" href="{{ url_for('anime.search_anime_page') }}">
+        <span class="cc-emoji">🔍</span>
+        <div>
+          <div class="cc-title">Поиск аниме</div>
+          <div class="cc-desc">Найдите тайтл по названию или описанию</div>
+        </div>
+        <span class="cc-arrow">→</span>
+      </a>
+    </div>
+  </section>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.AEMIndexPage = {
+    year: {{ home_year|tojson }},
+    season: {{ home_season|tojson }},
+    {% if current_user %}
+    userId: {{ current_user.id|tojson }},
+    {% else %}
+    userId: null,
+    {% endif %}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+<script src="{{ url_for('static', filename='js/index_recommendations.js') }}"></script>
+{% endblock %}

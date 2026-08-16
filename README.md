@@ -1,44 +1,47 @@
 # Anime Epic Moments
 
-Anime Epic Moments — это Flask-приложение для поиска аниме, просмотра, сохранения избранного, создания хайлайтов и
-персональных рекомендаций на основе действий пользователя.
+Anime Epic Moments — приложение для поиска аниме, просмотра (с выбором озвучки), сохранения избранного, создания
+хайлайтов и персональных рекомендаций на основе действий пользователя.
 
-Проект организован как DDD-ориентированный backend с тонким delivery-слоем, явными use case, PostgreSQL, Redis, Alembic
-и серверным frontend-слоем в `src/frontend`.
+Backend — FastAPI + dishka (DI), организован по DDD: тонкий presentation-слой, явные use case, домен без зависимостей
+от фреймворков. Данные: PostgreSQL + Redis, миграции Alembic. Поиск по описанию — LLM (Google Gemini с fallback на
+Hugging Face). Видео — Kodik и AniLibria через media-proxy с allowlist хостингов CDN.
 
 ## Быстрый старт
 
 ### Локальный запуск
 
-1. Создай и активируй виртуальное окружение:
+Требования: установленный [uv](https://docs.astral.sh/uv/) (установка:
 
 ```powershell
-python -m venv venv
-venv\Scripts\activate
+irm https://astral.sh/uv/install.ps1 | iex
 ```
 
-2. Установи зависимости:
+).
+
+1. Установи зависимости (создаст `.venv` и заберёт `uv.lock`):
 
 ```powershell
-pip install -r requirements.txt
+uv sync
 ```
 
-3. Создай локальный `.env` на основе примера и заполни секреты и параметры PostgreSQL:
+2. Создай локальный `.env` на основе примера и заполни секреты и параметры PostgreSQL:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-4. Примени миграции базы данных:
+3. Примени миграции базы данных:
 
 ```powershell
-alembic -c build/alembic/alembic.ini upgrade head
+uv run alembic -c build/alembic/alembic.ini upgrade head
 ```
 
-5. Запусти приложение:
+4. Запусти приложение:
 
 ```powershell
-python -m src.main
+$env:PYTHONPATH = "src"
+uv run python -m backend.main
 ```
 
 ### Запуск в Docker
@@ -48,8 +51,7 @@ docker compose -f build/docker-compose.yml up --build
 ```
 
 `docker compose` поднимает `app`, `postgres`, `redis` и Redis GUI. По умолчанию Docker-запуск использует
-`DATABASE_AUTO_INIT=1` и `RUN_DB_MIGRATIONS=0`, потому что в репозитории нет revision-файлов Alembic в
-`build/alembic/versions`.
+`DATABASE_AUTO_INIT=1`, когда в `build/alembic/versions` нет revision-файлов.
 
 Redis GUI после старта доступен в браузере:
 
@@ -62,36 +64,41 @@ http://localhost:8081
 Создать новую миграцию:
 
 ```powershell
-alembic -c build/alembic/alembic.ini revision --autogenerate -m "описание изменения"
+uv run alembic -c build/alembic/alembic.ini revision --autogenerate -m "описание изменения"
 ```
 
 Применить миграции:
 
 ```powershell
-alembic -c build/alembic/alembic.ini upgrade head
+uv run alembic -c build/alembic/alembic.ini upgrade head
 ```
 
 ## Тесты
 
-Запуск backend-тестов:
-
 ```powershell
-python -m pytest src/backend/tests -q
+uv run pytest
 ```
+
+Линт, формат и границы слоёв — см. [docs/styleguide.md](docs/styleguide.md).
 
 ## Структура проекта
 
 ```text
 build/                      Docker, Alembic, PostgreSQL/Redis runtime-скрипты и entrypoint
-docs/                       Навигационная документация по проекту
-src/main.py                 Локальная точка входа приложения
-src/backend/                Backend-слои: delivery, use_case, domain, infrastructure
+docs/                       Документация и стайлгайд
+src/backend/                Backend-слои: presentation, application, domain, infrastructure, config
 src/frontend/               Шаблоны, статические файлы и frontend-скрипты
+tests/                      unit/ и integration/ тесты (зеркалят src/backend)
+pyproject.toml + uv.lock    Зависимости (uv) и конфиги ruff/pytest/import-linter
+ruff.toml                   Конфиг линта
 ```
 
 ## Карта документации
 
 - Хаб документации: [docs/README.md](docs/README.md)
+- **Стайлгайд по работе с проектом и репозиторием: [docs/styleguide.md](docs/styleguide.md)**
+- Онбординг: [docs/onboarding.md](docs/onboarding.md)
+- Конвенции разработки: [docs/conventions.md](docs/conventions.md)
 - Обзор архитектуры: [docs/architecture/overview.md](docs/architecture/overview.md)
 - Доменная модель: [docs/domain/core.md](docs/domain/core.md)
 - API и маршруты: [docs/api/endpoints.md](docs/api/endpoints.md)
@@ -99,39 +106,27 @@ src/frontend/               Шаблоны, статические файлы и
 - Безопасность: [docs/security/security.md](docs/security/security.md)
 - Деплой и Docker: [docs/deployment/overview.md](docs/deployment/overview.md)
 - Тестовая стратегия: [docs/testing/strategy.md](docs/testing/strategy.md)
-- Онбординг: [docs/onboarding.md](docs/onboarding.md)
-- Конвенции разработки: [docs/conventions.md](docs/conventions.md)
 - Глоссарий: [docs/glossary.md](docs/glossary.md)
 - Пользовательские сценарии: [docs/use-cases.md](docs/use-cases.md)
 
-## Путь чтения
-
-1. [docs/architecture/overview.md](docs/architecture/overview.md)
-2. [docs/domain/core.md](docs/domain/core.md)
-3. [docs/api/endpoints.md](docs/api/endpoints.md)
-4. [docs/database/schema.md](docs/database/schema.md)
-5. [docs/security/security.md](docs/security/security.md)
-6. [docs/deployment/overview.md](docs/deployment/overview.md)
-7. [docs/testing/strategy.md](docs/testing/strategy.md)
-
 ## Ключевые точки входа в коде
 
-- Bootstrap приложения: `src/backend/main.py`
-- Flask app factory: `src/backend/create_app.py`
-- Граф зависимостей: `src/backend/dependencies/container.py`
-- Runtime-настройки: `src/backend/dependencies/settings.py`
-- Инициализация БД: `src/backend/infrastructure/files/database.py`
+- Точка входа и uvicorn: `src/backend/main.py`
+- App factory (FastAPI): `src/backend/presentation/app_factory.py` / `create_app`
+- Граф зависимостей (dishka): `src/backend/infrastructure/di/`
+- Runtime-настройки: `src/backend/config/` (`Settings`)
 - SQLAlchemy-модели: `src/backend/infrastructure/models/sqlalchemy_models.py`
-- HTTP-маршруты: `src/backend/delivery/api/v1`
-- Use case: `src/backend/use_case`
-- Тесты: `src/backend/tests/backend`
+- HTTP-маршруты: `src/backend/presentation/api/v1/`
+- Use cases: `src/backend/application/use_cases/`
+- Внешние провайдеры (LLM, Kodik, AniLibria, YouTube): `src/backend/infrastructure/external/`
+- Медиа-прокси: `src/backend/infrastructure/media_proxy/`
+- Тесты: `tests/`
 
 ## Почему репозиторий устроен так
 
-- Delivery-слой остается тонким и только переводит HTTP-запросы в вызовы use case.
-- Use case содержат orchestration-логику, а не детали фреймворка.
-- Domain-объекты описывают продуктовые сущности, а не наборы словарей.
-- Infrastructure-слой содержит все побочные эффекты: БД, внешние API, кэш и auth-хелперы.
-- Build- и deployment-артефакты вынесены в `build/`, чтобы код приложения и окружение не были перемешаны.
-- Redis используется для кэшей, rate limiting и blacklist-а JWT, но при локальной деградации приложение умеет
-  откатываться на in-memory fallback.
+- Presentation-слой тонкий: HTTP-запросы переводятся в вызовы use case, никакой бизнес-логики на уровне роутов.
+- Use cases оркестрируют бизнес-действия; домен описывает продуктовые сущности и правила, не зная про FastAPI/SQLAlchemy.
+- Infrastructure владеет побочными эффектами: БД, внешние API, кэш, безопасность, DI.
+- Границы слоёв проверяются import-linter (`Layer Boundaries`), гейты — ruff + pytest в CI.
+- Зависимости управляются через uv: `pyproject.toml` + зафиксированный `uv.lock`.
+- Build- и deployment-артефакты вынесены в `build/`.

@@ -69,7 +69,7 @@ flowchart LR
 - `src/backend/domain/watch/policy.py`
 - `src/backend/domain/watch/value_object.py`
 - `src/backend/domain/recommendation/value_object.py`
-- `src/backend/use_case`
+- `src/backend/application/use_cases`
 
 ## Связанные документы
 

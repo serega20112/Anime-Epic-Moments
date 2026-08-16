@@ -9,8 +9,7 @@ from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import Response
 
-from backend.application.use_cases import GenerateRecommendationsUseCase
-from backend.application.use_cases import GetFavoritesUseCase
+from backend.application.use_cases import GenerateRecommendationsUseCase, GetFavoritesUseCase
 from backend.application.use_cases.favorite.add_favorite import AddFavoriteUseCase
 from backend.application.use_cases.favorite.remove_favorite import RemoveFavoriteUseCase
 from backend.infrastructure.web import render_template
@@ -81,10 +80,10 @@ async def remove_favorite(request: Request, use_case: FromDishka[RemoveFavoriteU
 
 @favorite_router.get("/{user_id}", name="favorite.get_favorites")
 async def get_favorites(
-        request: Request,
-        user_id: int,
-        favorites_use_case: FromDishka[GetFavoritesUseCase],
-        recommendations_use_case: FromDishka[GenerateRecommendationsUseCase],
+    request: Request,
+    user_id: int,
+    favorites_use_case: FromDishka[GetFavoritesUseCase],
+    recommendations_use_case: FromDishka[GenerateRecommendationsUseCase],
 ):
     """Render the user's favorites page with recommendations.
 

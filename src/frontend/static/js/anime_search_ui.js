@@ -1,267 +1,198 @@
+/* Anime Epic Moments — anime_search_ui.js
+   Логика страниц поиска: по названию и по описанию (с age-gate). */
 (function () {
-  const AUTOCOMPLETE_DELAY = 220;
+  "use strict";
 
-  const debounce = (callback, delay) => {
-    let timeoutId = null;
-    return (...args) => {
-      window.clearTimeout(timeoutId);
-      timeoutId = window.setTimeout(() => callback(...args), delay);
-    };
-  };
+  var NO_COVER = "/static/images/no-cover.svg";
+  var adultConfirmed = false;
 
-  const truncate = (value, maxLength) => {
-    const text = String(value || "")
-      .replace(/\s+/g, " ")
-      .trim();
-    if (text.length <= maxLength) {
-      return text;
+  function findPage() {
+    if (document.getElementById("title-search-form")) return "title";
+    if (document.getElementById("description-search-form")) return "description";
+    return null;
+  }
+
+  /* ---------- карточка результата ---------- */
+  function resultCard(anime) {
+    var wrap = document.createElement("div");
+    wrap.className = "age-wrapper";
+    wrap.appendChild(elementFromHtml(AEM.animeCard(
+      anime,
+      { watchUrl: "/watch/" + (anime.anime_id || anime.external_id || anime.id) }
+    )));
+    if (anime.requires_age_confirmation) {
+      var overlay = document.createElement("div");
+      overlay.className = "age-overlay";
+      overlay.innerHTML =
+        '<span class="age-emoji">🔞</span>' +
+        "<p>Этот тайтл может содержать материалы 18+. Покажите, что вы совершеннолетний.</p>";
+      wrap.appendChild(overlay);
     }
-    return `${text.slice(0, maxLength - 1)}…`;
-  };
+    return wrap;
+  }
 
-  const escapeHtml = (value) =>
-    String(value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+  function elementFromHtml(html) {
+    var template = document.createElement("template");
+    template.innerHTML = html.trim();
+    return template.content.firstChild;
+  }
 
-  const buildWatchUrl = (title, externalId) => {
-    const numericId = Number(externalId);
-    if (Number.isInteger(numericId) && numericId > 0) {
-      return `/watch/${numericId}?episode=1`;
-    }
-    return `https://www.google.com/search?q=${encodeURIComponent(`where to watch ${title} anime`)}`;
-  };
-
-  const getCurrentUserId = () => document.body.dataset.currentUserId || "";
-
-  const addFavorite = async (anime, button) => {
-    const userId = getCurrentUserId();
-    if (!userId) {
-      window.location.href = "/auth/login";
-      return;
-    }
-
-    const animeId = Number(anime && anime.external_id);
-    if (!Number.isInteger(animeId) || animeId <= 0) {
-      window.alert("Это аниме пока нельзя сохранить в избранное.");
-      return;
-    }
-
-    const response = await fetch("/favorites/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: userId,
-        anime_id: animeId,
-        title: anime.title || "",
-        description: anime.description || "",
-        cover_url: anime.cover_url || "",
-        genres: Array.isArray(anime.genres) ? anime.genres : [],
-      }),
+  function renderResults(list) {
+    var grid = document.getElementById("results-grid");
+    var empty = document.getElementById("results-empty");
+    var count = document.getElementById("results-count");
+    grid.innerHTML = "";
+    list.forEach(function (anime) {
+      grid.appendChild(resultCard(anime));
     });
-
-    if (!response.ok) {
-      window.alert("Не удалось добавить в избранное.");
-      return;
+    if (count) {
+      count.textContent = list.length
+        ? "Найдено: " + list.length + (list.length === 1 ? " тайтл" : " тайтлов")
+        : "";
     }
+    if (empty) empty.classList.toggle("hidden", list.length > 0);
+  }
 
-    button.classList.add("is-added");
-    button.textContent = "В избранном";
-  };
+  function setLoading(on) {
+    var loading = document.getElementById("results-loading");
+    if (loading) loading.classList.toggle("hidden", !on);
+  }
 
-  const buildAnimeCard = (anime) => {
-    const genres = Array.isArray(anime.genres) ? anime.genres.slice(0, 3) : [];
-    const coverUrl = anime.cover_url || "/static/images/no-cover.png";
-    const watchUrl =
-      anime.watch_url || buildWatchUrl(anime.title, anime.external_id);
-    const rating = anime.rating == null ? "?" : anime.rating;
-    const year = anime.year == null ? "?" : anime.year;
-    const canFavorite =
-      Number.isInteger(Number(anime.external_id)) &&
-      Number(anime.external_id) > 0;
+  /* ---------- поиск по названию ---------- */
+  function initTitleSearch() {
+    var form = document.getElementById("title-search-form");
+    var grid = document.getElementById("results-grid");
+    if (!form || !grid) return;
+    var input = document.getElementById("search-input");
+    var hints = document.querySelectorAll("[data-hint]");
 
-    return `
-            <article class="result-card">
-                <img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(anime.title)}" loading="lazy">
-                <div class="result-card-body">
-                    <h3>${escapeHtml(anime.title)}</h3>
-                    <p>${escapeHtml(truncate(anime.description || "Описание недоступно", 220))}</p>
-                    <div class="result-genres">
-                        ${genres.map((genre) => `<span class="genre-chip">${escapeHtml(genre)}</span>`).join("")}
-                    </div>
-                    <div class="result-meta">
-                        <span>Рейтинг: ${escapeHtml(rating)}</span>
-                        <span>Год: ${escapeHtml(year)}</span>
-                    </div>
-                    <div class="result-actions">
-                        ${canFavorite ? `<button class="btn-favorite" data-anime-id="${escapeHtml(anime.external_id)}">В избранное</button>` : ""}
-                        <a class="btn neon-blue btn-watch" href="${escapeHtml(watchUrl)}" target="_blank" rel="noopener noreferrer">Где смотреть</a>
-                    </div>
-                </div>
-            </article>
-        `;
-  };
-
-  const renderAnimeCards = (container, items) => {
-    container.innerHTML = items.map(buildAnimeCard).join("");
-    const animeById = new Map(
-      items.map((anime) => [String(anime.external_id || ""), anime]),
-    );
-    container.querySelectorAll(".btn-favorite").forEach((button) => {
-      button.addEventListener("click", () => {
-        const anime = animeById.get(String(button.dataset.animeId || ""));
-        if (!anime) {
-          window.alert("Не удалось определить аниме для избранного.");
-          return;
-        }
-        addFavorite(anime, button);
-      });
-    });
-  };
-
-  const renderAutocomplete = (container, items) => {
-    if (!items.length) {
-      container.hidden = true;
-      container.innerHTML = "";
-      return;
-    }
-
-    container.innerHTML = items
-      .map(
-        (anime) => `
-            <a class="autocomplete-item" href="/anime/search?title=${encodeURIComponent(anime.title)}">
-                <img src="${escapeHtml(anime.cover_url || "/static/images/no-cover.png")}" alt="${escapeHtml(anime.title)}" loading="lazy">
-                <div>
-                    <strong>${escapeHtml(anime.title)}</strong>
-                    <span>${escapeHtml((anime.genres || []).slice(0, 3).join(" • ") || "Без жанров")}</span>
-                </div>
-            </a>
-        `,
-      )
-      .join("");
-    container.hidden = false;
-  };
-
-  const setupGlobalSearchForms = () => {
-    document.querySelectorAll(".global-search-form").forEach((form) => {
-      const input = form.querySelector(".global-search-input");
-      const autocomplete = form.querySelector(".search-autocomplete");
-      if (!input || !autocomplete) {
-        return;
-      }
-
-      const loadSuggestions = debounce(async () => {
-        const query = input.value.trim();
-        if (query.length < 2) {
-          renderAutocomplete(autocomplete, []);
-          return;
-        }
-        try {
-          const response = await fetch(
-            `/anime/api/autocomplete?query=${encodeURIComponent(query)}&limit=6`,
-          );
-          if (!response.ok) {
-            renderAutocomplete(autocomplete, []);
-            return;
-          }
-          const items = await response.json();
-          renderAutocomplete(autocomplete, Array.isArray(items) ? items : []);
-        } catch (_error) {
-          renderAutocomplete(autocomplete, []);
-        }
-      }, AUTOCOMPLETE_DELAY);
-
-      input.addEventListener("input", loadSuggestions);
-      input.addEventListener("focus", loadSuggestions);
-      document.addEventListener("click", (event) => {
-        if (!form.contains(event.target)) {
-          autocomplete.hidden = true;
-        }
-      });
-    });
-  };
-
-  const setupTitleSearchPage = () => {
-    const resultsContainer = document.getElementById("title-search-results");
-    const resultsMeta = document.getElementById("title-results-meta");
-    const form = document.querySelector(".global-search-form");
-    const input = form ? form.querySelector(".global-search-input") : null;
-    if (!resultsContainer || !form || !input) {
-      return;
-    }
-
-    const loadResults = async (title) => {
-      const query = String(title || "").trim();
-      if (!query) {
-        resultsContainer.innerHTML = "";
-        if (resultsMeta) {
-          resultsMeta.textContent = "Введи название или выбери подсказку";
-        }
-        return;
-      }
-
-      resultsContainer.innerHTML = "<p>Ищем аниме...</p>";
-      try {
-        const response = await fetch(
-          `/anime/api/search?title=${encodeURIComponent(query)}&limit=18`,
-        );
-        if (!response.ok) {
-          resultsContainer.innerHTML =
-            "<p>Не удалось загрузить результаты.</p>";
-          return;
-        }
-
-        const apiItems = await response.json();
-        const mergedItems = Array.isArray(apiItems) ? apiItems : [];
-
-        if (resultsMeta) {
-          resultsMeta.textContent = `Найдено: ${mergedItems.length}`;
-        }
-
-        if (!mergedItems.length) {
-          resultsContainer.innerHTML = "<p>Ничего не найдено по названию.</p>";
-          return;
-        }
-
-        renderAnimeCards(resultsContainer, mergedItems);
-      } catch (error) {
-        console.error("title_search_render_failed", error);
-        resultsContainer.innerHTML =
-          "<p>Не удалось показать результаты. Обнови страницу и попробуй снова.</p>";
-      }
-    };
-
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", function (event) {
       event.preventDefault();
-      const query = input.value.trim();
-      const url = new URL(window.location.href);
-      if (query) {
-        url.searchParams.set("title", query);
-      } else {
-        url.searchParams.delete("title");
-      }
-      window.history.replaceState({}, "", url.toString());
-      loadResults(query);
+      runTitleSearch(input.value.trim());
     });
 
-    const initialTitle =
-      new URLSearchParams(window.location.search).get("title") ||
-      input.value.trim();
-    if (initialTitle) {
-      input.value = initialTitle;
-      loadResults(initialTitle);
+    Array.prototype.forEach.call(hints, function (hint) {
+      hint.addEventListener("click", function () {
+        input.value = hint.getAttribute("data-hint");
+        runTitleSearch(input.value);
+      });
+    });
+
+    /* Авто-запуск только когда пришли с запросом из шапки (?title=):
+       это уже «нажатая кнопка отправки». При прямом переходе на страницу
+       результаты не показываем, пока не нажата кнопка «Найти». */
+    var initial = (window.AEMAnimeSearchPage || {}).initialTitle || "";
+    if (initial) runTitleSearch(initial);
+  }
+
+  function runTitleSearch(title) {
+    var empty = document.getElementById("results-empty");
+    if (!title) {
+      if (empty) empty.classList.remove("hidden");
+      return;
     }
-  };
+    setLoading(true);
+    AEM.api("/anime/api/search?title=" + encodeURIComponent(title) + "&limit=10")
+      .then(function (list) {
+        setLoading(false);
+        renderResults(Array.isArray(list) ? list : []);
+      })
+      .catch(function () {
+        setLoading(false);
+        if (empty) empty.classList.remove("hidden");
+      });
+  }
 
-  window.AEMAnimeUI = {
-    addFavorite,
-    renderAnimeCards,
-    buildWatchUrl,
-  };
+  /* ---------- поиск по описанию ---------- */
+  function initDescriptionSearch() {
+    var form = document.getElementById("description-search-form");
+    if (!form) return;
+    var hints = document.querySelectorAll("[data-desc-hint]");
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      runDescriptionSearch();
+    });
+    Array.prototype.forEach.call(hints, function (hint) {
+      hint.addEventListener("click", function () {
+        var input = document.getElementById("description-input");
+        input.value = hint.getAttribute("data-desc-hint");
+        runDescriptionSearch();
+      });
+    });
 
-  setupGlobalSearchForms();
-  setupTitleSearchPage();
+    bindAgeModal();
+  }
+
+  function runDescriptionSearch() {
+    var input = document.getElementById("description-input");
+    var description = input.value.trim();
+    if (!description) return;
+    var form = document.getElementById("description-search-form");
+    var params = new URLSearchParams();
+    params.set("description", description);
+    params.set("limit", "10");
+    ["genre_hint", "sort", "year_from", "year_to", "rating", "age_rating"].forEach(function (name) {
+      var el = form.querySelector('[name="' + name + '"]');
+      var value = el ? el.value.trim() : "";
+      if (name === "sort" && !value) value = "match";
+      if (value) params.set(name, value);
+    });
+    if (adultConfirmed) params.set("adult_confirmed", "1");
+
+    setLoading(true);
+    AEM.api("/anime/api/search/description?" + params.toString())
+      .then(function (result) {
+        setLoading(false);
+        var items = Array.isArray(result.items) ? result.items : [];
+        if (result && result.requires_age_confirmation && !adultConfirmed) {
+          showAgeModal(result.message || "");
+          return;
+        }
+        if (result && result.message && items.length) {
+          AEM.toast(result.message, "info");
+        }
+        renderResults(items);
+      })
+      .catch(function () {
+        setLoading(false);
+        AEM.toast("Не удалось выполнить поиск. Попробуйте ещё раз.", "error");
+      });
+  }
+
+  /* ---------- age-gate ---------- */
+  function bindAgeModal() {
+    var overlay = document.getElementById("age-modal");
+    if (!overlay) return;
+    var close = document.getElementById("age-modal-close");
+    var cancel = document.getElementById("age-cancel");
+    var confirmBtn = document.getElementById("age-confirm");
+    close.addEventListener("click", hideAgeModal);
+    cancel.addEventListener("click", hideAgeModal);
+    overlay.addEventListener("click", function (event) {
+      if (event.target === overlay) hideAgeModal();
+    });
+    confirmBtn.addEventListener("click", function () {
+      adultConfirmed = true;
+      hideAgeModal();
+      runDescriptionSearch();
+    });
+  }
+
+  function showAgeModal(message) {
+    var overlay = document.getElementById("age-modal");
+    var body = document.getElementById("age-modal-body");
+    if (!overlay) return;
+    body.textContent = message || "Часть результатов может содержать контент для взрослых. Подтвердите, что вам есть 18 лет.";
+    overlay.classList.add("open");
+  }
+
+  function hideAgeModal() {
+    var overlay = document.getElementById("age-modal");
+    if (overlay) overlay.classList.remove("open");
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    if (findPage() === "title") initTitleSearch();
+    else if (findPage() === "description") initDescriptionSearch();
+  });
 })();

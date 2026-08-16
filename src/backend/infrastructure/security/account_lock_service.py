@@ -6,9 +6,8 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from backend.infrastructure.security.rate_limiter import RateLimiter
-
 from backend.infrastructure.cache.key_value_store import KeyValueStore
+from backend.infrastructure.security.rate_limiter import RateLimiter
 
 logger = logging.getLogger("anime_epic_moments")
 
@@ -62,7 +61,9 @@ class AccountLockService:
             await self._lock_account(normalized_email)
             return AccountStatus(
                 is_locked=True,
-                unlock_at=(datetime.now(UTC) + timedelta(seconds=LOCK_DURATION_SECONDS)).isoformat(),
+                unlock_at=(
+                    datetime.now(UTC) + timedelta(seconds=LOCK_DURATION_SECONDS)
+                ).isoformat(),
                 failed_attempts=decision.current_count,
                 remaining_attempts=0,
             )

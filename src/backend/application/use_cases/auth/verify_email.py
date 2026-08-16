@@ -18,10 +18,10 @@ class VerifyEmailUseCase:
     """Подтверждает email кодом и создает пользователя после успешной проверки."""
 
     def __init__(
-            self,
-            user_repo: UserRepository,
-            verification_store: EmailVerificationStore,
-            unit_of_work: UnitOfWorkInterface,
+        self,
+        user_repo: UserRepository,
+        verification_store: EmailVerificationStore,
+        unit_of_work: UnitOfWorkInterface,
     ):
         """Initialize the use case.
 

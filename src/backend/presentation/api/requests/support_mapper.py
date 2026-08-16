@@ -9,11 +9,11 @@ from backend.domain import normalize_support_channel
 
 
 def map_create_support_ticket_command(
-        form: dict[str, Any],
-        *,
-        user_id: int | None,
-        user_email: str | None = None,
-        user_username: str | None = None,
+    form: dict[str, Any],
+    *,
+    user_id: int | None,
+    user_email: str | None = None,
+    user_username: str | None = None,
 ) -> CreateSupportTicketCommand:
     """Build a create support ticket command from form data.
 
@@ -27,9 +27,7 @@ def map_create_support_ticket_command(
         CreateSupportTicketCommand: Command (validation happens in the use case).
     """
     email = _normalize_email(user_email if user_id is not None else form.get("email"))
-    username = _normalize_username(
-        user_username if user_id is not None else form.get("username")
-    )
+    username = _normalize_username(user_username if user_id is not None else form.get("username"))
     subject = str(form.get("subject") or "").strip()
     message = str(form.get("message") or "").strip()
     channel = normalize_support_channel(form.get("channel"))

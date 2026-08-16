@@ -9,7 +9,7 @@
 ## Подготовка
 
 1. Убедитесь, что `build/Dockerfile` и `build/docker-compose.yml` в репозитории есть.
-2. Убедитесь, что `requirements/base.txt` содержит продакшен-зависимости.
+2. Убедитесь, что `pyproject.toml` и `uv.lock` в корне репозитория есть (образ собирается через uv, см. `build/Dockerfile`).
 3. Запушьте проект на GitHub.
 
 ## Настройка PostgreSQL
@@ -44,7 +44,7 @@ REDIS_REQUIRED=0
 COOKIE_SECURE=1
 COOKIE_SAMESITE=Lax
 APP_BASE_URL=https://anime-epic-moments.onrender.com
-FLASK_DEBUG=0
+APP_DEBUG=0
 MAX_REQUEST_BYTES=1048576
 LOG_LEVEL=INFO
 HSTS_MAX_AGE=63072000
@@ -62,7 +62,7 @@ ACCOUNT_LOCK_DURATION_SECONDS=1800
 
 Render автоматически:
 - Соберёт Docker-образ на основе `build/Dockerfile`
-- Установит зависимости из `requirements/base.txt`
+- Установит зависимости через `uv sync --frozen --no-dev` (см. `build/Dockerfile`)
 - Запустит контейнер
 - Применит `init_db()` (благодаря `DATABASE_AUTO_INIT=1`)
 

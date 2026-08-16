@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from backend.config import Settings
-from backend.infrastructure.files.database import init_db
+from backend.infrastructure.files.database import init_db, verify_schema
 from backend.utils import setup_logging
 
 logger = logging.getLogger("anime_epic_moments")
@@ -40,6 +40,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     setup_logging(level=_resolve_log_level(Settings.log_level))
     if Settings.database_auto_init:
         await init_db()
+    else:
+        await verify_schema()
     logger.info("application_started")
     yield
     logger.info("application_stopped")

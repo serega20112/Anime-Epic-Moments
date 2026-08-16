@@ -2,26 +2,39 @@
 
 ## Описание
 
-Backend покрыт зеркальной тестовой структурой в `src/backend/tests/backend`. Цель — прозрачность: у каждого backend-модуля есть соответствующий тестовый файл, поэтому от реализации до проверки можно дойти без догадок.
+Backend покрыт зеркальной тестовой структурой в `tests/`. Цель — прозрачность: у каждого backend-модуля есть
+соответствующий тестовый файл, поэтому от реализации до проверки можно дойти без догадок.
 
-Набор тестов построен на `pytest`, с активным использованием параметризации и прямого покрытия use case.
+Набор тестов построен на `pytest`, с активным использованием параметризации, async-тестов и прямого покрытия
+use case.
 
 ## Как это работает
 
 Тестовая структура повторяет backend-слои:
 
-- `src/backend/tests/backend/delivery`: тесты маршрутов
-- `src/backend/tests/backend/dependencies`: тесты настроек и контейнера
-- `src/backend/tests/backend/domain`: entity, policy и value object
-- `src/backend/tests/backend/infrastructure`: кэш, внешние клиенты, модели, репозитории, security
-- `src/backend/tests/backend/repository`: контрактные тесты репозиториев
-- `src/backend/tests/backend/services`: сервисы оркестрации
-- `src/backend/tests/backend/use_case`: пользовательские действия приложения
+- `tests/unit/presentation`: тесты маршрутов, мапперов запросов/ответов
+- `tests/unit/application`: use case и application-сервисы (с моками внешних зависимостей)
+- `tests/unit/domain`: entity, policy и value object
+- `tests/unit/infrastructure`: кэш, внешние клиенты, security, media_proxy
+- `tests/integration/infrastructure/repositories`: репозитории на реальной in-memory БД
+- `tests/integration/infrastructure/di`: wiring графа зависимостей
+
+Марки тестов (зарегистрированы в `pyproject.toml`):
+
+- `@pytest.mark.unit` — чистая логика без внешнего IO
+- `@pytest.mark.integration` — реальные компоненты (БД, репозитории, контейнер DI)
+- `@pytest.mark.e2e` — полные HTTP-сценарии
 
 Запуск тестов:
 
 ```powershell
-python -m pytest src/backend/tests -q
+uv run pytest
+```
+
+Быстрый прогон без coverage:
+
+```powershell
+uv run pytest -q --no-cov
 ```
 
 На что оптимизированы тесты:
@@ -29,7 +42,7 @@ python -m pytest src/backend/tests -q
 - поведение маршрутов и HTTP-статусы
 - orchestration в use case
 - семантика работы репозиториев
-- разбор ответов внешних клиентов и fallback-сценарии
+- разбор ответов внешних клиентов и fallback-сценарии (в т.ч. failover LLM)
 - поведение кэшей
 - security-хелперы вроде JWT и password hashing
 
@@ -39,17 +52,18 @@ python -m pytest src/backend/tests -q
 - use case тестируются без лишнего втягивания HTTP в каждый сценарий
 - repository-тесты особенно важны после перехода на PostgreSQL
 - параметризация снижает дублирование, но не прячет edge-case'ы
+- async-тесты в режиме `auto` (pytest-asyncio) позволяют тестировать асинхронный стек напрямую
 
 ## Где в коде
 
-- `src/backend/tests/conftest.py`
-- `src/backend/tests/backend`
-- `src/backend/tests/backend/delivery/api/v1`
-- `src/backend/tests/backend/infrastructure/repositories`
-- `src/backend/tests/backend/use_case`
+- `tests/conftest.py`
+- `tests/unit/`
+- `tests/integration/`
+- `pyproject.toml` (`[tool.pytest.ini_options]`)
 
 ## Связанные документы
 
 - [Обзор архитектуры](../architecture/overview.md)
 - [Конвенции](../conventions.md)
+- [Стайлгайд](../styleguide.md)
 - [Онбординг](../onboarding.md)

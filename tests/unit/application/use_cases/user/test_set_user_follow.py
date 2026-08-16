@@ -51,9 +51,7 @@ class TestSetUserFollowUseCase:
         user_repo.get_by_id.return_value = None
         use_case = SetUserFollowUseCase(user_repo, AsyncMock())
 
-        result = await use_case.execute(
-            follower_user_id=3, followed_user_id=99, follow=True
-        )
+        result = await use_case.execute(follower_user_id=3, followed_user_id=99, follow=True)
 
         assert result.ok is False
         assert result.status_code == 404

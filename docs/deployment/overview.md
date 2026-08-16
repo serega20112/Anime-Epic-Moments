@@ -15,7 +15,7 @@ Redis GUI.
 ```mermaid
 flowchart LR
     Client[Браузер]
-    App[Flask через Gunicorn]
+    App[FastAPI через Gunicorn]
     DB[(PostgreSQL)]
     Redis[(Redis)]
     RedisGUI[Redis GUI]
@@ -49,7 +49,7 @@ sequenceDiagram
     C->>A: старт app container
     A->>M: alembic upgrade head
     M-->>A: схема актуальна
-    A->>G: запуск Flask-приложения
+    A->>G: запуск FastAPI-приложения
 ```
 
 Ключевые build-файлы:
@@ -105,8 +105,8 @@ http://localhost:8081
 - `POSTGRES_PORT`
 - `DATABASE_AUTO_INIT`
 - `RUN_DB_MIGRATIONS`
-- `FLASK_HOST`
-- `FLASK_PORT`
+- `APP_HOST`
+- `APP_PORT`
 - `APP_BIND_IP`
 - `APP_PUBLIC_HOST`
 - `APP_PUBLIC_PORT`
@@ -117,7 +117,7 @@ http://localhost:8081
 ## Почему это сделано так
 
 - `build/` удерживает deployment-логику отдельно от кода приложения.
-- В контейнерах используется Gunicorn, а не debug-сервер Flask.
+- В контейнерах используется Gunicorn (uvicorn-воркер), а не debug-сервер FastAPI.
 - Миграции выполняются до старта web-процесса, чтобы не жить с schema drift.
 - PostgreSQL используется как единственная runtime-база, что убирает класс проблем, связанных с SQLite-only поведением.
 - Redis берет на себя кэши, rate limiting и JWT blocklist, а при локальной деградации код умеет откатываться на

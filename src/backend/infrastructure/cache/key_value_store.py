@@ -1,13 +1,85 @@
 from __future__ import annotations
 
-import pickle
+import dataclasses
+import datetime
+import importlib
+import json
 from threading import RLock
 from time import monotonic
 from typing import Any
 
+_DATACLASS_MARKER = "__dataclass__"
+_DATETIME_MARKER = "__datetime__"
+
+
+def _encode(value: Any) -> Any:
+    """Convert a value to JSON-native types, tagging dataclasses and datetimes."""
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        return {
+            _DATACLASS_MARKER: f"{value.__class__.__module__}.{value.__class__.__qualname__}",
+            "__fields__": {
+                field.name: _encode(getattr(value, field.name))
+                for field in dataclasses.fields(value)
+            },
+        }
+    if isinstance(value, datetime.datetime):
+        return {_DATETIME_MARKER: value.isoformat()}
+    if isinstance(value, (tuple, set)):
+        return [_encode(item) for item in value]
+    if isinstance(value, list):
+        return [_encode(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): _encode(item) for key, item in value.items()}
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    raise TypeError(f"cannot serialize value of type {type(value).__name__}")
+
+
+def _resolve_class(qualified_name: str) -> type:
+    """Resolve a ``module.QualifiedName`` string to the actual class."""
+    module_name, class_name = qualified_name.rsplit(".", 1)
+    module = importlib.import_module(module_name)
+    for part in class_name.split("."):
+        module = getattr(module, part)
+    if not isinstance(module, type):
+        raise TypeError(f"{qualified_name} does not name a class")
+    return module
+
+
+def _decode(value: Any) -> Any:
+    """Rebuild dataclasses and datetimes from a JSON-decoded structure."""
+    if isinstance(value, dict):
+        if _DATETIME_MARKER in value:
+            return datetime.datetime.fromisoformat(value[_DATETIME_MARKER])
+        if _DATACLASS_MARKER in value:
+            cls = _resolve_class(value[_DATACLASS_MARKER])
+            fields = {key: _decode(item) for key, item in value["__fields__"].items()}
+            return cls(**fields)
+        return {key: _decode(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_decode(item) for item in value]
+    return value
+
+
+def _serialize(value: Any) -> str:
+    """Serialize a value to a JSON string with explicit tagging."""
+    return json.dumps(_encode(value), ensure_ascii=False, separators=(",", ":"))
+
+
+def _deserialize(raw_value: str, default: Any) -> Any:
+    """Deserialize a JSON string, returning the default on corrupt payloads."""
+    try:
+        return _decode(json.loads(raw_value))
+    except (ValueError, TypeError, KeyError, AttributeError, ImportError):
+        return default
+
 
 class KeyValueStore:
-    """Store arbitrary values in Redis or an in-memory fallback with TTL support."""
+    """Store arbitrary JSON-serializable values in Redis or an in-memory fallback.
+
+    Domain dataclasses are stored with explicit type tags so the wire format is
+    plain JSON without pickling.
+    """
 
     def __init__(
         self,
@@ -31,6 +103,20 @@ class KeyValueStore:
     def uses_redis(self) -> bool:
         """Whether the store is backed by Redis."""
         return self._redis is not None
+
+    async def ping(self) -> bool:
+        """Check connectivity, returning True for the memory fallback.
+
+        Returns:
+            bool: True when the backing store responds.
+        """
+        if self._redis is None:
+            return True
+        try:
+            return bool(await self._redis.ping())
+        except Exception:
+            self._redis = None
+            return True
 
     def _build_redis(self, redis_url: str | None, required: bool):
         if not redis_url:
@@ -90,7 +176,10 @@ class KeyValueStore:
         """
         normalized_key = self._normalize_key(key)
         if self._redis is not None:
-            return bool(await self._redis.exists(normalized_key))
+            try:
+                return bool(await self._redis.exists(normalized_key))
+            except Exception:
+                self._redis = None
 
         with self._lock:
             found, _value = self._get_memory_item(normalized_key)
@@ -108,10 +197,14 @@ class KeyValueStore:
         """
         normalized_key = self._normalize_key(key)
         if self._redis is not None:
-            raw_value = await self._redis.get(normalized_key)
-            if raw_value is None:
-                return default
-            return pickle.loads(raw_value)
+            try:
+                raw_value = await self._redis.get(normalized_key)
+                if raw_value is None:
+                    return default
+                raw_text = raw_value.decode("utf-8") if isinstance(raw_value, bytes) else raw_value
+                return _deserialize(raw_text, default)
+            except Exception:
+                self._redis = None
 
         with self._lock:
             found, value = self._get_memory_item(normalized_key)
@@ -140,12 +233,15 @@ class KeyValueStore:
             return value
 
         if self._redis is not None:
-            payload = pickle.dumps(value)
-            if ttl_value is None:
-                await self._redis.set(normalized_key, payload)
-            else:
-                await self._redis.setex(normalized_key, ttl_value, payload)
-            return value
+            try:
+                payload = _serialize(value).encode("utf-8")
+                if ttl_value is None:
+                    await self._redis.set(normalized_key, payload)
+                else:
+                    await self._redis.setex(normalized_key, ttl_value, payload)
+                return value
+            except Exception:
+                self._redis = None
 
         expires_at = None if ttl_value is None else monotonic() + ttl_value
         with self._lock:
@@ -176,12 +272,15 @@ class KeyValueStore:
             return False
 
         if self._redis is not None:
-            payload = pickle.dumps(True)
-            if ttl_value is None:
-                claimed = await self._redis.set(normalized_key, payload, nx=True)
-            else:
-                claimed = await self._redis.set(normalized_key, payload, nx=True, ex=ttl_value)
-            return bool(claimed)
+            try:
+                payload = b"true"
+                if ttl_value is None:
+                    claimed = await self._redis.set(normalized_key, payload, nx=True)
+                else:
+                    claimed = await self._redis.set(normalized_key, payload, nx=True, ex=ttl_value)
+                return bool(claimed)
+            except Exception:
+                self._redis = None
 
         expires_at = None if ttl_value is None else monotonic() + ttl_value
         with self._lock:
@@ -199,8 +298,11 @@ class KeyValueStore:
         """
         normalized_key = self._normalize_key(key)
         if self._redis is not None:
-            await self._redis.delete(normalized_key)
-            return
+            try:
+                await self._redis.delete(normalized_key)
+                return
+            except Exception:
+                self._redis = None
 
         with self._lock:
             self._items.pop(normalized_key, None)
@@ -213,10 +315,13 @@ class KeyValueStore:
         """
         normalized_prefix = self._normalize_key(prefix)
         if self._redis is not None:
-            keys = [key async for key in self._redis.scan_iter(f"{normalized_prefix}*")]
-            if keys:
-                await self._redis.delete(*keys)
-            return
+            try:
+                keys = [key async for key in self._redis.scan_iter(f"{normalized_prefix}*")]
+                if keys:
+                    await self._redis.delete(*keys)
+                return
+            except Exception:
+                self._redis = None
 
         with self._lock:
             self._prune_memory()
@@ -246,10 +351,13 @@ class KeyValueStore:
         normalized_key = self._normalize_key(key)
         ttl_value = max(int(ttl_seconds), 1)
         if self._redis is not None:
-            value = int(await self._redis.incrby(normalized_key, int(amount)))
-            if await self._redis.ttl(normalized_key) < 0:
-                await self._redis.expire(normalized_key, ttl_value)
-            return value
+            try:
+                value = int(await self._redis.incrby(normalized_key, int(amount)))
+                if await self._redis.ttl(normalized_key) < 0:
+                    await self._redis.expire(normalized_key, ttl_value)
+                return value
+            except Exception:
+                self._redis = None
 
         with self._lock:
             found, current_value = self._get_memory_item(normalized_key)
@@ -271,8 +379,11 @@ class KeyValueStore:
         """
         normalized_key = self._normalize_key(key)
         if self._redis is not None:
-            ttl_value = int(await self._redis.ttl(normalized_key))
-            return max(ttl_value, 0)
+            try:
+                ttl_value = int(await self._redis.ttl(normalized_key))
+                return max(ttl_value, 0)
+            except Exception:
+                self._redis = None
 
         with self._lock:
             found, _value = self._get_memory_item(normalized_key)
@@ -286,8 +397,11 @@ class KeyValueStore:
     async def clear(self):
         """Remove all stored keys."""
         if self._redis is not None:
-            await self.delete_prefix("")
-            return
+            try:
+                await self.delete_prefix("")
+                return
+            except Exception:
+                self._redis = None
 
         with self._lock:
             self._items.clear()
@@ -297,6 +411,9 @@ class KeyValueStore:
         if self._redis is not None:
             close = getattr(self._redis, "aclose", None) or getattr(self._redis, "close", None)
             if close is not None:
-                result = close()
+                try:
+                    result = close()
+                except Exception:
+                    return
                 if result is not None:
                     await result

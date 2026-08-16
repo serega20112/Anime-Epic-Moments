@@ -36,8 +36,10 @@ class TestLifespan:
 
     def test_startup_skips_db_when_auto_init_disabled(self, monkeypatch):
         init_calls = []
+        verify_calls = []
         monkeypatch.setattr(lifecycle, "setup_logging", lambda **kwargs: None)
         monkeypatch.setattr(lifecycle, "init_db", _Recorder(init_calls))
+        monkeypatch.setattr(lifecycle, "verify_schema", _Recorder(verify_calls))
         monkeypatch.setattr(lifecycle.Settings, "database_auto_init", False)
 
         app = FastAPI(lifespan=lifecycle.lifespan)
@@ -45,6 +47,20 @@ class TestLifespan:
             pass
 
         assert init_calls == []
+        assert len(verify_calls) == 1
+
+    def test_startup_fails_fast_on_missing_schema(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(lifecycle, "setup_logging", lambda **kwargs: None)
+        monkeypatch.setattr(lifecycle, "verify_schema", _Raise(RuntimeError("schema missing")))
+        monkeypatch.setattr(lifecycle.Settings, "database_auto_init", False)
+
+        app = FastAPI(lifespan=lifecycle.lifespan)
+        with pytest.raises(RuntimeError, match="schema missing"):
+            with TestClient(app):
+                pass
+
+        assert calls == []
 
 
 class _Recorder:
@@ -53,6 +69,14 @@ class _Recorder:
 
     async def __call__(self):
         self.calls.append(True)
+
+
+class _Raise:
+    def __init__(self, error: Exception) -> None:
+        self.error = error
+
+    async def __call__(self):
+        raise self.error
 
 
 @pytest.mark.unit

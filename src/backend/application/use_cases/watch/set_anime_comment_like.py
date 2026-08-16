@@ -8,9 +8,9 @@ class SetAnimeCommentLikeUseCase:
     """Ставит или снимает лайк с комментария в обсуждении аниме."""
 
     def __init__(
-            self,
-            watch_repo: WatchRepository,
-            unit_of_work: UnitOfWorkInterface,
+        self,
+        watch_repo: WatchRepository,
+        unit_of_work: UnitOfWorkInterface,
     ):
         self.watch_repo = watch_repo
         self.unit_of_work = unit_of_work

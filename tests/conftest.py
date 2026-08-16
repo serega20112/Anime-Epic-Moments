@@ -219,12 +219,14 @@ class AsyncCompatProxy:
         attr = getattr(self._value, name)
         if callable(attr):
             if name.endswith("_use_case"):
+
                 @functools.wraps(attr)
                 def factory(*args, **kwargs):
                     return AsyncCompatProxy(attr(*args, **kwargs))
 
                 return factory
             if name in _ASYNC_COMPAT_METHOD_NAMES:
+
                 @functools.wraps(attr)
                 async def awaited(*args, **kwargs):
                     result = attr(*args, **kwargs)
@@ -242,7 +244,9 @@ class AsyncCompatProxy:
 def _should_wrap_value(value) -> bool:
     if inspect.isfunction(value) or inspect.ismethod(value) or inspect.isbuiltin(value):
         return False
-    if isinstance(value, (AsyncCompatProxy, str, bytes, int, float, bool, list, tuple, dict, set, type(None))):
+    if isinstance(
+        value, (AsyncCompatProxy, str, bytes, int, float, bool, list, tuple, dict, set, type(None))
+    ):
         return False
     if isinstance(value, (SimpleNamespace, Mock, NonCallableMock)):
         return True
@@ -274,6 +278,7 @@ def _patch_async_callable(async_callable):
             if args and hasattr(args[0], "__dict__"):
                 for attr_name, attr_value in list(vars(args[0]).items()):
                     if callable(attr_value) and attr_name in _ASYNC_COMPAT_INSTANCE_HELPERS:
+
                         async def _wrapped_helper(*helper_args, __attr=attr_value, **helper_kwargs):
                             result = __attr(*helper_args, **helper_kwargs)
                             if inspect.isawaitable(result):
@@ -300,7 +305,10 @@ def _patch_async_methods_for_sync_tests():
         if module is None:
             continue
         for attr_name, attr_value in list(vars(module).items()):
-            if inspect.isclass(attr_value) and getattr(attr_value, "__module__", None) == module_name:
+            if (
+                inspect.isclass(attr_value)
+                and getattr(attr_value, "__module__", None) == module_name
+            ):
                 for method_name, method_value in list(vars(attr_value).items()):
                     patched = _patch_async_callable(method_value)
                     if patched is not None:
@@ -319,6 +327,7 @@ def _install_fastapi_test_compat():
     if not hasattr(FastAPI, "test_client"):
         FastAPI.test_client = lambda self: CompatClient(self)
     if not hasattr(FastAPI, "route"):
+
         def route(self, path, methods=("GET",)):
             normalized_methods = list(methods or ("GET",))
 
@@ -326,10 +335,14 @@ def _install_fastapi_test_compat():
                 if inspect.iscoroutinefunction(handler):
                     endpoint = handler
                 else:
+
                     @functools.wraps(handler)
                     async def endpoint(*args, **kwargs):
                         return handler(*args, **kwargs)
-                self.add_api_route(path, endpoint, methods=normalized_methods, name=handler.__name__)
+
+                self.add_api_route(
+                    path, endpoint, methods=normalized_methods, name=handler.__name__
+                )
                 return handler
 
             return decorator
@@ -443,7 +456,9 @@ def flask_app_factory():
         _register_placeholder("/highlights/notifications", "highlight.get_highlight_notifications")
         _register_placeholder("/favorites/{user_id}", "favorite.get_favorites")
         _register_placeholder("/collections", "collection.collections_page")
-        _register_placeholder("/collections/share/{collection_id}", "collection.shared_collection_page")
+        _register_placeholder(
+            "/collections/share/{collection_id}", "collection.shared_collection_page"
+        )
         _register_placeholder("/auth/profile", "auth.profile_page")
         _register_placeholder("/auth/login", "auth.login_page")
         _register_placeholder("/auth/register", "auth.register_page")
@@ -494,15 +509,36 @@ def db_session():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
-    session = SessionLocal()
+    session = session_local()
     try:
         yield session
     finally:
         session.close()
         Base.metadata.drop_all(bind=engine)
         engine.dispose()
+
+
+@pytest.fixture
+async def async_db_session_factory():
+    """Создает async SQLAlchemy engine и sessionmaker на общей in-memory базе."""
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    from backend.infrastructure.files.database import Base
+
+    engine = create_async_engine(
+        "sqlite+aiosqlite://",
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False},
+    )
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+    session_local = async_sessionmaker(bind=engine, expire_on_commit=False)
+    yield session_local
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
 
 
 @pytest.fixture
@@ -519,8 +555,8 @@ async def async_db_session():
     )
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
-    SessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
-    async with SessionLocal() as session:
+    session_local = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_local() as session:
         try:
             yield session
         finally:

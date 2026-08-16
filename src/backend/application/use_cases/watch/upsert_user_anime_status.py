@@ -1,7 +1,6 @@
 from backend.application.dto import UpsertUserAnimeStatusCommand
 from backend.application.use_cases.watch.result import WatchResult
-from backend.domain import UserAnimeStatus
-from backend.domain import WatchRepository
+from backend.domain import UserAnimeStatus, WatchRepository
 from backend.domain.services.profile_overview_cache import (
     ProfileOverviewCacheInterface as ProfileOverviewCache,
 )
@@ -12,10 +11,10 @@ class UpsertUserAnimeStatusUseCase:
     """Создает или обновляет статус просмотра аниме."""
 
     def __init__(
-            self,
-            watch_repo: WatchRepository,
-            unit_of_work: UnitOfWorkInterface,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        watch_repo: WatchRepository,
+        unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.watch_repo = watch_repo
         self.profile_overview_cache = profile_overview_cache

@@ -9,9 +9,7 @@ from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from backend.application.use_cases import GetPublicProfileOverviewUseCase
-from backend.application.use_cases import SetUserFollowUseCase
-
+from backend.application.use_cases import GetPublicProfileOverviewUseCase, SetUserFollowUseCase
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
 from backend.infrastructure.web import flash, render_template
 from backend.presentation.api.helpers import get_current_user, wants_json
@@ -56,9 +54,9 @@ def _profile_redirect(request: Request, user_id: int) -> RedirectResponse:
 
 @user_router.get("/{user_id}", name="user.public_profile_page")
 async def public_profile_page(
-        request: Request,
-        user_id: int,
-        use_case: FromDishka[GetPublicProfileOverviewUseCase],
+    request: Request,
+    user_id: int,
+    use_case: FromDishka[GetPublicProfileOverviewUseCase],
 ):
     """Render a user's public profile.
 
@@ -94,13 +92,13 @@ async def public_profile_page(
     limit=30,
     window_seconds=60,
     key_builder=lambda request: (
-            f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
+        f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
     ),
 )
 async def follow_user(
-        request: Request,
-        user_id: int,
-        use_case: FromDishka[SetUserFollowUseCase],
+    request: Request,
+    user_id: int,
+    use_case: FromDishka[SetUserFollowUseCase],
 ):
     """Follow a user.
 
@@ -122,13 +120,13 @@ async def follow_user(
     limit=30,
     window_seconds=60,
     key_builder=lambda request: (
-            f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
+        f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
     ),
 )
 async def unfollow_user(
-        request: Request,
-        user_id: int,
-        use_case: FromDishka[SetUserFollowUseCase],
+    request: Request,
+    user_id: int,
+    use_case: FromDishka[SetUserFollowUseCase],
 ):
     """Unfollow a user.
 
@@ -145,11 +143,11 @@ async def unfollow_user(
 
 
 async def _set_follow(
-        request: Request,
-        user_id: int,
-        *,
-        follow: bool,
-        use_case: SetUserFollowUseCase,
+    request: Request,
+    user_id: int,
+    *,
+    follow: bool,
+    use_case: SetUserFollowUseCase,
 ):
     """Shared follow/unfollow handler.
 

@@ -29,7 +29,7 @@ class CurrentSeason:
 class GetHomePageUseCase:
     """Build home page context including the current anime season."""
 
-    def execute(self, now: datetime | None = None) -> CurrentSeason:
+    async def execute(self, now: datetime | None = None) -> CurrentSeason:
         """Resolve the current anime season from the current month.
 
         Args:

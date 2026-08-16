@@ -6,11 +6,11 @@ import pytest
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
 from fastapi.testclient import TestClient
-from backend.infrastructure.security.rate_limiter import RateLimiter
 from starlette.middleware.sessions import SessionMiddleware
 
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
+from backend.infrastructure.security.rate_limiter import RateLimiter
 
 
 @pytest.mark.unit

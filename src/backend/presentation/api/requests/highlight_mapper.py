@@ -93,7 +93,7 @@ def map_delete_highlight_command(*, highlight_id: int) -> DeleteHighlightCommand
 
 
 def map_set_like_command(
-        request: Request, *, highlight_id: int, user_id: int
+    request: Request, *, highlight_id: int, user_id: int
 ) -> SetHighlightLikeCommand:
     """Build a set like command from the request method.
 
@@ -113,7 +113,7 @@ def map_set_like_command(
 
 
 def map_set_saved_command(
-        request: Request, *, highlight_id: int, user_id: int
+    request: Request, *, highlight_id: int, user_id: int
 ) -> SetSavedHighlightCommand:
     """Build a set saved command from the request method.
 
@@ -132,7 +132,9 @@ def map_set_saved_command(
     )
 
 
-def map_add_comment_command(payload, *, highlight_id: int, user_id: int) -> AddHighlightCommentCommand:
+def map_add_comment_command(
+    payload, *, highlight_id: int, user_id: int
+) -> AddHighlightCommentCommand:
     """Build an add comment command from a JSON payload.
 
     Args:
@@ -151,9 +153,9 @@ def map_add_comment_command(payload, *, highlight_id: int, user_id: int) -> AddH
 
 
 def map_dashboard_query(
-        request: Request,
-        *,
-        viewer_user_id: int | None,
+    request: Request,
+    *,
+    viewer_user_id: int | None,
 ) -> HighlightDashboardQuery:
     """Build a dashboard query from request query parameters.
 

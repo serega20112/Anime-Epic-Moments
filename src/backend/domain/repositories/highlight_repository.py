@@ -45,7 +45,7 @@ class HighlightRepository(ABC):
 
     @abstractmethod
     async def get_by_anime_episode(
-            self, anime_id: int, episode: int, user_id: int | None = None
+        self, anime_id: int, episode: int, user_id: int | None = None
     ) -> list[Highlight]:
         """Возвращает хайлайты по аниме и серии"""
 
@@ -59,9 +59,9 @@ class HighlightRepository(ABC):
 
     @abstractmethod
     async def get_from_anime_ids(
-            self,
-            anime_ids: list[int],
-            limit: int = 20,
+        self,
+        anime_ids: list[int],
+        limit: int = 20,
     ) -> list[Highlight]:
         """Возвращает хайлайты из заданного набора аниме"""
 
@@ -75,7 +75,7 @@ class HighlightRepository(ABC):
 
     @abstractmethod
     async def add_comment(
-            self, highlight_id: int, user_id: int, content: str
+        self, highlight_id: int, user_id: int, content: str
     ) -> HighlightCommentItem:
         """Добавляет комментарий к хайлайту"""
 
@@ -89,7 +89,7 @@ class HighlightRepository(ABC):
 
     @abstractmethod
     async def get_engagement_map(
-            self, highlight_ids: list[int], viewer_user_id: int | None = None
+        self, highlight_ids: list[int], viewer_user_id: int | None = None
     ) -> dict[int, HighlightEngagement]:
         """Возвращает социальные метрики для набора хайлайтов"""
 
@@ -103,6 +103,6 @@ class HighlightRepository(ABC):
 
     @abstractmethod
     async def get_recent_activity(
-            self, user_id: int, limit: int = 10
+        self, user_id: int, limit: int = 10
     ) -> list[HighlightActivityItem]:
         """Возвращает последние реакции сообщества на хайлайты пользователя"""

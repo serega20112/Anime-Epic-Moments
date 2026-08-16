@@ -1,80 +1,60 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ collection.collection.title }} - коллекция AEM</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/anime.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/highlight.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/profile.css') }}"
-    />
-  </head>
-  <body>
-    <header class="header">
-      <div class="logo">AEM</div>
-      <nav>
-        <a href="{{ url_for('index.index') }}">Главная</a>
-      </nav>
-    </header>
+{% extends "base.html" %}
 
-    <main class="search-page profile-page">
-      <section class="search-shell highlight-dashboard">
-        <section class="results-panel">
-          <section class="feed-section-block">
-            <div class="results-head">
-              <div>
-                <h1>{{ collection.collection.title }}</h1>
-                <p class="filters-subtitle">
-                  {{ collection.collection.description }}
-                </p>
-              </div>
-            </div>
-            <p class="filters-subtitle">
-              {{ collection.collection.items_count }} аниме · создана {{
-              collection.collection.created_at }}
-            </p>
-            <div class="highlight-feed">
-              {% for item in collection.items %}
-              <article class="highlight-entry">
-                <div class="highlight-entry-body">
-                  <div class="highlight-entry-head">
-                    <h3>{{ item.title }}</h3>
-                    <span class="highlight-like-badge"
-                      >{{ item.genres|join(', ') }}</span
-                    >
-                  </div>
-                  <p class="highlight-meta-line">{{ item.description }}</p>
-                  <div class="result-actions">
-                    <a
-                      class="btn neon-blue btn-watch"
-                      href="{{ item.watch_url }}"
-                      >Открыть</a
-                    >
-                  </div>
-                </div>
-              </article>
-              {% endfor %}
-            </div>
-          </section>
-        </section>
-      </section>
-    </main>
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  </body>
-</html>
+{% block title %}{{ collection.collection.title }} — Коллекция{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% set c = collection.collection %}
+
+{% block content %}
+<div class="container">
+  <section class="collection-hero glass">
+    {% if collection.items %}
+    <img class="ch-cover" src="{{ collection.items[0].cover_url or url_for('static', filename='images/no-cover.svg') }}"
+         alt=""
+         onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';">
+    {% else %}
+    <img class="ch-cover" src="{{ url_for('static', filename='images/no-cover.svg') }}" alt="">
+    {% endif %}
+    <div class="ch-info">
+      <p class="hero-kicker">✦ коллекция {{ c.created_at }}</p>
+      <h1 class="hero-title" style="font-family:var(--font-sans)">{{ c.title }}</h1>
+      {% if c.description %}<p class="hero-subtitle">{{ c.description }}</p>{% endif %}
+      <div class="ch-stats">
+        <div class="stat-pill"><b>{{ c.items_count }}</b><span>тайтлов</span></div>
+        <div class="stat-pill"><b>{{ 'Публичная' if c.is_public else 'Приватная' }}</b><span>видимость</span></div>
+      </div>
+    </div>
+  </section>
+
+  {% if collection.items %}
+  <div class="results-grid" style="margin-top:var(--space-6)">
+    {% for item in collection.items %}
+    <a class="anime-card" href="{{ item.watch_url }}">
+      <div class="poster">
+        <img src="{{ item.cover_url or url_for('static', filename='images/no-cover.svg') }}"
+             alt="{{ item.title }}" loading="lazy"
+             onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';">
+        {% if item.genres and item.genres|length %}<span class="type-badge">{{ item.genres[0] }}</span>{% endif %}
+        <span class="poster-actions"><span class="btn btn-primary btn-sm">Смотреть</span></span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">{{ item.title }}</div>
+        {% if item.description %}<div class="card-meta"><span>{{ item.description|truncate(60) }}</span></div>{% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-emoji">📭</span>
+    <h3>Коллекция пуста</h3>
+    <p>Автор ещё не добавил сюда тайтлы.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

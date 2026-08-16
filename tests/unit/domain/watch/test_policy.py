@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from backend.domain.watch.policy import (
+    PREFERRED_TRANSLATION_GROUPS,
     canonicalize_translation_name,
     get_translation_priority,
     is_preferred_translation,
@@ -26,7 +27,8 @@ class TestNormalizeTranslationName:
         """Что тестируем: функцию normalize_translation_name.
 
         Что передаём: названия с лишними пробелами, знаками препинания и None.
-        Что ожидаем: строка приводится к нижнему регистру и нормализованному виду, None -> пустая строка.
+        Что ожидаем: строка приводится к нижнему регистру и нормализованному виду,
+        None -> пустая строка.
         """
         assert normalize_translation_name(value) == expected
 
@@ -40,6 +42,9 @@ class TestTranslationPriorityPolicy:
         [
             ("студийная банда", "StudioBand", True),
             ("anidub tv", "AniDUB", True),
+            ("комната диди", "Komnata Didi", True),
+            ("didi", "Komnata Didi", True),
+            ("sovetromantica", "SovetRomantica", True),
             ("Custom Fansub", "Custom Fansub", False),
         ],
     )
@@ -49,17 +54,18 @@ class TestTranslationPriorityPolicy:
         expected_label,
         preferred,
     ):
-        """Что тестируем: get_translation_priority, canonicalize_translation_name и is_preferred_translation.
+        """Что тестируем: get_translation_priority, canonicalize и is_preferred_translation.
 
         Что передаём: названия предпочитаемых и обычных озвучек.
-        Что ожидаем: для предпочитаемых групп приоритет < 6 и каноническое имя из списка, для прочих - оригинальное имя.
+        Что ожидаем: для предпочитаемых групп приоритет меньше длины списка предпочитаемых групп
+        и каноническое имя из списка, для прочих - оригинальное имя.
         """
         priority, normalized = get_translation_priority(value)
 
         assert canonicalize_translation_name(value) == expected_label
         assert is_preferred_translation(value) is preferred
         if preferred:
-            assert priority < 6
+            assert priority < len(PREFERRED_TRANSLATION_GROUPS)
             assert normalized != ""
         else:
-            assert priority >= 6
+            assert priority >= len(PREFERRED_TRANSLATION_GROUPS)

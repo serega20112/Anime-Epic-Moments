@@ -11,10 +11,10 @@ class SetSavedHighlightUseCase:
     """Сохраняет или удаляет хайлайт из пользовательской коллекции."""
 
     def __init__(
-            self,
-            repo: HighlightRepository,
-            unit_of_work: UnitOfWorkInterface,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        repo: HighlightRepository,
+        unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.repo = repo
         self.profile_overview_cache = profile_overview_cache

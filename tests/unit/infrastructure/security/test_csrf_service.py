@@ -31,7 +31,7 @@ class TestCSRFService:
     def test_validate_mismatch(self):
         service = CSRFService()
         state = SimpleNamespace()
-        token = service.generate_token(state)
+        service.generate_token(state)
         assert service.validate_token(state, "wrong") is False
 
     def test_validate_success(self):

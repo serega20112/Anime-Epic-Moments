@@ -50,9 +50,7 @@ async def test_app_provider_resolves_anime_api_client(app_container):
 
 async def test_app_provider_resolves_caches(app_container):
     assert isinstance(await app_container.get(RecommendationCache), RecommendationCache)
-    assert isinstance(
-        await app_container.get(HighlightDashboardCache), HighlightDashboardCache
-    )
+    assert isinstance(await app_container.get(HighlightDashboardCache), HighlightDashboardCache)
     assert isinstance(await app_container.get(ProfileOverviewCache), ProfileOverviewCache)
 
 

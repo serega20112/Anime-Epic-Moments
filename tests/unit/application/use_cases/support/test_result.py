@@ -14,9 +14,7 @@ class TestCreateSupportTicketResult:
         assert result.error_message is None
 
     def test_success_unavailable(self):
-        result = CreateSupportTicketResult.success(
-            data="ticket", service_unavailable=True
-        )
+        result = CreateSupportTicketResult.success(data="ticket", service_unavailable=True)
         assert result.service_unavailable is True
 
     def test_failure(self):

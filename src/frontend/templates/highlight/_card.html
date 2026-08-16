@@ -1,157 +1,52 @@
-<article
-  class="highlight-entry {% if item.is_spoiler %}spoiler-entry{% endif %}"
-  id="highlight-{{ item.id }}"
->
-  <img
-    src="{{ item.anime_cover or '/static/images/no-cover.png' }}"
-    alt="{{ item.anime_title }}"
-    loading="lazy"
-  />
-  <div class="highlight-entry-body">
-    <div class="highlight-entry-head">
-      <div>
-        <h3>{{ item.title }}</h3>
-        <p class="highlight-meta-line">
-          {{ item.anime_title }} • Серия {{ item.episode }}
-        </p>
-        {% if item.owner_username %}
-        <p class="highlight-owner-line">
-          Автор:
-          <a href="{{ item.owner_profile_url or '#' }}">
-            @{{ item.owner_username }}
-          </a>
-        </p>
-        {% endif %}
-      </div>
-      <span
-        class="highlight-like-badge"
-        data-highlight-likes-badge="{{ item.id }}"
-      >
-        {{ item.likes_count }} лайков
-      </span>
-    </div>
-    <p class="highlight-meta-line">
-      {{ item.start_timestamp }} - {{ item.end_timestamp }} • {{ item.created_at
-      }} • {{ item.views_count }} просмотров
-    </p>
-    <div class="result-genres">
-      {% if item.category %}
-      <span class="genre-chip">{{ item.category }}</span>
-      {% endif %} {% if item.emotion %}
-      <span class="genre-chip">{{ item.emotion }}</span>
-      {% endif %}
-      <span class="genre-chip" data-highlight-comments-badge="{{ item.id }}"
-        >{{ item.comments_count }} комментариев</span
-      >
-    </div>
-    {% if item.is_spoiler and not include_spoilers %}
-    <div class="spoiler-veil">
-      <p>Спойлер скрыт. Нажми "Показать спойлер", если готов.</p>
-      <button
-        type="button"
-        class="btn neon-blue reveal-spoiler-button"
-        data-highlight-id="{{ item.id }}"
-      >
-        Показать спойлер
-      </button>
-    </div>
+<article class="highlight-card" data-highlight-id="{{ highlight.id }}" data-liked="{{ '1' if highlight.is_liked else '0' }}" data-saved="{{ '1' if highlight.is_saved else '0' }}">
+  <a class="hc-cover" href="{{ highlight.watch_url }}" aria-label="Смотреть {{ highlight.anime_title }}">
+    <img src="{{ highlight.anime_cover or url_for('static', filename='images/no-cover.svg') }}"
+         alt="{{ highlight.anime_title }}" loading="lazy"
+         onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';">
+    <span class="hc-overlay"></span>
+    <span class="hc-duration">{{ highlight.start_timestamp }}</span>
+    {% if highlight.is_spoiler %}<span class="hc-spoiler">спойлер</span>{% endif %}
+    {% if highlight.emotion %}
+    <span class="sticker hc-emotion"><span class="st-emoji">{{ highlight.emotion }}</span></span>
     {% endif %}
-    <p
-      class="highlight-description {% if item.is_spoiler and not include_spoilers %}is-hidden{% endif %}"
-      data-highlight-description="{{ item.id }}"
-    >
-      {{ item.description or 'Без описания' }}
-    </p>
-    <div class="result-actions">
-      <a class="btn neon-blue btn-watch" href="{{ item.watch_url }}"
-        >Смотреть</a
-      >
-      {% if current_user %}
-      <button
-        type="button"
-        class="btn-favorite highlight-like-button"
-        data-highlight-id="{{ item.id }}"
-        data-liked="{{ 1 if item.is_liked else 0 }}"
-      >
-        {{ 'Убрать лайк' if item.is_liked else 'Лайк' }}
-      </button>
-      <button
-        type="button"
-        class="btn-favorite highlight-save-button"
-        data-highlight-id="{{ item.id }}"
-        data-saved="{{ 1 if item.is_saved else 0 }}"
-      >
-        {{ 'Убрать из сохраненных' if item.is_saved else 'Сохранить' }}
-      </button>
-      {% endif %}
-      <button
-        type="button"
-        class="btn-favorite highlight-comments-toggle"
-        data-highlight-id="{{ item.id }}"
-      >
-        Комментарии
-      </button>
-      <button
-        type="button"
-        class="btn-favorite highlight-likers-button"
-        data-highlight-id="{{ item.id }}"
-      >
-        Кто лайкнул
-      </button>
-      <button
-        type="button"
-        class="btn-favorite highlight-share-button"
-        data-share-url="{{ item.share_url }}"
-      >
-        Поделиться
-      </button>
-      {% if not is_public and view_mode == 'user' %}
-      <button
-        type="button"
-        class="btn-favorite highlight-edit-button"
-        data-highlight-id="{{ item.id }}"
-        data-title="{{ item.title }}"
-        data-category="{{ item.category or '' }}"
-        data-episode="{{ item.episode }}"
-        data-start="{{ item.start_timestamp }}"
-        data-end="{{ item.end_timestamp }}"
-        data-description="{{ item.description }}"
-        data-spoiler="{{ 1 if item.is_spoiler else 0 }}"
-        data-emotion="{{ item.emotion or '' }}"
-      >
-        Редактировать
-      </button>
-      <button
-        type="button"
-        class="btn-favorite highlight-delete-button"
-        data-highlight-id="{{ item.id }}"
-      >
-        Удалить
-      </button>
-      {% endif %}
+    <span class="hc-play">▶</span>
+  </a>
+
+  <div class="hc-body">
+    <a class="hc-title" href="{{ highlight.share_url }}">{{ highlight.title }}</a>
+    {% if highlight.description %}
+    <p class="hc-desc">{{ highlight.description }}</p>
+    {% endif %}
+
+    <div class="hc-meta">
+      <span class="hc-anime">{{ highlight.anime_title }}</span>
+      {% if highlight.episode %}<span class="hc-ep">серия {{ highlight.episode }}</span>{% endif %}
+      {% if highlight.category %}<span class="hc-cat">{{ highlight.category }}</span>{% endif %}
     </div>
-    <section
-      class="highlight-comments-panel"
-      data-comments-panel="{{ item.id }}"
-      hidden
-    >
-      <div
-        class="highlight-comments-list"
-        data-comments-list="{{ item.id }}"
-      ></div>
-      {% if current_user %}
-      <form
-        class="manual-add-form highlight-comment-form"
-        data-highlight-id="{{ item.id }}"
-      >
-        <textarea
-          name="content"
-          placeholder="Оставь комментарий"
-          required
-        ></textarea>
-        <button type="submit" class="btn neon-pink">Отправить</button>
-      </form>
-      {% endif %}
-    </section>
+
+    <div class="hc-footer">
+      <a class="hc-author" href="{{ highlight.owner_profile_url }}">
+        <img class="avatar avatar-sm" src="{{ highlight.owner_avatar_url or url_for('static', filename='images/default-avatar.svg') }}"
+             alt="" loading="lazy"
+             onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';">
+        <span>{{ highlight.owner_username }}</span>
+      </a>
+      <span class="hc-date">{{ highlight.created_at }}</span>
+    </div>
+
+    <div class="hc-actions">
+      <button type="button" class="hc-action" data-action="like" data-id="{{ highlight.id }}" aria-pressed="{{ 'true' if highlight.is_liked else 'false' }}">
+        <span class="hc-action-icon">❤️</span><span class="hc-count" data-count="likes">{{ highlight.likes_count }}</span>
+      </button>
+      <button type="button" class="hc-action" data-action="comment" data-id="{{ highlight.id }}">
+        <span class="hc-action-icon">💬</span><span class="hc-count">{{ highlight.comments_count }}</span>
+      </button>
+      <button type="button" class="hc-action {{ 'active' if highlight.is_saved }}" data-action="save" data-id="{{ highlight.id }}" aria-pressed="{{ 'true' if highlight.is_saved else 'false' }}">
+        <span class="hc-action-icon">🔖</span>
+      </button>
+      <a class="hc-action" data-action="open" href="{{ highlight.share_url }}" aria-label="Открыть хайлайт">
+        <span class="hc-action-icon">↗</span>
+      </a>
+    </div>
   </div>
 </article>

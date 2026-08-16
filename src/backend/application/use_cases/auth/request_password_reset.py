@@ -11,10 +11,10 @@ class RequestPasswordResetUseCase:
     """Создает ссылку сброса пароля и отправляет ее на email пользователя."""
 
     def __init__(
-            self,
-            user_repo: UserRepository,
-            jwt_service: JWTService,
-            mailer: PasswordResetMailer,
+        self,
+        user_repo: UserRepository,
+        jwt_service: JWTService,
+        mailer: PasswordResetMailer,
     ):
         self.user_repo = user_repo
         self.jwt_service = jwt_service

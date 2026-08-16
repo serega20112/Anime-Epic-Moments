@@ -6,9 +6,9 @@ from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 
-from backend.application.use_cases import GetSeasonPopularUseCase
-from backend.application.use_cases import SearchAnimeUseCase
+from backend.application.use_cases import GetSeasonPopularUseCase, SearchAnimeUseCase
 from backend.application.use_cases.anime.autocomplete_anime import AutocompleteAnimeUseCase
+from backend.application.use_cases.anime.filter_anime_catalog import FilterAnimeCatalogUseCase
 from backend.application.use_cases.anime.search_anime_by_description import (
     SearchAnimeByDescriptionUseCase,
 )
@@ -16,6 +16,7 @@ from backend.infrastructure.security.flask_protection import client_ip, rate_lim
 from backend.infrastructure.web import render_template
 from backend.presentation.api.requests.anime_requests import (
     build_autocomplete_anime_query,
+    build_filter_anime_catalog_query,
     build_get_season_popular_query,
     build_search_anime_by_description_query,
     build_search_anime_query,
@@ -55,6 +56,27 @@ async def search_by_description_page(request: Request):
     return render_template(request, "anime/search_by_description.html")
 
 
+@anime_router.get("/catalog", name="anime.catalog_page")
+async def catalog_page(request: Request):
+    """Render the filterable anime catalog page.
+
+    Args:
+        request: Incoming HTTP request.
+
+    Returns:
+        HTMLResponse: Rendered catalog page.
+    """
+    return render_template(
+        request,
+        "anime/catalog.html",
+        initial_filters={
+            "genre": request.query_params.get("genre", ""),
+            "type": request.query_params.get("type", ""),
+            "status": request.query_params.get("status", ""),
+        },
+    )
+
+
 @anime_router.get("/api/search", name="anime.search_anime")
 @rate_limit(
     scope="anime_search",
@@ -63,8 +85,8 @@ async def search_by_description_page(request: Request):
     key_builder=lambda request: client_ip(request),
 )
 async def search_anime(
-        request: Request,
-        use_case: FromDishka[SearchAnimeUseCase],
+    request: Request,
+    use_case: FromDishka[SearchAnimeUseCase],
 ):
     """Search anime by title.
 
@@ -88,8 +110,8 @@ async def search_anime(
     key_builder=lambda request: client_ip(request),
 )
 async def search_anime_by_description(
-        request: Request,
-        use_case: FromDishka[SearchAnimeByDescriptionUseCase],
+    request: Request,
+    use_case: FromDishka[SearchAnimeByDescriptionUseCase],
 ):
     """Search anime by natural language description.
 
@@ -113,8 +135,8 @@ async def search_anime_by_description(
     key_builder=lambda request: client_ip(request),
 )
 async def autocomplete_anime(
-        request: Request,
-        use_case: FromDishka[AutocompleteAnimeUseCase],
+    request: Request,
+    use_case: FromDishka[AutocompleteAnimeUseCase],
 ):
     """Autocomplete anime titles.
 
@@ -130,6 +152,31 @@ async def autocomplete_anime(
     return [vars(anime) for anime in suggestions]
 
 
+@anime_router.get("/api/catalog", name="anime.filter_anime_catalog")
+@rate_limit(
+    scope="anime_catalog",
+    limit=60,
+    window_seconds=60,
+    key_builder=lambda request: client_ip(request),
+)
+async def filter_anime_catalog(
+    request: Request,
+    use_case: FromDishka[FilterAnimeCatalogUseCase],
+):
+    """Browse anime with Anixart-style filters.
+
+    Args:
+        request: Incoming HTTP request.
+        use_case: Catalog filter use case.
+
+    Returns:
+        list[dict]: List of anime dictionaries.
+    """
+    query = build_filter_anime_catalog_query(request)
+    results = await use_case.execute(query)
+    return [vars(anime) for anime in results]
+
+
 @anime_router.get("/api/season/popular", name="anime.get_season_popular")
 @rate_limit(
     scope="anime_season_popular",
@@ -138,8 +185,8 @@ async def autocomplete_anime(
     key_builder=lambda request: client_ip(request),
 )
 async def get_season_popular(
-        request: Request,
-        use_case: FromDishka[GetSeasonPopularUseCase],
+    request: Request,
+    use_case: FromDishka[GetSeasonPopularUseCase],
 ):
     """Fetch popular anime for a season.
 

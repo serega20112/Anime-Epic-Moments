@@ -8,23 +8,23 @@ class GetLikedHighlightsUseCase(GetUserHighlightsUseCase):
     """Возвращает дашборд хайлайтов, которые пользователь лайкнул."""
 
     def __init__(
-            self,
-            repo: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            user_repo: UserRepository | None = None,
+        self,
+        repo: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        user_repo: UserRepository | None = None,
     ):
         super().__init__(repo, anime_api_client, user_repo=user_repo)
 
     async def execute(
-            self,
-            user_id: int,
-            anime_id: int | None = None,
-            emotion: str | None = None,
-            category: str | None = None,
-            sort_by: str = "recent",
-            created_date: str | None = None,
-            query: str | None = None,
-            include_spoilers: bool = True,
+        self,
+        user_id: int,
+        anime_id: int | None = None,
+        emotion: str | None = None,
+        category: str | None = None,
+        sort_by: str = "recent",
+        created_date: str | None = None,
+        query: str | None = None,
+        include_spoilers: bool = True,
     ):
         highlights = await self.repo.get_liked_by_user(user_id)
         return await self._build_dashboard(

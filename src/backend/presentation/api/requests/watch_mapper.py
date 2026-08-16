@@ -34,10 +34,10 @@ def map_watch_page_query(request) -> WatchPageQuery:
 
 
 def map_upsert_status_command(
-        payload: dict[str, Any] | None,
-        *,
-        user_id: int,
-        anime_id: int,
+    payload: dict[str, Any] | None,
+    *,
+    user_id: int,
+    anime_id: int,
 ) -> UpsertUserAnimeStatusCommand:
     """Build an upsert status command from a JSON payload.
 
@@ -57,10 +57,10 @@ def map_upsert_status_command(
 
 
 def map_save_session_command(
-        payload: dict[str, Any] | None,
-        *,
-        user_id: int,
-        anime_id: int,
+    payload: dict[str, Any] | None,
+    *,
+    user_id: int,
+    anime_id: int,
 ) -> SaveViewingSessionCommand:
     """Build a save session command from a JSON payload.
 
@@ -86,10 +86,10 @@ def map_save_session_command(
 
 
 def map_create_watch_highlight_command(
-        payload: dict[str, Any] | None,
-        *,
-        user_id: int,
-        anime_id: int,
+    payload: dict[str, Any] | None,
+    *,
+    user_id: int,
+    anime_id: int,
 ) -> CreateWatchHighlightCommand:
     """Build a create watch highlight command from a JSON payload.
 
@@ -119,10 +119,10 @@ def map_create_watch_highlight_command(
 
 
 def map_add_anime_comment_command(
-        payload: dict[str, Any] | None,
-        *,
-        anime_id: int,
-        user_id: int,
+    payload: dict[str, Any] | None,
+    *,
+    anime_id: int,
+    user_id: int,
 ) -> AddAnimeCommentCommand:
     """Build an add anime comment command from a JSON payload.
 
@@ -142,10 +142,10 @@ def map_add_anime_comment_command(
 
 
 def map_set_comment_like_command(
-        request,
-        *,
-        comment_id: int,
-        user_id: int,
+    request,
+    *,
+    comment_id: int,
+    user_id: int,
 ) -> SetAnimeCommentLikeCommand:
     """Build a set comment like command from the request method.
 

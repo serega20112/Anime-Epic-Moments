@@ -3,6 +3,10 @@ from email.message import EmailMessage
 
 from backend.config import Settings
 from backend.infrastructure.external._async import external_method
+from backend.infrastructure.external.errors import (
+    ExternalServiceConfigurationError,
+    ExternalServiceUnavailableError,
+)
 
 
 class PasswordResetMailer:
@@ -12,7 +16,9 @@ class PasswordResetMailer:
     def send_reset_email(self, email: str, reset_link: str) -> None:
         """Отправляет письмо со ссылкой сброса на email пользователя."""
         if not Settings.smtp_host or not Settings.smtp_from_email:
-            raise RuntimeError("SMTP settings are not configured")
+            raise ExternalServiceConfigurationError(
+                "SMTP settings are not configured", service_name="smtp"
+            )
 
         message = EmailMessage()
         message["Subject"] = "Anime Epic Moments: сброс пароля"
@@ -32,6 +38,7 @@ class PasswordResetMailer:
                     smtp.login(Settings.smtp_username, Settings.smtp_password)
                 smtp.send_message(message)
         except (OSError, smtplib.SMTPException) as error:
-            raise RuntimeError(
-                "Не удалось отправить письмо для сброса пароля. Проверь SMTP-настройки и сетевой доступ."
+            raise ExternalServiceUnavailableError(
+                "Не удалось отправить письмо для сброса пароля. Проверь SMTP-настройки и сетевой доступ.",
+                service_name="smtp",
             ) from error

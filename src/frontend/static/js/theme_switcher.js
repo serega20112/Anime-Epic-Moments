@@ -1,105 +1,63 @@
+/* Anime Epic Moments — theme_switcher.js
+   Переключение тем (neon → dark → light → rose), сохранение в localStorage. */
 (function () {
-  const storageKey = "aem_theme";
-  const themes = ["neon", "dark", "light", "rose"];
-  const labels = {
-    neon: "Неон",
-    dark: "Тёмная",
-    light: "Светлая",
-    rose: "Сакура",
-  };
-  const icons = {
-    neon: "✦",
-    dark: "◐",
-    light: "☼",
-    rose: "✿",
-  };
+  "use strict";
 
-  let toggleButton = null;
+  var STORAGE_KEY = "aem_theme";
+  var LABELS = { neon: "Неон", dark: "Тёмная", light: "Светлая", rose: "Сакура" };
 
-  const normalizeTheme = (theme) => {
-    if (!theme || !themes.includes(theme)) {
-      return "neon";
+  function getSaved() {
+    try {
+      return localStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+      return null;
     }
-    return theme;
-  };
+  }
 
-  const currentTheme = () =>
-    normalizeTheme(document.documentElement.getAttribute("data-theme"));
-
-  const updateButton = (theme) => {
-    if (!toggleButton) {
-      return;
+  function save(theme) {
+    try {
+      localStorage.setItem(STORAGE_KEY, theme);
+    } catch (e) {
+      /* localStorage недоступен — живём без сохранения */
     }
-    toggleButton.setAttribute(
-      "aria-label",
-      `Переключить тему. Сейчас: ${labels[theme]}`,
-    );
-    const labelNode = toggleButton.querySelector(".theme-toggle-label");
-    const valueNode = toggleButton.querySelector(".theme-toggle-value");
-    const iconNode = toggleButton.querySelector(".theme-toggle-icon");
-    if (labelNode) {
-      labelNode.textContent = "Тема";
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    var label = document.getElementById("theme-fab-label");
+    if (label) label.textContent = "Тема: " + (LABELS[theme] || theme);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      var css = getComputedStyle(document.documentElement);
+      meta.setAttribute("content", css.getPropertyValue("--color-background").trim());
     }
-    if (valueNode) {
-      valueNode.textContent = labels[theme];
+    document.dispatchEvent(new CustomEvent("aem:themechange", { detail: { theme: theme } }));
+  }
+
+  function nextTheme(current) {
+    var keys = ["neon", "dark", "light", "rose"];
+    var index = keys.indexOf(current);
+    return keys[(index + 1) % keys.length];
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var saved = getSaved();
+    var current = saved || document.documentElement.getAttribute("data-theme") || "neon";
+    if (keysIndexOf(current) === -1) current = "neon";
+    applyTheme(current);
+
+    var fab = document.getElementById("theme-fab");
+    if (fab) {
+      fab.addEventListener("click", function () {
+        var next = nextTheme(current);
+        current = next;
+        save(next);
+        applyTheme(next);
+      });
     }
-    if (iconNode) {
-      iconNode.textContent = icons[theme];
-    }
-  };
+  });
 
-  const syncThemeFields = (theme) => {
-    document.querySelectorAll("input[data-theme-field]").forEach((field) => {
-      field.value = theme;
-    });
-  };
-
-  const applyTheme = (theme) => {
-    const normalized = normalizeTheme(theme);
-    document.documentElement.setAttribute("data-theme", normalized);
-    updateButton(normalized);
-    syncThemeFields(normalized);
-  };
-
-  const cycleTheme = () => {
-    const theme = currentTheme();
-    const nextIndex = (themes.indexOf(theme) + 1) % themes.length;
-    const nextTheme = themes[nextIndex];
-    applyTheme(nextTheme);
-    localStorage.setItem(storageKey, nextTheme);
-  };
-
-  const ensureToggleButton = () => {
-    toggleButton = document.querySelector("[data-theme-toggle]");
-    if (!toggleButton) {
-      toggleButton = document.createElement("button");
-      toggleButton.type = "button";
-      toggleButton.className = "theme-toggle";
-      toggleButton.setAttribute("data-theme-toggle", "1");
-      toggleButton.innerHTML =
-        '<span class="theme-toggle-icon" aria-hidden="true"></span>' +
-        '<span class="theme-toggle-label"></span>' +
-        '<span class="theme-toggle-value"></span>';
-      document.body.appendChild(toggleButton);
-    }
-    if (toggleButton.dataset.themeBound !== "1") {
-      toggleButton.dataset.themeBound = "1";
-      toggleButton.addEventListener("click", cycleTheme);
-    }
-    updateButton(currentTheme());
-  };
-
-  const savedTheme = normalizeTheme(localStorage.getItem(storageKey));
-  applyTheme(savedTheme);
-
-  const init = () => {
-    ensureToggleButton();
-    syncThemeFields(currentTheme());
-  };
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
+  function keysIndexOf(theme) {
+    return ["neon", "dark", "light", "rose"].indexOf(theme);
   }
 })();

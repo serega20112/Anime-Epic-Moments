@@ -12,8 +12,6 @@ class CollectionCard:
     share_url: str
 
 
-
-
 @dataclass
 class CollectionItemCard:
     anime_id: int

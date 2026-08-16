@@ -15,7 +15,9 @@ def test_get_public_top_highlights_uses_popularity_or_recency_query(monkeypatch)
     use_case = GetPublicTopHighlightsUseCase(repo, Mock())
     monkeypatch.setattr(use_case, "_build_dashboard", lambda **kwargs: kwargs)
 
-    popular_result = use_case.execute(limit=12, emotion="funny", include_spoilers=True, sort_by="popular")
+    popular_result = use_case.execute(
+        limit=12, emotion="funny", include_spoilers=True, sort_by="popular"
+    )
     recent_result = use_case.execute(limit=9, include_spoilers=False, sort_by="recent")
 
     repo.get_public_top.assert_called_once_with(12)

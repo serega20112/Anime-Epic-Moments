@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from backend.infrastructure.security.rate_limiter import RateLimiter
 
 from backend.infrastructure.cache.key_value_store import KeyValueStore
+from backend.infrastructure.security.rate_limiter import RateLimiter
 
 
 @pytest.mark.unit

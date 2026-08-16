@@ -64,10 +64,8 @@ class Highlight:
         self.emotion = self._normalize_optional_text(emotion)
         self._validate_times()
 
-
     def add_like(self):
         self.likes_count += 1
-
 
     def add_view(self):
         self.views_count += 1

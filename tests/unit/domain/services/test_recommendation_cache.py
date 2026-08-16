@@ -5,9 +5,7 @@ from backend.domain.services.recommendation_cache import RecommendationCacheInte
 
 class TestRecommendationCacheInterface:
     def test_abstract_method_names(self):
-        assert {"get", "set", "invalidate"} <= set(
-            RecommendationCacheInterface.__abstractmethods__
-        )
+        assert {"get", "set", "invalidate"} <= set(RecommendationCacheInterface.__abstractmethods__)
 
     def test_cannot_be_instantiated(self):
         try:

@@ -12,10 +12,12 @@ from backend.application.services.recommendation_service import RecommendationSe
 from backend.domain.unit_of_work import UnitOfWorkInterface
 from backend.infrastructure.cache import RecommendationCache
 from backend.infrastructure.external import (
+    AniBoomProvider,
     AniLibriaClient,
     AnimeApiClient,
     JustWatchClient,
     KodikClient,
+    SamebandProvider,
 )
 from backend.infrastructure.external.youtube_client import YouTubeClient
 from backend.infrastructure.files.database import get_session_factory
@@ -158,6 +160,8 @@ class RequestProvider(Provider):
         watch_repository: WatchRepository,
         kodik_client: KodikClient,
         anilibria_client: AniLibriaClient,
+        sameband_provider: SamebandProvider,
+        aniboom_provider: AniBoomProvider,
         youtube_client: YouTubeClient,
         justwatch_client: JustWatchClient,
     ) -> WatchSourceSyncService:
@@ -167,6 +171,8 @@ class RequestProvider(Provider):
             watch_repository: Watch repository.
             kodik_client: Kodik client.
             anilibria_client: AniLibria client.
+            sameband_provider: SameBand provider.
+            aniboom_provider: AniBoom provider.
             youtube_client: YouTube client.
             justwatch_client: JustWatch client.
 
@@ -176,6 +182,8 @@ class RequestProvider(Provider):
         return WatchSourceSyncService(
             watch_repository,
             [
+                sameband_provider,
+                aniboom_provider,
                 kodik_client,
                 anilibria_client,
                 youtube_client,

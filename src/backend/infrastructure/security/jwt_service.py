@@ -59,10 +59,10 @@ class JWTService:
         return max(remaining, 0)
 
     def _create_typed_token(
-            self,
-            user_id: int,
-            token_type: str,
-            expires_delta: timedelta,
+        self,
+        user_id: int,
+        token_type: str,
+        expires_delta: timedelta,
     ) -> str:
         expire = datetime.now(UTC) + expires_delta
         payload = {"user_id": user_id, "token_type": token_type, "exp": expire}

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -38,7 +38,7 @@ class TestRequestEmailVerification:
         ],
     )
     async def test_normalizes_hashes_saves_and_sends_code(
-            self, email, username, theme, expected_theme, monkeypatch
+        self, email, username, theme, expected_theme, monkeypatch
     ):
         user_repo = AsyncMock()
         user_repo.get_by_email.return_value = None
@@ -52,9 +52,7 @@ class TestRequestEmailVerification:
         )
         monkeypatch.setattr(use_case, "_generate_code", lambda: "123456")
 
-        result = await use_case.execute(
-            email, "password123", username, theme=theme
-        )
+        result = await use_case.execute(email, "password123", username, theme=theme)
 
         normalized_email = email.strip().lower()
         assert isinstance(result, AuthResult)

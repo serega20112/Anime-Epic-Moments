@@ -80,7 +80,11 @@ class TestCollectionRepository:
     async def test_returns_only_public_user_collections(self, async_db_session):
         """Проверяем, что CollectionRepository отдает в публичной выборке только коллекции с is_public=True."""
         user = await UserRepository(async_db_session).add(
-            User(email="public-collection@example.com", username="public-collector", password_hash="hash")
+            User(
+                email="public-collection@example.com",
+                username="public-collector",
+                password_hash="hash",
+            )
         )
         repo = CollectionRepository(async_db_session)
         await repo.create_collection(

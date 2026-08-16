@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -21,7 +21,7 @@ class TestLoginUserUseCase:
         ],
     )
     async def test_authenticates_only_on_valid_credentials(
-            self, credentials, password_matches, expected_ok
+        self, credentials, password_matches, expected_ok
     ):
         """Что тестируем: проверку учетных данных в LoginUserUseCase.
         Что передаём: найденного или отсутствующего пользователя и ответ проверки пароля.

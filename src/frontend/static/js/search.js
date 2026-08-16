@@ -1,147 +1,147 @@
+/* Anime Epic Moments — search.js
+   Автокомплит в шапке + поиск по названию. */
 (function () {
-  const form = document.getElementById("description-search-form");
-  const results = document.getElementById("results");
-  const resultsMeta = document.getElementById("results-meta");
-  const ratingInput = document.getElementById("rating");
-  const ratingValue = document.getElementById("rating-value");
-  const resetButton = document.getElementById("reset-filters");
+  "use strict";
 
-  if (!form || !results) {
-    return;
-  }
+  var input, box, clearBtn, timer = null, items = [], activeIndex = -1, abort = null;
 
-  const syncRangeLabels = () => {
-    if (ratingInput && ratingValue) {
-      ratingValue.textContent = ratingInput.value;
+  function init() {
+    input = document.getElementById("header-search-input");
+    box = document.getElementById("autocomplete");
+    clearBtn = document.getElementById("search-clear");
+    if (!input || !box) return;
+
+    /* Живой автокомплит при вводе отключён: результаты показываем
+       только после отправки формы (Enter). Здесь — поведение Enter/Escape. */
+    input.addEventListener("keydown", onKeydown);
+    if (clearBtn) {
+      clearBtn.addEventListener("click", function () {
+        input.value = "";
+        box.classList.remove("open");
+        input.focus();
+      });
     }
-  };
-
-  syncRangeLabels();
-  if (ratingInput) {
-    ratingInput.addEventListener("input", syncRangeLabels);
   }
 
-  if (resetButton) {
-    resetButton.addEventListener("click", () => {
-      setTimeout(syncRangeLabels, 0);
-      if (resultsMeta) {
-        resultsMeta.textContent = "Фильтры сброшены";
-      }
+  function onInput() {
+    if (timer) clearTimeout(timer);
+    var query = input.value.trim();
+    if (!query) {
+      close();
+      return;
+    }
+    timer = setTimeout(function () {
+      fetchSuggestions(query);
+    }, 220);
+  }
+
+  function fetchSuggestions(query) {
+    if (abort) abort.abort();
+    abort = new AbortController();
+    fetch("/anime/api/autocomplete?query=" + encodeURIComponent(query) + "&limit=6", {
+      signal: abort.signal,
+      credentials: "same-origin",
+    })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        items = Array.isArray(data) ? data : [];
+        activeIndex = -1;
+        render();
+      })
+      .catch(function (err) {
+        if (err.name !== "AbortError") close();
+      });
+  }
+
+  function render() {
+    if (!items.length) {
+      box.innerHTML = '<div class="autocomplete-empty">Ничего не найдено…</div>';
+      box.classList.add("open");
+      return;
+    }
+    var html = "";
+    items.forEach(function (anime, i) {
+      var title = anime.title || "Без названия";
+      var cover = anime.cover_url || "/static/images/no-cover.svg";
+      var meta = [];
+      if (anime.year) meta.push(anime.year);
+      if (anime.episode_count) meta.push(anime.episode_count + " сер.");
+      if (anime.rating) meta.push("★ " + anime.rating);
+      html +=
+        '<div class="autocomplete-item' + (i === activeIndex ? " active" : "") + '" data-index="' + i + '" role="option">' +
+          '<img src="' + cover + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'/static/images/no-cover.svg\';">' +
+          '<div>' +
+            '<div class="ac-title">' + escapeHtml(title) + "</div>" +
+            (meta.length ? '<div class="ac-meta">' + escapeHtml(meta.join(" · ")) + "</div>" : "") +
+          "</div>" +
+        "</div>";
+    });
+    box.innerHTML = html;
+    box.classList.add("open");
+    Array.prototype.forEach.call(box.querySelectorAll(".autocomplete-item"), function (el) {
+      el.addEventListener("click", function () {
+        var anime = items[Number(el.getAttribute("data-index"))];
+        goTo(anime);
+      });
+      el.addEventListener("mousemove", function () {
+        activeIndex = Number(el.getAttribute("data-index"));
+        updateActive();
+      });
     });
   }
 
-  const renderResults = (items) => {
-    if (!items.length) {
-      results.innerHTML = `
-                <p>Ничего не найдено. Попробуйте уточнить описание или ослабить фильтры.</p>
-            `;
-      return;
+  function onKeydown(event) {
+    if (!box.classList.contains("open") || !items.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      activeIndex = (activeIndex + 1) % items.length;
+      updateActive();
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      activeIndex = (activeIndex - 1 + items.length) % items.length;
+      updateActive();
+    } else if (event.key === "Enter" && activeIndex >= 0) {
+      event.preventDefault();
+      goTo(items[activeIndex]);
+    } else if (event.key === "Escape") {
+      box.classList.remove("open");
     }
+  }
 
-    if (
-      window.AEMAnimeUI &&
-      typeof window.AEMAnimeUI.renderAnimeCards === "function"
-    ) {
-      window.AEMAnimeUI.renderAnimeCards(results, items);
-      return;
-    }
+  function updateActive() {
+    var els = box.querySelectorAll(".autocomplete-item");
+    Array.prototype.forEach.call(els, function (el, i) {
+      el.classList.toggle("active", i === activeIndex);
+    });
+  }
 
-    results.innerHTML = "";
-  };
+  function goTo(anime) {
+    box.classList.remove("open");
+    var id = anime.anime_id || anime.external_id || anime.id;
+    if (!id) return;
+    window.location.href = "/watch/" + id;
+  }
 
-  const buildParamsFromForm = (formData, adultConfirmed) => {
-    const params = new URLSearchParams();
-    params.set("description", String(formData.get("description") || "").trim());
-    params.set("limit", "18");
+  function close() {
+    items = [];
+    activeIndex = -1;
+    box.classList.remove("open");
+  }
 
-    const yearFrom = String(formData.get("year_from") || "");
-    const yearTo = String(formData.get("year_to") || "");
-    const rating = String(formData.get("rating") || "");
-    const ageRating = String(formData.get("age_rating") || "");
-    const sort = String(formData.get("sort") || "");
-    const genreHint = String(formData.get("genre_hint") || "").trim();
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
 
-    if (yearFrom) params.set("year_from", yearFrom);
-    if (yearTo) params.set("year_to", yearTo);
-    if (rating) params.set("rating", rating);
-    if (ageRating) params.set("age_rating", ageRating);
-    params.set("adult_confirmed", adultConfirmed ? "1" : "0");
-    if (sort) params.set("sort", sort);
-    if (genreHint) params.set("genre_hint", genreHint);
-    return params;
-  };
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const formData = new FormData(form);
-    const description = String(formData.get("description") || "").trim();
-    if (!description) {
-      return;
-    }
-
-    results.innerHTML = "<p>Ищем подходящее аниме...</p>";
-
-    const ageRating = String(formData.get("age_rating") || "");
-    let adultConfirmed = false;
-
-    if (ageRating === "18+") {
-      const confirmed = window.confirm(
-        "Показать 18+ контент? Подтвердите, что вам есть 18 лет.",
-      );
-      if (!confirmed) {
-        if (resultsMeta) {
-          resultsMeta.textContent = "Показ 18+ отменён";
-        }
-        results.innerHTML =
-          "<p>Поиск 18+ отменён. Выберите другой возрастной рейтинг.</p>";
-        return;
-      }
-      adultConfirmed = true;
-    }
-
-    let params = buildParamsFromForm(formData, adultConfirmed);
-    let response = await fetch(
-      `/anime/api/search/description?${params.toString()}`,
-    );
-    if (!response.ok) {
-      results.innerHTML = "<p>Ошибка поиска. Попробуйте позже.</p>";
-      if (resultsMeta) {
-        resultsMeta.textContent = "Не удалось получить результаты";
-      }
-      return;
-    }
-
-    let payload = await response.json();
-    if (!Array.isArray(payload) && payload.requires_age_confirmation) {
-      const confirmed = window.confirm(
-        payload.message || "Подтвердите, что вам есть 18 лет.",
-      );
-      if (!confirmed) {
-        if (resultsMeta) {
-          resultsMeta.textContent = "Показ 18+ отменён";
-        }
-        results.innerHTML =
-          "<p>Контент 18+ скрыт до подтверждения возраста.</p>";
-        return;
-      }
-      params = buildParamsFromForm(formData, true);
-      response = await fetch(
-        `/anime/api/search/description?${params.toString()}`,
-      );
-      if (!response.ok) {
-        results.innerHTML = "<p>Ошибка поиска. Попробуйте позже.</p>";
-        if (resultsMeta) {
-          resultsMeta.textContent = "Не удалось получить результаты";
-        }
-        return;
-      }
-      payload = await response.json();
-    }
-
-    const items = Array.isArray(payload) ? payload : payload.items || [];
-    if (resultsMeta) {
-      resultsMeta.textContent = `Найдено: ${items.length}`;
-    }
-    renderResults(items);
-  });
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();

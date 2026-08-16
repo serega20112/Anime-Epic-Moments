@@ -1,610 +1,272 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ watch.anime_title }} - просмотр</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/anime.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/watch.css') }}"
-    />
-  </head>
-  <body data-current-user-id="{{ current_user.id if current_user else '' }}">
-    <header class="header">
-      <div class="logo">AEM</div>
-      <form
-        class="search-container global-search-form"
-        action="{{ url_for('anime.search_anime_page') }}"
-        method="get"
-        autocomplete="off"
-      >
-        <input
-          type="text"
-          name="title"
-          class="global-search-input"
-          placeholder="Найди аниме по названию, жанру или эмоции…"
-        />
-        <button type="submit">🔍</button>
-        <div class="search-autocomplete" hidden></div>
-      </form>
-      <nav class="header-nav">
-        <a href="{{ url_for('index.index') }}">Главная</a>
-        {% if current_user %}
-        <a
-          href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}"
-          >Избранное</a
-        >
-        <a
-          href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}"
-          >Мои хайлайты</a
-        >
-        <a href="{{ url_for('highlight.get_highlight_feed') }}">Фид</a>
-        <a href="{{ url_for('highlight.get_liked_highlights') }}">Мои лайки</a>
-        {% endif %}
-      </nav>
-    </header>
+{% extends "base.html" %}
 
-    {% set status_labels = { 'planned': 'В планах', 'watching': 'Смотрю',
-    'completed': 'Просмотрено', 'on_hold': 'Отложено', 'dropped': 'Брошено' } %}
-    <main class="watch-page">
-      <section class="watch-layout">
-        <section class="watch-stage">
-          <div
-            class="watch-player-shell {% if watch.sources|length == 0 %}is-empty{% endif %}"
-            id="watch-player-shell"
-          >
-            <div class="watch-player-noise"></div>
-            <div class="watch-player-status" id="watch-player-status" hidden>
-              <div class="watch-player-status-card">
-                <span class="watch-kicker">Плеер</span>
-                <h2 id="watch-player-status-title">Источник недоступен</h2>
-                <p id="watch-player-status-text">
-                  Не удалось подготовить поток для этой серии.
-                </p>
-              </div>
-            </div>
-            {% if watch.sources|length > 0 %}
-            <video
-              id="watch-video"
-              class="watch-video"
-              preload="metadata"
-              playsinline
-              {% if current_user %}data-autosave="1"{% endif %}
-            ></video>
-            <iframe
-              id="watch-embed-frame"
-              class="watch-embed-frame"
-              title="Embedded watch player"
-              allow="
-                accelerometer;
-                autoplay;
-                clipboard-write;
-                encrypted-media;
-                gyroscope;
-                picture-in-picture;
-                web-share;
-              "
-              referrerpolicy="strict-origin-when-cross-origin"
-              allowfullscreen
-              hidden
-            ></iframe>
-            <div class="watch-external-panel" id="watch-external-panel" hidden>
-              <div class="watch-external-card">
-                <span class="watch-kicker">External Source</span>
-                <h2 id="watch-external-title">Источник готов</h2>
-                <p id="watch-external-meta">
-                  Этот вариант открывается у внешнего провайдера.
-                </p>
-                <a
-                  id="watch-external-link"
-                  class="btn neon-pink"
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Открыть источник
-                </a>
-              </div>
-            </div>
-            <div
-              class="watch-player-overlay is-visible"
-              id="watch-player-overlay"
-            >
-              <div class="watch-overlay-top">
-                <div class="watch-overlay-copy">
-                  <span class="watch-kicker">Anime Epic Moments Player</span>
-                  <h1>{{ watch.anime_title }}</h1>
-                  <p>
-                    Эпизод {{ watch.episode }}{% if watch.episode_total and
-                    watch.episode_total > watch.episode %}/{{
-                    watch.episode_total }}{% endif %} {% if watch.anime_year %}
-                    • {{ watch.anime_year }}{% endif %} {% if watch.anime_rating
-                    %} • ★ {{ '%.1f'|format(watch.anime_rating) }}{% endif %}
-                  </p>
-                </div>
-                {% if watch.current_status %}
-                <span class="watch-now-status"
-                  >{{ status_labels.get(watch.current_status,
-                  watch.current_status) }}</span
-                >
-                {% endif %}
-              </div>
+{% block title %}{{ watch.anime_title }} — {{ watch.episode }} серия | Anime Epic Moments{% endblock %}
 
-              <button
-                type="button"
-                class="hero-play-toggle"
-                id="hero-play-toggle"
-                aria-label="Play"
-              >
-                <span class="hero-play-icon">▶</span>
-              </button>
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/watch.css') }}">
+{% endblock %}
 
-              <div class="watch-overlay-bottom">
-                <div class="watch-timeline-row">
-                  <span class="watch-time-label" id="current-time-label"
-                    >00:00</span
-                  >
-                  <input
-                    id="timeline-range"
-                    class="timeline-range"
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value="0"
-                  />
-                  <span class="watch-time-label" id="duration-time-label"
-                    >00:00</span
-                  >
-                </div>
-
-                <div class="watch-controls-row">
-                  <div class="watch-control-group">
-                    <button
-                      type="button"
-                      class="player-icon-button"
-                      id="play-toggle"
-                      aria-label="Play / Pause"
-                    >
-                      ▶
-                    </button>
-                    <button
-                      type="button"
-                      class="player-icon-button"
-                      id="mute-toggle"
-                      aria-label="Mute / Unmute"
-                    >
-                      🔊
-                    </button>
-                    <input
-                      id="volume-range"
-                      class="volume-range"
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value="{{ watch.saved_volume }}"
-                    />
-                  </div>
-
-                  <div class="watch-control-group watch-control-group--stretch">
-                    <form
-                      id="episode-form"
-                      class="watch-inline-form"
-                      method="get"
-                    >
-                      <label for="episode-select" class="sr-only">Эпизод</label>
-                      {% if watch.episode_options %}
-                      <select
-                        id="episode-select"
-                        name="episode"
-                        class="player-select"
-                      >
-                        {% for episode_number in watch.episode_options %}
-                        <option
-                          value="{{ episode_number }}"
-                          {% if watch.episode == episode_number %}selected{% endif %}
-                        >
-                          Серия {{ episode_number }}
-                        </option>
-                        {% endfor %}
-                      </select>
-                      {% else %}
-                      <input
-                        type="number"
-                        id="episode-select"
-                        name="episode"
-                        min="1"
-                        value="{{ watch.episode }}"
-                      />
-                      {% endif %}
-                    </form>
-
-                    <label for="translation-select" class="sr-only"
-                      >Источник / озвучка</label
-                    >
-                    <select id="translation-select" class="player-select">
-                      <option value="">Выбери источник</option>
-                      {% for source in watch.sources %}
-                      <option
-                        value="{{ source.translation_id }}"
-                        {% if watch.selected_translation_id == source.translation_id %}selected{% endif %}
-                      >
-                        {{ source.translation_name }}
-                      </option>
-                      {% endfor %}
-                    </select>
-
-                    <label for="quality-select" class="sr-only">Качество</label>
-                    <select id="quality-select" class="player-select"></select>
-
-                    <button
-                      type="button"
-                      class="player-icon-button"
-                      id="fullscreen-toggle"
-                      aria-label="Fullscreen"
-                    >
-                      ⛶
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+{% block content %}
+<div class="container">
+  <div class="watch-layout">
+    <div class="watch-main">
+      <!-- Плеер -->
+      <div class="player-shell" id="player-shell">
+        <div class="player-overlay" id="player-overlay">
+          <span class="po-eyebrow">anime epic moments</span>
+          <h1 class="po-title">{{ watch.anime_title }}</h1>
+          <p class="po-sub">Серия {{ watch.episode }}{% if watch.episode_total %} из {{ watch.episode_total }}{% endif %}</p>
+          <div class="po-actions">
+            {% if watch.can_discover_sources and not watch.sources %}
+            <button class="btn btn-primary" id="discover-btn" data-anime-id="{{ watch.anime_id }}">
+              🔎 Найти источники через {{ watch.discovery_provider_name or 'провайдера' }}
+            </button>
+            {% endif %}
+            {% if current_user %}
+            <button class="btn btn-ghost" id="open-highlight-form-btn">✂️ Сохранить момент</button>
             {% else %}
-            <div class="watch-empty-player">
-              <div class="watch-empty-icon">AEM</div>
-              <h2>Источники пока не найдены</h2>
-              {% if watch.can_discover_sources %}
-              <p>
-                Подтянем озвучки, плееры и внешние источники из {{
-                watch.discovery_provider_name }} по названию тайтла и номеру
-                эпизода.
-              </p>
-              <button
-                type="button"
-                class="btn neon-pink"
-                id="discover-sources-button"
-              >
-                Найти источники и озвучки
-              </button>
-              {% else %}
-              <p>
-                Автопоиск источников сейчас недоступен. Проверь настройки
-                внешних провайдеров и перезапусти сервер.
-              </p>
+            <a class="btn btn-ghost" href="{{ url_for('auth.login_page') }}">Войдите, чтобы сохранять моменты</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Инфо об аниме -->
+      <div class="watch-anime-head">
+        <img class="wa-poster" src="{{ watch.anime_cover or url_for('static', filename='images/no-cover.svg') }}"
+             alt="{{ watch.anime_title }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';">
+        <div class="wa-info">
+          <h2 class="wa-title">{{ watch.anime_title }}</h2>
+          <div class="wa-meta">
+            {% if watch.anime_year %}<span>🗓 {{ watch.anime_year }}</span>{% endif %}
+            {% if watch.anime_rating %}<span>⭐ {{ watch.anime_rating }}</span>{% endif %}
+            {% if watch.episode_total %}<span>🎞 {{ watch.episode_total }} серий</span>{% endif %}
+          </div>
+          <div class="wa-meta">
+            {% for genre in watch.genres %}
+            <span class="genre-chip">{{ genre }}</span>
+            {% endfor %}
+          </div>
+          <p class="wa-desc muted" style="margin-top:8px;font-size:var(--text-sm);max-width:640px">{{ watch.anime_description }}</p>
+          <div class="wa-actions">
+            {% if current_user %}
+            <select class="wa-status-select" id="status-select" aria-label="Статус просмотра">
+              <option value="" {% if not watch.current_status %}selected{% endif %}>Статус: не указан</option>
+              <option value="watching" {% if watch.current_status == 'watching' %}selected{% endif %}>Смотрю</option>
+              <option value="completed" {% if watch.current_status == 'completed' %}selected{% endif %}>Просмотрено</option>
+              <option value="planned" {% if watch.current_status == 'planned' %}selected{% endif %}>В планах</option>
+              <option value="paused" {% if watch.current_status == 'paused' %}selected{% endif %}>На паузе</option>
+              <option value="rewatching" {% if watch.current_status == 'rewatching' %}selected{% endif %}>Пересматриваю</option>
+              <option value="dropped" {% if watch.current_status == 'dropped' %}selected{% endif %}>Не понравилось</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" id="favorite-badge-btn">❤️ Нравится</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Сайдбар -->
+    <div class="watch-sidebar">
+      <div class="side-panel glass">
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" data-tab="sources" role="tab">Источники</button>
+          <button class="tab-btn" data-tab="episodes" role="tab">Серии</button>
+          <button class="tab-btn" data-tab="highlights" role="tab">Моменты</button>
+          <button class="tab-btn" data-tab="discussion" role="tab">Обсуждение</button>
+        </div>
+
+        <div class="tab-content active" data-tab-content="sources">
+          {% if watch.sources %}
+          <div class="source-list">
+            {% for group in watch.sources|groupby('translation_name') %}
+            {% set source = group.list[0] %}
+            {% if source %}
+            <a class="source-item {{ 'active' if source.translation_id == watch.selected_translation_id }}"
+               href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode, source_id=source.source_id) }}"
+               data-source-id="{{ source.source_id }}">
+              <span class="si-icon">🎙️</span>
+              <span class="si-title">
+                <span class="si-name">{{ group.grouper }}</span>
+                <span class="si-meta">{{ source.provider_name }}{% if group.list|length > 1 %} · {{ group.list|length }} качества{% endif %}</span>
+              </span>
+              <span class="si-badge quality">{% if group.list|length > 1 %}кв {{ group.list|length }}{% else %}кв{% endif %}</span>
+            </a>
+            {% endif %}
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="discussion-empty">Источники пока не найдены.</div>
+          {% endif %}
+        </div>
+
+        <div class="tab-content" data-tab-content="episodes">
+          {% if watch.episode_options %}
+          <div class="episode-grid" id="episode-grid">
+            {% for option in watch.episode_options %}
+            <a class="episode-btn {{ 'active' if option == watch.episode }}"
+               href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=option) }}"
+               {% if option == watch.episode %}aria-current="true"{% endif %}>{{ option }}</a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="discussion-empty">Серии: {{ watch.episode }}{% if watch.episode_total %} из {{ watch.episode_total }}{% endif %}</div>
+          {% endif %}
+          <div class="episode-nav">
+            {% if watch.episode > 1 %}
+            <a class="btn btn-ghost btn-sm" href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode - 1) }}">← Предыдущая</a>
+            {% endif %}
+            {% if watch.episode_total and watch.episode < watch.episode_total %}
+            <a class="btn btn-primary btn-sm" href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode + 1) }}">Следующая →</a>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="tab-content" data-tab-content="highlights">
+          {% if current_user %}
+          <form class="highlight-form" id="highlight-form">
+            <div class="hf-time-row">
+              <div>
+                <label for="hf-start">Начало (мм:сс)</label>
+                <input type="text" id="hf-start" name="start_timestamp" placeholder="00:00" value="{{ watch.highlights[0].start_timestamp if watch.highlights else '00:00' }}">
+              </div>
+              <div>
+                <label for="hf-end">Конец (мм:сс)</label>
+                <input type="text" id="hf-end" name="end_timestamp" placeholder="00:10" value="{{ watch.highlights[0].end_timestamp if watch.highlights else '00:10' }}">
+              </div>
+            </div>
+            <div>
+              <label for="hf-title">Название момента</label>
+              <input type="text" id="hf-title" name="title" placeholder="Например: «Эпичный бросок»" maxlength="120">
+            </div>
+            <div>
+              <label>Эмоция</label>
+              <div class="hf-emotions">
+                {% for emotion in [("🔥", "epic", "EPIC"), ("😭", "cry", "CRY"), ("❤️", "love", "LOVE"), ("😂", "funny", "FUNNY"), ("😨", "wtf", "WTF"), ("🥶", "cold", "COLD"), ("✨", "beautiful", "BEAUTIFUL")] %}
+                <button type="button" class="sticker hf-emotion" data-emotion="{{ emotion[1] }}" {% if loop.first %}style="border-color:var(--color-accent)"{% endif %}>
+                  <span class="st-emoji">{{ emotion[0] }}</span>{{ emotion[2] }}
+                </button>
+                {% endfor %}
+              </div>
+            </div>
+            <div>
+              <label for="hf-description">Комментарий (необязательно)</label>
+              <input type="text" id="hf-description" name="description" placeholder="Почему этот момент цепляет?" maxlength="600">
+            </div>
+            <label class="hf-check">
+              <input type="checkbox" id="hf-spoiler" name="is_spoiler" value="1"> Это спойлер — скрыть из лент по умолчанию
+            </label>
+            <button type="submit" class="btn btn-primary">✂️ Сохранить момент</button>
+          </form>
+          {% else %}
+          <div class="discussion-empty">Войдите, чтобы вырезать моменты из этой серии.</div>
+          {% endif %}
+
+          {% if watch.highlights %}
+          <h3 style="margin-top:var(--space-4)">Моменты из этой серии</h3>
+          <div class="ep-hightlight-list">
+            {% for hl in watch.highlights %}
+            <div class="ep-highlight-item">
+              <div class="eh-title">{{ hl.title }}</div>
+              {% if hl.emotion %}<span class="sticker" style="margin:6px 0;font-size:11px">✨ {{ hl.emotion|upper }}</span>{% endif %}
+              <div class="eh-meta">
+                <span class="eh-time">▶ {{ hl.start_timestamp }}–{{ hl.end_timestamp }}</span>
+                {% if hl.is_spoiler %}<span>🔒 спойлер</span>{% endif %}
+                <span>❤️ {{ hl.likes_count }}</span>
+              </div>
+              {% if hl.description %}
+              <p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:6px">{{ hl.description }}</p>
               {% endif %}
             </div>
-            {% endif %}
-          </div>
-
-          <div class="source-discovery-bar">
-            {% if watch.can_discover_sources %} {% if watch.sources|length > 0
-            %}
-            <button
-              type="button"
-              class="btn neon-pink"
-              id="discover-sources-button"
-            >
-              Обновить источники и озвучки
-            </button>
-            {% endif %}
-            <p class="source-discovery-note">
-              Автопоиск идет по названию аниме и эпизоду через {{
-              watch.discovery_provider_name }}. {% if watch.sources|length > 0
-              %} Сейчас доступно {{ watch.sources|length }} {% if
-              watch.sources|length == 1 %}источник{% elif watch.sources|length <
-              5 %}источника{% else %}источников{% endif %}. {% endif %}
-            </p>
-            {% else %}
-            <p class="source-discovery-note">
-              Автопоиск источников сейчас недоступен. Проверь конфиг провайдеров
-              и перезапусти сервер.
-            </p>
-            {% endif %}
-          </div>
-
-          <div class="watch-highlight-toolbar">
-            <div class="watch-highlight-toolbar-copy">
-              <h2>Момент эпизода</h2>
-              <p>
-                Поставь на паузу, отметь начало и конец, потом сохрани хайлайт
-                справа.
-              </p>
-            </div>
-            <div class="watch-highlight-toolbar-actions">
-              <button type="button" class="btn neon-blue" id="highlight-start">
-                Начало хайлайта
-              </button>
-              <button type="button" class="btn neon-blue" id="highlight-end">
-                Конец хайлайта
-              </button>
-            </div>
-          </div>
-
-          {% if current_user %}
-          <div class="status-strip">
-            {% for status_code, status_label in [ ('planned', 'В планах'),
-            ('watching', 'Смотрю'), ('completed', 'Просмотрено'), ('on_hold',
-            'Отложено'), ('dropped', 'Брошено') ] %}
-            <button
-              type="button"
-              class="status-pill {% if watch.current_status == status_code %}is-active{% endif %}"
-              data-status="{{ status_code }}"
-            >
-              {{ status_label }}
-            </button>
             {% endfor %}
           </div>
           {% endif %}
-        </section>
+        </div>
 
-        <aside class="watch-side-panel">
-          <div class="watch-anime-card">
-            <div class="watch-poster-frame">
-              <img
-                src="{{ watch.anime_cover or '/static/images/no-cover.png' }}"
-                alt="{{ watch.anime_title }}"
-              />
-            </div>
-            <div class="watch-anime-meta">
-              <span class="watch-kicker">Now Watching</span>
-              <h2>{{ watch.anime_title }}</h2>
-              <div class="watch-meta-stats">
-                {% if watch.anime_rating %}
-                <div class="watch-meta-stat">
-                  <span>★</span>
-                  <strong>{{ '%.1f'|format(watch.anime_rating) }}</strong>
-                </div>
-                {% endif %} {% if watch.anime_year %}
-                <div class="watch-meta-stat">
-                  <span>Год</span>
-                  <strong>{{ watch.anime_year }}</strong>
-                </div>
-                {% endif %}
-                <div class="watch-meta-stat">
-                  <span>Эпизод</span>
-                  <strong>
-                    {{ watch.episode }}{% if watch.episode_total and
-                    watch.episode_total > watch.episode %}/{{
-                    watch.episode_total }}{% endif %}
-                  </strong>
-                </div>
-                {% if watch.current_status %}
-                <div class="watch-meta-stat">
-                  <span>Статус</span>
-                  <strong
-                    >{{ status_labels.get(watch.current_status,
-                    watch.current_status) }}</strong
-                  >
-                </div>
-                {% endif %}
+        <div class="tab-content" data-tab-content="discussion">
+          <div class="discussion-list" id="discussion-list" data-anime-id="{{ watch.anime_id }}">
+            {% for comment in discussion.items %}
+            <div class="discussion-item" data-comment-id="{{ comment.id }}">
+              <div class="di-head">
+                <strong class="di-username">{{ comment.username }}</strong>
+                <span class="di-time">{{ comment.created_at }}</span>
               </div>
-              <p class="watch-anime-description">
-                {{ watch.anime_description }}
-              </p>
-              <div class="result-genres">
-                {% for genre in watch.genres %}
-                <span class="genre-chip">{{ genre }}</span>
-                {% endfor %}
-              </div>
-              {% if current_user %}
-              <div class="result-actions watch-side-actions">
-                <button
-                  type="button"
-                  class="btn-favorite watch-favorite-button"
-                  data-anime-id="{{ watch.anime_id }}"
-                >
-                  В избранное
-                </button>
-              </div>
-              {% endif %}
-            </div>
-          </div>
-
-          <section class="watch-highlight-builder">
-            <h2>Сохранить хайлайт</h2>
-            {% if current_user %}
-            <form id="watch-highlight-form" class="manual-add-form">
-              <input
-                type="text"
-                name="title"
-                placeholder="Название хайлайта"
-                required
-              />
-              <select name="category">
-                <option value="">Категория</option>
-                <option value="бой">Бой</option>
-                <option value="драма">Драма</option>
-                <option value="романтика">Романтика</option>
-                <option value="комедия">Комедия</option>
-                <option value="твист">Твист</option>
-                <option value="мотивация">Мотивация</option>
-              </select>
-              <input
-                type="text"
-                name="start_timestamp"
-                placeholder="Начало"
-                readonly
-                required
-              />
-              <input
-                type="text"
-                name="end_timestamp"
-                placeholder="Конец"
-                readonly
-                required
-              />
-              <input type="text" name="emotion" placeholder="Эмоция" />
-              <textarea
-                name="description"
-                placeholder="Почему этот момент важен"
-              ></textarea>
-              <label class="filter-checkbox">
-                <input type="checkbox" name="is_spoiler" value="1" />
-                <span>Содержит спойлер</span>
-              </label>
-              <button type="submit" class="btn neon-pink">
-                Сохранить хайлайт
+              <p class="di-content">{{ comment.content }}</p>
+              <button class="di-like {{ 'liked' if comment.is_liked }}" data-comment-id="{{ comment.id }}">
+                ❤️ <span class="like-count">{{ comment.likes_count }}</span>
               </button>
-            </form>
+            </div>
             {% else %}
-            <p>
-              Войди в аккаунт, чтобы сохранять хайлайты прямо во время
-              просмотра.
-            </p>
-            {% endif %}
-          </section>
+            <div class="discussion-empty" id="discussion-empty">Обсуждение пока пустое. Напишите первым, что думаете о серии!</div>
+            {% endfor %}
+          </div>
+          {% if current_user %}
+          <form class="discussion-form" id="discussion-form">
+            <input type="text" id="discussion-input" placeholder="Ваш комментарий к серии…" maxlength="600" required>
+            <button type="submit" class="btn btn-primary btn-sm">Отправить</button>
+          </form>
+          {% else %}
+          <div class="discussion-empty">Войдите, чтобы обсуждать серии.</div>
+          {% endif %}
+        </div>
+          </div>
+        </div>
+        <span class="po-status-chip" id="player-status-chip"><span class="dot"></span><span id="player-status-text">Загрузка…</span></span>
+      </div>
+</div>
+{% endblock %}
 
-          <section class="watch-highlight-list">
-            <div class="results-head">
-              <h2>Хайлайты эпизода</h2>
-              <p>{{ watch.highlights|length }}</p>
-            </div>
-            <div class="watch-mini-feed">
-              {% for highlight in watch.highlights %}
-              <article class="watch-highlight-item">
-                <div class="watch-highlight-head">
-                  <h3>{{ highlight.title }}</h3>
-                  {% if highlight.category %}
-                  <span class="genre-chip">{{ highlight.category }}</span>
-                  {% endif %} {% if highlight.emotion %}
-                  <span class="genre-chip">{{ highlight.emotion }}</span>
-                  {% endif %}
-                </div>
-                <p>
-                  {{ highlight.start_timestamp }} - {{ highlight.end_timestamp
-                  }}
-                </p>
-                <p>{{ highlight.description }}</p>
-                <small>{{ highlight.likes_count }} лайков</small>
-                <br />
-                <small
-                  >{{ highlight.translation_name or 'Без озвучки' }} • {{
-                  highlight.provider_name or 'Без источника' }}</small
-                >
-              </article>
-              {% else %}
-              <section class="empty-state">
-                <h2>Пока нет хайлайтов</h2>
-                <p>Сохрани первый момент прямо из плеера.</p>
-              </section>
-              {% endfor %}
-            </div>
-          </section>
-
-          <section class="watch-highlight-list">
-            <div class="results-head">
-              <h2>Обсуждение аниме</h2>
-              <div class="result-actions">
-                <a
-                  class="btn {% if discussion.selected_sort == 'popular' %}neon-blue{% else %}neon-pink{% endif %}"
-                  href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode, discussion_sort='popular') }}"
-                >
-                  Популярные
-                </a>
-                <a
-                  class="btn {% if discussion.selected_sort == 'recent' %}neon-blue{% else %}neon-pink{% endif %}"
-                  href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode, discussion_sort='recent') }}"
-                >
-                  Новые
-                </a>
-              </div>
-            </div>
-            {% if current_user %}
-            <form
-              class="manual-add-form"
-              method="post"
-              action="{{ url_for('watch.add_anime_comment', anime_id=watch.anime_id) }}"
-            >
-              <input type="hidden" name="episode" value="{{ watch.episode }}" />
-              <input
-                type="hidden"
-                name="discussion_sort"
-                value="{{ discussion.selected_sort }}"
-              />
-              <textarea
-                name="content"
-                placeholder="Напиши, что думаешь об этом тайтле, сцене или вайбе"
-                required
-                maxlength="600"
-              ></textarea>
-              <button type="submit" class="btn neon-blue">
-                Отправить в обсуждение
-              </button>
-            </form>
-            {% endif %}
-            <div class="watch-mini-feed">
-              {% for comment in discussion.items %}
-              <article class="watch-highlight-item">
-                <div class="watch-highlight-head">
-                  <h3>{{ comment.username }}</h3>
-                  <span class="genre-chip">{{ comment.created_at }}</span>
-                </div>
-                <p>{{ comment.content }}</p>
-                <div class="result-actions">
-                  {% if current_user %}
-                  <button
-                    type="button"
-                    class="btn {% if comment.is_liked %}neon-blue{% else %}neon-pink{% endif %} anime-comment-like-button"
-                    data-comment-id="{{ comment.id }}"
-                    data-liked="{{ '1' if comment.is_liked else '0' }}"
-                  >
-                    👍 <span>{{ comment.likes_count }}</span>
-                  </button>
-                  {% else %}
-                  <span class="highlight-like-badge"
-                    >👍 {{ comment.likes_count }}</span
-                  >
-                  {% endif %}
-                </div>
-              </article>
-              {% else %}
-              <section class="empty-state">
-                <h2>Пока тихо</h2>
-                <p>Стань первым, кто оставит комментарий по этому аниме.</p>
-              </section>
-              {% endfor %}
-            </div>
-          </section>
-        </aside>
-      </section>
-    </main>
-
-    <script id="watch-sources-json" type="application/json">
-      [
+{% block scripts %}
+{% if watch.sources %}
+<script>
+  window.AEMWatchPage = {
+    animeId: {{ watch.anime_id|tojson }},
+    animeTitle: {{ watch.anime_title|tojson }},
+    coverUrl: {{ watch.anime_cover|tojson }},
+    genres: {{ watch.genres|tojson }},
+    episode: {{ watch.episode|tojson }},
+    selectedSourceId: {{ watch.selected_source_id|tojson }},
+    selectedTranslationId: {{ watch.selected_translation_id|tojson }},
+    lastPositionSeconds: {{ watch.last_position_seconds|tojson }},
+    preferredStartSeconds: {{ watch.preferred_start_seconds|tojson }},
+    savedVolume: {{ watch.saved_volume|tojson }},
+    savedQualityLabel: {{ watch.saved_quality_label|tojson }},
+    {% if current_user %}
+    isAuthenticated: true,
+    currentUserId: {{ current_user.id|tojson }},
+    {% else %}
+    isAuthenticated: false,
+    {% endif %}
+    sources: [
       {% for source in watch.sources %}
-      {"source_id": {{ source.source_id }}, "translation_id": {{ source.translation_id }}, "translation_name": {{ source.translation_name|tojson }}, "episode": {{ source.episode }}, "provider_name": {{ source.provider_name|tojson }}, "source_name": {{ source.source_name|tojson }}, "quality_label": {{ source.quality_label|tojson }}, "stream_url": {{ source.stream_url|tojson }}, "source_type": {{ source.source_type|tojson }}}{% if not loop.last %},{% endif %}
+      {
+        id: {{ source.source_id|tojson }},
+        type: {{ source.source_type|tojson }},
+        url: {{ source.stream_url|tojson }},
+        label: {{ (source.translation_name + ' · ' + source.quality_label)|tojson }},
+        translationId: {{ source.translation_id|tojson }},
+        translationName: {{ source.translation_name|tojson }},
+        providerName: {{ source.provider_name|tojson }},
+        qualityLabel: {{ source.quality_label|tojson }},
+        {% if source.source_id == watch.selected_source_id %}active: true{% else %}active: false{% endif %}
+      }{{ "," if not loop.last }}
       {% endfor %}
-      ]
-    </script>
-    <script>
-      window.AEMWatchPage = {
-          animeId: {{ watch.anime_id }},
-          episode: {{ watch.episode }},
-          selectedSourceId: {{ watch.selected_source_id or 'null' }},
-          selectedTranslationId: {{ watch.selected_translation_id or 'null' }},
-          lastPositionSeconds: {{ watch.last_position_seconds }},
-          preferredStartSeconds: {{ watch.preferred_start_seconds }},
-          savedVolume: {{ watch.saved_volume }},
-          savedQualityLabel: {{ watch.saved_quality_label|tojson }},
-          isAuthenticated: {{ 'true' if current_user else 'false' }}
-      };
-    </script>
-    <script src="{{ url_for('static', filename='js/vendor/hls.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/watch_player.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  </body>
-</html>
+    ]
+  };
+</script>
+{% else %}
+<script>
+  window.AEMWatchPage = {
+    animeId: {{ watch.anime_id|tojson }},
+    animeTitle: {{ watch.anime_title|tojson }},
+    coverUrl: {{ watch.anime_cover|tojson }},
+    genres: {{ watch.genres|tojson }},
+    episode: {{ watch.episode|tojson }},
+    isAuthenticated: {{ 'true' if current_user else 'false' }},
+    sources: []
+  };
+</script>
+{% endif %}
+<script src="{{ url_for('static', filename='js/vendor/hls.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/watch_player.js') }}"></script>
+{% endblock %}

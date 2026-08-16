@@ -12,9 +12,7 @@ class PasswordService:
 
     async def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Проверяет соответствие пароля и хеша"""
-        return await asyncio.to_thread(
-            self._verify_sync, plain_password, hashed_password
-        )
+        return await asyncio.to_thread(self._verify_sync, plain_password, hashed_password)
 
     def _hash_sync(self, plain_password: str) -> str:
         salt = bcrypt.gensalt()

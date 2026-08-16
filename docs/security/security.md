@@ -76,15 +76,15 @@ sequenceDiagram
 
 ## Где в коде
 
-- `src/backend/create_app.py`
-- `src/backend/dependencies/settings.py`
-- `src/backend/dependencies/auth_dependencies.py`
+- `src/backend/presentation/app_factory.py`
+- `src/backend/config/settings.py`
+- `src/backend/presentation/dependencies/auth_dependencies.py`
 - `src/backend/infrastructure/cache/key_value_store.py`
 - `src/backend/infrastructure/security/jwt_service.py`
 - `src/backend/infrastructure/security/password_service.py`
 - `src/backend/infrastructure/security/rate_limiter.py`
 - `src/backend/infrastructure/security/token_blocklist.py`
-- `src/backend/infrastructure/security/flask_protection.py`
+- `src/backend/infrastructure/security/csrf_service.py`
 - `src/backend/infrastructure/files/database.py`
 - `build/docker-compose.yml`
 - `build/Dockerfile`

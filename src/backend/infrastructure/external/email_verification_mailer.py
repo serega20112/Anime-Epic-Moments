@@ -4,6 +4,10 @@ from html import escape
 
 from backend.config import Settings
 from backend.infrastructure.external._async import external_method
+from backend.infrastructure.external.errors import (
+    ExternalServiceConfigurationError,
+    ExternalServiceUnavailableError,
+)
 
 
 class EmailVerificationMailer:
@@ -11,14 +15,16 @@ class EmailVerificationMailer:
 
     @external_method
     def send_verification_code(
-            self,
-            email: str,
-            code: str,
-            theme: str = "neon",
+        self,
+        email: str,
+        code: str,
+        theme: str = "neon",
     ) -> None:
         """Отправляет одноразовый код подтверждения на email пользователя."""
         if not Settings.smtp_host or not Settings.smtp_from_email:
-            raise RuntimeError("SMTP settings are not configured")
+            raise ExternalServiceConfigurationError(
+                "SMTP settings are not configured", service_name="smtp"
+            )
 
         normalized_theme = self._normalize_theme(theme)
         message = EmailMessage()
@@ -44,8 +50,9 @@ class EmailVerificationMailer:
                     smtp.login(Settings.smtp_username, Settings.smtp_password)
                 smtp.send_message(message)
         except (OSError, smtplib.SMTPException) as error:
-            raise RuntimeError(
-                "Не удалось отправить письмо с кодом подтверждения. Проверь SMTP-настройки и сетевой доступ."
+            raise ExternalServiceUnavailableError(
+                "Не удалось отправить письмо с кодом подтверждения. Проверь SMTP-настройки и сетевой доступ.",
+                service_name="smtp",
             ) from error
 
     def _build_html_message(self, code: str, theme: str) -> str:

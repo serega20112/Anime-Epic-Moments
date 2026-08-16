@@ -38,9 +38,34 @@ def hf_api_url() -> str:
     Returns:
         str: Chat completions URL.
     """
-    return os.getenv(
-        "HF_API_URL", "https://router.huggingface.co/v1/chat/completions"
-    )
+    return os.getenv("HF_API_URL", "https://router.huggingface.co/v1/chat/completions")
+
+
+def google_api_key() -> str | None:
+    """Return the Google Gemini API key.
+
+    Returns:
+        str | None: Google API key or None.
+    """
+    return os.getenv("GOOGLE_API_KEY")
+
+
+def google_model() -> str:
+    """Return the Google Gemini model identifier.
+
+    Returns:
+        str: Gemini model identifier.
+    """
+    return os.getenv("GOOGLE_MODEL", "gemini-2.0-flash")
+
+
+def google_api_url() -> str:
+    """Return the Google Gemini API base URL.
+
+    Returns:
+        str: Gemini API base URL.
+    """
+    return os.getenv("GOOGLE_API_URL", "https://generativelanguage.googleapis.com/v1beta")
 
 
 def kodik_api_token() -> str | None:
@@ -61,6 +86,15 @@ def kodik_api_url() -> str:
     return os.getenv("KODIK_API_URL", "https://kodik-api.com")
 
 
+def kodik_tokens_path() -> str:
+    """Return the path to the Kodik public tokens file.
+
+    Returns:
+        str: Path to the tokens JSON file.
+    """
+    return os.getenv("KODIK_TOKENS_PATH", "kdk_tokns/tokens.json")
+
+
 def anilibria_api_url() -> str:
     """Return the AniLibria API base URL.
 
@@ -68,6 +102,60 @@ def anilibria_api_url() -> str:
         str: AniLibria API URL.
     """
     return os.getenv("ANILIBRIA_API_URL", "https://anilibria.top/api/v1")
+
+
+def sameband_enabled() -> bool:
+    """Return whether the SameBand SSR source is enabled.
+
+    Returns:
+        bool: True when SAMEBAND_ENABLED is enabled.
+    """
+    return os.getenv("SAMEBAND_ENABLED", "0") == "1"
+
+
+def sameband_base_url() -> str:
+    """Return the SameBand site base URL.
+
+    Returns:
+        str: SameBand base URL.
+    """
+    return os.getenv("SAMEBAND_BASE_URL", "https://sameband.studio")
+
+
+def sameband_timeout() -> float:
+    """Return the SameBand request timeout in seconds.
+
+    Returns:
+        float: SameBand timeout in seconds.
+    """
+    return float(os.getenv("SAMEBAND_TIMEOUT", "8"))
+
+
+def aniboom_enabled() -> bool:
+    """Return whether the AniBoom SSR source is enabled.
+
+    Returns:
+        bool: True when ANIBOOM_ENABLED is enabled.
+    """
+    return os.getenv("ANIBOOM_ENABLED", "0") == "1"
+
+
+def aniboom_base_url() -> str:
+    """Return the AniBoom player base URL.
+
+    Returns:
+        str: AniBoom base URL.
+    """
+    return os.getenv("ANIBOOM_BASE_URL", "https://aniboom.one")
+
+
+def aniboom_timeout() -> float:
+    """Return the AniBoom request timeout in seconds.
+
+    Returns:
+        float: AniBoom timeout in seconds.
+    """
+    return float(os.getenv("ANIBOOM_TIMEOUT", "8"))
 
 
 def youtube_api_key() -> str | None:
@@ -116,9 +204,7 @@ def justwatch_api_url() -> str:
     Returns:
         str: JustWatch API URL.
     """
-    return os.getenv(
-        "JUSTWATCH_API_URL", "https://apis.justwatch.com/contentpartner/v2/content"
-    )
+    return os.getenv("JUSTWATCH_API_URL", "https://apis.justwatch.com/contentpartner/v2/content")
 
 
 def justwatch_locale() -> str:
@@ -167,9 +253,7 @@ def support_email_to() -> list[str]:
     Returns:
         list[str]: Recipient addresses.
     """
-    return [
-        item.strip() for item in os.getenv("SUPPORT_EMAIL_TO", "").split(",") if item.strip()
-    ]
+    return [item.strip() for item in os.getenv("SUPPORT_EMAIL_TO", "").split(",") if item.strip()]
 
 
 def smtp_host() -> str | None:

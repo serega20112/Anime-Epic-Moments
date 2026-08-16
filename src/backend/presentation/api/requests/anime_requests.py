@@ -6,6 +6,7 @@ from fastapi import Request
 
 from backend.application.dto.anime_queries import (
     AutocompleteAnimeQuery,
+    FilterAnimeCatalogQuery,
     GetSeasonPopularQuery,
     SearchAnimeByDescriptionQuery,
     SearchAnimeQuery,
@@ -42,6 +43,23 @@ def _to_bool(value) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _to_float(value) -> float | None:
+    """Parse a float query parameter.
+
+    Args:
+        value: Raw query parameter value.
+
+    Returns:
+        float | None: Parsed float when valid, else None.
+    """
+    if value in (None, ""):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _clamp_int(value, *, default: int, minimum: int, maximum: int) -> int:
     """Parse and clamp an integer query parameter.
 
@@ -69,9 +87,7 @@ def build_search_anime_query(request: Request) -> SearchAnimeQuery:
     Returns:
         SearchAnimeQuery: Validated query DTO.
     """
-    title = str(request.query_params.get("title", "")).strip()[
-        : Settings.anime_title_max_length
-    ]
+    title = str(request.query_params.get("title", "")).strip()[: Settings.anime_title_max_length]
     limit = _clamp_int(
         request.query_params.get("limit"),
         default=10,
@@ -82,7 +98,7 @@ def build_search_anime_query(request: Request) -> SearchAnimeQuery:
 
 
 def build_search_anime_by_description_query(
-        request: Request,
+    request: Request,
 ) -> SearchAnimeByDescriptionQuery:
     """Build a search by description query from request parameters.
 
@@ -125,9 +141,7 @@ def build_autocomplete_anime_query(request: Request) -> AutocompleteAnimeQuery:
     Returns:
         AutocompleteAnimeQuery: Validated query DTO.
     """
-    query = str(request.query_params.get("query", "")).strip()[
-        : Settings.anime_title_max_length
-    ]
+    query = str(request.query_params.get("query", "")).strip()[: Settings.anime_title_max_length]
     limit = _clamp_int(
         request.query_params.get("limit"),
         default=5,
@@ -155,5 +169,37 @@ def build_get_season_popular_query(request: Request) -> GetSeasonPopularQuery:
     return GetSeasonPopularQuery(
         year=_to_int(request.query_params.get("year")) or 0,
         season=str(request.query_params.get("season") or "").strip(),
+        limit=limit,
+    )
+
+
+def build_filter_anime_catalog_query(request: Request) -> FilterAnimeCatalogQuery:
+    """Build an anime catalog filter query from request parameters.
+
+    Args:
+        request: Incoming HTTP request.
+
+    Returns:
+        FilterAnimeCatalogQuery: Validated query DTO.
+    """
+    limit = _clamp_int(
+        request.query_params.get("limit"),
+        default=30,
+        minimum=1,
+        maximum=Settings.anime_query_limit_max,
+    )
+    min_score = _to_float(request.query_params.get("min_score"))
+    if min_score is not None:
+        min_score = max(0.0, min(min_score, 10.0))
+    return FilterAnimeCatalogQuery(
+        genre=str(request.query_params.get("genre", "")).strip(
+        )[: Settings.anime_genre_hint_max_length],
+        media_type=str(request.query_params.get("type", "")).strip().lower(),
+        status=str(request.query_params.get("status", "")).strip().lower(),
+        year_from=_clamp_int(request.query_params.get("year_from"), default=0, minimum=1950, maximum=2100) or None,
+        year_to=_clamp_int(request.query_params.get("year_to"), default=0, minimum=1950, maximum=2100) or None,
+        min_score=min_score,
+        sort=str(request.query_params.get("sort", "rating")).strip(),
+        order=str(request.query_params.get("order", "desc")).strip().lower(),
         limit=limit,
     )

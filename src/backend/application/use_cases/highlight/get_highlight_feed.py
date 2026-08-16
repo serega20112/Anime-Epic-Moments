@@ -1,9 +1,12 @@
 from collections import Counter
 
 from backend.application.use_cases.highlight.get_user_highlights import GetUserHighlightsUseCase
-from backend.domain import FavoriteRepository
-from backend.domain import HighlightAnimeGroup, HighlightFeedPage
-from backend.domain import UserRepository
+from backend.domain import (
+    FavoriteRepository,
+    HighlightAnimeGroup,
+    HighlightFeedPage,
+    UserRepository,
+)
 from backend.domain.repositories.highlight_repository import HighlightRepository
 from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
 
@@ -12,22 +15,22 @@ class GetHighlightFeedUseCase(GetUserHighlightsUseCase):
     """Собирает социальный фид хайлайтов с персональными секциями."""
 
     def __init__(
-            self,
-            repo: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            favorite_repo: FavoriteRepository,
-            user_repo: UserRepository | None = None,
+        self,
+        repo: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        favorite_repo: FavoriteRepository,
+        user_repo: UserRepository | None = None,
     ):
         super().__init__(repo, anime_api_client, user_repo=user_repo)
         self.favorite_repo = favorite_repo
 
     async def execute(
-            self,
-            viewer_user_id: int | None = None,
-            anime_id: int | None = None,
-            category: str | None = None,
-            include_spoilers: bool = False,
-            limit: int = 12,
+        self,
+        viewer_user_id: int | None = None,
+        anime_id: int | None = None,
+        category: str | None = None,
+        include_spoilers: bool = False,
+        limit: int = 12,
     ) -> HighlightFeedPage:
         popular_items = (
             await self._build_dashboard(

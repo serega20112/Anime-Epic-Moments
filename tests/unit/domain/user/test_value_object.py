@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import pytest
 from dataclasses import asdict
+
+import pytest
 
 from backend.domain.highlight.value_object import (
     HighlightActivityItem,

@@ -8,24 +8,30 @@ from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
-from backend.application.use_cases import AddHighlightCommentUseCase
-from backend.application.use_cases import DeleteHighlightUseCase
-from backend.application.use_cases import EditHighlightUseCase
-from backend.application.use_cases import GetFollowingHighlightsUseCase
-from backend.application.use_cases import GetHighlightFeedUseCase
-from backend.application.use_cases import GetHighlightLikersUseCase
-from backend.application.use_cases import GetHighlightNotificationsUseCase
-from backend.application.use_cases import GetLikedHighlightsUseCase
-from backend.application.use_cases import GetPublicTopHighlightsUseCase
-from backend.application.use_cases import GetSavedHighlightsUseCase
-from backend.application.use_cases import GetSharedHighlightUseCase
-from backend.application.use_cases import GetUserHighlightsUseCase
-from backend.application.use_cases import SetHighlightLikeUseCase
-from backend.application.use_cases import SetSavedHighlightUseCase
+
+from backend.application.use_cases import (
+    AddHighlightCommentUseCase,
+    DeleteHighlightUseCase,
+    EditHighlightUseCase,
+    GetFollowingHighlightsUseCase,
+    GetHighlightFeedUseCase,
+    GetHighlightLikersUseCase,
+    GetHighlightNotificationsUseCase,
+    GetLikedHighlightsUseCase,
+    GetPublicTopHighlightsUseCase,
+    GetSavedHighlightsUseCase,
+    GetSharedHighlightUseCase,
+    GetUserHighlightsUseCase,
+    SetHighlightLikeUseCase,
+    SetSavedHighlightUseCase,
+)
 from backend.application.use_cases.highlight.create_highlight import CreateHighlightUseCase
 from backend.application.use_cases.highlight.get_highlight_comments import (
     GetHighlightCommentsUseCase,
 )
+from backend.infrastructure.security.flask_protection import client_ip, rate_limit
+from backend.infrastructure.web import render_template
+from backend.presentation.api.helpers import get_current_user, read_payload
 from backend.presentation.api.requests.highlight_mapper import (
     map_add_comment_command,
     map_create_highlight_command,
@@ -38,10 +44,6 @@ from backend.presentation.api.requests.highlight_mapper import (
     map_set_saved_command,
 )
 
-from backend.infrastructure.security.flask_protection import client_ip, rate_limit
-from backend.infrastructure.web import render_template
-from backend.presentation.api.helpers import get_current_user, read_payload
-
 highlight_router = APIRouter(prefix="/highlights", route_class=DishkaRoute)
 highlight_bp = highlight_router
 
@@ -52,12 +54,12 @@ highlight_bp = highlight_router
     limit=20,
     window_seconds=60,
     key_builder=lambda request: (
-            f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
+        f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
     ),
 )
 async def create_highlight(
-        request: Request,
-        use_case: FromDishka[CreateHighlightUseCase],
+    request: Request,
+    use_case: FromDishka[CreateHighlightUseCase],
 ):
     """Create a new highlight from JSON payload.
 
@@ -87,8 +89,8 @@ async def create_highlight(
 
 @highlight_router.get("/feed", name="highlight.get_highlight_feed")
 async def get_highlight_feed(
-        request: Request,
-        use_case: FromDishka[GetHighlightFeedUseCase],
+    request: Request,
+    use_case: FromDishka[GetHighlightFeedUseCase],
 ):
     """Render the highlight feed page with optional filters.
 
@@ -113,8 +115,8 @@ async def get_highlight_feed(
 
 @highlight_router.get("/following", name="highlight.get_following_highlights")
 async def get_following_highlights(
-        request: Request,
-        use_case: FromDishka[GetFollowingHighlightsUseCase],
+    request: Request,
+    use_case: FromDishka[GetFollowingHighlightsUseCase],
 ):
     """Render highlights from users the current user follows.
 
@@ -146,8 +148,8 @@ async def get_following_highlights(
 
 @highlight_router.get("/saved", name="highlight.get_saved_highlights")
 async def get_saved_highlights(
-        request: Request,
-        use_case: FromDishka[GetSavedHighlightsUseCase],
+    request: Request,
+    use_case: FromDishka[GetSavedHighlightsUseCase],
 ):
     """Render highlights saved by the current user.
 
@@ -185,8 +187,8 @@ async def get_saved_highlights(
 
 @highlight_router.get("/liked", name="highlight.get_liked_highlights")
 async def get_liked_highlights(
-        request: Request,
-        use_case: FromDishka[GetLikedHighlightsUseCase],
+    request: Request,
+    use_case: FromDishka[GetLikedHighlightsUseCase],
 ):
     """Render highlights liked by the current user.
 
@@ -224,9 +226,9 @@ async def get_liked_highlights(
 
 @highlight_router.get("/share/{highlight_id}", name="highlight.get_shared_highlight")
 async def get_shared_highlight(
-        request: Request,
-        highlight_id: int,
-        use_case: FromDishka[GetSharedHighlightUseCase],
+    request: Request,
+    highlight_id: int,
+    use_case: FromDishka[GetSharedHighlightUseCase],
 ):
     """Render a single highlight for public sharing.
 
@@ -261,8 +263,8 @@ async def get_shared_highlight(
 
 @highlight_router.get("/notifications", name="highlight.get_highlight_notifications")
 async def get_highlight_notifications(
-        request: Request,
-        use_case: FromDishka[GetHighlightNotificationsUseCase],
+    request: Request,
+    use_case: FromDishka[GetHighlightNotificationsUseCase],
 ):
     """Render highlight notifications for the current user.
 
@@ -287,8 +289,8 @@ async def get_highlight_notifications(
 
 @highlight_router.get("/top", name="highlight.get_public_top_highlights")
 async def get_public_top_highlights(
-        request: Request,
-        use_case: FromDishka[GetPublicTopHighlightsUseCase],
+    request: Request,
+    use_case: FromDishka[GetPublicTopHighlightsUseCase],
 ):
     """Render the public top highlights dashboard.
 
@@ -324,9 +326,9 @@ async def get_public_top_highlights(
 
 @highlight_router.get("/{user_id}", name="highlight.get_user_highlights")
 async def get_user_highlights(
-        request: Request,
-        user_id: int,
-        use_case: FromDishka[GetUserHighlightsUseCase],
+    request: Request,
+    user_id: int,
+    use_case: FromDishka[GetUserHighlightsUseCase],
 ):
     """Render highlights created by a specific user.
 
@@ -363,9 +365,9 @@ async def get_user_highlights(
 
 @highlight_router.put("/{highlight_id}", name="highlight.edit_highlight")
 async def edit_highlight(
-        request: Request,
-        highlight_id: int,
-        use_case: FromDishka[EditHighlightUseCase],
+    request: Request,
+    highlight_id: int,
+    use_case: FromDishka[EditHighlightUseCase],
 ):
     """Edit an existing highlight.
 
@@ -387,9 +389,9 @@ async def edit_highlight(
 
 @highlight_router.delete("/{highlight_id}", name="highlight.delete_highlight")
 async def delete_highlight(
-        request: Request,
-        highlight_id: int,
-        use_case: FromDishka[DeleteHighlightUseCase],
+    request: Request,
+    highlight_id: int,
+    use_case: FromDishka[DeleteHighlightUseCase],
 ):
     """Delete a highlight.
 
@@ -416,14 +418,14 @@ async def delete_highlight(
     limit=60,
     window_seconds=60,
     key_builder=lambda request: (
-            f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
+        f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
     ),
 )
 async def highlight_likes(
-        request: Request,
-        highlight_id: int,
-        set_like_use_case: FromDishka[SetHighlightLikeUseCase],
-        get_likers_use_case: FromDishka[GetHighlightLikersUseCase],
+    request: Request,
+    highlight_id: int,
+    set_like_use_case: FromDishka[SetHighlightLikeUseCase],
+    get_likers_use_case: FromDishka[GetHighlightLikersUseCase],
 ):
     """Get, set, or remove a highlight like.
 
@@ -464,13 +466,13 @@ async def highlight_likes(
     limit=60,
     window_seconds=60,
     key_builder=lambda request: (
-            f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
+        f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
     ),
 )
 async def set_saved_highlight(
-        request: Request,
-        highlight_id: int,
-        use_case: FromDishka[SetSavedHighlightUseCase],
+    request: Request,
+    highlight_id: int,
+    use_case: FromDishka[SetSavedHighlightUseCase],
 ):
     """Save or unsave a highlight.
 
@@ -504,14 +506,14 @@ async def set_saved_highlight(
     limit=30,
     window_seconds=60,
     key_builder=lambda request: (
-            f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
+        f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
     ),
 )
 async def highlight_comments(
-        request: Request,
-        highlight_id: int,
-        get_comments_use_case: FromDishka[GetHighlightCommentsUseCase],
-        add_comment_use_case: FromDishka[AddHighlightCommentUseCase],
+    request: Request,
+    highlight_id: int,
+    get_comments_use_case: FromDishka[GetHighlightCommentsUseCase],
+    add_comment_use_case: FromDishka[AddHighlightCommentUseCase],
 ):
     """Get or add highlight comments.
 
@@ -569,9 +571,9 @@ async def highlight_comments(
 
 
 async def _get_likers(
-        request: Request,
-        highlight_id: int,
-        use_case: GetHighlightLikersUseCase,
+    request: Request,
+    highlight_id: int,
+    use_case: GetHighlightLikersUseCase,
 ):
     """Return the likers list for a highlight.
 

@@ -34,8 +34,7 @@ class TestSetHighlightLikeUseCase:
         dashboard_cache.invalidate_public.assert_awaited_once()
         profile_cache.invalidate_overview.assert_awaited()
         invalidate_calls = [
-            call.kwargs or call.args
-            for call in profile_cache.invalidate_overview.await_args_list
+            call.kwargs or call.args for call in profile_cache.invalidate_overview.await_args_list
         ]
         assert (3,) in invalidate_calls
         assert (8,) in invalidate_calls

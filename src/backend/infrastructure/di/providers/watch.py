@@ -8,6 +8,7 @@ from backend.application.services import WatchSourceSyncService
 from backend.application.use_cases import (
     AddAnimeCommentUseCase,
     AddWatchSourceUseCase,
+    GetAnimeDiscussionUseCase,
     GetWatchPageUseCase,
     SetAnimeCommentLikeUseCase,
     SyncWatchSourcesUseCase,
@@ -56,6 +57,21 @@ class WatchUseCaseProvider(Provider):
             watch_source_sync_service,
             unit_of_work,
         )
+
+    @provide(scope=Scope.REQUEST)
+    def get_anime_discussion(
+        self,
+        watch_repository: WatchRepository,
+    ) -> GetAnimeDiscussionUseCase:
+        """Provide the get anime discussion use case.
+
+        Args:
+            watch_repository: Watch repository.
+
+        Returns:
+            GetAnimeDiscussionUseCase: Configured use case.
+        """
+        return GetAnimeDiscussionUseCase(watch_repository)
 
     @provide(scope=Scope.REQUEST)
     def add_watch_source(

@@ -1,53 +1,65 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Поиск аниме - AEM</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/anime.css') }}"
-    />
-  </head>
-  <body data-current-user-id="{{ current_user.id if current_user else '' }}">
-    <header class="header">
-      <div class="logo">AEM</div>
-      <form
-        class="search-container global-search-form"
-        action="{{ url_for('anime.search_anime_page') }}"
-        method="get"
-        autocomplete="off"
-      >
-        <input
-          type="text"
-          name="title"
-          class="global-search-input"
-          value="{{ initial_title }}"
-          placeholder="Поиск аниме по названию, жанру, эмоции…"
-        />
-        <button type="submit">🔍</button>
-        <div class="search-autocomplete" hidden></div>
-      </form>
-    </header>
-    <main class="anime-search">
-      <section class="results-panel search-page-results">
-        <div class="results-head">
-          <h2>Поиск по названию</h2>
-          <p id="title-results-meta">Введи название или выбери подсказку</p>
-        </div>
-        <div id="title-search-results" class="results-grid"></div>
-      </section>
-    </main>
-    <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/particles.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  </body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Поиск аниме — Anime Epic Moments{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="search-hero">
+  <div class="container">
+    <h1>Поиск аниме</h1>
+    <p>Находите тайтлы по названию — или опишите своими словами, что хотите посмотреть.</p>
+
+    <form class="search-panel glass" method="get" action="{{ url_for('anime.search_anime_page') }}" id="title-search-form">
+      <div class="search-bar">
+        <input type="search" name="title" id="search-input" placeholder="Название аниме…"
+               value="{{ initial_title }}" autofocus>
+        <button type="submit" class="btn btn-primary">Найти</button>
+      </div>
+    </form>
+
+    <div class="search-hints">
+      <span>Попробуйте:</span>
+      {% for hint in ["Steins;Gate", "Frieren", "Naruto", "Death Note", "One Piece"] %}
+      <button type="button" class="search-hint-chip" data-hint="{{ hint }}">{{ hint }}</button>
+      {% endfor %}
+    </div>
+
+    <p class="search-hints" style="margin-top:6px">
+      <span>Или ищите по настроению и описанию:</span>&nbsp;
+      <a href="{{ url_for('anime.search_by_description_page') }}">поиск по описанию →</a>
+    </p>
+  </div>
+</section>
+
+<section class="results-section">
+  <div class="container">
+    <div class="results-header">
+      <h2 class="section-title" style="margin:0">Результаты</h2>
+      <span class="results-count" id="results-count"></span>
+    </div>
+    <div class="loading-state hidden" id="results-loading">
+      <div class="spinner"></div>
+      <span>Ищем аниме…</span>
+    </div>
+    <div class="results-grid" id="results-grid"></div>
+    <div class="empty-state hidden" id="results-empty">
+      <span class="empty-emoji">👻</span>
+      <h3>Ничего не найдено</h3>
+      <p>Попробуйте другой запрос или воспользуйтесь поиском по описанию.</p>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('anime.search_by_description_page') }}">Поиск по описанию</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.AEMAnimeSearchPage = {
+    initialTitle: {{ initial_title|tojson }},
+  };
+</script>
+<script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
+{% endblock %}

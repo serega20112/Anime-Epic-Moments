@@ -17,12 +17,12 @@ class DeleteHighlightUseCase:
     """Use case для удаления Highlight"""
 
     def __init__(
-            self,
-            repo: HighlightRepository,
-            unit_of_work: UnitOfWorkInterface,
-            recommendation_service: RecommendationService | None = None,
-            highlight_dashboard_cache: HighlightDashboardCache | None = None,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        repo: HighlightRepository,
+        unit_of_work: UnitOfWorkInterface,
+        recommendation_service: RecommendationService | None = None,
+        highlight_dashboard_cache: HighlightDashboardCache | None = None,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.repo = repo
         self.recommendation_service = recommendation_service

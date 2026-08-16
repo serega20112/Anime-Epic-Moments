@@ -25,16 +25,12 @@ class TestAddHighlightCommentUseCase:
         use_case = AddHighlightCommentUseCase(repo, AsyncMock(), dashboard_cache)
 
         result = await use_case.execute(
-            AddHighlightCommentCommand(
-                highlight_id=5, user_id=7, content="great scene"
-            )
+            AddHighlightCommentCommand(highlight_id=5, user_id=7, content="great scene")
         )
 
         assert result.ok is True
         assert result.status_code == 201
-        repo.add_comment.assert_awaited_once_with(
-            highlight_id=5, user_id=7, content="great scene"
-        )
+        repo.add_comment.assert_awaited_once_with(highlight_id=5, user_id=7, content="great scene")
         dashboard_cache.invalidate_public.assert_awaited_once()
 
     async def test_rejects_empty_content(self):

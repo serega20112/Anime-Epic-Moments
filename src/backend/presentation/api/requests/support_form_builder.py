@@ -11,10 +11,10 @@ _PAGE_URL_MAX_LENGTH = 500
 
 
 def build_support_form_data(
-        *,
-        command: CreateSupportTicketCommand,
-        user_email: str | None = None,
-        user_username: str | None = None,
+    *,
+    command: CreateSupportTicketCommand,
+    user_email: str | None = None,
+    user_username: str | None = None,
 ) -> dict[str, str]:
     """Build pre-filled form data from a command for re-display.
 
@@ -37,11 +37,11 @@ def build_support_form_data(
 
 
 def build_default_support_form(
-        *,
-        user_email: str | None = None,
-        user_username: str | None = None,
-        channel_param: Any = None,
-        page_param: Any = None,
+    *,
+    user_email: str | None = None,
+    user_username: str | None = None,
+    channel_param: Any = None,
+    page_param: Any = None,
 ) -> dict[str, str]:
     """Build default form data from the current user and query params.
 

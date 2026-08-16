@@ -1,7 +1,6 @@
 from backend.application.dto import SaveViewingSessionCommand
 from backend.application.use_cases.watch.result import WatchResult
-from backend.domain import ViewingSession
-from backend.domain import WatchRepository
+from backend.domain import ViewingSession, WatchRepository
 from backend.domain.services.profile_overview_cache import (
     ProfileOverviewCacheInterface as ProfileOverviewCache,
 )
@@ -12,10 +11,10 @@ class SaveViewingSessionUseCase:
     """Сохраняет текущую позицию просмотра пользователя."""
 
     def __init__(
-            self,
-            watch_repo: WatchRepository,
-            unit_of_work: UnitOfWorkInterface,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        watch_repo: WatchRepository,
+        unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.watch_repo = watch_repo
         self.profile_overview_cache = profile_overview_cache

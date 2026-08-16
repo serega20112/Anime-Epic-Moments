@@ -6,6 +6,7 @@ import logging
 import secrets
 from http import HTTPStatus
 from pathlib import Path
+from time import perf_counter
 from urllib.parse import urlparse
 
 import jwt
@@ -27,6 +28,7 @@ from backend.presentation.api.v1.anime_route import anime_router
 from backend.presentation.api.v1.auth_route import auth_router
 from backend.presentation.api.v1.collection_route import collection_router
 from backend.presentation.api.v1.favorite_route import favorite_router
+from backend.presentation.api.v1.health_route import health_router
 from backend.presentation.api.v1.highlight_route import highlight_router
 from backend.presentation.api.v1.index_route import index_router
 from backend.presentation.api.v1.recommendation_route import recommendation_router
@@ -35,6 +37,7 @@ from backend.presentation.api.v1.user_route import user_router
 from backend.presentation.api.v1.watch_route import (
     watch_router,
 )
+from backend.utils.logging import request_id_var, user_id_var
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 FRONTEND_ROOT = PROJECT_ROOT / "src" / "frontend"
@@ -64,6 +67,37 @@ def create_app() -> FastAPI:
         https_only=Settings.cookie_secure,
         session_cookie="aem_session",
     )
+
+    @app.middleware("http")
+    async def request_logging_middleware(request: Request, call_next):
+        """Assign a request ID, correlate logs, and report latency.
+
+        Returns:
+            Response: HTTP response with the request ID header.
+        """
+        request_id = request.headers.get("X-Request-ID") or secrets.token_hex(8)
+        started_at = perf_counter()
+        request_id_var.set(request_id)
+        logger.info(
+            "request_started method=%s path=%s",
+            request.method,
+            request.url.path,
+        )
+        try:
+            response = await call_next(request)
+        finally:
+            request_id_var.set(None)
+            user_id_var.set(None)
+        duration_ms = int((perf_counter() - started_at) * 1000)
+        response.headers.setdefault("X-Request-ID", request_id)
+        logger.info(
+            "request_finished method=%s path=%s status=%s duration_ms=%s",
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
+        )
+        return response
 
     @app.middleware("http")
     async def app_context_middleware(request: Request, call_next):
@@ -129,6 +163,7 @@ def create_app() -> FastAPI:
     app.include_router(support_router)
     app.include_router(user_router)
     app.include_router(index_router)
+    app.include_router(health_router)
 
     @app.exception_handler(404)
     async def handle_not_found(request: Request, _error):
@@ -186,6 +221,7 @@ async def _load_user(request: Request):
         user_id = jwt_service.decode_token(token)
         user_repository = await dishka_container.get(UserRepository)
         request.state.user = await user_repository.get_by_id(user_id)
+        user_id_var.set(str(user_id))
     except jwt.InvalidTokenError as error:
         logger.info(
             "access_token_rejected reason=%s path=%s",

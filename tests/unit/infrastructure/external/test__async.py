@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from backend.infrastructure.external._async import external_method
 
 
@@ -23,7 +21,6 @@ async def test_external_method_makes_sync_callable_awaitable():
 
 
 async def test_external_method_runs_in_worker_thread():
-    import threading
 
     blocking = _Blocking()
 

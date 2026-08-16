@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.use_cases.highlight.get_highlight_comments import GetHighlightCommentsUseCase
+from backend.application.use_cases.highlight.get_highlight_comments import (
+    GetHighlightCommentsUseCase,
+)
 
 
 @pytest.mark.unit

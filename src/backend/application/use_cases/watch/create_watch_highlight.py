@@ -1,9 +1,7 @@
-from backend.application.dto import CreateHighlightCommand
-from backend.application.dto import CreateWatchHighlightCommand
-from backend.application.use_cases.watch.result import WatchResult
+from backend.application.dto import CreateHighlightCommand, CreateWatchHighlightCommand
 from backend.application.use_cases.highlight.create_highlight import CreateHighlightUseCase
-from backend.domain import HighlightContext
-from backend.domain import WatchRepository
+from backend.application.use_cases.watch.result import WatchResult
+from backend.domain import HighlightContext, WatchRepository
 from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
@@ -11,10 +9,10 @@ class CreateWatchHighlightUseCase:
     """Создает хайлайт из плеера и сохраняет playback context."""
 
     def __init__(
-            self,
-            create_highlight_use_case: CreateHighlightUseCase,
-            watch_repo: WatchRepository,
-            unit_of_work: UnitOfWorkInterface,
+        self,
+        create_highlight_use_case: CreateHighlightUseCase,
+        watch_repo: WatchRepository,
+        unit_of_work: UnitOfWorkInterface,
     ):
         self.create_highlight_use_case = create_highlight_use_case
         self.watch_repo = watch_repo
@@ -27,11 +25,11 @@ class CreateWatchHighlightUseCase:
 
     async def _execute(self, command: CreateWatchHighlightCommand) -> WatchResult:
         if (
-                command.episode is None
-                or command.watch_source_id is None
-                or command.translation_id is None
-                or command.start_timestamp is None
-                or command.end_timestamp is None
+            command.episode is None
+            or command.watch_source_id is None
+            or command.translation_id is None
+            or command.start_timestamp is None
+            or command.end_timestamp is None
         ):
             return WatchResult.failure("invalid_payload", status_code=400)
         highlight_result = await self.create_highlight_use_case.execute(

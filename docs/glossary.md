@@ -17,7 +17,7 @@
 - Recommendation: ранжированная рекомендация, собранная из избранного и хайлайтов
 - Provider: внешняя интеграция вроде Jikan, AniList, Kodik, AniLibria, YouTube или JustWatch
 - Use case: одно прикладное действие, вызываемое из routes
-- Delivery layer: Flask routes и формирование ответов
+- Presentation layer: FastAPI routes и формирование ответов
 - Infrastructure layer: репозитории, база, внешние клиенты, кэши и security-хелперы
 
 ## Почему это сделано так
@@ -28,7 +28,7 @@
 ## Где в коде
 
 - `src/backend/domain`
-- `src/backend/use_case`
+- `src/backend/application/use_cases`
 - `src/backend/infrastructure/external`
 - `src/backend/infrastructure/models/sqlalchemy_models.py`
 

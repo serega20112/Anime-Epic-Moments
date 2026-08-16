@@ -27,8 +27,6 @@ class UserModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-
-
 class UserFollowModel(Base):
     __tablename__ = "user_follows"
     __table_args__ = (
@@ -36,18 +34,22 @@ class UserFollowModel(Base):
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    follower_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    followed_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    follower_user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    followed_user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     created_at = Column(DateTime, default=datetime.utcnow)
-
-
 
 
 class SupportTicketModel(Base):
     __tablename__ = "support_tickets"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     email = Column(String(254), nullable=False)
     username = Column(String(40), nullable=False)
     subject = Column(String(120), nullable=False)
@@ -60,13 +62,13 @@ class SupportTicketModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-
-
 class HighlightModel(Base):
     __tablename__ = "highlights"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     anime_id = Column(Integer, nullable=False)
     episode = Column(Integer, nullable=False)
     start_timestamp = Column(Float, nullable=False)
@@ -81,30 +83,32 @@ class HighlightModel(Base):
     emotion = Column(String, nullable=True)
 
 
-
-
 class HighlightLikeModel(Base):
     __tablename__ = "highlight_likes"
     __table_args__ = (UniqueConstraint("highlight_id", "user_id", name="uq_highlight_like"),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    highlight_id = Column(Integer, ForeignKey("highlights.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    highlight_id = Column(
+        Integer, ForeignKey("highlights.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     created_at = Column(DateTime, default=datetime.utcnow)
-
-
 
 
 class HighlightCommentModel(Base):
     __tablename__ = "highlight_comments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    highlight_id = Column(Integer, ForeignKey("highlights.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    highlight_id = Column(
+        Integer, ForeignKey("highlights.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     content = Column(String(600), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-
-
 
 
 class SavedHighlightModel(Base):
@@ -112,18 +116,22 @@ class SavedHighlightModel(Base):
     __table_args__ = (UniqueConstraint("highlight_id", "user_id", name="uq_saved_highlight"),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    highlight_id = Column(Integer, ForeignKey("highlights.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    highlight_id = Column(
+        Integer, ForeignKey("highlights.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     saved_at = Column(DateTime, default=datetime.utcnow)
-
-
 
 
 class FavoriteModel(Base):
     __tablename__ = "favorites"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     anime_id = Column(Integer, nullable=False)
     title = Column(String, nullable=True)
     description = Column(String, nullable=True)
@@ -132,29 +140,27 @@ class FavoriteModel(Base):
     added_at = Column(DateTime, default=datetime.utcnow)
 
 
-
-
 class AnimeCollectionModel(Base):
     __tablename__ = "anime_collections"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     title = Column(String(80), nullable=False)
     description = Column(String(400), nullable=True)
     is_public = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-
-
 class AnimeCollectionItemModel(Base):
     __tablename__ = "anime_collection_items"
-    __table_args__ = (
-        UniqueConstraint("collection_id", "anime_id", name="uq_collection_anime"),
-    )
+    __table_args__ = (UniqueConstraint("collection_id", "anime_id", name="uq_collection_anime"),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    collection_id = Column(Integer, ForeignKey("anime_collections.id"), nullable=False)
+    collection_id = Column(
+        Integer, ForeignKey("anime_collections.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     anime_id = Column(Integer, nullable=False)
     title = Column(String(120), nullable=False)
     description = Column(String, nullable=True)
@@ -163,44 +169,45 @@ class AnimeCollectionItemModel(Base):
     added_at = Column(DateTime, default=datetime.utcnow)
 
 
-
-
 class AnimeDiscussionCommentModel(Base):
     __tablename__ = "anime_discussion_comments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     anime_id = Column(Integer, nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     content = Column(String(600), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-
-
 class AnimeDiscussionLikeModel(Base):
     __tablename__ = "anime_discussion_likes"
-    __table_args__ = (
-        UniqueConstraint("comment_id", "user_id", name="uq_anime_discussion_like"),
-    )
+    __table_args__ = (UniqueConstraint("comment_id", "user_id", name="uq_anime_discussion_like"),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    comment_id = Column(Integer, ForeignKey("anime_discussion_comments.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    comment_id = Column(
+        Integer,
+        ForeignKey("anime_discussion_comments.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     created_at = Column(DateTime, default=datetime.utcnow)
-
-
 
 
 class UserAnimeStatusModel(Base):
     __tablename__ = "user_anime_statuses"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     anime_id = Column(Integer, nullable=False)
     status = Column(String, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow)
-
-
 
 
 class TranslationModel(Base):
@@ -214,15 +221,15 @@ class TranslationModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-
-
 class WatchSourceModel(Base):
     __tablename__ = "watch_sources"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     anime_id = Column(Integer, nullable=False)
     episode = Column(Integer, nullable=False)
-    translation_id = Column(Integer, ForeignKey("translations.id"), nullable=False)
+    translation_id = Column(
+        Integer, ForeignKey("translations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     provider_name = Column(String, nullable=False)
     source_name = Column(String, nullable=False)
     stream_url = Column(String, nullable=False)
@@ -231,16 +238,18 @@ class WatchSourceModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-
-
 class ViewingSessionModel(Base):
     __tablename__ = "viewing_sessions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     anime_id = Column(Integer, nullable=False)
     episode = Column(Integer, nullable=False)
-    watch_source_id = Column(Integer, ForeignKey("watch_sources.id"), nullable=False)
+    watch_source_id = Column(
+        Integer, ForeignKey("watch_sources.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     position_seconds = Column(Float, nullable=False, default=0.0)
     volume = Column(Float, nullable=False, default=1.0)
     quality_label = Column(String, nullable=False)
@@ -248,14 +257,18 @@ class ViewingSessionModel(Base):
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 
-
-
 class HighlightContextModel(Base):
     __tablename__ = "highlight_contexts"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    highlight_id = Column(Integer, ForeignKey("highlights.id"), nullable=False)
-    watch_source_id = Column(Integer, ForeignKey("watch_sources.id"), nullable=False)
-    translation_id = Column(Integer, ForeignKey("translations.id"), nullable=False)
+    highlight_id = Column(
+        Integer, ForeignKey("highlights.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    watch_source_id = Column(
+        Integer, ForeignKey("watch_sources.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    translation_id = Column(
+        Integer, ForeignKey("translations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     title = Column(String, nullable=False, default="")
     created_at = Column(DateTime, default=datetime.utcnow)

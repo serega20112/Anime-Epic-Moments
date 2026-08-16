@@ -4,13 +4,21 @@ from __future__ import annotations
 
 import logging
 import sys
+from contextvars import ContextVar
 from typing import Any
 
 from pythonjsonlogger.json import JsonFormatter
 
+request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
+user_id_var: ContextVar[str | None] = ContextVar("user_id", default=None)
+
 
 class RequestIdFilter(logging.Filter):
-    """Attach request ID and user ID to log records."""
+    """Attach request ID and user ID to log records.
+
+    Reads the values from context variables set by the request logging
+    middleware, falling back to the instance attributes for tests.
+    """
 
     def __init__(self) -> None:
         super().__init__()
@@ -26,8 +34,8 @@ class RequestIdFilter(logging.Filter):
         Returns:
             bool: Always True to keep the record.
         """
-        record.request_id = self.request_id or "-"
-        record.user_id = self.user_id or "-"
+        record.request_id = request_id_var.get() or self.request_id or "-"
+        record.user_id = user_id_var.get() or self.user_id or "-"
         return True
 
 

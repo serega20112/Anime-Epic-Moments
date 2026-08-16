@@ -151,9 +151,7 @@ def map_resend_verification_command(form: dict) -> ResendVerificationCommand:
     return ResendVerificationCommand(email=email)
 
 
-def map_request_password_reset_command(
-        form: dict, *, base_url: str
-) -> RequestPasswordResetCommand:
+def map_request_password_reset_command(form: dict, *, base_url: str) -> RequestPasswordResetCommand:
     """Validate and build a password reset request command from form data.
 
     Args:

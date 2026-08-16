@@ -78,17 +78,17 @@ async def test_highlight_dashboard_cache_returns_saved_public_dashboard():
     )
 
     assert (
-            await cache.get_public(
-                limit=10,
-                anime_id=None,
-                emotion=None,
-                category=None,
-                sort_by="popular",
-                created_date=None,
-                query=None,
-                include_spoilers=False,
-            )
-            == expected
+        await cache.get_public(
+            limit=10,
+            anime_id=None,
+            emotion=None,
+            category=None,
+            sort_by="popular",
+            created_date=None,
+            query=None,
+            include_spoilers=False,
+        )
+        == expected
     )
 
 
@@ -111,17 +111,17 @@ async def test_highlight_dashboard_cache_invalidates_public_dashboards():
     await cache.invalidate_public()
 
     assert (
-            await cache.get_public(
-                limit=10,
-                anime_id=None,
-                emotion=None,
-                category=None,
-                sort_by="recent",
-                created_date=None,
-                query=None,
-                include_spoilers=False,
-            )
-            is None
+        await cache.get_public(
+            limit=10,
+            anime_id=None,
+            emotion=None,
+            category=None,
+            sort_by="recent",
+            created_date=None,
+            query=None,
+            include_spoilers=False,
+        )
+        is None
     )
 
 
@@ -158,32 +158,26 @@ async def test_highlight_dashboard_cache_separates_popular_and_recent_dashboards
     )
 
     assert (
-            (
-                await cache.get_public(
-                    limit=10,
-                    anime_id=None,
-                    emotion=None,
-                    category=None,
-                    sort_by="popular",
-                    created_date=None,
-                    query=None,
-                    include_spoilers=False,
-                )
-            ).selected_sort
-            == "popular"
-    )
+        await cache.get_public(
+            limit=10,
+            anime_id=None,
+            emotion=None,
+            category=None,
+            sort_by="popular",
+            created_date=None,
+            query=None,
+            include_spoilers=False,
+        )
+    ).selected_sort == "popular"
     assert (
-            (
-                await cache.get_public(
-                    limit=10,
-                    anime_id=None,
-                    emotion=None,
-                    category=None,
-                    sort_by="recent",
-                    created_date=None,
-                    query=None,
-                    include_spoilers=False,
-                )
-            ).selected_sort
-            == "recent"
-    )
+        await cache.get_public(
+            limit=10,
+            anime_id=None,
+            emotion=None,
+            category=None,
+            sort_by="recent",
+            created_date=None,
+            query=None,
+            include_spoilers=False,
+        )
+    ).selected_sort == "recent"

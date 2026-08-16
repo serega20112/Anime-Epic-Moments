@@ -4,10 +4,10 @@ from types import SimpleNamespace
 
 import pytest
 
+from backend.infrastructure.external import email_verification_mailer as mailer_module
 from backend.infrastructure.external.email_verification_mailer import (
     EmailVerificationMailer,
 )
-from backend.infrastructure.external import email_verification_mailer as mailer_module
 
 
 class _FakeSMTP:
@@ -125,7 +125,9 @@ def test_email_verification_mailer_wraps_network_errors(monkeypatch):
         ("unknown", "Неоновая тема"),
     ],
 )
-def test_email_verification_mailer_renders_theme_specific_html(monkeypatch, theme, expected_fragment):
+def test_email_verification_mailer_renders_theme_specific_html(
+    monkeypatch, theme, expected_fragment
+):
     """Проверяем, что EmailVerificationMailer строит HTML-письмо в палитре выбранной темы."""
     monkeypatch.setattr(
         mailer_module,

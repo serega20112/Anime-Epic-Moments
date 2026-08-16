@@ -12,9 +12,7 @@ class TestSupportTicketSubject:
         assert support_ticket_subject(ip_address="1.2.3.4", user_id=9) == "1.2.3.4::user::9"
 
     def test_guest(self):
-        assert (
-            support_ticket_subject(ip_address="1.2.3.4", user_id=None) == "1.2.3.4::guest"
-        )
+        assert support_ticket_subject(ip_address="1.2.3.4", user_id=None) == "1.2.3.4::guest"
 
 
 class TestWatchAnimeSubject:

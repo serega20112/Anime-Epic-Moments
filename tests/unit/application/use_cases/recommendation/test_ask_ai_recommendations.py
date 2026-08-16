@@ -67,9 +67,7 @@ class TestAskAiRecommendationsUseCase:
         use_case = AskAiRecommendationsUseCase(favorite_repo, anime_api_client, hf_client)
 
         result = await use_case.execute(
-            AskAiRecommendationsCommand(
-                user_id=7, query="что-то как Naruto, но темнее", limit=3
-            )
+            AskAiRecommendationsCommand(user_id=7, query="что-то как Naruto, но темнее", limit=3)
         )
 
         assert result.ok is True

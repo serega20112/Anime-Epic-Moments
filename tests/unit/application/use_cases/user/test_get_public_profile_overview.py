@@ -68,7 +68,9 @@ class TestGetPublicProfileOverviewUseCase:
             SimpleNamespace(id=11, username="follower-1", avatar_url=None)
         ]
         user_repo.get_followed_users.return_value = [
-            SimpleNamespace(id=12, username="followed-1", avatar_url="https://example.com/followed.png")
+            SimpleNamespace(
+                id=12, username="followed-1", avatar_url="https://example.com/followed.png"
+            )
         ]
         user_repo.is_following.return_value = is_following
         collection_repo = AsyncMock()

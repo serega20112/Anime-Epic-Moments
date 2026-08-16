@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import pytest
 from starlette.responses import JSONResponse, Response, StreamingResponse
 
 from backend.infrastructure.media_proxy.media_proxy_client import MediaProxyClient

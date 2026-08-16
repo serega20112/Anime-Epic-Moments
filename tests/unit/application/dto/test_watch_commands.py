@@ -45,9 +45,7 @@ class TestSaveViewingSessionCommand:
         assert command.is_paused is True
 
     def test_defaults(self):
-        command = SaveViewingSessionCommand(
-            user_id=1, anime_id=2, episode=3, watch_source_id=4
-        )
+        command = SaveViewingSessionCommand(user_id=1, anime_id=2, episode=3, watch_source_id=4)
         assert command.position_seconds == 0.0
         assert command.volume == 1.0
         assert command.quality_label == "Auto"

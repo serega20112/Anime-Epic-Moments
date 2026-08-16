@@ -30,6 +30,7 @@
 - Деплой и runtime: [deployment/overview.md](deployment/overview.md)
 - Тестовая стратегия: [testing/strategy.md](testing/strategy.md)
 - Онбординг разработчика: [onboarding.md](onboarding.md)
+- Стайлгайд по работе с проектом и репозиторием: [styleguide.md](styleguide.md)
 - Конвенции: [conventions.md](conventions.md)
 - Глоссарий: [glossary.md](glossary.md)
 - Основные пользовательские сценарии: [use-cases.md](use-cases.md)
@@ -48,12 +49,15 @@
 ## Где это в коде
 
 - Точка входа: `../src/backend/main.py`
-- Bootstrap backend: `src/backend/create_app.py`
+- App factory (FastAPI): `src/backend/presentation/app_factory.py`
+- Граф зависимостей (dishka): `src/backend/infrastructure/di`
 - Frontend-шаблоны и статика: `src/frontend`
 - Build-артефакты: `build`
+- Зависимости и конфиги инструментов: `../pyproject.toml`, `../ruff.toml`
 
 ## Связанные документы
 
 - Вход в репозиторий: [../README.md](../README.md)
 - Путь нового разработчика: [onboarding.md](onboarding.md)
 - Правила разработки: [conventions.md](conventions.md)
+- Стайлгайд: [styleguide.md](styleguide.md)

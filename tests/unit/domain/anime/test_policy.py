@@ -19,10 +19,10 @@ class TestAnimeSafetyPolicy:
         ],
     )
     def test_has_explicit_adult_intent_detects_explicit_queries(
-            self,
-            description,
-            genre_hint,
-            expected,
+        self,
+        description,
+        genre_hint,
+        expected,
     ):
         """Что тестируем: метод has_explicit_adult_intent.
 
@@ -43,11 +43,11 @@ class TestAnimeSafetyPolicy:
         ],
     )
     def test_is_probably_nsfw_uses_title_description_and_genres(
-            self,
-            title,
-            description,
-            genres,
-            expected,
+        self,
+        title,
+        description,
+        genres,
+        expected,
     ):
         """Что тестируем: метод is_probably_nsfw.
 

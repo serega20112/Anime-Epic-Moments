@@ -15,11 +15,11 @@ class RequestEmailVerificationUseCase:
     """Создает pending-регистрацию и отправляет код подтверждения email."""
 
     def __init__(
-            self,
-            user_repo: UserRepository,
-            password_service: PasswordService,
-            verification_store: EmailVerificationStore,
-            mailer: EmailVerificationMailer,
+        self,
+        user_repo: UserRepository,
+        password_service: PasswordService,
+        verification_store: EmailVerificationStore,
+        mailer: EmailVerificationMailer,
     ):
         self.user_repo = user_repo
         self.password_service = password_service
@@ -27,11 +27,11 @@ class RequestEmailVerificationUseCase:
         self.mailer = mailer
 
     async def execute(
-            self,
-            email: str,
-            password: str,
-            username: str,
-            theme: str = "neon",
+        self,
+        email: str,
+        password: str,
+        username: str,
+        theme: str = "neon",
     ) -> AuthResult:
         """Start registration by requesting an email verification code.
 
@@ -68,8 +68,7 @@ class RequestEmailVerificationUseCase:
         return AuthResult.success(
             data=normalized_email,
             message=(
-                "Мы отправили код подтверждения на почту. "
-                "Введи его, чтобы завершить регистрацию."
+                "Мы отправили код подтверждения на почту. Введи его, чтобы завершить регистрацию."
             ),
             redirect_endpoint="auth.verify_email_page",
             redirect_email=normalized_email,

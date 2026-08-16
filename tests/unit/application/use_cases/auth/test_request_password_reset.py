@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+import backend.application.use_cases.auth.request_password_reset as module
 from backend.application.use_cases.auth.request_password_reset import (
     RequestPasswordResetUseCase,
 )
-from unittest.mock import AsyncMock, Mock
-
-import backend.application.use_cases.auth.request_password_reset as module
 
 
 @pytest.mark.unit

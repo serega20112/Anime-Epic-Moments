@@ -1,236 +1,123 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {% set page_title = 'Топ хайлайтов' if view_mode == 'public' else
-    'Сохраненные хайлайты' if view_mode == 'saved' else 'Мои лайки' if view_mode
-    == 'liked' else 'Поделиться хайлайтом' if view_mode == 'share' else 'Мои
-    хайлайты' %} {% set include_spoilers = dashboard.include_spoilers %}
-    <title>{{ page_title }} - AEM</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/anime.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/highlight.css') }}"
-    />
-  </head>
-  <body>
-    <header class="header">
-      <div class="logo">AEM</div>
-      <form
-        class="search-container global-search-form"
-        action="{{ url_for('anime.search_anime_page') }}"
-        method="get"
-        autocomplete="off"
-      >
-        <input
-          type="text"
-          name="title"
-          class="global-search-input"
-          placeholder="Найди аниме по названию, жанру или эмоции…"
-        />
-        <button type="submit">🔍</button>
-        <div class="search-autocomplete" hidden></div>
-      </form>
-      <nav>
-        <a href="{{ url_for('index.index') }}">Главная</a>
-        <a href="{{ url_for('highlight.get_highlight_feed') }}">Фид</a>
-        <a href="{{ url_for('highlight.get_public_top_highlights') }}"
-          >Тренды</a
-        >
-        {% if current_user %}
-        <a href="{{ url_for('highlight.get_following_highlights') }}"
-          >Подписки</a
-        >
-        <a href="{{ url_for('auth.profile_page') }}">Профиль</a>
-        <a href="{{ url_for('highlight.get_liked_highlights') }}">Мои лайки</a>
-        <a href="{{ url_for('highlight.get_saved_highlights') }}"
-          >Сохраненные</a
-        >
-        <a href="{{ url_for('highlight.get_highlight_notifications') }}"
-          >Уведомления</a
-        >
-        <a
-          href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}"
-          >Мои хайлайты</a
-        >
-        <a
-          href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}"
-          >Избранное</a
-        >
-        {% endif %}
-      </nav>
-    </header>
+{% extends "base.html" %}
 
-    <main class="search-page">
-      <section class="search-shell highlight-dashboard">
-        <aside class="filters-panel">
-          <h1>{{ page_title }}</h1>
-          <p class="filters-subtitle">
-            {% if view_mode == 'public' %} Смотри самые обсуждаемые моменты
-            сообщества, фильтруй по аниме и категории. {% elif view_mode ==
-            'saved' %} Храни ценные моменты отдельно от обычных лайков и
-            возвращайся к ним позже. {% elif view_mode == 'liked' %} Отдельная
-            лента моментов, которые ты уже отметил лайком. {% elif view_mode ==
-            'share' %} Открытая карточка одного момента, которой можно делиться
-            без лишнего контекста. {% else %} Управляй своей библиотекой
-            моментов, категориями и откликом аудитории. {% endif %}
-          </p>
+{% block title %}{{ page_title }} — Anime Epic Moments{% endblock %}
 
-          <form class="description-search-form" method="get">
-            <div class="filter-control">
-              <label for="anime_id">По аниме</label>
-              <select id="anime_id" name="anime_id">
-                <option value="">Все аниме</option>
-                {% for group in dashboard.anime_groups %}
-                <option
-                  value="{{ group.anime_id }}"
-                  {% if dashboard.selected_anime_id == group.anime_id %}selected{% endif %}
-                >
-                  {{ group.anime_title }} ({{ group.count }})
-                </option>
-                {% endfor %}
-              </select>
-            </div>
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}">
+{% endblock %}
 
-            <div class="filter-control">
-              <label for="emotion">По эмоции</label>
-              <select id="emotion" name="emotion">
-                <option value="">Все эмоции</option>
-                {% for emotion in dashboard.emotions %}
-                <option
-                  value="{{ emotion }}"
-                  {% if dashboard.selected_emotion == emotion %}selected{% endif %}
-                >
-                  {{ emotion }}
-                </option>
-                {% endfor %}
-              </select>
-            </div>
+{% set titles = {
+  "public": "Топ хайлайтов",
+  "user": "Хайлайты пользователя",
+  "saved": "Сохранённые",
+  "liked": "Мои лайки",
+  "share": "Хайлайт"
+} %}
+{% set page_title = titles[view_mode] %}
 
-            <div class="filter-control">
-              <label for="category">По категории</label>
-              <select id="category" name="category">
-                <option value="">Все категории</option>
-                {% for category in dashboard.categories %}
-                <option
-                  value="{{ category }}"
-                  {% if dashboard.selected_category == category %}selected{% endif %}
-                >
-                  {{ category }}
-                </option>
-                {% endfor %}
-              </select>
-            </div>
+{% if view_mode == "public" %}
+{% set filter_action = url_for('highlight.get_public_top_highlights') %}
+{% elif view_mode == "user" %}
+{% set filter_action = url_for('highlight.get_user_highlights', user_id=user_id) %}
+{% elif view_mode == "saved" %}
+{% set filter_action = url_for('highlight.get_saved_highlights') %}
+{% elif view_mode == "liked" %}
+{% set filter_action = url_for('highlight.get_liked_highlights') %}
+{% elif view_mode == "share" %}
+{% set filter_action = "#" %}
+{% endif %}
 
-            <div class="filter-control">
-              <label for="sort">Сортировка</label>
-              <select id="sort" name="sort">
-                <option
-                  value="recent"
-                  {% if dashboard.selected_sort == 'recent' %}selected{% endif %}
-                >
-                  Сначала новые
-                </option>
-                <option
-                  value="popular"
-                  {% if dashboard.selected_sort == 'popular' %}selected{% endif %}
-                >
-                  По популярности
-                </option>
-              </select>
-            </div>
+{% block content %}
+<div class="container">
+  <header class="dash-head">
+    <div>
+      <h1 class="page-title">{{ page_title }}</h1>
+      {% if view_mode == "share" and dashboard.items %}
+      <p class="muted">Публичная страница хайлайта. Лайки и комментарии требуют авторизации.</p>
+      {% elif view_mode == "public" and dashboard.items %}
+      <p class="muted">Самые залайканные моменты сообщества.</p>
+      {% endif %}
+    </div>
 
-            <div class="filter-control">
-              <label for="date">По дате</label>
-              <input
-                id="date"
-                type="date"
-                name="date"
-                value="{{ dashboard.selected_date or '' }}"
-              />
-            </div>
+    {% set s = dashboard.stats %}
+    {% if s %}
+    <div class="dash-stats">
+      {% if s.total_highlights is not none %}
+      <div class="stat-pill"><b>{{ s.total_highlights }}</b><span>всего</span></div>
+      {% endif %}
+      {% if s.top_anime_title %}
+      <div class="stat-pill"><b style="font-size:var(--text-sm)">{{ s.top_anime_title }}</b><span>топ-аниме</span></div>
+      {% endif %}
+      {% if s.average_duration_seconds %}
+      <div class="stat-pill"><b>{{ (s.average_duration_seconds|round|int)|default(0) }}с</b><span>средний момент</span></div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </header>
 
-            <div class="filter-control">
-              <label for="query">Поиск по содержанию</label>
-              <input
-                id="query"
-                type="text"
-                name="query"
-                value="{{ dashboard.selected_query or '' }}"
-                placeholder="Название, описание, эмоция"
-              />
-            </div>
+  {% if view_mode != "share" %}
+  <form class="filters" method="get" action="{{ filter_action }}">
+    {% if dashboard.emotions %}
+    <select name="emotion" aria-label="Эмоция">
+      <option value="">Все эмоции</option>
+      {% for e in dashboard.emotions %}
+      <option value="{{ e }}" {{ 'selected' if dashboard.selected_emotion == e }}>{{ e }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
 
-            <label class="filter-checkbox">
-              <input
-                type="checkbox"
-                name="include_spoilers"
-                value="1"
-                {% if dashboard.include_spoilers %}checked{% endif %}
-              />
-              <span>Показывать спойлеры</span>
-            </label>
+    {% if dashboard.categories %}
+    <select name="category" aria-label="Категория">
+      <option value="">Все категории</option>
+      {% for c in dashboard.categories %}
+      <option value="{{ c }}" {{ 'selected' if dashboard.selected_category == c }}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
 
-            <div class="search-actions">
-              <button type="submit" class="btn neon-pink">Применить</button>
-              <a href="{{ request.path }}" class="btn neon-blue">Сбросить</a>
-            </div>
-          </form>
+    {% if dashboard.anime_groups %}
+    <select name="anime_id" aria-label="Аниме">
+      <option value="">Все аниме</option>
+      {% for g in dashboard.anime_groups %}
+      <option value="{{ g.anime_id }}" {{ 'selected' if dashboard.selected_anime_id == g.anime_id }}>{{ g.anime_title }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
 
-          <section class="highlight-stats">
-            <h2>Статистика</h2>
-            <div class="stat-card">
-              <span>Количество хайлайтов</span>
-              <strong>{{ dashboard.stats.total_highlights }}</strong>
-            </div>
-            <div class="stat-card">
-              <span>Топ аниме</span>
-              <strong>{{ dashboard.stats.top_anime_title }}</strong>
-            </div>
-            <div class="stat-card">
-              <span>Средняя длительность</span>
-              <strong
-                >{{ dashboard.stats.average_duration_seconds }} сек</strong
-              >
-            </div>
-          </section>
-        </aside>
+    <select name="sort_by" aria-label="Сортировка">
+      <option value="recent" {{ 'selected' if dashboard.selected_sort == 'recent' }}>Свежие</option>
+      <option value="popular" {{ 'selected' if dashboard.selected_sort == 'popular' }}>Популярные</option>
+    </select>
 
-        <section class="results-panel">
-          <div class="results-head">
-            <h2>{{ page_title }}</h2>
-            <p id="results-meta">Найдено: {{ dashboard.items|length }}</p>
-          </div>
+    <input type="text" name="query" value="{{ dashboard.selected_query or '' }}" placeholder="Поиск в хайлайтах…" aria-label="Поиск в хайлайтах">
 
-          {% if dashboard.items|length == 0 %}
-          <section class="empty-state">
-            <h2>Пока пусто</h2>
-            <p>Добавь свой первый хайлайт или вернись в фид позже.</p>
-          </section>
-          {% endif %}
+    <label class="filter-check">
+      <input type="checkbox" name="include_spoilers" value="1" {{ 'checked' if dashboard.include_spoilers }}>
+      Скрывать спойлеры
+    </label>
 
-          <div class="highlight-feed">
-            {% for item in dashboard.items %} {% include 'highlight/_card.html'
-            %} {% endfor %}
-          </div>
-        </section>
-      </section>
-    </main>
+    <button type="submit" class="btn btn-ghost btn-sm">Применить</button>
+  </form>
+  {% endif %}
 
-    <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  </body>
-</html>
+  {% if dashboard.items %}
+  <div class="highlight-grid tight">
+    {% for highlight in dashboard.items %}
+    {% include "highlight/_card.html" %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-emoji">📭</span>
+    <h3>Здесь пока пусто</h3>
+    <p>Хайлайты по этим фильтрам не найдены. Попробуйте изменить параметры.</p>
+    <a class="btn btn-primary btn-sm" href="{{ url_for('highlight.get_highlight_feed') }}">Смотреть ленту</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.AEM_LOGGED_IN = {{ 'true' if current_user else 'false' }};</script>
+<script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
+{% endblock %}

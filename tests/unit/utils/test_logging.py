@@ -22,9 +22,7 @@ class TestRequestIdFilter:
         filter_ = logging_module.RequestIdFilter()
         filter_.request_id = None
         filter_.user_id = None
-        record = logging.LogRecord(
-            "test", logging.INFO, "module", 1, "message", None, None
-        )
+        record = logging.LogRecord("test", logging.INFO, "module", 1, "message", None, None)
 
         assert filter_.filter(record) is True
         assert record.request_id == "-"
@@ -34,9 +32,7 @@ class TestRequestIdFilter:
         filter_ = logging_module.RequestIdFilter()
         filter_.request_id = "req-123"
         filter_.user_id = "user-456"
-        record = logging.LogRecord(
-            "test", logging.INFO, "module", 1, "message", None, None
-        )
+        record = logging.LogRecord("test", logging.INFO, "module", 1, "message", None, None)
 
         assert filter_.filter(record) is True
         assert record.request_id == "req-123"

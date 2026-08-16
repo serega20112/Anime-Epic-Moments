@@ -14,8 +14,6 @@ class DiscoveredWatchSource:
     language: str = "ru"
 
 
-
-
 @dataclass
 class WatchSourceCard:
     source_id: int
@@ -27,8 +25,6 @@ class WatchSourceCard:
     quality_label: str
     stream_url: str
     source_type: str
-
-
 
 
 @dataclass
@@ -46,8 +42,6 @@ class WatchHighlightCard:
     provider_name: str | None
 
 
-
-
 @dataclass
 class WatchedAnimeStat:
     anime_id: int
@@ -56,14 +50,10 @@ class WatchedAnimeStat:
     last_watched_at: str
 
 
-
-
 @dataclass
 class ViewingHeatmapPoint:
     date: str
     interactions: int
-
-
 
 
 @dataclass

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -37,9 +37,7 @@ class TestSearchAnimeByDescriptionUseCase:
         use_case = SearchAnimeByDescriptionUseCase(AsyncMock(), AsyncMock())
 
         result = await use_case.execute(
-            SearchAnimeByDescriptionQuery(
-                description="ищу hentai comedy", age_rating="16+"
-            )
+            SearchAnimeByDescriptionQuery(description="ищу hentai comedy", age_rating="16+")
         )
 
         assert result.items == []
@@ -77,11 +75,15 @@ class TestSearchAnimeByDescriptionUseCase:
             None,
         )
         api_client.search_by_title.side_effect = self._search_by_title_results(anime_factory)
-        api_client.search_by_description.side_effect = self._search_by_description_results(anime_factory)
+        api_client.search_by_description.side_effect = self._search_by_description_results(
+            anime_factory
+        )
         use_case = SearchAnimeByDescriptionUseCase(api_client, llm_client)
 
         result = await use_case.execute(
-            SearchAnimeByDescriptionQuery(description='ищу что-то как "Gintama"', sort_by="match", limit=5)
+            SearchAnimeByDescriptionQuery(
+                description='ищу что-то как "Gintama"', sort_by="match", limit=5
+            )
         )
 
         assert [item.title for item in result.items] == ["Gintama", "Daily Lives", "Sket Dance"]

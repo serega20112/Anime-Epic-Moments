@@ -7,13 +7,10 @@ from backend.domain import UserRepository
 from backend.domain.services import PasswordServiceInterface as PasswordService
 
 _ACCOUNT_LOCKED_MESSAGE = (
-    "Аккаунт временно заблокирован из-за множества неудачных "
-    "попыток входа. Попробуйте позже."
+    "Аккаунт временно заблокирован из-за множества неудачных попыток входа. Попробуйте позже."
 )
 _INVALID_CREDENTIALS_MESSAGE = "Неверный email или пароль"
-_DUMMY_PASSWORD_HASH = (
-    "$2b$12$YkpE4gT/crtJTugOQ0Uh5ObWVyl1NJXIXc/xc4MbchXOi4R2JXns2"
-)
+_DUMMY_PASSWORD_HASH = "$2b$12$YkpE4gT/crtJTugOQ0Uh5ObWVyl1NJXIXc/xc4MbchXOi4R2JXns2"
 
 
 def _welcome_message(username: str) -> str:
@@ -37,10 +34,10 @@ class LoginUserUseCase:
     """
 
     def __init__(
-            self,
-            user_repository: UserRepository,
-            password_service: PasswordService,
-            account_lock_service=None,
+        self,
+        user_repository: UserRepository,
+        password_service: PasswordService,
+        account_lock_service=None,
     ):
         """Initialize the use case.
 

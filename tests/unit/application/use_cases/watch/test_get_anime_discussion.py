@@ -20,9 +20,7 @@ class TestGetAnimeDiscussionUseCase:
         repo.get_anime_comments.return_value = ["comment-1", "comment-2"]
         use_case = GetAnimeDiscussionUseCase(repo)
 
-        result = await use_case.execute(
-            anime_id=7, sort_by="unknown", viewer_user_id=4, limit=10
-        )
+        result = await use_case.execute(anime_id=7, sort_by="unknown", viewer_user_id=4, limit=10)
 
         assert result.ok is True
         assert result.data.selected_sort == "popular"

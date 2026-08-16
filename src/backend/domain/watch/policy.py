@@ -20,6 +20,9 @@ PREFERRED_TRANSLATION_GROUPS: list[tuple[str, tuple[str, ...]]] = [
             "komnata didi",
             "komnata-didi",
             "komnata_didi",
+            "didi studio",
+            "didi",
+            "диди",
         ),
     ),
     (
@@ -34,6 +37,36 @@ PREFERRED_TRANSLATION_GROUPS: list[tuple[str, tuple[str, ...]]] = [
     ),
     ("AnimeVost", ("анимевост", "animevost", "anime vost", "anime-vost", "anvost")),
     ("AniLibria", ("анилибрия", "anilibria", "aniliberty")),
+    (
+        "SovetRomantica",
+        (
+            "советская романтика",
+            "совромантика",
+            "сов. романтика",
+            "sovetromantica",
+            "soviet romantica",
+        ),
+    ),
+    ("Dream Cast", ("dream cast", "дрим каст", "дримкаст")),
+    ("Daddy Cast", ("daddy cast", "дадди каст")),
+    (
+        "Kansai Studio",
+        ("канзай", "kansai", "kansai studio", "кансай студио"),
+    ),
+    ("JAM", ("jam", "студия джем", "джем студио")),
+    ("AniStar", ("anistar", "анистар", "ani star")),
+    ("AniMaunt", ("animaunt", "анимаунт", "анимаут")),
+    ("Shiza Project", ("shiza project", "шиза проект", "shiza")),
+    ("Onibaku", ("onibaku", "онибаку")),
+    ("Voice of Love", ("voice of love", "войс оф лав")),
+    ("AniFlex", ("aniflex", "анифлекс")),
+    ("Studio OD", ("studio od", "od studio", "студия од")),
+    ("Heroic Voice", ("heroic voice", "хероик войс")),
+    ("Kanobu", ("kanobu", "канабу")),
+    ("AniRise", ("anirise", "анирайз", "ani rise")),
+    ("Reanimedia", ("reanimedia", "реанимедиа")),
+    ("String Studio", ("string studio", "стринг студио")),
+    ("Sadim Sakura", ("sadim sakura", "садим сакура", "sadim-sakura")),
 ]
 
 

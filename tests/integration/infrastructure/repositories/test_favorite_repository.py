@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain import Favorite
-from backend.domain import User
+from backend.domain import Favorite, User
 from backend.infrastructure.repositories.favorite_repository import FavoriteRepository
 from backend.infrastructure.repositories.user_repository import UserRepository
 
@@ -36,7 +35,9 @@ class TestFavoriteRepository:
         assert items[0].genres == ["Action", "Cars"]
 
     @pytest.mark.parametrize("exists", [False, True])
-    async def test_remove_deletes_existing_entry_and_ignores_missing(self, async_db_session, exists):
+    async def test_remove_deletes_existing_entry_and_ignores_missing(
+        self, async_db_session, exists
+    ):
         """Проверяем, что FavoriteRepository удаляет существующую запись и спокойно игнорирует отсутствующую."""
         user = await UserRepository(async_db_session).add(
             User(email="remove@example.com", username="remove-user", password_hash="hash")
@@ -52,12 +53,19 @@ class TestFavoriteRepository:
     @pytest.mark.parametrize(
         ("genres", "expected_dump", "payload", "expected_load"),
         [
-            (["Action", "", "Cars"], '["Action", "Cars"]', '["Action", "", "Cars"]', ["Action", "Cars"]),
+            (
+                ["Action", "", "Cars"],
+                '["Action", "Cars"]',
+                '["Action", "", "Cars"]',
+                ["Action", "Cars"],
+            ),
             ([], None, None, []),
             (None, None, '{"foo":"bar"}', []),
         ],
     )
-    def test_serializes_and_deserializes_genres(self, genres, expected_dump, payload, expected_load):
+    def test_serializes_and_deserializes_genres(
+        self, genres, expected_dump, payload, expected_load
+    ):
         """Проверяем, что FavoriteRepository чистит жанры при сериализации и безопасно читает JSON."""
         repo = FavoriteRepository(None)
 

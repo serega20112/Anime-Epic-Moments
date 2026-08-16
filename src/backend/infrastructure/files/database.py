@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 
 from sqlalchemy import inspect, text
@@ -14,6 +15,8 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import declarative_base
 
 from backend.config import Settings
+
+logger = logging.getLogger("anime_epic_moments")
 
 Base = declarative_base()
 engine: AsyncEngine | None = None
@@ -31,7 +34,7 @@ def create_db_engine(database_url: str) -> AsyncEngine:
 
 
 def create_session_factory(
-        db_engine: AsyncEngine,
+    db_engine: AsyncEngine,
 ) -> async_sessionmaker[AsyncSession]:
     """Create async session factory bound to the engine."""
     return async_sessionmaker(
@@ -60,7 +63,7 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
 
 
 async def init_db():
-    """Initialize tables and backward-compatible columns."""
+    """Initialize tables for development and tests (create_all + legacy columns)."""
     async_engine = get_engine()
     async with async_engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
@@ -68,7 +71,40 @@ async def init_db():
         await connection.run_sync(_ensure_favorite_columns)
         await connection.run_sync(_ensure_highlight_columns)
         await connection.run_sync(_ensure_support_ticket_columns)
-    print("✓ Tables initialized")
+    logger.info("tables_initialized")
+
+
+async def verify_schema():
+    """Verify migrations were applied; raise a clear error otherwise.
+
+    Runs in production startup so a missing schema fails fast instead of
+    producing opaque 500s on the first request.
+    """
+    async_engine = get_engine()
+    async with async_engine.connect() as connection:
+        await connection.run_sync(_verify_schema_tables)
+        logger.info("schema_verified")
+
+
+def _verify_schema_tables(connection):
+    """Check required tables exist on a sync connection (run_sync wrapper)."""
+    inspector = inspect(connection)
+    table_names = set(inspector.get_table_names())
+    missing_tables = sorted(
+        [table_name for table_name in Base.metadata.tables if table_name not in table_names]
+    )
+    if "alembic_version" not in table_names:
+        raise RuntimeError(
+            "Database schema is not initialized: 'alembic_version' table is missing. "
+            "Run 'alembic upgrade head' before starting the application."
+        )
+    if missing_tables:
+        raise RuntimeError(
+            "Database schema is out of date: tables missing: {missing}. "
+            "Run 'alembic upgrade head' before starting the application.".format(
+                missing=", ".join(missing_tables)
+            )
+        )
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:

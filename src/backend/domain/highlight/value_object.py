@@ -30,15 +30,11 @@ class HighlightCard:
     owner_profile_url: str | None = None
 
 
-
-
 @dataclass
 class HighlightStats:
     total_highlights: int
     top_anime_title: str
     average_duration_seconds: float
-
-
 
 
 @dataclass

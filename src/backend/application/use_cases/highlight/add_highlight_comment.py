@@ -14,11 +14,11 @@ class AddHighlightCommentUseCase:
     """Добавляет комментарий к хайлайту после базовой валидации."""
 
     def __init__(
-            self,
-            repo: HighlightRepository,
-            unit_of_work: UnitOfWorkInterface,
-            highlight_dashboard_cache: HighlightDashboardCache | None = None,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        repo: HighlightRepository,
+        unit_of_work: UnitOfWorkInterface,
+        highlight_dashboard_cache: HighlightDashboardCache | None = None,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.repo = repo
         self.highlight_dashboard_cache = highlight_dashboard_cache

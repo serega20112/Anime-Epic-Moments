@@ -28,12 +28,12 @@ class GetFavoritesUseCase:
                     anime_id=favorite.anime_id,
                     title=title,
                     description=(
-                            favorite.description
-                            or (
-                                anime.description
-                                if anime and anime.description
-                                else "Описание недоступно"
-                            )
+                        favorite.description
+                        or (
+                            anime.description
+                            if anime and anime.description
+                            else "Описание недоступно"
+                        )
                     ),
                     cover_url=favorite.cover_url or (anime.cover_url if anime else None),
                     genres=favorite.genres or (anime.genres if anime and anime.genres else []),
@@ -43,9 +43,7 @@ class GetFavoritesUseCase:
             )
         return result
 
-    def _resolve_watch_id(
-            self, stored_anime_id: int, resolved_external_id: str | None
-    ) -> int:
+    def _resolve_watch_id(self, stored_anime_id: int, resolved_external_id: str | None) -> int:
         """Выбирает id для построения watch-ссылки."""
         try:
             numeric_id = int(str(resolved_external_id or "").strip())

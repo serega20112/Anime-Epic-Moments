@@ -5,13 +5,26 @@ from __future__ import annotations
 from urllib.parse import urlparse
 
 ALLOWED_MEDIA_HOST_SUFFIXES: tuple[str, ...] = (
+    # CDN и видео-хосты российских аниме-провайдеров (Kodik, AniLibria)
     "libria.fun",
     "anilibria.top",
     "anilibria.tv",
+    "anilibria.host",
+    "sameband.studio",
+    "aniboom.one",
     "kodikplayer.com",
     "kodik.info",
     "kodik.biz",
     "kodikapi.com",
+    # Видео-хостинги, на которых зеркалируются серии с озвучкой
+    "youtube.com",
+    "youtube-nocookie.com",
+    "ytimg.com",
+    "googlevideo.com",
+    "ok.ru",
+    "vk.com",
+    "vkvideo.ru",
+    "mail.ru",
 )
 
 _DEFAULT_USER_AGENT = "Mozilla/5.0"

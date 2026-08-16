@@ -1,113 +1,56 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Регистрация - AEM</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/auth.css') }}"
-    />
-  </head>
-  <body>
-    <div class="auth-page">
-      <div class="auth-card">
-        <h1>Регистрация</h1>
-        <form
-          class="auth-form"
-          action="{{ url_for('auth.register_user') }}"
-          method="POST"
-        >
-          <input type="hidden" name="theme" value="neon" data-theme-field />
-          <div class="form-group">
-            <label for="username">Имя пользователя</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              placeholder="AnimeFan2026"
-              required
-              minlength="3"
-              maxlength="20"
-            />
-          </div>
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="example@anime.com"
-              required
-            />
-          </div>
-          <div class="form-group">
-            <label for="password">Пароль</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              placeholder="Минимум 8 символов"
-              required
-              minlength="8"
-            />
-            <div id="password-strength">
-              Сила пароля: <span id="strength-text">Слабый</span>
-            </div>
-          </div>
-          <button type="submit" class="btn neon-pink btn-large">
-            Зарегистрироваться
-          </button>
-        </form>
-        <p class="auth-switch">
-          Уже есть аккаунт? <a href="{{ url_for('auth.login_page') }}">Вход</a>
-        </p>
+{% extends "base.html" %}
+
+{% block title %}Регистрация — Anime Epic Moments{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card glass">
+    <div class="auth-logo">AEM</div>
+    <p class="auth-sub">Создайте профиль и начните сохранять моменты, которые тронули душу.</p>
+
+    <form class="auth-form" method="post" action="{{ url_for('auth.register_user') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com"
+               required autocomplete="email">
       </div>
-    </div>
-    {% with messages = get_flashed_messages() %} {% if messages %}
-    <div id="errorModal" class="modal">
-      <div class="modal-content">
-        <button type="button" class="close" onclick="closeErrorModal()">
-          &times;
-        </button>
-        <h2 class="modal-title">Ошибка</h2>
-        <ul class="modal-error-list">
-          {% for message in messages %}
-          <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-        <div class="modal-actions">
-          <button type="button" class="btn-modal" onclick="closeErrorModal()">
-            Понятно
-          </button>
+
+      <div class="form-group">
+        <label for="username">Имя пользователя</label>
+        <input type="text" id="username" name="username" placeholder="от 3 до 20 символов"
+               required minlength="3" maxlength="20" autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Пароль</label>
+        <input type="password" id="password" name="password" placeholder="минимум 8 символов"
+               required minlength="8" maxlength="128" autocomplete="new-password">
+        <div class="password-strength">
+          <span class="pw-bar"></span><span class="pw-bar"></span>
+          <span class="pw-bar"></span><span class="pw-bar"></span>
+          <span class="pw-label"></span>
         </div>
       </div>
+
+      <div class="auth-actions">
+        <button type="submit" class="btn btn-primary btn-lg">Создать профиль</button>
+      </div>
+    </form>
+
+    <div class="auth-links auth-links-center" style="justify-content:center">
+      <span class="muted">Уже есть аккаунт?</span>
+      <a href="{{ url_for('auth.login_page') }}">Войти</a>
     </div>
-    <script>
-      function openErrorModal() {
-        const modal = document.getElementById("errorModal");
-        if (!modal) return;
-        modal.style.display = "flex";
-      }
+  </div>
+</div>
+{% endblock %}
 
-      function closeErrorModal() {
-        const modal = document.getElementById("errorModal");
-        if (!modal) return;
-        modal.style.display = "none";
-      }
-
-      openErrorModal();
-    </script>
-    {% endif %} {% endwith %}
-    <script src="{{ url_for('static', filename='js/password_strength.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  </body>
-</html>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/password_strength.js') }}"></script>
+{% endblock %}

@@ -1,215 +1,54 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {% set include_spoilers = page.dashboard.include_spoilers %} {% set
-    is_public = True %} {% set view_mode = 'following' %}
-    <title>Лента подписок - AEM</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/anime.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/highlight.css') }}"
-    />
-  </head>
-  <body>
-    <header class="header">
-      <div class="logo">AEM</div>
-      <form
-        class="search-container global-search-form"
-        action="{{ url_for('anime.search_anime_page') }}"
-        method="get"
-        autocomplete="off"
-      >
-        <input
-          type="text"
-          name="title"
-          class="global-search-input"
-          placeholder="Найди аниме по названию, жанру или эмоции…"
-        />
-        <button type="submit">🔍</button>
-        <div class="search-autocomplete" hidden></div>
-      </form>
-      <nav>
-        <a href="{{ url_for('index.index') }}">Главная</a>
-        <a href="{{ url_for('highlight.get_highlight_feed') }}">Общий фид</a>
-        <a href="{{ url_for('highlight.get_public_top_highlights') }}"
-          >Тренды</a
-        >
-        <a href="{{ url_for('auth.profile_page') }}">Мой профиль</a>
-      </nav>
-    </header>
+{% extends "base.html" %}
 
-    <main class="search-page">
-      <section class="search-shell highlight-dashboard">
-        <aside class="filters-panel">
-          <h1>Лента подписок</h1>
-          <p class="filters-subtitle">
-            Здесь появляются новые и популярные моменты пользователей, на
-            которых ты подписан.
-          </p>
+{% block title %}Подписки — Anime Epic Moments{% endblock %}
 
-          <form class="description-search-form" method="get">
-            <div class="filter-control">
-              <label for="anime_id">По аниме</label>
-              <select id="anime_id" name="anime_id">
-                <option value="">Все аниме</option>
-                {% for group in page.dashboard.anime_groups %}
-                <option
-                  value="{{ group.anime_id }}"
-                  {% if page.dashboard.selected_anime_id == group.anime_id %}selected{% endif %}
-                >
-                  {{ group.anime_title }} ({{ group.count }})
-                </option>
-                {% endfor %}
-              </select>
-            </div>
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}">
+{% endblock %}
 
-            <div class="filter-control">
-              <label for="emotion">По эмоции</label>
-              <select id="emotion" name="emotion">
-                <option value="">Все эмоции</option>
-                {% for emotion in page.dashboard.emotions %}
-                <option
-                  value="{{ emotion }}"
-                  {% if page.dashboard.selected_emotion == emotion %}selected{% endif %}
-                >
-                  {{ emotion }}
-                </option>
-                {% endfor %}
-              </select>
-            </div>
+{% block content %}
+<div class="container">
+  <header class="dash-head">
+    <div>
+      <h1 class="page-title">Хайлайты подписок</h1>
+      <p class="muted">Моменты авторов, на которых вы подписаны. Всего: {{ page.total_following }}.</p>
+    </div>
+  </header>
 
-            <div class="filter-control">
-              <label for="category">По категории</label>
-              <select id="category" name="category">
-                <option value="">Все категории</option>
-                {% for category in page.dashboard.categories %}
-                <option
-                  value="{{ category }}"
-                  {% if page.dashboard.selected_category == category %}selected{% endif %}
-                >
-                  {{ category }}
-                </option>
-                {% endfor %}
-              </select>
-            </div>
+  {% if page.dashboard.items %}
+  <div class="highlight-grid">
+    {% for highlight in page.dashboard.items %}
+    {% include "highlight/_card.html" %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-emoji">👥</span>
+    <h3>В подписках пока нет хайлайтов</h3>
+    <p>Подпишитесь на авторов в их профилях, и их моменты появятся здесь.</p>
+    <a class="btn btn-primary btn-sm" href="{{ url_for('highlight.get_public_top_highlights') }}">Популярное</a>
+  </div>
+  {% endif %}
 
-            <div class="filter-control">
-              <label for="sort">Сортировка</label>
-              <select id="sort" name="sort">
-                <option
-                  value="recent"
-                  {% if page.dashboard.selected_sort == 'recent' %}selected{% endif %}
-                >
-                  Сначала новые
-                </option>
-                <option
-                  value="popular"
-                  {% if page.dashboard.selected_sort == 'popular' %}selected{% endif %}
-                >
-                  По популярности
-                </option>
-              </select>
-            </div>
+  {% if page.followed_users %}
+  <section class="section" style="margin-top:var(--space-7)">
+    <div class="section-title"><span class="emoji">👥</span> Вы подписаны</div>
+    <div class="chip-row">
+      {% for u in page.followed_users %}
+      <a class="chip" href="{{ u.profile_url }}">
+        <img class="avatar avatar-sm" src="{{ u.avatar_url or url_for('static', filename='images/default-avatar.svg') }}"
+             alt="" style="width:22px;height:22px"
+             onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';">
+        {{ u.username }}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
 
-            <div class="filter-control">
-              <label for="query">Поиск по содержанию</label>
-              <input
-                id="query"
-                type="text"
-                name="query"
-                value="{{ page.dashboard.selected_query or '' }}"
-                placeholder="Название, описание, эмоция"
-              />
-            </div>
-
-            <label class="filter-checkbox">
-              <input
-                type="checkbox"
-                name="include_spoilers"
-                value="1"
-                {% if page.dashboard.include_spoilers %}checked{% endif %}
-              />
-              <span>Показывать спойлеры</span>
-            </label>
-
-            <div class="search-actions">
-              <button type="submit" class="btn neon-pink">Применить</button>
-              <a href="{{ request.path }}" class="btn neon-blue">Сбросить</a>
-            </div>
-          </form>
-
-          <section class="highlight-stats">
-            <h2>Подписки</h2>
-            <div class="stat-card">
-              <span>Всего подписок</span>
-              <strong>{{ page.total_following }}</strong>
-            </div>
-            <div class="stat-card">
-              <span>Хайлайтов в ленте</span>
-              <strong>{{ page.dashboard.stats.total_highlights }}</strong>
-            </div>
-            <div class="stat-card">
-              <span>Топ аниме</span>
-              <strong>{{ page.dashboard.stats.top_anime_title }}</strong>
-            </div>
-          </section>
-
-          <section class="highlight-sidebar">
-            <h2>За кем ты следишь</h2>
-            <div class="highlight-group-list">
-              {% for item in page.followed_users %}
-              <a class="highlight-group-link" href="{{ item.profile_url }}">
-                <span>@{{ item.username }}</span>
-                <strong>Профиль</strong>
-              </a>
-              {% else %}
-              <p class="filters-subtitle">
-                Подпишись на пару авторов, чтобы наполнить эту ленту.
-              </p>
-              {% endfor %}
-            </div>
-          </section>
-        </aside>
-
-        <section class="results-panel">
-          <div class="results-head">
-            <h2>Хайлайты подписок</h2>
-            <p id="results-meta">Найдено: {{ page.dashboard.items|length }}</p>
-          </div>
-
-          {% if page.dashboard.items %}
-          <div class="highlight-feed">
-            {% for item in page.dashboard.items %} {% include
-            'highlight/_card.html' %} {% endfor %}
-          </div>
-          {% else %}
-          <section class="empty-state">
-            <h2>Лента пока пуста</h2>
-            <p>
-              Подпишись на пользователей с интересными моментами или подожди,
-              пока они выложат новые хайлайты.
-            </p>
-          </section>
-          {% endif %}
-        </section>
-      </section>
-    </main>
-
-    <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  </body>
-</html>
+{% block scripts %}
+<script>window.AEM_LOGGED_IN = {{ 'true' if current_user else 'false' }};</script>
+<script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
+{% endblock %}

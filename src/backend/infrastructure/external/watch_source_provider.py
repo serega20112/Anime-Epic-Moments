@@ -14,10 +14,10 @@ class WatchSourceProvider(ABC):
 
     @abstractmethod
     async def search_sources(
-            self,
-            title: str,
-            episode: int,
-            year: int | None = None,
-            limit: int = 8,
+        self,
+        title: str,
+        episode: int,
+        year: int | None = None,
+        limit: int = 8,
     ) -> list[DiscoveredWatchSource]:
         """Ищет источники для конкретного аниме и эпизода."""

@@ -4,6 +4,10 @@ from email.message import EmailMessage
 from backend.config import Settings
 from backend.domain.support.entity import SupportTicket
 from backend.infrastructure.external._async import external_method
+from backend.infrastructure.external.errors import (
+    ExternalServiceConfigurationError,
+    ExternalServiceUnavailableError,
+)
 
 
 class SupportEmailMailer:
@@ -20,7 +24,9 @@ class SupportEmailMailer:
     def send_ticket_created(self, ticket: SupportTicket) -> int:
         """Отправляет тикет поддержки по email во все настроенные адреса."""
         if not self.is_enabled():
-            raise RuntimeError("Support email delivery is not configured")
+            raise ExternalServiceConfigurationError(
+                "Support email delivery is not configured", service_name="smtp"
+            )
 
         message = EmailMessage()
         message["Subject"] = self._build_subject(ticket)
@@ -38,8 +44,9 @@ class SupportEmailMailer:
                     smtp.login(Settings.smtp_username, Settings.smtp_password)
                 smtp.send_message(message)
         except (OSError, smtplib.SMTPException) as error:
-            raise RuntimeError(
-                "Не удалось отправить тикет по email. Проверь SMTP и SUPPORT_EMAIL_TO."
+            raise ExternalServiceUnavailableError(
+                "Не удалось отправить тикет по email. Проверь SMTP и SUPPORT_EMAIL_TO.",
+                service_name="smtp",
             ) from error
 
         return len(self.recipient_emails)

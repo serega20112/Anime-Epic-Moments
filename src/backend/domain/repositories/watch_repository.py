@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from backend.domain.anime.value_object import AnimeDiscussionComment
 from backend.domain.watch.entity import (
     HighlightContext,
     Translation,
@@ -7,7 +8,6 @@ from backend.domain.watch.entity import (
     ViewingSession,
     WatchSource,
 )
-from backend.domain.anime.value_object import AnimeDiscussionComment
 from backend.domain.watch.value_object import (
     ViewingHeatmapPoint,
     WatchedAnimeStat,
@@ -57,44 +57,44 @@ class WatchRepository(ABC):
 
     @abstractmethod
     async def get_watched_anime_stats(
-            self,
-            user_id: int,
-            limit: int | None = None,
+        self,
+        user_id: int,
+        limit: int | None = None,
     ) -> list[WatchedAnimeStat]:
         """Возвращает агрегированную статистику просмотра по аниме."""
 
     @abstractmethod
     async def get_viewing_heatmap(
-            self,
-            user_id: int,
-            days: int = 35,
+        self,
+        user_id: int,
+        days: int = 35,
     ) -> list[ViewingHeatmapPoint]:
         """Возвращает тепловую карту активности просмотра по дням."""
 
     @abstractmethod
     async def add_anime_comment(
-            self,
-            anime_id: int,
-            user_id: int,
-            content: str,
+        self,
+        anime_id: int,
+        user_id: int,
+        content: str,
     ) -> AnimeDiscussionComment:
         """Добавляет комментарий в обсуждение аниме."""
 
     @abstractmethod
     async def get_anime_comments(
-            self,
-            anime_id: int,
-            sort_by: str = "popular",
-            viewer_user_id: int | None = None,
-            limit: int = 20,
+        self,
+        anime_id: int,
+        sort_by: str = "popular",
+        viewer_user_id: int | None = None,
+        limit: int = 20,
     ) -> list[AnimeDiscussionComment]:
         """Возвращает комментарии обсуждения аниме."""
 
     @abstractmethod
     async def set_anime_comment_like(
-            self,
-            comment_id: int,
-            user_id: int,
-            liked: bool,
+        self,
+        comment_id: int,
+        user_id: int,
+        liked: bool,
     ) -> AnimeDiscussionComment:
         """Ставит или снимает лайк с комментария в обсуждении аниме."""

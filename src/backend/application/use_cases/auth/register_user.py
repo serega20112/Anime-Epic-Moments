@@ -15,10 +15,10 @@ class RegisterUserUseCase:
     """Create a new user when the email is not yet registered."""
 
     def __init__(
-            self,
-            user_repository: UserRepository,
-            password_service: PasswordService,
-            unit_of_work: UnitOfWorkInterface,
+        self,
+        user_repository: UserRepository,
+        password_service: PasswordService,
+        unit_of_work: UnitOfWorkInterface,
     ):
         """Initialize the use case.
 
@@ -32,7 +32,7 @@ class RegisterUserUseCase:
         self.unit_of_work = unit_of_work
 
     async def execute(
-            self, *, email: str, password: str, username: str,             theme: str = "neon"
+        self, *, email: str, password: str, username: str, theme: str = "neon"
     ) -> User:
         """Register a user within a transaction."""
         async with self.unit_of_work:
@@ -41,7 +41,7 @@ class RegisterUserUseCase:
             )
 
     async def _execute(
-            self, *, email: str, password: str, username: str, theme: str = "neon"
+        self, *, email: str, password: str, username: str, theme: str = "neon"
     ) -> User:
         """Register a user and return the persisted aggregate.
 

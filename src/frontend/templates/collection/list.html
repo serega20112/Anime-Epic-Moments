@@ -1,212 +1,99 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Коллекции - AEM</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/anime.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/highlight.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/profile.css') }}"
-    />
-  </head>
-  <body>
-    <header class="header">
-      <div class="logo">AEM</div>
-      <nav>
-        <a href="{{ url_for('index.index') }}">Главная</a>
-        <a
-          href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}"
-          >Избранное</a
-        >
-        <a href="{{ url_for('auth.profile_page') }}">Профиль</a>
-      </nav>
-    </header>
+{% extends "base.html" %}
 
-    <main class="search-page profile-page">
-      <section class="search-shell highlight-dashboard">
-        <aside class="filters-panel">
-          <h1>Коллекции</h1>
-          <p class="filters-subtitle">
-            Собирай аниме в тематические подборки и делись ими по ссылке.
-          </p>
-          <form
-            class="profile-ai-panel profile-form"
-            method="post"
-            action="{{ url_for('collection.create_collection') }}"
-          >
-            <label for="title">Название коллекции</label>
-            <input
-              id="title"
-              name="title"
-              type="text"
-              maxlength="80"
-              required
-              placeholder="Лучшие боевики"
-            />
-            <label for="description">Описание</label>
-            <input
-              id="description"
-              name="description"
-              type="text"
-              maxlength="400"
-              placeholder="Что сюда попадает и почему"
-            />
-            <label class="profile-tag">
-              <input type="checkbox" name="is_public" value="1" checked />
-              Публичная share-ссылка
-            </label>
-            <button type="submit" class="btn neon-pink">
-              Создать коллекцию
-            </button>
-          </form>
-        </aside>
+{% block title %}Коллекции — Anime Epic Moments{% endblock %}
 
-        <section class="results-panel">
-          {% for collection in collections %}
-          <section class="feed-section-block">
-            <div class="results-head">
-              <div>
-                <h2>{{ collection.collection.title }}</h2>
-                <p class="filters-subtitle">
-                  {{ collection.collection.description }}
-                </p>
-              </div>
-              <a
-                class="btn neon-blue"
-                href="{{ collection.collection.share_url }}"
-                >Поделиться</a
-              >
-            </div>
-            <p class="filters-subtitle">
-              {{ collection.collection.items_count }} аниме · создана {{
-              collection.collection.created_at }}
-            </p>
-            <form
-              class="profile-ai-panel profile-form"
-              method="post"
-              action="{{ url_for('collection.add_collection_item', collection_id=collection.collection.id) }}"
-            >
-              <label for="anime-{{ collection.collection.id }}"
-                >Добавить из избранного</label
-              >
-              <select
-                id="anime-{{ collection.collection.id }}"
-                name="anime_id"
-                required
-              >
-                <option value="">Выбери аниме</option>
-                {% for favorite in favorites %}
-                <option
-                  value="{{ favorite.anime_id }}"
-                  data-title="{{ favorite.title }}"
-                  data-description="{{ favorite.description }}"
-                  data-cover-url="{{ favorite.cover_url }}"
-                  data-genres="{{ favorite.genres|join(',') }}"
-                >
-                  {{ favorite.title }}
-                </option>
-                {% endfor %}
-              </select>
-              <input type="hidden" name="title" />
-              <input type="hidden" name="description" />
-              <input type="hidden" name="cover_url" />
-              <input type="hidden" name="genres" />
-              <button type="submit" class="btn neon-blue">Добавить</button>
-            </form>
-            {% if collection.items %}
-            <div class="highlight-feed">
-              {% for item in collection.items %}
-              <article class="highlight-entry">
-                <div class="highlight-entry-body">
-                  <div class="highlight-entry-head">
-                    <h3>{{ item.title }}</h3>
-                    <span class="highlight-like-badge"
-                      >{{ item.genres|join(', ') }}</span
-                    >
-                  </div>
-                  <p class="highlight-meta-line">{{ item.description }}</p>
-                  <div class="result-actions">
-                    <a
-                      class="btn neon-blue btn-watch"
-                      href="{{ item.watch_url }}"
-                      >Открыть</a
-                    >
-                    <form
-                      method="post"
-                      action="{{ url_for('collection.remove_collection_item', collection_id=collection.collection.id) }}"
-                    >
-                      <input
-                        type="hidden"
-                        name="anime_id"
-                        value="{{ item.anime_id }}"
-                      />
-                      <button type="submit" class="btn neon-pink">
-                        Убрать
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              </article>
-              {% endfor %}
-            </div>
-            {% else %}
-            <section class="empty-state">
-              <h2>Пока пусто</h2>
-              <p>
-                Добавь сюда аниме из избранного и преврати список в готовую
-                подборку.
-              </p>
-            </section>
-            {% endif %}
-          </section>
-          {% else %}
-          <section class="empty-state">
-            <h2>Коллекций пока нет</h2>
-            <p>
-              Создай первую подборку и собери туда аниме под конкретный вайб.
-            </p>
-          </section>
-          {% endfor %}
-        </section>
-      </section>
-    </main>
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
 
-    <script>
-      document.querySelectorAll('form[action$="/items"]').forEach((form) => {
-        const select = form.querySelector('select[name="anime_id"]');
-        const titleInput = form.querySelector('input[name="title"]');
-        const descriptionInput = form.querySelector(
-          'input[name="description"]',
-        );
-        const coverInput = form.querySelector('input[name="cover_url"]');
-        const genresInput = form.querySelector('input[name="genres"]');
-        const sync = () => {
-          const option = select.options[select.selectedIndex];
-          if (!option) return;
-          titleInput.value = option.dataset.title || option.textContent.trim();
-          descriptionInput.value = option.dataset.description || "";
-          coverInput.value = option.dataset.coverUrl || "";
-          genresInput.value = option.dataset.genres || "";
-        };
-        select.addEventListener("change", sync);
-      });
-    </script>
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  </body>
-</html>
+{% block content %}
+<div class="container">
+  <header class="dash-head">
+    <div>
+      <h1 class="page-title">Коллекции</h1>
+      <p class="muted">Ваши подборки аниме. Делитесь ими со зрителями.</p>
+    </div>
+    {% if collections %}
+    <button class="btn btn-primary" data-action="open-creator">Новая коллекция</button>
+    {% endif %}
+  </header>
+
+  {% if collections %}
+  <div class="collection-grid">
+    {% for cd in collections %}
+    {% set c = cd.collection %}
+    <article class="collection-card">
+      <a class="cc-cover" href="{{ c.share_url }}">
+        {% if cd.items %}
+        <img src="{{ cd.items[0].cover_url or url_for('static', filename='images/no-cover.svg') }}"
+             alt="" loading="lazy"
+             onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';">
+        {% else %}
+        <img src="{{ url_for('static', filename='images/no-cover.svg') }}" alt="">
+        {% endif %}
+        <span class="cc-count">{{ c.items_count }} тайтла</span>
+        {% if not c.is_public %}<span class="hc-spoiler">приватная</span>{% endif %}
+      </a>
+      <div class="cc-body">
+        <a class="cc-title" href="{{ c.share_url }}">{{ c.title }}</a>
+        {% if c.description %}<p class="hc-desc">{{ c.description }}</p>{% endif %}
+        <div class="hc-footer">
+          <span class="hc-date">{{ c.created_at }}</span>
+          <a class="btn btn-ghost btn-sm" href="{{ c.share_url }}">Открыть</a>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-emoji">📚</span>
+    <h3>Коллекций пока нет</h3>
+    <p>Соберите аниме в подборку и поделитесь ею с сообществом.</p>
+    <button class="btn btn-primary" data-action="open-creator">Создать коллекцию</button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Создание коллекции -->
+<div class="modal-overlay" id="create-collection-modal">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h3>Новая коллекция</h3>
+      <button class="modal-close" data-action="close-creator" aria-label="Закрыть">&times;</button>
+    </div>
+    <form method="post" action="{{ url_for('collection.create_collection') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label for="col-title">Название</label>
+        <input type="text" id="col-title" name="title" required maxlength="120" placeholder="Например: Лучшие миры">
+      </div>
+      <div class="form-group">
+        <label for="col-desc">Описание</label>
+        <textarea id="col-desc" name="description" rows="3" maxlength="400" placeholder="О чём ваша подборка?"></textarea>
+      </div>
+      <label class="filter-check" style="margin-bottom:14px">
+        <input type="checkbox" name="is_public" value="1"> Публичная коллекция
+      </label>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-action="close-creator">Отмена</button>
+        <button type="submit" class="btn btn-primary">Создать</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var overlay = document.getElementById("create-collection-modal");
+    function open() { overlay.classList.add("open"); }
+    function close() { overlay.classList.remove("open"); }
+    document.querySelectorAll('[data-action="open-creator"]').forEach(function (b) { b.addEventListener("click", open); });
+    document.querySelectorAll('[data-action="close-creator"]').forEach(function (b) { b.addEventListener("click", close); });
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+  });
+</script>
+{% endblock %}

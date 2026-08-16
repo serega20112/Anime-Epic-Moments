@@ -1,7 +1,6 @@
 import json
 
-from backend.domain import Favorite
-from backend.domain import FavoriteRepository
+from backend.domain import Favorite, FavoriteRepository
 from backend.domain.services import (
     RecommendationServiceInterface as RecommendationService,
 )
@@ -13,11 +12,11 @@ from backend.domain.unit_of_work import UnitOfWorkInterface
 
 class AddFavoriteUseCase:
     def __init__(
-            self,
-            repo: FavoriteRepository,
-            unit_of_work: UnitOfWorkInterface,
-            recommendation_service: RecommendationService | None = None,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        repo: FavoriteRepository,
+        unit_of_work: UnitOfWorkInterface,
+        recommendation_service: RecommendationService | None = None,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.repo = repo
         self.recommendation_service = recommendation_service
@@ -25,28 +24,26 @@ class AddFavoriteUseCase:
         self.unit_of_work = unit_of_work
 
     async def execute(
-            self,
-            user_id: int,
-            anime_id: int,
-            title: str | None = None,
-            description: str | None = None,
-            cover_url: str | None = None,
-            genres: list[str] | str | None = None,
+        self,
+        user_id: int,
+        anime_id: int,
+        title: str | None = None,
+        description: str | None = None,
+        cover_url: str | None = None,
+        genres: list[str] | str | None = None,
     ) -> Favorite:
         """Add an anime to favorites within a transaction."""
         async with self.unit_of_work:
-            return await self._execute(
-                user_id, anime_id, title, description, cover_url, genres
-            )
+            return await self._execute(user_id, anime_id, title, description, cover_url, genres)
 
     async def _execute(
-            self,
-            user_id: int,
-            anime_id: int,
-            title: str | None = None,
-            description: str | None = None,
-            cover_url: str | None = None,
-            genres: list[str] | str | None = None,
+        self,
+        user_id: int,
+        anime_id: int,
+        title: str | None = None,
+        description: str | None = None,
+        cover_url: str | None = None,
+        genres: list[str] | str | None = None,
     ) -> Favorite:
         favorite = Favorite(
             user_id=int(user_id),

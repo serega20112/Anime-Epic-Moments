@@ -19,6 +19,8 @@ _environment = Environment(
     autoescape=select_autoescape(("html", "xml")),
 )
 
+_route_param_names_cache: dict[str, set[str]] = {}
+
 
 def _get_session(request: Request) -> dict[str, Any] | None:
     """Retrieve session dictionary from request scope.
@@ -126,10 +128,15 @@ class TemplateRequestProxy:
         Returns:
             set[str]: Set of path parameter names.
         """
+        cached = _route_param_names_cache.get(name)
+        if cached is not None:
+            return cached
         for route in self.request.app.router.routes:
             if getattr(route, "name", None) != name:
                 continue
-            return set(getattr(route, "param_convertors", {}).keys())
+            param_names = set(getattr(route, "param_convertors", {}).keys())
+            _route_param_names_cache[name] = param_names
+            return param_names
         return set()
 
     def _normalize_query_value(self, value: Any) -> str | list[str]:
@@ -175,10 +182,8 @@ def render_template(
     def get_flashed_messages() -> list[str]:
         return list(messages)
 
-
     def url_for(name: str, **params: Any) -> str:
         return proxy.url_for(name, **params)
-
 
     def csrf_token() -> str:
         """Get the current CSRF token value for use in forms."""

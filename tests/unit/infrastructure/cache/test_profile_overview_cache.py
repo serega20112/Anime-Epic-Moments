@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import pytest
 
+from backend.domain.highlight.value_object import HighlightProfileSummary
 from backend.domain.user.value_object import (
     ProfileOverview,
     SmartProfile,
 )
-from backend.domain.highlight.value_object import HighlightProfileSummary
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 

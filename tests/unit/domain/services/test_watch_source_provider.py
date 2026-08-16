@@ -5,9 +5,7 @@ from backend.domain.services.watch_source_provider import WatchSourceProviderInt
 
 class TestWatchSourceProviderInterface:
     def test_abstract_method_names(self):
-        assert {"get_sources", "close"} <= set(
-            WatchSourceProviderInterface.__abstractmethods__
-        )
+        assert {"get_sources", "close"} <= set(WatchSourceProviderInterface.__abstractmethods__)
 
     def test_cannot_be_instantiated(self):
         try:

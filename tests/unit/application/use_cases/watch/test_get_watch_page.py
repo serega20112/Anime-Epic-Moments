@@ -8,8 +8,7 @@ import pytest
 
 from backend.application.dto import WatchPageQuery
 from backend.application.use_cases import GetWatchPageUseCase
-from backend.domain import Highlight
-from backend.domain import Translation, ViewingSession, WatchSource
+from backend.domain import Highlight, Translation, ViewingSession, WatchSource
 
 
 @pytest.mark.unit
@@ -85,9 +84,7 @@ class TestGetWatchPageUseCase:
         )
         watch_repo.get_status.return_value = SimpleNamespace(status="watching")
         watch_repo.get_highlight_contexts.return_value = [
-            SimpleNamespace(
-                highlight_id=8, watch_source_id=1, translation_id=1, title="best drift"
-            )
+            SimpleNamespace(highlight_id=8, watch_source_id=1, translation_id=1, title="best drift")
         ]
         highlight = Highlight(
             user_id=1,

@@ -20,11 +20,11 @@ class RateLimiter:
         self.store = store
 
     async def hit(
-            self,
-            scope: str,
-            subject: str,
-            limit: int,
-            window_seconds: int,
+        self,
+        scope: str,
+        subject: str,
+        limit: int,
+        window_seconds: int,
     ) -> RateLimitDecision:
         normalized_scope = str(scope or "default").strip().lower()
         normalized_subject = str(subject or "anonymous").strip().lower()

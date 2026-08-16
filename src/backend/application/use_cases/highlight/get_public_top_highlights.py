@@ -11,26 +11,26 @@ class GetPublicTopHighlightsUseCase(GetUserHighlightsUseCase):
     """Возвращает публичный топ хайлайтов в формате дашборда."""
 
     def __init__(
-            self,
-            repo: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            highlight_dashboard_cache: HighlightDashboardCache | None = None,
-            user_repo: UserRepository | None = None,
+        self,
+        repo: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        highlight_dashboard_cache: HighlightDashboardCache | None = None,
+        user_repo: UserRepository | None = None,
     ):
         super().__init__(repo, anime_api_client, user_repo=user_repo)
         self.highlight_dashboard_cache = highlight_dashboard_cache
 
     async def execute(
-            self,
-            limit: int = 20,
-            anime_id: int | None = None,
-            emotion: str | None = None,
-            category: str | None = None,
-            sort_by: str = "popular",
-            created_date: str | None = None,
-            query: str | None = None,
-            include_spoilers: bool = False,
-            viewer_user_id: int | None = None,
+        self,
+        limit: int = 20,
+        anime_id: int | None = None,
+        emotion: str | None = None,
+        category: str | None = None,
+        sort_by: str = "popular",
+        created_date: str | None = None,
+        query: str | None = None,
+        include_spoilers: bool = False,
+        viewer_user_id: int | None = None,
     ):
         normalized_sort = sort_by if sort_by in {"popular", "recent"} else "popular"
         use_cache = self.highlight_dashboard_cache is not None and viewer_user_id is None

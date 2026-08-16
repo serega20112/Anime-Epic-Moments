@@ -8,9 +8,9 @@ class CreateCollectionUseCase:
     """Создает пользовательскую коллекцию аниме."""
 
     def __init__(
-            self,
-            collection_repo: CollectionRepository,
-            unit_of_work: UnitOfWorkInterface,
+        self,
+        collection_repo: CollectionRepository,
+        unit_of_work: UnitOfWorkInterface,
     ):
         self.collection_repo = collection_repo
         self.unit_of_work = unit_of_work

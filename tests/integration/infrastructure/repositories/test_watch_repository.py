@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain import Highlight
 from backend.domain import (
+    Highlight,
     HighlightContext,
     Translation,
+    User,
     UserAnimeStatus,
     ViewingSession,
     WatchSource,
 )
-from backend.domain import User
 from backend.infrastructure.repositories.highlight_repository import HighlightRepository
 from backend.infrastructure.repositories.user_repository import UserRepository
 from backend.infrastructure.repositories.watch_repository import WatchRepository
@@ -282,12 +282,20 @@ class TestWatchRepository:
             User(email="discussion-2@example.com", username="viewer", password_hash="hash")
         )
         repo = WatchRepository(async_db_session)
-        first = await repo.add_anime_comment(anime_id=7, user_id=author.id, content="Первый коммент")
-        second = await repo.add_anime_comment(anime_id=7, user_id=viewer.id, content="Второй коммент")
+        first = await repo.add_anime_comment(
+            anime_id=7, user_id=author.id, content="Первый коммент"
+        )
+        second = await repo.add_anime_comment(
+            anime_id=7, user_id=viewer.id, content="Второй коммент"
+        )
 
         await repo.set_anime_comment_like(comment_id=second.id, user_id=author.id, liked=True)
-        popular = await repo.get_anime_comments(anime_id=7, sort_by="popular", viewer_user_id=author.id)
-        recent = await repo.get_anime_comments(anime_id=7, sort_by="recent", viewer_user_id=author.id)
+        popular = await repo.get_anime_comments(
+            anime_id=7, sort_by="popular", viewer_user_id=author.id
+        )
+        recent = await repo.get_anime_comments(
+            anime_id=7, sort_by="recent", viewer_user_id=author.id
+        )
 
         assert popular[0].id == second.id
         assert popular[0].likes_count == 1

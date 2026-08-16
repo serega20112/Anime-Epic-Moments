@@ -17,8 +17,6 @@ class UserAnimeStatus:
         self.updated_at = updated_at or datetime.utcnow()
 
 
-
-
 class Translation:
     def __init__(
         self,
@@ -35,8 +33,6 @@ class Translation:
         self.translation_type = translation_type
         self.language = language
         self.created_at = created_at or datetime.utcnow()
-
-
 
 
 class WatchSource:
@@ -65,8 +61,6 @@ class WatchSource:
         self.created_at = created_at or datetime.utcnow()
 
 
-
-
 class ViewingSession:
     def __init__(
         self,
@@ -91,8 +85,6 @@ class ViewingSession:
         self.quality_label = quality_label
         self.is_paused = is_paused
         self.updated_at = updated_at or datetime.utcnow()
-
-
 
 
 class HighlightContext:

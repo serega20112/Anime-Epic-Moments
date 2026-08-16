@@ -10,11 +10,11 @@ class GetAnimeDiscussionUseCase:
         self.watch_repo = watch_repo
 
     async def execute(
-            self,
-            anime_id: int,
-            sort_by: str = "popular",
-            viewer_user_id: int | None = None,
-            limit: int = 20,
+        self,
+        anime_id: int,
+        sort_by: str = "popular",
+        viewer_user_id: int | None = None,
+        limit: int = 20,
     ) -> WatchResult:
         normalized_sort = str(sort_by or "popular").strip().lower()
         if normalized_sort not in {"popular", "recent"}:

@@ -2,7 +2,7 @@
 
 ## Описание
 
-Система организована как многослойное Flask-приложение с DDD-подобными границами. Delivery-слой принимает HTTP-запросы,
+Система организована как многослойное FastAPI-приложение с DDD-подобными границами. Presentation-слой принимает HTTP-запросы,
 use case оркестрируют действия, domain-объекты описывают язык продукта, а infrastructure-слой владеет побочными
 эффектами: PostgreSQL, Redis, внешними провайдерами аниме, кэшированием, JWT и хешированием паролей.
 
@@ -16,7 +16,7 @@ use case и репозитория и при этом оставаться те�
 ```mermaid
 flowchart TB
     Browser[Браузер или API-клиент]
-    Routes[Flask routes]
+    Routes[FastAPI routes]
     UseCases[Use case]
     Domain[Domain entities, policies, value objects]
     Services[Application services]
@@ -44,7 +44,7 @@ flowchart TB
 ```mermaid
 sequenceDiagram
     participant U as Пользователь
-    participant R as Flask route
+    participant R as FastAPI route
     participant C as Container
     participant UC as Use case
     participant S as Service или Repository
@@ -64,11 +64,12 @@ sequenceDiagram
 
 Конкретные backend-слои:
 
-- Delivery: Flask blueprints в `src/backend/delivery/api/v1`
-- Application orchestration: `src/backend/use_case`
+- Presentation: FastAPI routes в `src/backend/presentation/api/v1` (тонкие: HTTP → use case)
+- Application orchestration: `src/backend/application/use_cases`
 - Domain-язык: `src/backend/domain`
 - Побочные эффекты: `src/backend/infrastructure`
-- Runtime-композиция: `src/backend/dependencies`
+- Runtime-композиция (dishka): `src/backend/infrastructure/di`
+- Настройки: `src/backend/config`
 - Frontend-шаблоны и статика: `src/frontend`
 - Окружение и упаковка: `build`
 
@@ -85,11 +86,11 @@ sequenceDiagram
 ## Где в коде
 
 - `../../src/backend/main.py`
-- `src/backend/create_app.py`
-- `src/backend/dependencies/container.py`
-- `src/backend/dependencies/settings.py`
-- `src/backend/delivery/api/v1`
-- `src/backend/use_case`
+- `src/backend/presentation/app_factory.py`
+- `src/backend/infrastructure/di/`
+- `src/backend/config/settings.py`
+- `src/backend/presentation/api/v1`
+- `src/backend/application/use_cases`
 - `src/backend/domain`
 - `src/backend/infrastructure`
 - `src/frontend`

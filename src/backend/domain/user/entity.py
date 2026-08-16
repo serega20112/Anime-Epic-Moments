@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-from .exceptions import *
+from .exceptions import InvalidEmailError, InvalidUsernameError
 
 
 class User:
@@ -44,10 +44,8 @@ class User:
             "Password verification must be performed in application layer via PasswordService"
         )
 
-
     def update_avatar(self, avatar_url: str):
         self.avatar_url = avatar_url
-
 
     def change_username(self, new_username: str):
         self._validate_username(new_username)

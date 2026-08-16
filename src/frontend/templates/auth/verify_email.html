@@ -1,107 +1,77 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Подтверждение почты - AEM</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/auth.css') }}"
-    />
-  </head>
-  <body>
-    <div class="auth-page">
-      <div class="auth-card">
-        <h1>Подтверждение почты</h1>
-        <p class="auth-switch">
-          Мы отправили код на <strong>{{ email or "указанный email" }}</strong>.
-        </p>
-        <form
-          class="auth-form"
-          action="{{ url_for('auth.verify_email') }}"
-          method="POST"
-        >
-          <input type="hidden" name="email" value="{{ email }}" />
-          <div class="form-group">
-            <label for="code">Код подтверждения</label>
-            <input
-              type="text"
-              id="code"
-              name="code"
-              placeholder="123456"
-              inputmode="numeric"
-              pattern="\d{6}"
-              maxlength="6"
-              required
-              autofocus
-            />
-          </div>
-          <button type="submit" class="btn neon-pink btn-large">
-            Подтвердить почту
-          </button>
-        </form>
-        <form
-          class="auth-form"
-          action="{{ url_for('auth.resend_verification_email') }}"
-          method="POST"
-        >
-          <input type="hidden" name="email" value="{{ email }}" />
-          <button type="submit" class="btn btn-large">
-            Отправить код заново
-          </button>
-        </form>
-        <p class="auth-switch">
-          Ошибся в адресе?
-          <a href="{{ url_for('auth.register_page') }}"
-            >Вернуться к регистрации</a
-          >
-        </p>
-      </div>
+{% extends "base.html" %}
+
+{% block title %}Подтверждение email — Anime Epic Moments{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card glass">
+    <div class="auth-logo">AEM</div>
+    <p class="auth-sub">Почти готово!</p>
+
+    <div class="verify-note">
+      Мы отправили <strong>6-значный код</strong> на адрес
+      <strong>{{ email }}</strong>. Введите его ниже, чтобы завершить регистрацию.
     </div>
 
-    {% with messages = get_flashed_messages() %} {% if messages %}
-    <div id="errorModal" class="modal">
-      <div class="modal-content">
-        <button type="button" class="close" onclick="closeErrorModal()">
-          &times;
-        </button>
-        <h2 class="modal-title">Уведомление</h2>
-        <ul class="modal-error-list">
-          {% for message in messages %}
-          <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-        <div class="modal-actions">
-          <button type="button" class="btn-modal" onclick="closeErrorModal()">
-            Понятно
-          </button>
-        </div>
+    <form class="auth-form" method="post" action="{{ url_for('auth.verify_email') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="email" value="{{ email }}">
+
+      <div class="form-group">
+        <label for="code">Код подтверждения</label>
+        <input type="text" id="code" name="code" class="code-input" placeholder="000000"
+               required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autofocus>
       </div>
+
+      <div class="auth-actions">
+        <button type="submit" class="btn btn-primary btn-lg">Подтвердить</button>
+      </div>
+    </form>
+
+    <div class="resend-box">
+      <span>Не пришло письмо? Проверьте спам или запросите код ещё раз.</span>
+      <form method="post" action="{{ url_for('auth.resend_verification_email') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="email" value="{{ email }}">
+        <button type="submit" class="btn btn-ghost btn-sm" id="resend-btn">Отправить код ещё раз</button>
+      </form>
+      <span class="resend-timer" id="resend-timer"></span>
     </div>
-    <script>
-      function openErrorModal() {
-        const modal = document.getElementById("errorModal");
-        if (!modal) return;
-        modal.style.display = "flex";
-      }
+  </div>
+</div>
+{% endblock %}
 
-      function closeErrorModal() {
-        const modal = document.getElementById("errorModal");
-        if (!modal) return;
-        modal.style.display = "none";
-      }
-
-      openErrorModal();
-    </script>
-    {% endif %} {% endwith %}
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  </body>
-</html>
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+  var btn = document.getElementById("resend-btn");
+  var timer = document.getElementById("resend-timer");
+  if (!btn || !timer) return;
+  var remaining = 0;
+  function tick() {
+    if (remaining <= 0) {
+      btn.disabled = false;
+      timer.textContent = "";
+      return;
+    }
+    btn.disabled = true;
+    timer.textContent = "Повторная отправка через " + remaining + " с";
+    remaining -= 1;
+    setTimeout(tick, 1000);
+  }
+  btn.addEventListener("click", function () {
+    remaining = 30;
+    tick();
+  });
+  var input = document.getElementById("code");
+  input.addEventListener("input", function () {
+    input.value = input.value.replace(/\D/g, "").slice(0, 6);
+  });
+})();
+</script>
+{% endblock %}

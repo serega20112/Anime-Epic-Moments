@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from backend.application.dto import CreateSupportTicketCommand
 from backend.application.use_cases.support.result import CreateSupportTicketResult
-from backend.domain import is_support_channel, normalize_support_channel
+from backend.domain import is_support_channel
 from backend.domain.repositories.support_repository import SupportRepository
 from backend.domain.services import (
     SupportEmailMailerInterface as SupportEmailMailer,
@@ -28,11 +28,11 @@ class CreateSupportTicketUseCase:
     _logger = logging.getLogger("anime_epic_moments")
 
     def __init__(
-            self,
-            support_repo: SupportRepository,
-            telegram_notifier: TelegramSupportNotifier,
-            email_mailer: SupportEmailMailer,
-            unit_of_work: UnitOfWorkInterface,
+        self,
+        support_repo: SupportRepository,
+        telegram_notifier: TelegramSupportNotifier,
+        email_mailer: SupportEmailMailer,
+        unit_of_work: UnitOfWorkInterface,
     ):
         self.support_repo = support_repo
         self.telegram_notifier = telegram_notifier

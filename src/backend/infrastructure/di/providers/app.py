@@ -11,15 +11,19 @@ from backend.infrastructure.cache import HighlightDashboardCache, Recommendation
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from backend.infrastructure.external import (
+    AniBoomProvider,
     AniLibriaClient,
     AnimeApiClient,
     JustWatchClient,
     KodikClient,
     PasswordResetMailer,
+    SamebandProvider,
     SupportEmailMailer,
     TelegramSupportNotifier,
 )
 from backend.infrastructure.external.email_verification_mailer import EmailVerificationMailer
+from backend.infrastructure.external.failover_llm_client import FailoverLLMClient
+from backend.infrastructure.external.google_gemini_llm_client import GoogleGeminiLLMClient
 from backend.infrastructure.external.huggingface_llm_client import HuggingFaceLLMClient
 from backend.infrastructure.external.youtube_client import YouTubeClient
 from backend.infrastructure.media_proxy import MediaProxyClient
@@ -36,17 +40,19 @@ class AppProvider(Provider):
     """Provide application-wide singletons."""
 
     @provide(scope=Scope.APP)
-    def key_value_store(self) -> KeyValueStore:
+    async def key_value_store(self) -> AsyncIterator[KeyValueStore]:
         """Provide the key-value store.
 
-        Returns:
+        Yields:
             KeyValueStore: Redis-backed store with in-memory fallback.
         """
-        return KeyValueStore(
+        store = KeyValueStore(
             redis_url=Settings.redis_url,
             namespace="anime_epic_moments",
             required=Settings.redis_required,
         )
+        yield store
+        await store.close()
 
     @provide(scope=Scope.APP)
     async def anime_api_client(self, store: KeyValueStore) -> AsyncIterator[AnimeApiClient]:
@@ -99,6 +105,34 @@ class AppProvider(Provider):
         return JustWatchClient()
 
     @provide(scope=Scope.APP)
+    async def sameband_provider(self) -> AsyncIterator[SamebandProvider]:
+        """Provide the SameBand provider.
+
+        Yields:
+            SamebandProvider: Configured provider.
+        """
+        provider = SamebandProvider(
+            base_url=Settings.sameband_base_url,
+            enabled=Settings.sameband_enabled,
+            timeout=Settings.sameband_timeout,
+        )
+        yield provider
+        await provider.aclose()
+
+    @provide(scope=Scope.APP)
+    def aniboom_provider(self) -> AniBoomProvider:
+        """Provide the AniBoom provider.
+
+        Returns:
+            AniBoomProvider: Configured provider.
+        """
+        return AniBoomProvider(
+            base_url=Settings.aniboom_base_url,
+            enabled=Settings.aniboom_enabled,
+            timeout=Settings.aniboom_timeout,
+        )
+
+    @provide(scope=Scope.APP)
     async def media_proxy_client(self) -> AsyncIterator[MediaProxyClient]:
         """Provide the media proxy client.
 
@@ -110,17 +144,24 @@ class AppProvider(Provider):
         await client.aclose()
 
     @provide(scope=Scope.APP)
-    def hf_llm_client(self) -> HuggingFaceLLMClient:
-        """Provide the HuggingFace LLM client.
+    def llm_client(self) -> FailoverLLMClient:
+        """Provide the LLM client with Gemini primary and Hugging Face fallback.
 
         Returns:
-            HuggingFaceLLMClient: Configured client.
+            FailoverLLMClient: Failover client for AI-powered search.
         """
-        return HuggingFaceLLMClient(
-            api_key=Settings.hf_token,
-            model=Settings.hf_model,
-            provider=Settings.hf_provider,
-            api_url=Settings.hf_api_url,
+        return FailoverLLMClient(
+            primary=GoogleGeminiLLMClient(
+                api_key=Settings.google_api_key,
+                model=Settings.google_model,
+                api_url=Settings.google_api_url,
+            ),
+            fallback=HuggingFaceLLMClient(
+                api_key=Settings.hf_token,
+                model=Settings.hf_model,
+                provider=Settings.hf_provider,
+                api_url=Settings.hf_api_url,
+            ),
         )
 
     @provide(scope=Scope.APP)

@@ -6,8 +6,8 @@ from backend.domain import (
     HighlightCard,
     HighlightDashboard,
     HighlightStats,
+    UserRepository,
 )
-from backend.domain import UserRepository
 from backend.domain.repositories.highlight_repository import HighlightRepository
 from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
 
@@ -16,26 +16,26 @@ class GetUserHighlightsUseCase:
     """Возвращает дашборд хайлайтов пользователя с фильтрами и статистикой."""
 
     def __init__(
-            self,
-            repo: HighlightRepository,
-            anime_api_client: AnimeApiClient,
-            user_repo: UserRepository | None = None,
+        self,
+        repo: HighlightRepository,
+        anime_api_client: AnimeApiClient,
+        user_repo: UserRepository | None = None,
     ):
         self.repo = repo
         self.anime_api_client = anime_api_client
         self.user_repo = user_repo
 
     async def execute(
-            self,
-            user_id: int,
-            anime_id: int | None = None,
-            emotion: str | None = None,
-            category: str | None = None,
-            sort_by: str = "recent",
-            created_date: str | None = None,
-            query: str | None = None,
-            include_spoilers: bool = True,
-            viewer_user_id: int | None = None,
+        self,
+        user_id: int,
+        anime_id: int | None = None,
+        emotion: str | None = None,
+        category: str | None = None,
+        sort_by: str = "recent",
+        created_date: str | None = None,
+        query: str | None = None,
+        include_spoilers: bool = True,
+        viewer_user_id: int | None = None,
     ) -> HighlightDashboard:
         highlights = await self.repo.get_by_user(user_id)
         return await self._build_dashboard(
@@ -51,16 +51,16 @@ class GetUserHighlightsUseCase:
         )
 
     async def _build_dashboard(
-            self,
-            highlights,
-            anime_id: int | None,
-            emotion: str | None,
-            category: str | None,
-            sort_by: str,
-            created_date: str | None,
-            query: str | None,
-            include_spoilers: bool,
-            viewer_user_id: int | None,
+        self,
+        highlights,
+        anime_id: int | None,
+        emotion: str | None,
+        category: str | None,
+        sort_by: str,
+        created_date: str | None,
+        query: str | None,
+        include_spoilers: bool,
+        viewer_user_id: int | None,
     ) -> HighlightDashboard:
         anime_cache: dict[int, tuple[str, str | None, int]] = {}
 
@@ -195,10 +195,10 @@ class GetUserHighlightsUseCase:
         return f"{minutes:02d}:{sec:02d}"
 
     def _build_watch_url(
-            self,
-            watch_id: int,
-            episode: int,
-            start_timestamp: float,
+        self,
+        watch_id: int,
+        episode: int,
+        start_timestamp: float,
     ) -> str:
         start_at = max(int(float(start_timestamp or 0.0)), 0)
         return f"/watch/{watch_id}?episode={episode}&start_at={start_at}"
@@ -229,7 +229,7 @@ class GetUserHighlightsUseCase:
         )
         freshness_bonus = max(72.0 - age_hours, 0.0) / 12.0
         return (
-                float(highlight.likes_count or 0) * 4.0
-                + float(getattr(highlight, "views_count", 0) or 0) * 2.0
-                + freshness_bonus
+            float(highlight.likes_count or 0) * 4.0
+            + float(getattr(highlight, "views_count", 0) or 0) * 2.0
+            + freshness_bonus
         )

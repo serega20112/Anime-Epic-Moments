@@ -23,7 +23,9 @@ class TestUpdateUserProfileUseCase:
         user_repo.get_by_id.return_value = None
         use_case = UpdateUserProfileUseCase(user_repo, AsyncMock())
 
-        result = await use_case.execute(user_id=900, username="NewName", avatar_url="http://a/x.png")
+        result = await use_case.execute(
+            user_id=900, username="NewName", avatar_url="http://a/x.png"
+        )
 
         assert result.ok is False
         assert result.error_endpoint == "auth.profile_page"
@@ -51,7 +53,9 @@ class TestUpdateUserProfileUseCase:
             ("NoAvatar", None, None),
         ],
     )
-    async def test_updates_profile_and_invalidates_cache(self, username, avatar_url, expected_avatar):
+    async def test_updates_profile_and_invalidates_cache(
+        self, username, avatar_url, expected_avatar
+    ):
         """Что тестируем: успешное обновление имени и аватара.
         Что передаём: имя, аватар и cache надстройку.
         Что ожидаем: союз-код изменяет поля и возвращает success + инвалидацию кэша.

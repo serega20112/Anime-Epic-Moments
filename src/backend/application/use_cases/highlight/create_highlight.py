@@ -1,7 +1,6 @@
 from backend.application.dto import CreateHighlightCommand
 from backend.application.use_cases.highlight.result import HighlightResult
-from backend.domain import Highlight
-from backend.domain import HighlightPolicy
+from backend.domain import Highlight, HighlightPolicy
 from backend.domain.repositories.highlight_repository import HighlightRepository
 from backend.domain.services import (
     HighlightDashboardCacheInterface as HighlightDashboardCache,
@@ -19,12 +18,12 @@ class CreateHighlightUseCase:
     """Use case для создания Highlight"""
 
     def __init__(
-            self,
-            repo: HighlightRepository,
-            unit_of_work: UnitOfWorkInterface,
-            recommendation_service: RecommendationService | None = None,
-            highlight_dashboard_cache: HighlightDashboardCache | None = None,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        repo: HighlightRepository,
+        unit_of_work: UnitOfWorkInterface,
+        recommendation_service: RecommendationService | None = None,
+        highlight_dashboard_cache: HighlightDashboardCache | None = None,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.repo = repo
         self.recommendation_service = recommendation_service
@@ -52,9 +51,7 @@ class CreateHighlightUseCase:
                 status_code=403,
             )
 
-        if not HighlightPolicy.filter_spoiler_content(
-                f"{command.title} {command.description}"
-        ):
+        if not HighlightPolicy.filter_spoiler_content(f"{command.title} {command.description}"):
             return HighlightResult.failure(
                 "Описание содержит запрещённый контент",
                 status_code=400,

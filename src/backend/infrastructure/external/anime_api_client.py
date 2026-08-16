@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 import httpx
@@ -22,7 +23,22 @@ class AnimeApiClient:
         """
         self.jikan_base = "https://api.jikan.moe/v4"
         self.anilist_base = "https://graphql.anilist.co"
-        self.session = httpx.AsyncClient(timeout=20.0, trust_env=False)
+        self.genre_id_map = {
+            "Action": 1, "Adventure": 2, "Cars": 3, "Comedy": 4,
+            "Dementia": 5, "Demons": 6, "Mystery": 7, "Drama": 8,
+            "Ecchi": 9, "Fantasy": 10, "Gender Bender": 11, "Harem": 35,
+            "Historical": 13, "Horror": 14, "Kids": 15, "Magic": 16,
+            "Martial Arts": 17, "Mecha": 18, "Music": 19,
+            "Parody": 20, "Psychological": 40, "Romance": 22, "Samurai": 21,
+            "School": 23, "Sci-Fi": 24, "Seinen": 42, "Shoujo": 25,
+            "Shounen": 27, "Slice of Life": 36, "Space": 29, "Sports": 30,
+            "Super Power": 31, "Supernatural": 37, "Thriller": 41,
+            "Vampire": 32,
+        }
+        self.session = httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=3.0, read=6.0, write=3.0, pool=3.0),
+            trust_env=False,
+        )
         self.store = store or KeyValueStore(redis_url=None, namespace="anime_api")
 
     async def aclose(self) -> None:
@@ -223,7 +239,11 @@ class AnimeApiClient:
         return list(await self._set_cached(cache_key, result, ttl_seconds=300))
 
     async def get_by_id(self, anime_id: int) -> Anime | None:
-        """Fetch anime by id with Jikan priority and AniList fallback.
+        """Fetch anime by id, trying Jikan and AniList concurrently.
+
+        Whenever a provider hangs (e.g. Jikan timing out), the other provider
+        (AniList) can satisfy the request immediately instead of blocking on
+        the slow/failing upstream.
 
         Args:
             anime_id: Anime identifier.
@@ -236,34 +256,51 @@ class AnimeApiClient:
         cached = await self._get_cached(cache_key)
         if cached is not _CACHE_MISS:
             return cached
+        result = await self._first_truthy(
+            self._get_by_jikan(anime_id),
+            self._get_by_anilist_id(anime_id),
+        )
+        return await self._set_cached(cache_key, result, ttl_seconds=1800)
+
+    async def _get_by_jikan(self, anime_id: int) -> Anime | None:
+        """Fetch anime by id from the Jikan API."""
         url = f"{self.jikan_base}/anime/{anime_id}"
         try:
             resp = await self.session.get(url)
             resp.raise_for_status()
             item = resp.json().get("data")
             if not item:
-                return await self._set_cached(
-                    cache_key, await self._get_by_anilist_id(anime_id), ttl_seconds=1800
-                )
-        except httpx.HTTPStatusError as error:
-            status_code = error.response.status_code if error.response else None
-            if status_code == 404:
-                return await self._set_cached(
-                    cache_key, await self._get_by_anilist_id(anime_id), ttl_seconds=1800
-                )
-            anime = await self._get_by_mal_id_via_anilist(anime_id)
-            fallback = anime or await self._get_by_anilist_id(anime_id)
-            return await self._set_cached(cache_key, fallback, ttl_seconds=1800)
-        except (httpx.RequestError, ValueError, KeyError, TypeError):
-            anime = await self._get_by_mal_id_via_anilist(anime_id)
-            fallback = anime or await self._get_by_anilist_id(anime_id)
-            return await self._set_cached(cache_key, fallback, ttl_seconds=1800)
+                return None
+            return self._build_anime_from_jikan_item(item)
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            return None
 
-        return await self._set_cached(
-            cache_key,
-            self._build_anime_from_jikan_item(item),
-            ttl_seconds=1800,
-        )
+    async def _first_truthy(self, *awaitables) -> Any:
+        """Await several coroutines and return the first truthy result.
+
+        Cancels the remaining pending tasks as soon as one yields a truthy
+        result, so a hanging provider does not delay the response.
+
+        Args:
+            *awaitables: Coroutines to race.
+
+        Returns:
+            The first truthy value, or None when all yield falsy results.
+        """
+        tasks = [asyncio.ensure_future(item) for item in awaitables]
+        pending = list(tasks)
+        while pending:
+            done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+            for task in done:
+                try:
+                    value = task.result()
+                except Exception:
+                    value = None
+                if value:
+                    for other in pending:
+                        other.cancel()
+                    return value
+        return None
 
     async def _get_by_mal_id_via_anilist(self, anime_id: int) -> Anime | None:
         """Fetch anime by MAL id via AniList.
@@ -306,6 +343,265 @@ class AnimeApiClient:
             result.append(self._build_anime_from_jikan_item(item))
         return list(await self._set_cached(cache_key, result, ttl_seconds=900))
 
+    async def filter_catalog(
+        self,
+        *,
+        genre: str = "",
+        media_type: str = "",
+        status: str = "",
+        year_from: int | None = None,
+        year_to: int | None = None,
+        min_score: float | None = None,
+        sort: str = "rating",
+        order: str = "desc",
+        limit: int = 30,
+    ) -> list[Anime]:
+        """Browse anime with Anixart-like filters.
+
+        Args:
+            genre: Selected genre name or empty string for all.
+            media_type: Format filter (tv, movie, ova, ona, special). Empty means all.
+            status: Status filter (airing, complete, upcoming). Empty means all.
+            year_from: Optional lower bound release year.
+            year_to: Optional upper bound release year.
+            min_score: Optional minimum normalized rating (0-10).
+            sort: Sorting strategy (rating, popularity, newest, title).
+            order: Sorting direction (asc, desc).
+            limit: Maximum number of results to return.
+
+        Returns:
+            list[Anime]: Filtered and sorted anime.
+        """
+        sort_key = sort
+        valid_sorts = {"rating", "popularity", "newest", "title"}
+        if sort_key not in valid_sorts:
+            sort_key = "rating"
+        order_key = "asc" if str(order).strip().lower() == "asc" else "desc"
+        cache_key = self._cache_key(
+            "filter_catalog_v1",
+            str(genre).strip().lower(),
+            str(media_type).strip().lower(),
+            str(status).strip().lower(),
+            year_from if year_from is not None else "",
+            year_to if year_to is not None else "",
+            min_score if min_score is not None else "",
+            sort_key,
+            order_key,
+            int(limit),
+        )
+        cached = await self._get_cached(cache_key)
+        if cached is not _CACHE_MISS:
+            return list(cached)
+
+        result = await self._first_truthy(
+            self._filter_catalog_via_jikan(
+                genre=genre,
+                media_type=media_type,
+                status=status,
+                year_from=year_from,
+                year_to=year_to,
+                min_score=min_score,
+                sort=sort_key,
+                order=order_key,
+                limit=limit,
+            ),
+            self._filter_catalog_via_anilist(
+                genre=genre,
+                media_type=media_type,
+                status=status,
+                year_from=year_from,
+                year_to=year_to,
+                min_score=min_score,
+                sort=sort_key,
+                limit=limit,
+            ),
+        )
+        ttl_seconds = 600 if result else 60
+        return list(await self._set_cached(cache_key, result or [], ttl_seconds=ttl_seconds))
+
+    async def _filter_catalog_via_jikan(
+        self,
+        *,
+        genre: str,
+        media_type: str,
+        status: str,
+        year_from: int | None,
+        year_to: int | None,
+        min_score: float | None,
+        sort: str,
+        order: str,
+        limit: int,
+    ) -> list[Anime]:
+        """Filter and sort anime through the Jikan /anime endpoint.
+
+        Args:
+            genre: Selected genre name.
+            media_type: Format filter value.
+            status: Status filter value.
+            year_from: Optional lower bound release year.
+            year_to: Optional upper bound release year.
+            min_score: Optional minimum normalized rating.
+            sort: Normalized sort key.
+            order: Sorting direction.
+            limit: Maximum number of results to return.
+
+        Returns:
+            list[Anime]: Filtered and sorted anime.
+        """
+        params: dict[str, object] = {"limit": limit, "sfw": "true"}
+        genre_id = self.genre_id_map.get(str(genre).strip().title())
+        if genre_id:
+            params["genres"] = genre_id
+        normalized_type = str(media_type).strip().lower()
+        if normalized_type in {"tv", "movie", "ova", "ona", "special", "music"}:
+            params["type"] = normalized_type
+        normalized_status = str(status).strip().lower()
+        if normalized_status in {"airing", "complete", "upcoming"}:
+            params["status"] = normalized_status
+        if isinstance(year_from, int):
+            params["start_date"] = f"{year_from}-01-01"
+        if isinstance(year_to, int):
+            params["end_date"] = f"{year_to}-12-31"
+        if isinstance(min_score, (int, float)) and 0 <= float(min_score) <= 10:
+            params["min_score"] = float(min_score)
+        order_by_map = {
+            "rating": "score",
+            "popularity": "members",
+            "newest": "start_date",
+            "title": "title",
+        }
+        params["order_by"] = order_by_map.get(sort, "score")
+        params["sort"] = order
+        try:
+            resp = await self.session.get(f"{self.jikan_base}/anime", params=params)
+            resp.raise_for_status()
+            data = resp.json().get("data", [])
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            return []
+
+        result = []
+        for item in data:
+            if self._is_nsfw_jikan(item):
+                continue
+            result.append(self._build_anime_from_jikan_item(item))
+        return result
+
+    async def _filter_catalog_via_anilist(
+        self,
+        *,
+        genre: str,
+        media_type: str,
+        status: str,
+        year_from: int | None,
+        year_to: int | None,
+        min_score: float | None,
+        sort: str,
+        limit: int,
+    ) -> list[Anime]:
+        """Filter and sort anime via an AniList GraphQL fallback.
+
+        Args:
+            genre: Selected genre name.
+            media_type: Format filter value.
+            status: Status filter value.
+            year_from: Optional lower bound release year.
+            year_to: Optional upper bound release year.
+            min_score: Optional minimum normalized rating.
+            sort: Normalized sort key.
+            limit: Maximum number of results to return.
+
+        Returns:
+            list[Anime]: Filtered and sorted anime.
+        """
+        format_map = {"tv": "TV", "movie": "MOVIE", "ova": "OVA", "ona": "ONA", "special": "SPECIAL"}
+        status_map = {"airing": "RELEASING", "complete": "FINISHED", "upcoming": "NOT_YET_RELEASED"}
+        sort_map = {
+            "rating": "SCORE_DESC",
+            "popularity": "POPULARITY_DESC",
+            "newest": "START_DATE_DESC",
+            "title": "TITLE_ROMAJI",
+        }
+
+        def parse_anilist_media(payload_data: list) -> list[Anime]:
+            result = []
+            for item in payload_data:
+                if self._is_nsfw_anilist(item):
+                    continue
+                result.append(
+                    self._build_anime_from_anilist_item(
+                        item,
+                        fallback_to_anilist_id=True,
+                    )
+                )
+            return result
+
+        # Собираем media-аргументы и переменные только для заданных фильтров,
+        # чтобы не передавать AniList значения типа genre_in: [null] (это 400).
+        args = ["type: ANIME", "isAdult: false", "sort: PLACEHOLDER_SORT"]
+        declarations = ["$perPage: Int"]
+        variables: dict[str, object] = {"perPage": int(limit)}
+
+        if genre:
+            args.append("genre_in: [$genre]")
+            declarations.append("$genre: String")
+            variables["genre"] = str(genre).strip()
+
+        normalized_type = str(media_type).strip().lower()
+        if normalized_type in format_map:
+            args.append("format: $format")
+            declarations.append("$format: MediaFormat")
+            variables["format"] = format_map[normalized_type]
+
+        normalized_status = str(status).strip().lower()
+        if normalized_status in status_map:
+            args.append("status: $status")
+            declarations.append("$status: MediaStatus")
+            variables["status"] = status_map[normalized_status]
+
+        if isinstance(year_from, int):
+            args.append("seasonYear_greater: $yearGreater")
+            declarations.append("$yearGreater: FuzzyDateInt")
+            variables["yearGreater"] = year_from - 1
+        if isinstance(year_to, int):
+            args.append("seasonYear_lesser: $yearLess")
+            declarations.append("$yearLess: FuzzyDateInt")
+            variables["yearLess"] = year_to + 1
+        if isinstance(min_score, (int, float)) and 0 <= float(min_score) <= 10:
+            args.append("averageScore_greater: $minScore")
+            declarations.append("$minScore: Int")
+            variables["minScore"] = int(float(min_score) * 10)
+
+        query = (
+            """
+            query (%s) {
+              Page(perPage: $perPage) {
+                media(%s) {
+                  id
+                  idMal
+                  episodes
+                  title { romaji english native }
+                  description
+                  genres
+                  seasonYear
+                  averageScore
+                  coverImage { large }
+                }
+              }
+            }
+            """
+            % (", ".join(declarations), " ".join(args))
+        ).replace("PLACEHOLDER_SORT", sort_map.get(sort, "SCORE_DESC"))
+        try:
+            resp = await self.session.post(
+                self.anilist_base,
+                json={"query": query, "variables": variables},
+            )
+            resp.raise_for_status()
+            data = resp.json().get("data", {}).get("Page", {}).get("media", [])
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            return []
+        return parse_anilist_media(data)
+
     async def _get_by_anilist_id(self, anime_id: int) -> Anime | None:
         """Fetch anime by AniList id as a fallback.
 
@@ -337,22 +633,28 @@ class AnimeApiClient:
         Returns:
             Anime | None: The anime or None when unavailable.
         """
-        query = """
-        query ($id: Int, $idMal: Int) {
-          media: PLACEHOLDER_MEDIA_EXPRESSION {
+        variable_types = {"id": "Int", "idMal": "Int"}
+        declarations = ", ".join(
+            f"${name}: {variable_type}"
+            for name, variable_type in variable_types.items()
+            if name in variables
+        )
+        query = f"""
+        query ({declarations}) {{
+          media: {media_expression} {{
             id
             idMal
             episodes
-            title { romaji english native }
+            title {{ romaji english native }}
             description
             genres
             isAdult
             seasonYear
             averageScore
-            coverImage { large }
-          }
-        }
-        """.replace("PLACEHOLDER_MEDIA_EXPRESSION", media_expression)
+            coverImage {{ large }}
+          }}
+        }}
+        """
         try:
             resp = await self.session.post(
                 self.anilist_base,
@@ -700,9 +1002,12 @@ class AnimeApiClient:
         """
         if self.store is None:
             return _CACHE_MISS
-        if not await self.store.contains(key):
+        try:
+            if not await self.store.contains(key):
+                return _CACHE_MISS
+            return await self.store.get(key)
+        except Exception:
             return _CACHE_MISS
-        return await self.store.get(key)
 
     async def _set_cached(self, key: str, value, ttl_seconds: int):
         """Store a value in the cache store.
@@ -717,5 +1022,8 @@ class AnimeApiClient:
         """
         if self.store is None:
             return value
-        await self.store.set(key, value, ttl_seconds=ttl_seconds)
+        try:
+            await self.store.set(key, value, ttl_seconds=ttl_seconds)
+        except Exception:
+            pass
         return value

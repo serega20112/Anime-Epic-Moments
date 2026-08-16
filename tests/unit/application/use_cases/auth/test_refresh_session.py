@@ -3,7 +3,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, Mock
 
 import jwt
-import pytest
 
 from backend.application.use_cases.auth.refresh_session import RefreshSessionUseCase
 

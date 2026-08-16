@@ -1,8 +1,10 @@
 import asyncio
+import logging
 import re
 
 from backend.domain import Translation, WatchRepository, WatchSource
 from backend.domain.anime.entity import Anime
+from backend.domain.exceptions import ExternalServiceError
 from backend.domain.services import (
     WatchSourceProviderInterface as WatchSourceProvider,
 )
@@ -12,6 +14,8 @@ from backend.domain.watch.policy import (
 )
 from backend.domain.watch.value_object import DiscoveredWatchSource
 from backend.utils.ttl_cache import TTLCache
+
+logger = logging.getLogger(__name__)
 
 
 class WatchSourceSyncService:
@@ -39,11 +43,11 @@ class WatchSourceSyncService:
         return ", ".join(enabled) if enabled else None
 
     async def sync_for_anime(
-            self,
-            anime_id: int,
-            anime: Anime | None,
-            episode: int,
-            force: bool = False,
+        self,
+        anime_id: int,
+        anime: Anime | None,
+        episode: int,
+        force: bool = False,
     ) -> list[WatchSource]:
         """Подтягивает и сохраняет источники для конкретного аниме и эпизода."""
         existing = await self.watch_repo.get_sources(anime_id=anime_id, episode=episode)
@@ -55,7 +59,7 @@ class WatchSourceSyncService:
             provider
             for provider in self.providers
             if provider.is_enabled()
-               and (force or provider.provider_name.strip().lower() not in existing_provider_names)
+            and (force or provider.provider_name.strip().lower() not in existing_provider_names)
         ]
         if not providers_to_query:
             return existing
@@ -92,9 +96,10 @@ class WatchSourceSyncService:
         )
 
         translation_cache: dict[tuple[str, str, str | None], Translation] = {}
+        stored_quality_seen: set[tuple[str, str, str | None, str]] = set()
         for (empty_cache_key, _provider), discovered in zip(
-                pending_discoveries,
-                discovered_batches,
+            pending_discoveries,
+            discovered_batches,
         ):
             if not discovered:
                 self.empty_result_cache.set(empty_cache_key, True)
@@ -107,6 +112,16 @@ class WatchSourceSyncService:
                     item.translation_type,
                     item.language,
                 )
+                quality_key = (
+                    translation_key[0],
+                    translation_key[1],
+                    translation_key[2],
+                    str(item.quality_label or "").strip().lower(),
+                )
+                # Не плодим дубли качества для одной озвучки (например, "1080, 1080").
+                if quality_key in stored_quality_seen:
+                    continue
+                stored_quality_seen.add(quality_key)
                 translation = translation_cache.get(translation_key)
                 if translation is None:
                     translation = await self.watch_repo.add_translation(
@@ -142,24 +157,46 @@ class WatchSourceSyncService:
         normalized = " ".join(title.replace("-", " ").split())
         if normalized and normalized not in variants:
             variants.append(normalized)
+
+        # Убираем маркер сезона, чтобы "Grand Blue Season 2"/"Grand Blue S2"
+        # матчился с релизом, названным просто "Grand Blue".
+        seasonless = re.sub(
+            r"\b(?:season|сезон)\s*\d+\b|\bs\d+\b",
+            "",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        seasonless = re.sub(r"\s+", " ", seasonless).strip()
+        if seasonless and seasonless != normalized and seasonless not in variants:
+            variants.append(seasonless)
         return [item for item in variants if item]
 
     async def _discover_sources(
-            self,
-            provider: WatchSourceProvider,
-            title_variants: list[str],
-            episode: int,
-            year: int | None,
+        self,
+        provider: WatchSourceProvider,
+        title_variants: list[str],
+        episode: int,
+        year: int | None,
     ) -> list[DiscoveredWatchSource]:
         """Ищет источники по нескольким вариантам названия и объединяет результат."""
         discovered: list[DiscoveredWatchSource] = []
         seen: set[tuple[str, str, str, str, str]] = set()
         for title_variant in title_variants:
-            variant_sources = await provider.search_sources(
-                title=title_variant,
-                episode=episode,
-                year=year,
-            )
+            try:
+                variant_sources = await provider.search_sources(
+                    title=title_variant,
+                    episode=episode,
+                    year=year,
+                )
+            except ExternalServiceError:
+                logger.warning(
+                    "Watch source provider failed",
+                    extra={
+                        "provider": provider.provider_name,
+                        "episode": episode,
+                    },
+                )
+                continue
             for item in variant_sources:
                 dedupe_key = (
                     canonicalize_translation_name(item.translation_name),

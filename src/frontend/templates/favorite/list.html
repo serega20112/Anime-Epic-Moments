@@ -1,213 +1,70 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Избранное - AEM</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/anime.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/highlight.css') }}"
-    />
-  </head>
-  <body data-current-user-id="{{ current_user.id if current_user else '' }}">
-    <header class="header">
-      <div class="logo">AEM</div>
-      <form
-        class="search-container global-search-form"
-        action="{{ url_for('anime.search_anime_page') }}"
-        method="get"
-        autocomplete="off"
-      >
-        <input
-          type="text"
-          name="title"
-          class="global-search-input"
-          placeholder="Найди аниме по названию, жанру или эмоции…"
-        />
-        <button type="submit">🔍</button>
-        <div class="search-autocomplete" hidden></div>
-      </form>
-      <nav>
-        <a href="{{ url_for('anime.search_anime_page') }}">Поиск</a>
-        <a
-          href="{{ url_for('highlight.get_user_highlights', user_id=user_id) }}"
-          >Хайлайты</a
-        >
-        <a href="{{ url_for('favorite.get_favorites', user_id=user_id) }}"
-          >Избранное</a
-        >
-        <a href="{{ url_for('collection.collections_page') }}">Коллекции</a>
-        <a href="{{ url_for('auth.profile_page') }}">Мой профиль</a>
-        <form
-          method="post"
-          action="{{ url_for('auth.logout_user') }}"
-          class="inline-logout-form"
-        >
-          <button type="submit" class="nav-link-button">Выход</button>
-        </form>
-      </nav>
-    </header>
+{% extends "base.html" %}
 
-    <main class="favorite-container">
-      <h1>Мои избранные аниме</h1>
-      <div class="favorite-grid">
-        {% for anime in favorites %}
-        <div class="anime-card">
-          <div class="poster">
-            <img
-              src="{{ anime.cover_url or '/static/images/no-cover.png' }}"
-              alt="{{ anime.title }}"
-              loading="lazy"
-            />
-          </div>
-          <div class="info">
-            <h2>{{ anime.title }}</h2>
-            <p>{{ anime.description }}</p>
-            <p class="genres">
-              {% for genre in anime.genres %}
-              <span class="genre-chip">{{ genre }}</span>
-              {% endfor %}
-            </p>
-            <div class="actions">
-              <button
-                class="btn-heart liked"
-                onclick="removeFavorite({{ anime.anime_id }})"
-              >
-                ❤
-              </button>
-              <a
-                href="{{ anime.watch_url }}"
-                class="btn-watch"
-                target="_blank"
-                rel="noopener noreferrer"
-                >Где смотреть</a
-              >
-            </div>
-          </div>
-        </div>
-        {% else %}
-        <section class="empty-state">
-          <h2>Избранное пока пустое</h2>
-          <p>Добавь аниме из поиска, чтобы собрать свою коллекцию.</p>
-        </section>
-        {% endfor %}
+{% block title %}Избранное — Anime Epic Moments{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <header class="dash-head">
+    <div>
+      <h1 class="page-title">Избранное</h1>
+      <p class="muted">Аниме, которое вы сохранили. Всего: {{ favorites|length }}.</p>
+    </div>
+  </header>
+
+  {% if favorites %}
+  <div class="results-grid">
+    {% for f in favorites %}
+    <a class="anime-card" href="{{ f.watch_url }}">
+      <div class="poster">
+        <img src="{{ f.cover_url or url_for('static', filename='images/no-cover.svg') }}"
+             alt="{{ f.title }}" loading="lazy"
+             onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';">
+        {% if f.genres and f.genres|length %}<span class="type-badge">{{ f.genres[0] }}</span>{% endif %}
+        {% if f.added_at %}<span class="rating-badge" style="color:var(--color-text-muted)">+{{ f.added_at }}</span>{% endif %}
+        <span class="poster-actions"><span class="btn btn-primary btn-sm">Смотреть</span></span>
       </div>
+      <div class="card-body">
+        <div class="card-title">{{ f.title }}</div>
+        {% if f.description %}<div class="card-meta"><span>{{ f.description|truncate(60) }}</span></div>{% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-emoji">💔</span>
+    <h3>В избранном пусто</h3>
+    <p>Добавляйте аниме в избранное, чтобы оно всегда было под рукой.</p>
+    <a class="btn btn-primary btn-sm" href="{{ url_for('anime.search_anime_page') }}">Найти аниме</a>
+  </div>
+  {% endif %}
 
-      <section class="results-panel favorite-recommendations">
-        <div class="results-head">
-          <h2>ИИ-рекомендации</h2>
-          <button
-            type="button"
-            class="btn neon-pink"
-            id="refresh-recommendations"
-          >
-            Обновить рекомендации
-          </button>
+  {% if recommendations %}
+  <section class="section" style="margin-top:var(--space-7)">
+    <div class="section-title"><span class="emoji">🎯</span> Рекомендации по вашему вкусу</div>
+    <div class="results-grid">
+      {% for r in recommendations %}
+      <a class="anime-card" href="{{ r.watch_url }}">
+        <div class="poster">
+          <img src="{{ r.image_url or url_for('static', filename='images/no-cover.svg') }}"
+               alt="{{ r.title }}" loading="lazy"
+               onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';">
+          {% if r.genres and r.genres|length %}<span class="type-badge">{{ r.genres[0] }}</span>{% endif %}
+          <span class="poster-actions"><span class="btn btn-primary btn-sm">Смотреть</span></span>
         </div>
-        <div id="recommendation-grid" class="results-grid">
-          {% for rec in recommendations %}
-          <article class="result-card">
-            <img
-              src="{{ rec.image_url or '/static/images/no-cover.png' }}"
-              alt="{{ rec.title }}"
-              loading="lazy"
-            />
-            <div class="result-card-body">
-              <h3>{{ rec.title }}</h3>
-              <p>{{ rec.description }}</p>
-              <div class="result-genres">
-                {% for genre in rec.genres %}
-                <span class="genre-chip">{{ genre }}</span>
-                {% endfor %}
-              </div>
-              <div class="result-meta">
-                <span>{{ rec.reason }}</span>
-                <span>{{ '%.2f'|format(rec.similarity_score) }}</span>
-              </div>
-              <div class="result-actions">
-                <button
-                  class="btn-favorite recommendation-favorite-button"
-                  data-anime-id="{{ rec.anime_id }}"
-                  data-title="{{ rec.title }}"
-                  data-description="{{ rec.description }}"
-                  data-cover-url="{{ rec.image_url or '' }}"
-                  data-genres="{{ rec.genres|tojson|forceescape }}"
-                >
-                  В избранное
-                </button>
-                <a class="btn neon-blue btn-watch" href="{{ rec.watch_url }}"
-                  >Где смотреть</a
-                >
-              </div>
-            </div>
-          </article>
-          {% else %}
-          <section class="empty-state">
-            <h2>Пока мало данных для рекомендаций</h2>
-            <p>
-              Добавь избранное или хайлайты, чтобы ИИ начал подбирать похожие
-              аниме.
-            </p>
-          </section>
-          {% endfor %}
+        <div class="card-body">
+          <div class="card-title">{{ r.title }}</div>
+          {% if r.reason %}<div class="card-meta"><span>🎯 {{ r.reason|truncate(50) }}</span></div>{% endif %}
         </div>
-      </section>
-    </main>
-
-    <script>
-      function removeFavorite(animeId) {
-          fetch('/favorites/', {
-              method: 'DELETE',
-              headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({user_id: {{ user_id }}, anime_id: animeId})
-          }).then(() => location.reload());
-      }
-
-      document.getElementById('refresh-recommendations')?.addEventListener('click', async () => {
-          const response = await fetch('/api/v1/recommendations/refresh/{{ user_id }}', { method: 'POST' });
-          if (!response.ok) {
-              window.alert('Не удалось обновить рекомендации.');
-              return;
-          }
-          window.location.reload();
-      });
-
-      document.querySelectorAll('.recommendation-favorite-button').forEach((button) => {
-          button.addEventListener('click', async () => {
-              const response = await fetch('/favorites/', {
-                  method: 'POST',
-                  headers: {'Content-Type':'application/json'},
-                  body: JSON.stringify({
-                      user_id: {{ user_id }},
-                      anime_id: button.dataset.animeId,
-                      title: button.dataset.title || '',
-                      description: button.dataset.description || '',
-                      cover_url: button.dataset.coverUrl || '',
-                      genres: JSON.parse(button.dataset.genres || '[]')
-                  })
-              });
-              if (!response.ok) {
-                  window.alert('Не удалось добавить рекомендацию в избранное.');
-                  return;
-              }
-              button.textContent = 'В избранном';
-              button.classList.add('is-added');
-          });
-      });
-    </script>
-    <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  </body>
-</html>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

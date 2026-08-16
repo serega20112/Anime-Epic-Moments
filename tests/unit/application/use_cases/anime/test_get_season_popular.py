@@ -5,14 +5,13 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+import backend.application.use_cases.anime.get_season_popular as module
 from backend.application.dto.anime_queries import GetSeasonPopularQuery
 from backend.application.use_cases.anime.get_season_popular import (
-    GetSeasonPopularUseCase,
     _VALID_SEASONS,
+    GetSeasonPopularUseCase,
 )
 from backend.domain.exceptions import ValidationError
-
-import backend.application.use_cases.anime.get_season_popular as module
 
 
 @pytest.mark.unit
@@ -53,7 +52,7 @@ class TestGetSeasonPopularUseCase:
         ],
     )
     async def test_uses_current_year_and_season_by_default(
-            self, anime_factory, monkeypatch, year, season, limit, expected_calls
+        self, anime_factory, monkeypatch, year, season, limit, expected_calls
     ):
         """Что тестируем: подстановку текущих года и сезона если не заданы.
         Что передаём: комбинации year/season/limit.

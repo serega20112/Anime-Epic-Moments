@@ -1,294 +1,151 @@
+/* Anime Epic Moments — highlight_social.js
+   Соц-взаимодействия на карточках хайлайтов: лайки, сохранения, комментарии. */
 (function () {
-  const escapeHtml = (value) =>
-    String(value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/\"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+  "use strict";
 
-  const showToast = (message) => {
-    const toast = document.createElement("div");
-    toast.textContent = message;
-    toast.style.position = "fixed";
-    toast.style.right = "16px";
-    toast.style.bottom = "16px";
-    toast.style.padding = "12px 16px";
-    toast.style.background = "rgba(12, 18, 34, 0.96)";
-    toast.style.color = "#fff";
-    toast.style.borderRadius = "12px";
-    toast.style.zIndex = "9999";
-    document.body.appendChild(toast);
-    window.setTimeout(() => toast.remove(), 2200);
-  };
+  var AEM = window.AEM;
+  if (!AEM) return;
 
-  const requestJson = async (url, options) => {
-    const response = await fetch(url, options);
-    let payload = null;
-    try {
-      payload = await response.json();
-    } catch (_error) {
-      payload = null;
-    }
-    if (!response.ok) {
-      throw new Error(payload?.error || "request_failed");
-    }
-    return payload;
-  };
+  function loggedIn() {
+    return !!window.AEMHighlightSocial && !!window.AEMHighlightSocial.loggedIn;
+  }
 
-  const renderComments = (highlightId, items) => {
-    const list = document.querySelector(
-      `[data-comments-list="${highlightId}"]`,
-    );
-    if (!list) {
-      return;
-    }
-    if (!items.length) {
-      list.innerHTML = "<p>Комментариев пока нет.</p>";
-      return;
-    }
-    list.innerHTML = items
-      .map(
-        (item) => `
-          <article class="comment-item">
-            <strong>${escapeHtml(item.username)}</strong>
-            <span>${escapeHtml(item.created_at)}</span>
-            <p>${escapeHtml(item.content)}</p>
-          </article>
-        `,
-      )
-      .join("");
-  };
+  function requireAuth(action) {
+    if (loggedIn()) return true;
+    AEM.toast("Войдите, чтобы совершить это действие", "warning");
+    setTimeout(function () {
+      window.location.href = "/login";
+    }, 1200);
+    return false;
+  }
 
-  document.querySelectorAll(".reveal-spoiler-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      const id = button.dataset.highlightId;
-      const description = document.querySelector(
-        `[data-highlight-description="${id}"]`,
-      );
-      const veil = button.closest(".spoiler-veil");
-      if (description) {
-        description.classList.remove("is-hidden");
-      }
-      if (veil) {
-        veil.remove();
-      }
-    });
-  });
+  function card(btn) {
+    return btn.closest(".highlight-card");
+  }
 
-  document.querySelectorAll(".highlight-share-button").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const shareUrl = `${window.location.origin}${button.dataset.shareUrl}`;
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        showToast("Ссылка скопирована");
-      } catch (_error) {
-        window.prompt("Скопируй ссылку", shareUrl);
-      }
-    });
-  });
+  function updateCount(btn, label) {
+    var countEl = btn.querySelector(".hc-count");
+    if (!countEl) return;
+    var current = parseInt(countEl.textContent || "0", 10) || 0;
+    var liked = btn.classList.contains("active");
+    countEl.textContent = Math.max(0, current + (liked ? 1 : -1));
+  }
 
-  document.querySelectorAll(".highlight-like-button").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const highlightId = button.dataset.highlightId;
-      const liked = button.dataset.liked === "1";
-      const payload = await requestJson(`/highlights/${highlightId}/likes`, {
-        method: liked ? "DELETE" : "POST",
-      }).catch(() => null);
-      if (!payload) {
-        showToast("Не удалось обновить лайк");
-        return;
-      }
-      button.dataset.liked = liked ? "0" : "1";
-      button.textContent = liked ? "Лайк" : "Убрать лайк";
-      const badge = document.querySelector(
-        `[data-highlight-likes-badge="${highlightId}"]`,
-      );
-      if (badge) {
-        badge.textContent = `${payload.likes_count} лайков`;
-      }
-      showToast(liked ? "Лайк снят" : "Лайк сохранен");
-    });
-  });
-
-  document.querySelectorAll(".highlight-save-button").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const highlightId = button.dataset.highlightId;
-      const saved = button.dataset.saved === "1";
-      const payload = await requestJson(`/highlights/${highlightId}/save`, {
-        method: saved ? "DELETE" : "POST",
-      }).catch(() => null);
-      if (!payload) {
-        showToast("Не удалось обновить сохранение");
-        return;
-      }
-      button.dataset.saved = payload.saved ? "1" : "0";
-      button.textContent = payload.saved
-        ? "Убрать из сохраненных"
-        : "Сохранить";
-      showToast(
-        payload.saved ? "Хайлайт сохранен" : "Хайлайт удален из сохраненных",
-      );
-    });
-  });
-
-  document.querySelectorAll(".highlight-likers-button").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const highlightId = button.dataset.highlightId;
-      const payload = await requestJson(`/highlights/${highlightId}/likes`, {
-        method: "GET",
-      }).catch(() => null);
-      if (!payload) {
-        showToast("Не удалось загрузить список лайков");
-        return;
-      }
-      const message = payload.items.length
-        ? payload.items
-            .map((item) => `${item.username} • ${item.created_at}`)
-            .join("\n")
-        : "Пока никто не лайкнул";
-      window.alert(message);
-    });
-  });
-
-  document.querySelectorAll(".highlight-comments-toggle").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const highlightId = button.dataset.highlightId;
-      const panel = document.querySelector(
-        `[data-comments-panel="${highlightId}"]`,
-      );
-      if (!panel) {
-        return;
-      }
-      const shouldOpen = panel.hidden;
-      panel.hidden = !shouldOpen;
-      if (!shouldOpen) {
-        return;
-      }
-      const payload = await requestJson(`/highlights/${highlightId}/comments`, {
-        method: "GET",
-      }).catch(() => null);
-      if (!payload) {
-        showToast("Не удалось загрузить комментарии");
-        return;
-      }
-      renderComments(highlightId, payload.items || []);
-    });
-  });
-
-  document.querySelectorAll(".highlight-comment-form").forEach((form) => {
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const highlightId = form.dataset.highlightId;
-      const textarea = form.querySelector("textarea[name='content']");
-      const payload = await requestJson(`/highlights/${highlightId}/comments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: textarea?.value || "" }),
-      }).catch(() => null);
-      if (!payload) {
-        showToast("Не удалось добавить комментарий");
-        return;
-      }
-      textarea.value = "";
-      const panel = document.querySelector(
-        `[data-comments-panel="${highlightId}"]`,
-      );
-      if (panel) {
-        panel.hidden = false;
-      }
-      const commentsPayload = await requestJson(
-        `/highlights/${highlightId}/comments`,
-        {
-          method: "GET",
-        },
-      ).catch(() => null);
-      if (commentsPayload) {
-        renderComments(highlightId, commentsPayload.items || []);
-      }
-      const badge = document.querySelector(
-        `[data-highlight-comments-badge="${highlightId}"]`,
-      );
-      if (badge) {
-        const nextCount = commentsPayload?.items?.length || 1;
-        badge.textContent = `${nextCount} комментариев`;
-      }
-      showToast("Комментарий добавлен");
-    });
-  });
-
-  document.querySelectorAll(".highlight-delete-button").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const highlightId = button.dataset.highlightId;
-      const response = await fetch(`/highlights/${highlightId}`, {
-        method: "DELETE",
+  function toggleLike(btn) {
+    var id = btn.getAttribute("data-id");
+    var c = card(btn);
+    var willLike = !btn.classList.contains("active");
+    if (!requireAuth(willLike)) return;
+    btn.disabled = true;
+    AEM.api("/highlights/" + id + "/likes", {
+      method: willLike ? "POST" : "DELETE",
+    })
+      .then(function () {
+        btn.classList.toggle("active", willLike);
+        btn.setAttribute("aria-pressed", willLike ? "true" : "false");
+        if (c) c.setAttribute("data-liked", willLike ? "1" : "0");
+        updateCount(btn, "likes");
+        btn.disabled = false;
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        AEM.toast(err.status === 401 ? "Войдите, чтобы поставить лайк" : "Не удалось обновить лайк", "error");
       });
-      if (!response.ok) {
-        showToast("Не удалось удалить хайлайт");
-        return;
-      }
-      document.getElementById(`highlight-${highlightId}`)?.remove();
-      showToast("Хайлайт удален");
-    });
+  }
+
+  function toggleSave(btn) {
+    var id = btn.getAttribute("data-id");
+    var c = card(btn);
+    var willSave = !btn.classList.contains("active");
+    if (!requireAuth(willSave)) return;
+    btn.disabled = true;
+    AEM.api("/highlights/" + id + "/save", {
+      method: willSave ? "POST" : "DELETE",
+    })
+      .then(function () {
+        btn.classList.toggle("active", willSave);
+        btn.setAttribute("aria-pressed", willSave ? "true" : "false");
+        if (c) c.setAttribute("data-saved", willSave ? "1" : "0");
+        AEM.toast(willSave ? "Хайлайт сохранён" : "Удалён из сохранённых", "success");
+        btn.disabled = false;
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        AEM.toast(err.status === 401 ? "Войдите, чтобы сохранить" : "Не удалось сохранить", "error");
+      });
+  }
+
+  function openShare(btn) {
+    var shareUrl = location.origin + "/highlights/share/" + btn.getAttribute("data-id");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareUrl).then(function () {
+        AEM.toast("Ссылка скопирована", "success");
+      });
+    } else {
+      AEM.toast(shareUrl, "info");
+    }
+  }
+
+  function openComments(btn) {
+    var id = btn.getAttribute("data-id");
+    if (!requireAuth(true)) return;
+    AEM.openModal("Комментарии", '<div class="comments-loading"><div class="spinner"></div></div>');
+    AEM.api("/highlights/" + id + "/comments")
+      .then(function (data) {
+        var items = (data && data.items) || [];
+        var html = '<div class="comments-list">';
+        if (!items.length) {
+          html += '<p class="muted">Пока нет комментариев. Будьте первым!</p>';
+        }
+        items.forEach(function (item) {
+          html +=
+            '<div class="comment"><div class="comment-head"><b>' + AEM.escapeHtml(item.username) + "</b>" +
+            '<span class="muted">' + AEM.escapeHtml(String(item.created_at || "")) + "</span></div>" +
+            '<p>' + AEM.escapeHtml(item.content) + "</p></div>";
+        });
+        html += "</div>";
+        html +=
+          '<div class="comment-form"><input type="text" id="new-comment-input" placeholder="Напишите комментарий…" maxlength="500">' +
+          '<button class="btn btn-primary btn-sm" id="new-comment-send">Отправить</button></div>';
+        AEM.openModal("Комментарии", html);
+        var input = document.getElementById("new-comment-input");
+        var send = document.getElementById("new-comment-send");
+        function submit() {
+          var text = (input.value || "").trim();
+          if (!text) return;
+          send.disabled = true;
+          AEM.api("/highlights/" + id + "/comments", {
+            method: "POST",
+            body: { content: text },
+          })
+            .then(function () {
+              AEM.closeModal();
+              AEM.toast("Комментарий добавлен", "success");
+              window.dispatchEvent(new CustomEvent("aem:comment-added", { detail: { id: id } }));
+            })
+            .catch(function () {
+              send.disabled = false;
+              AEM.toast("Не удалось добавить комментарий", "error");
+            });
+        }
+        send.addEventListener("click", submit);
+        input.addEventListener("keydown", function (event) {
+          if (event.key === "Enter") submit();
+        });
+      })
+      .catch(function () {
+        AEM.openModal("Комментарии", '<p class="muted">Не удалось загрузить комментарии.</p>');
+      });
+  }
+
+  document.addEventListener("click", function (event) {
+    var btn = event.target.closest(".hc-action");
+    if (!btn) return;
+    var action = btn.getAttribute("data-action");
+    if (action === "like") toggleLike(btn);
+    else if (action === "save") toggleSave(btn);
+    else if (action === "comment") openComments(btn);
   });
 
-  document.querySelectorAll(".highlight-edit-button").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const highlightId = button.dataset.highlightId;
-      const title = window.prompt("Название", button.dataset.title);
-      if (title === null) {
-        return;
-      }
-      const category = window.prompt(
-        "Категория",
-        button.dataset.category || "",
-      );
-      if (category === null) {
-        return;
-      }
-      const episode = window.prompt("Серия", button.dataset.episode);
-      if (episode === null) {
-        return;
-      }
-      const startTimestamp = window.prompt(
-        "Начало MM:SS",
-        button.dataset.start,
-      );
-      if (startTimestamp === null) {
-        return;
-      }
-      const endTimestamp = window.prompt("Конец MM:SS", button.dataset.end);
-      if (endTimestamp === null) {
-        return;
-      }
-      const description = window.prompt("Описание", button.dataset.description);
-      if (description === null) {
-        return;
-      }
-      const emotion = window.prompt("Эмоция", button.dataset.emotion);
-      if (emotion === null) {
-        return;
-      }
-      const isSpoiler = window.confirm("Отметить как спойлер?");
-      const response = await fetch(`/highlights/${highlightId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          category,
-          episode,
-          start_timestamp: startTimestamp,
-          end_timestamp: endTimestamp,
-          description,
-          is_spoiler: isSpoiler,
-          emotion,
-        }),
-      });
-      if (!response.ok) {
-        showToast("Не удалось обновить хайлайт");
-        return;
-      }
-      window.location.reload();
-    });
-  });
+  window.AEMHighlightSocial = { loggedIn: !!window.AEM_LOGGED_IN };
 })();

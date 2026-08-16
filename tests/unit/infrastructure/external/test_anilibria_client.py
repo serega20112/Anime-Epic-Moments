@@ -24,16 +24,22 @@ def test_anilibria_client_checks_release_relevance_by_title_and_year():
     """Проверяем, что AniLibriaClient отбрасывает нерелевантные релизы по названию и году."""
     client = AniLibriaClient()
 
-    assert client._looks_relevant(
-        release={"year": 2024, "name": {"main": "Gintama"}, "alias": "gintama"},
-        requested_title="Gintama",
-        requested_year=2024,
-    ) is True
-    assert client._looks_relevant(
-        release={"year": 2020, "name": {"main": "Other Title"}, "alias": "other"},
-        requested_title="Gintama",
-        requested_year=2024,
-    ) is False
+    assert (
+        client._looks_relevant(
+            release={"year": 2024, "name": {"main": "Gintama"}, "alias": "gintama"},
+            requested_title="Gintama",
+            requested_year=2024,
+        )
+        is True
+    )
+    assert (
+        client._looks_relevant(
+            release={"year": 2020, "name": {"main": "Other Title"}, "alias": "other"},
+            requested_title="Gintama",
+            requested_year=2024,
+        )
+        is False
+    )
 
 
 @pytest.mark.unit

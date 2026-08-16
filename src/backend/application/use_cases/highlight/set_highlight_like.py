@@ -14,11 +14,11 @@ class SetHighlightLikeUseCase:
     """Ставит или снимает лайк с хайлайта."""
 
     def __init__(
-            self,
-            repo: HighlightRepository,
-            unit_of_work: UnitOfWorkInterface,
-            highlight_dashboard_cache: HighlightDashboardCache | None = None,
-            profile_overview_cache: ProfileOverviewCache | None = None,
+        self,
+        repo: HighlightRepository,
+        unit_of_work: UnitOfWorkInterface,
+        highlight_dashboard_cache: HighlightDashboardCache | None = None,
+        profile_overview_cache: ProfileOverviewCache | None = None,
     ):
         self.repo = repo
         self.highlight_dashboard_cache = highlight_dashboard_cache
@@ -51,11 +51,6 @@ class SetHighlightLikeUseCase:
             await self.highlight_dashboard_cache.invalidate_public()
         if self.profile_overview_cache is not None:
             await self.profile_overview_cache.invalidate_overview(command.user_id)
-            if (
-                    highlight.user_id is not None
-                    and int(highlight.user_id) != int(command.user_id)
-            ):
-                await self.profile_overview_cache.invalidate_overview(
-                    int(highlight.user_id)
-                )
+            if highlight.user_id is not None and int(highlight.user_id) != int(command.user_id):
+                await self.profile_overview_cache.invalidate_overview(int(highlight.user_id))
         return HighlightResult.success(highlight)

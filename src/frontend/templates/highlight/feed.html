@@ -1,206 +1,92 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {% set view_mode = 'feed' %} {% set is_public = True %} {% set
-    include_spoilers = feed.include_spoilers %}
-    <title>Фид хайлайтов - AEM</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/anime.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/highlight.css') }}"
-    />
-  </head>
-  <body>
-    <header class="header">
-      <div class="logo">AEM</div>
-      <form
-        class="search-container global-search-form"
-        action="{{ url_for('anime.search_anime_page') }}"
-        method="get"
-        autocomplete="off"
-      >
-        <input
-          type="text"
-          name="title"
-          class="global-search-input"
-          placeholder="Найди аниме по названию, жанру или эмоции…"
-        />
-        <button type="submit">🔍</button>
-        <div class="search-autocomplete" hidden></div>
-      </form>
-      <nav>
-        <a href="{{ url_for('index.index') }}">Главная</a>
-        <a href="{{ url_for('highlight.get_public_top_highlights') }}"
-          >Тренды</a
-        >
-        <a href="{{ url_for('support.support_page', page=request.url) }}"
-          >Поддержка</a
-        >
-        {% if current_user %}
-        <a href="{{ url_for('highlight.get_following_highlights') }}"
-          >Подписки</a
-        >
-        <a href="{{ url_for('auth.profile_page') }}">Профиль</a>
-        <a href="{{ url_for('highlight.get_liked_highlights') }}">Мои лайки</a>
-        <a href="{{ url_for('highlight.get_saved_highlights') }}"
-          >Сохраненные</a
-        >
-        <a href="{{ url_for('highlight.get_highlight_notifications') }}"
-          >Уведомления</a
-        >
-        <a
-          href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}"
-          >Мои хайлайты</a
-        >
-        {% endif %}
+{% extends "base.html" %}
+
+{% block title %}Лента хайлайтов — Anime Epic Moments{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <header class="feed-head">
+    <h1 class="page-title">Лента</h1>
+    <p class="muted">Моменты и эмоции зрителей — что посмотрели и что почувствовали.</p>
+  </header>
+
+  <div class="feed-layout">
+    <div class="feed-main">
+      {% set tabs = [
+        ('for_you', 'Foryou'.lower(), 'Для вас'),
+        ('following', 'following', 'Подписки'),
+        ('popular', 'popular', 'Популярные'),
+        ('latest', 'latest', 'Новые')
+      ] %}
+      <nav class="feed-tabs" aria-label="Фильтры ленты">
+        <a class="feed-tab active" href="{{ url_for('highlight.get_highlight_feed') }}">Для вас</a>
+        <a class="feed-tab" href="{{ url_for('highlight.get_following_highlights') }}">Подписки</a>
+        <a class="feed-tab" href="{{ url_for('highlight.get_public_top_highlights') }}">Популярные</a>
+        <a class="feed-tab" href="{{ url_for('highlight.get_highlight_feed') }}?sort=recent">Новые</a>
       </nav>
-    </header>
 
-    <main class="search-page">
-      <section class="search-shell highlight-dashboard">
-        <aside class="filters-panel">
-          <h1>Фид хайлайтов</h1>
-          <p class="filters-subtitle">
-            Один экран для трендов, новых моментов, твоих лайков и контента из
-            любимых аниме.
-          </p>
-          <p class="filters-subtitle">
-            Тренды считаются по простой формуле: лайки + просмотры + свежесть.
-          </p>
+      {% if feed.items %}
+      <div class="highlight-grid">
+        {% for highlight in feed.items %}
+        {% include "highlight/_card.html" %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <span class="empty-emoji">🌊</span>
+        <h3>Лента пуста</h3>
+        <p>Проверьте фильтры или подпишитесь на авторов.</p>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('highlight.get_public_top_highlights') }}">Популярное</a>
+      </div>
+      {% endif %}
+    </div>
 
-          <form class="description-search-form" method="get">
-            <div class="filter-control">
-              <label for="anime_id">По аниме</label>
-              <select id="anime_id" name="anime_id">
-                <option value="">Все аниме</option>
-                {% for group in feed.anime_groups %}
-                <option
-                  value="{{ group.anime_id }}"
-                  {% if feed.selected_anime_id == group.anime_id %}selected{% endif %}
-                >
-                  {{ group.anime_title }} ({{ group.count }})
-                </option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="filter-control">
-              <label for="category">По категории</label>
-              <select id="category" name="category">
-                <option value="">Все категории</option>
-                {% for category in feed.categories %}
-                <option
-                  value="{{ category }}"
-                  {% if feed.selected_category == category %}selected{% endif %}
-                >
-                  {{ category }}
-                </option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <label class="filter-checkbox">
-              <input
-                type="checkbox"
-                name="include_spoilers"
-                value="1"
-                {% if feed.include_spoilers %}checked{% endif %}
-              />
-              <span>Показывать спойлеры</span>
-            </label>
-
-            <div class="search-actions">
-              <button type="submit" class="btn neon-pink">Применить</button>
-              <a href="{{ request.path }}" class="btn neon-blue">Сбросить</a>
-            </div>
-          </form>
-
-          {% if feed.profile %}
-          <section class="highlight-stats">
-            <h2>Мой профиль</h2>
-            <div class="stat-card">
-              <span>Мои хайлайты</span>
-              <strong>{{ feed.profile.highlight_count }}</strong>
-            </div>
-            <div class="stat-card">
-              <span>Мои лайки</span>
-              <strong>{{ feed.profile.like_count }}</strong>
-            </div>
-            <div class="stat-card">
-              <span>Сохраненные</span>
-              <strong>{{ feed.profile.saved_count }}</strong>
-            </div>
-            <a class="btn neon-blue" href="{{ url_for('auth.profile_page') }}"
-              >Открыть профиль</a
-            >
-          </section>
-
-          <section class="highlight-sidebar">
-            <h2>Последняя активность</h2>
-            <div class="highlight-group-list">
-              {% for item in feed.recent_activity %}
-              <div class="highlight-group-link">
-                <span>
-                  {{ item.actor_username }} {% if item.action == 'comment'
-                  %}прокомментировал{% else %}лайкнул{% endif %} {{
-                  item.highlight_title }}
-                </span>
-                <strong>{{ item.created_at }}</strong>
-              </div>
-              {% else %}
-              <p class="filters-subtitle">
-                На твоих хайлайтах пока нет новых реакций.
-              </p>
-              {% endfor %}
-            </div>
-          </section>
-          {% endif %}
-        </aside>
-
-        <section class="results-panel">
-          {% for title, items in [ ('Популярные хайлайты', feed.popular_items),
-          ('Новые хайлайты', feed.recent_items), ('Твои лайки',
-          feed.liked_items), ('Из твоих аниме', feed.from_favorites_items) ] %}
-          {% if items %}
-          <section class="feed-section-block">
-            <div class="results-head">
-              <h2>{{ title }}</h2>
-              <p>{{ items|length }}</p>
-            </div>
-            <div class="highlight-feed">
-              {% for item in items %} {% include 'highlight/_card.html' %} {%
-              endfor %}
-            </div>
-          </section>
-          {% endif %} {% endfor %} {% if not feed.popular_items and not
-          feed.recent_items and not feed.liked_items and not
-          feed.from_favorites_items %}
-          <section class="empty-state">
-            <h2>Фид пока пуст</h2>
-            <p>
-              Добавь аниме в избранное, сохрани пару моментов или вернись позже.
-            </p>
-          </section>
-          {% endif %}
-        </section>
+    <aside class="feed-side">
+      {% if feed.profile %}
+      <section class="side-panel">
+        <h4>Ваша активность</h4>
+        <div class="dash-stats">
+          <div class="stat-pill"><b>{{ feed.profile.highlight_count }}</b><span>хайлайтов</span></div>
+          <div class="stat-pill"><b>{{ feed.profile.like_count }}</b><span>лайков</span></div>
+          <div class="stat-pill"><b>{{ feed.profile.saved_count }}</b><span>сохранено</span></div>
+        </div>
       </section>
-    </main>
+      {% endif %}
 
-    <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  </body>
-</html>
+      {% if feed.anime_groups %}
+      <section class="side-panel">
+        <h4>Топ-аниме в ленте</h4>
+        <div class="chip-row">
+          {% for g in feed.anime_groups %}
+          <a class="chip {{ 'active' if feed.selected_anime_id == g.anime_id }}"
+             href="{{ url_for('highlight.get_highlight_feed', anime_id=g.anime_id) if g.anime_id else '#' }}">
+            {{ g.anime_title }} <span class="muted">{{ g.count }}</span>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if feed.categories %}
+      <section class="side-panel">
+        <h4>Категории</h4>
+        <div class="chip-row">
+          {% for c in feed.categories %}
+          <a class="chip {{ 'active' if feed.selected_category == c }}"
+             href="{{ url_for('highlight.get_highlight_feed', category=c) }}">{{ c }}</a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.AEM_LOGGED_IN = {{ 'true' if current_user else 'false' }};</script>
+<script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
+{% endblock %}
