@@ -40,7 +40,7 @@ async def ready(store: FromDishka[KeyValueStore]) -> JSONResponse:
     is_ready = True
 
     try:
-        session_factory = get_session_factory()
+        session_factory = await get_session_factory()
         async with session_factory() as session:
             await session.execute(text("SELECT 1"))
         checks["database"] = "ok"

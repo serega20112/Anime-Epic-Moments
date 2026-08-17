@@ -34,7 +34,7 @@ class AuthResult:
     redirect_email: str | None = None
 
     @classmethod
-    def success(
+    async def success(
         cls,
         data: Any = None,
         message: str | None = None,
@@ -61,7 +61,7 @@ class AuthResult:
         )
 
     @classmethod
-    def failure(
+    async def failure(
         cls,
         error_message: str,
         error_endpoint: str,

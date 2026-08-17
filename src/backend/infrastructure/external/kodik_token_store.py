@@ -9,6 +9,7 @@ Kodik-экосистема использует публичные токены,
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from base64 import b64decode, b64encode
@@ -24,7 +25,7 @@ _TOKEN_ERROR_HINTS = (
 )
 
 
-def encrypt_token(token: str) -> str:
+async def encrypt_token(token: str) -> str:
     """Зашифровать токен по схеме Kodik-парсера.
 
     Первая половина кодируется в base64, вторая — тоже, затем части
@@ -42,7 +43,7 @@ def encrypt_token(token: str) -> str:
     return p2[::-1] + p1[::-1]
 
 
-def decrypt_token(obfuscated: str) -> str:
+async def decrypt_token(obfuscated: str) -> str:
     """Расшифровать токен, сохранённый функцией :func:`encrypt_token`.
 
     Args:
@@ -75,11 +76,10 @@ class KodikTokenStore:
         self.tokens_path = Path(tokens_path)
         self.configured_token = configured_token or None
 
-    def _read_encrypted_tokens(self) -> list[str]:
+    async def _read_encrypted_tokens(self) -> list[str]:
         """Прочитать и расшифровать токены из файла ``tokens.json``."""
         try:
-            with self.tokens_path.open("r", encoding="utf-8") as handle:
-                payload: dict[str, Any] = json.load(handle)
+            payload = await asyncio.to_thread(self._load_tokens_file)
         except (OSError, ValueError, TypeError):
             return []
 
@@ -94,12 +94,17 @@ class KodikTokenStore:
                 obfuscated = entry.get("tokn")
                 if not obfuscated:
                     continue
-                token = self._safe_decrypt(str(obfuscated))
+                token = await self._safe_decrypt(str(obfuscated))
                 if token:
                     tokens.append(token)
         return tokens
 
-    def candidates(self) -> list[str]:
+    def _load_tokens_file(self) -> dict[str, Any]:
+        """Load the raw tokens payload from disk (sync I/O helper)."""
+        with self.tokens_path.open("r", encoding="utf-8") as handle:
+            return json.load(handle)
+
+    async def candidates(self) -> list[str]:
         """Все токены-кандидаты в порядке приоритета.
 
         Returns:
@@ -108,19 +113,19 @@ class KodikTokenStore:
         ordered: list[str] = []
         if self.configured_token:
             ordered.append(self.configured_token)
-        for token in self._read_encrypted_tokens():
+        for token in await self._read_encrypted_tokens():
             if token not in ordered:
                 ordered.append(token)
         return ordered
 
-    def _safe_decrypt(self, obfuscated: str) -> str:
+    async def _safe_decrypt(self, obfuscated: str) -> str:
         try:
-            return decrypt_token(obfuscated)
+            return await decrypt_token(obfuscated)
         except (ValueError, UnicodeDecodeError, TypeError):
             return ""
 
     @staticmethod
-    def token_looks_invalid(payload: Any) -> bool:
+    async def token_looks_invalid(payload: Any) -> bool:
         """True, когда ответ API явно сообщает о неверном токене."""
         if not isinstance(payload, dict):
             return False

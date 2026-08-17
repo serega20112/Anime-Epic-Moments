@@ -8,7 +8,7 @@ from backend.application.dto import CreateSupportTicketCommand
 from backend.domain import normalize_support_channel
 
 
-def map_create_support_ticket_command(
+async def map_create_support_ticket_command(
     form: dict[str, Any],
     *,
     user_id: int | None,
@@ -26,12 +26,12 @@ def map_create_support_ticket_command(
     Returns:
         CreateSupportTicketCommand: Command (validation happens in the use case).
     """
-    email = _normalize_email(user_email if user_id is not None else form.get("email"))
-    username = _normalize_username(user_username if user_id is not None else form.get("username"))
+    email = await _normalize_email(user_email if user_id is not None else form.get("email"))
+    username = await _normalize_username(user_username if user_id is not None else form.get("username"))
     subject = str(form.get("subject") or "").strip()
     message = str(form.get("message") or "").strip()
-    channel = normalize_support_channel(form.get("channel"))
-    page_url = _normalize_page_url(form.get("page_url"))
+    channel = await normalize_support_channel(form.get("channel"))
+    page_url = await _normalize_page_url(form.get("page_url"))
     return CreateSupportTicketCommand(
         user_id=user_id,
         email=email,
@@ -43,7 +43,7 @@ def map_create_support_ticket_command(
     )
 
 
-def _normalize_email(value: str | None) -> str:
+async def _normalize_email(value: str | None) -> str:
     """Normalize an email address.
 
     Args:
@@ -55,7 +55,7 @@ def _normalize_email(value: str | None) -> str:
     return str(value or "").strip().lower()
 
 
-def _normalize_username(value: str | None) -> str:
+async def _normalize_username(value: str | None) -> str:
     """Normalize a username by collapsing whitespace.
 
     Args:
@@ -67,7 +67,7 @@ def _normalize_username(value: str | None) -> str:
     return " ".join(str(value or "").strip().split())
 
 
-def _normalize_page_url(value: str | None) -> str | None:
+async def _normalize_page_url(value: str | None) -> str | None:
     """Normalize a page URL.
 
     Args:

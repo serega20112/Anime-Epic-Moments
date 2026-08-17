@@ -19,7 +19,7 @@ favorite_router = APIRouter(prefix="/favorites", route_class=DishkaRoute)
 favorite_bp = favorite_router
 
 
-def _extract_favorite_payload(payload, user_id_fallback=None):
+async def _extract_favorite_payload(payload, user_id_fallback=None):
     """Extract favorite fields from a payload dict.
 
     Args:
@@ -50,7 +50,7 @@ async def add_favorite(request: Request, use_case: FromDishka[AddFavoriteUseCase
     Returns:
         Response: 201 Created on success, 400 on invalid payload.
     """
-    payload = _extract_favorite_payload(await read_payload(request))
+    payload = await _extract_favorite_payload(await read_payload(request))
     if payload["user_id"] is None or payload["anime_id"] is None:
         return Response(status_code=HTTPStatus.BAD_REQUEST)
     await use_case.execute(**payload)
@@ -68,7 +68,7 @@ async def remove_favorite(request: Request, use_case: FromDishka[RemoveFavoriteU
     Returns:
         Response: 204 No Content on success, 400 on invalid payload.
     """
-    payload = _extract_favorite_payload(await read_payload(request))
+    payload = await _extract_favorite_payload(await read_payload(request))
     if payload["user_id"] is None or payload["anime_id"] is None:
         return Response(status_code=HTTPStatus.BAD_REQUEST)
     await use_case.execute(
@@ -98,7 +98,7 @@ async def get_favorites(
     """
     favorites = await favorites_use_case.execute(user_id=user_id)
     recommendations = await recommendations_use_case.execute(user_id=user_id)
-    return render_template(
+    return await render_template(
         request,
         "favorite/list.html",
         favorites=favorites,

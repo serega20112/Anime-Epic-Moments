@@ -1,8 +1,8 @@
+import asyncio
 import smtplib
 from email.message import EmailMessage
 
 from backend.config import Settings
-from backend.infrastructure.external._async import external_method
 from backend.infrastructure.external.errors import (
     ExternalServiceConfigurationError,
     ExternalServiceUnavailableError,
@@ -12,8 +12,7 @@ from backend.infrastructure.external.errors import (
 class PasswordResetMailer:
     """Отправляет письмо со ссылкой для сброса пароля."""
 
-    @external_method
-    def send_reset_email(self, email: str, reset_link: str) -> None:
+    async def send_reset_email(self, email: str, reset_link: str) -> None:
         """Отправляет письмо со ссылкой сброса на email пользователя."""
         if not Settings.smtp_host or not Settings.smtp_from_email:
             raise ExternalServiceConfigurationError(
@@ -31,14 +30,22 @@ class PasswordResetMailer:
         )
 
         try:
-            with smtplib.SMTP(Settings.smtp_host, Settings.smtp_port, timeout=30) as smtp:
-                if Settings.smtp_use_tls:
-                    smtp.starttls()
-                if Settings.smtp_username and Settings.smtp_password:
-                    smtp.login(Settings.smtp_username, Settings.smtp_password)
-                smtp.send_message(message)
+            await asyncio.to_thread(self._deliver_via_smtp, message)
         except (OSError, smtplib.SMTPException) as error:
             raise ExternalServiceUnavailableError(
                 "Не удалось отправить письмо для сброса пароля. Проверь SMTP-настройки и сетевой доступ.",
                 service_name="smtp",
             ) from error
+
+    def _deliver_via_smtp(self, message: EmailMessage) -> None:
+        """Отправляет письмо через SMTP (блокирующий вызов).
+
+        В стандартной библиотеке нет асинхронного SMTP-клиента, поэтому
+        блокирующая операция изолирована в asyncio.to_thread.
+        """
+        with smtplib.SMTP(Settings.smtp_host, Settings.smtp_port, timeout=30) as smtp:
+            if Settings.smtp_use_tls:
+                smtp.starttls()
+            if Settings.smtp_username and Settings.smtp_password:
+                smtp.login(Settings.smtp_username, Settings.smtp_password)
+            smtp.send_message(message)

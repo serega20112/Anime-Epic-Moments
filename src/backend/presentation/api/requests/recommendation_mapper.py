@@ -11,7 +11,7 @@ _ASK_LIMIT_MIN = 1
 _ASK_LIMIT_MAX = 10
 
 
-def map_ask_ai_command(
+async def map_ask_ai_command(
     payload: dict[str, Any] | None, *, user_id: int
 ) -> AskAiRecommendationsCommand:
     """Build an ask AI command from a JSON payload.
@@ -27,7 +27,7 @@ def map_ask_ai_command(
         AskAiRecommendationsCommand: Command with clamped limit.
     """
     query = str((payload or {}).get("query") or "").strip()
-    limit = _clamp_limit(_to_int((payload or {}).get("limit")), default=_ASK_LIMIT_DEFAULT)
+    limit = await _clamp_limit(await _to_int((payload or {}).get("limit")), default=_ASK_LIMIT_DEFAULT)
     return AskAiRecommendationsCommand(
         user_id=user_id,
         query=query,
@@ -35,7 +35,7 @@ def map_ask_ai_command(
     )
 
 
-def _clamp_limit(value: int | None, *, default: int) -> int:
+async def _clamp_limit(value: int | None, *, default: int) -> int:
     """Clamp a limit to the allowed range.
 
     Args:
@@ -50,7 +50,7 @@ def _clamp_limit(value: int | None, *, default: int) -> int:
     return max(_ASK_LIMIT_MIN, min(value, _ASK_LIMIT_MAX))
 
 
-def _to_int(value: Any) -> int | None:
+async def _to_int(value: Any) -> int | None:
     """Convert a value to an int, returning None on failure.
 
     Args:

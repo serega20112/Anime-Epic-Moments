@@ -43,7 +43,7 @@ class UserRepository:
         """
         result = await self.session.execute(select(UserModel).where(UserModel.id == user_id))
         db_user = result.scalar_one_or_none()
-        return self._to_entity(db_user) if db_user else None
+        return await self._to_entity(db_user) if db_user else None
 
     async def get_by_email(self, email: str) -> User | None:
         """Fetch a user by email.
@@ -56,7 +56,7 @@ class UserRepository:
         """
         result = await self.session.execute(select(UserModel).where(UserModel.email == email))
         db_user = result.scalar_one_or_none()
-        return self._to_entity(db_user) if db_user else None
+        return await self._to_entity(db_user) if db_user else None
 
     async def get_by_ids(self, user_ids: list[int]) -> list[User]:
         """Fetch users matching the given identifiers.
@@ -70,7 +70,7 @@ class UserRepository:
         if not user_ids:
             return []
         result = await self.session.execute(select(UserModel).where(UserModel.id.in_(user_ids)))
-        return [self._to_entity(row) for row in result.scalars().all()]
+        return [await self._to_entity(row) for row in result.scalars().all()]
 
     async def update(self, user: User) -> User:
         """Update the username and avatar of a user.
@@ -106,7 +106,7 @@ class UserRepository:
             raise ValueError("Пользователь для обновления не найден")
         db_user.password_hash = password_hash
         await self.session.flush()
-        return self._to_entity(db_user)
+        return await self._to_entity(db_user)
 
     async def follow(self, follower_user_id: int, followed_user_id: int) -> bool:
         """Create a follow relation if it does not exist.
@@ -239,7 +239,7 @@ class UserRepository:
             .order_by(UserFollowModel.created_at.desc())
             .limit(limit)
         )
-        return [self._to_entity(row) for row in result.scalars().all()]
+        return [await self._to_entity(row) for row in result.scalars().all()]
 
     async def get_followers(self, followed_user_id: int, limit: int = 12) -> list[User]:
         """Return followers of the given user.
@@ -261,9 +261,9 @@ class UserRepository:
             .order_by(UserFollowModel.created_at.desc())
             .limit(limit)
         )
-        return [self._to_entity(row) for row in result.scalars().all()]
+        return [await self._to_entity(row) for row in result.scalars().all()]
 
-    def _to_entity(self, db_user: UserModel) -> User:
+    async def _to_entity(self, db_user: UserModel) -> User:
         return User(
             id=db_user.id,
             email=db_user.email,

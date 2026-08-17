@@ -69,40 +69,48 @@ class AppProvider(Provider):
         await client.aclose()
 
     @provide(scope=Scope.APP)
-    def kodik_client(self) -> KodikClient:
+    async def kodik_client(self) -> AsyncIterator[KodikClient]:
         """Provide the Kodik client.
 
-        Returns:
+        Yields:
             KodikClient: Configured client.
         """
-        return KodikClient()
+        client = KodikClient()
+        yield client
+        await client.aclose()
 
     @provide(scope=Scope.APP)
-    def anilibria_client(self) -> AniLibriaClient:
+    async def anilibria_client(self) -> AsyncIterator[AniLibriaClient]:
         """Provide the AniLibria client.
 
-        Returns:
+        Yields:
             AniLibriaClient: Configured client.
         """
-        return AniLibriaClient()
+        client = AniLibriaClient()
+        yield client
+        await client.aclose()
 
     @provide(scope=Scope.APP)
-    def youtube_client(self) -> YouTubeClient:
+    async def youtube_client(self) -> AsyncIterator[YouTubeClient]:
         """Provide the YouTube client.
 
-        Returns:
+        Yields:
             YouTubeClient: Configured client.
         """
-        return YouTubeClient()
+        client = YouTubeClient()
+        yield client
+        await client.aclose()
 
     @provide(scope=Scope.APP)
-    def justwatch_client(self) -> JustWatchClient:
+    async def justwatch_client(self) -> AsyncIterator[JustWatchClient]:
         """Provide the JustWatch client.
 
-        Returns:
+        Yields:
             JustWatchClient: Configured client.
         """
-        return JustWatchClient()
+        client = JustWatchClient()
+        yield client
+        await client.aclose()
 
     @provide(scope=Scope.APP)
     async def sameband_provider(self) -> AsyncIterator[SamebandProvider]:
@@ -120,17 +128,19 @@ class AppProvider(Provider):
         await provider.aclose()
 
     @provide(scope=Scope.APP)
-    def aniboom_provider(self) -> AniBoomProvider:
+    async def aniboom_provider(self) -> AsyncIterator[AniBoomProvider]:
         """Provide the AniBoom provider.
 
-        Returns:
+        Yields:
             AniBoomProvider: Configured provider.
         """
-        return AniBoomProvider(
+        provider = AniBoomProvider(
             base_url=Settings.aniboom_base_url,
             enabled=Settings.aniboom_enabled,
             timeout=Settings.aniboom_timeout,
         )
+        yield provider
+        await provider.aclose()
 
     @provide(scope=Scope.APP)
     async def media_proxy_client(self) -> AsyncIterator[MediaProxyClient]:
@@ -144,13 +154,13 @@ class AppProvider(Provider):
         await client.aclose()
 
     @provide(scope=Scope.APP)
-    def llm_client(self) -> FailoverLLMClient:
+    async def llm_client(self) -> AsyncIterator[FailoverLLMClient]:
         """Provide the LLM client with Gemini primary and Hugging Face fallback.
 
-        Returns:
+        Yields:
             FailoverLLMClient: Failover client for AI-powered search.
         """
-        return FailoverLLMClient(
+        client = FailoverLLMClient(
             primary=GoogleGeminiLLMClient(
                 api_key=Settings.google_api_key,
                 model=Settings.google_model,
@@ -163,9 +173,11 @@ class AppProvider(Provider):
                 api_url=Settings.hf_api_url,
             ),
         )
+        yield client
+        await client.aclose()
 
     @provide(scope=Scope.APP)
-    def recommendation_cache(self, store: KeyValueStore) -> RecommendationCache:
+    async def recommendation_cache(self, store: KeyValueStore) -> RecommendationCache:
         """Provide the recommendation cache.
 
         Args:
@@ -177,7 +189,7 @@ class AppProvider(Provider):
         return RecommendationCache(store=store)
 
     @provide(scope=Scope.APP)
-    def highlight_dashboard_cache(self, store: KeyValueStore) -> HighlightDashboardCache:
+    async def highlight_dashboard_cache(self, store: KeyValueStore) -> HighlightDashboardCache:
         """Provide the highlight dashboard cache.
 
         Args:
@@ -189,7 +201,7 @@ class AppProvider(Provider):
         return HighlightDashboardCache(store=store)
 
     @provide(scope=Scope.APP)
-    def profile_overview_cache(self, store: KeyValueStore) -> ProfileOverviewCache:
+    async def profile_overview_cache(self, store: KeyValueStore) -> ProfileOverviewCache:
         """Provide the profile overview cache.
 
         Args:
@@ -201,7 +213,7 @@ class AppProvider(Provider):
         return ProfileOverviewCache(store=store)
 
     @provide(scope=Scope.APP)
-    def password_service(self) -> PasswordService:
+    async def password_service(self) -> PasswordService:
         """Provide the password service.
 
         Returns:
@@ -210,7 +222,7 @@ class AppProvider(Provider):
         return PasswordService()
 
     @provide(scope=Scope.APP)
-    def jwt_service(self) -> JWTService:
+    async def jwt_service(self) -> JWTService:
         """Provide the JWT service.
 
         Returns:
@@ -219,7 +231,7 @@ class AppProvider(Provider):
         return JWTService()
 
     @provide(scope=Scope.APP)
-    def token_blocklist(self, store: KeyValueStore) -> TokenBlocklist:
+    async def token_blocklist(self, store: KeyValueStore) -> TokenBlocklist:
         """Provide the token blocklist.
 
         Args:
@@ -231,7 +243,7 @@ class AppProvider(Provider):
         return TokenBlocklist(store)
 
     @provide(scope=Scope.APP)
-    def csrf_service(self) -> CSRFService:
+    async def csrf_service(self) -> CSRFService:
         """Provide the CSRF service.
 
         Returns:
@@ -240,7 +252,7 @@ class AppProvider(Provider):
         return CSRFService()
 
     @provide(scope=Scope.APP)
-    def account_lock_service(self, store: KeyValueStore) -> AccountLockService:
+    async def account_lock_service(self, store: KeyValueStore) -> AccountLockService:
         """Provide the account lock service.
 
         Args:
@@ -252,7 +264,7 @@ class AppProvider(Provider):
         return AccountLockService(store=store)
 
     @provide(scope=Scope.APP)
-    def rate_limiter(self, store: KeyValueStore) -> RateLimiter:
+    async def rate_limiter(self, store: KeyValueStore) -> RateLimiter:
         """Provide the rate limiter.
 
         Args:
@@ -264,7 +276,7 @@ class AppProvider(Provider):
         return RateLimiter(store)
 
     @provide(scope=Scope.APP)
-    def password_reset_mailer(self) -> PasswordResetMailer:
+    async def password_reset_mailer(self) -> PasswordResetMailer:
         """Provide the password reset mailer.
 
         Returns:
@@ -273,7 +285,7 @@ class AppProvider(Provider):
         return PasswordResetMailer()
 
     @provide(scope=Scope.APP)
-    def email_verification_mailer(self) -> EmailVerificationMailer:
+    async def email_verification_mailer(self) -> EmailVerificationMailer:
         """Provide the email verification mailer.
 
         Returns:
@@ -282,16 +294,18 @@ class AppProvider(Provider):
         return EmailVerificationMailer()
 
     @provide(scope=Scope.APP)
-    def telegram_support_notifier(self) -> TelegramSupportNotifier:
+    async def telegram_support_notifier(self) -> AsyncIterator[TelegramSupportNotifier]:
         """Provide the Telegram support notifier.
 
-        Returns:
+        Yields:
             TelegramSupportNotifier: Configured notifier.
         """
-        return TelegramSupportNotifier()
+        notifier = TelegramSupportNotifier()
+        yield notifier
+        await notifier.aclose()
 
     @provide(scope=Scope.APP)
-    def support_email_mailer(self) -> SupportEmailMailer:
+    async def support_email_mailer(self) -> SupportEmailMailer:
         """Provide the support email mailer.
 
         Returns:
@@ -300,7 +314,7 @@ class AppProvider(Provider):
         return SupportEmailMailer()
 
     @provide(scope=Scope.APP)
-    def email_verification_store(self, store: KeyValueStore) -> EmailVerificationStore:
+    async def email_verification_store(self, store: KeyValueStore) -> EmailVerificationStore:
         """Provide the email verification store.
 
         Args:

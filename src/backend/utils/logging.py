@@ -39,7 +39,7 @@ class RequestIdFilter(logging.Filter):
         return True
 
 
-def _build_formatter() -> JsonFormatter:
+async def _build_formatter() -> JsonFormatter:
     """Create a JSON formatter for structured logging.
 
     Returns:
@@ -55,7 +55,7 @@ def _build_formatter() -> JsonFormatter:
     )
 
 
-def setup_logging(*, level: int = logging.INFO) -> None:
+async def setup_logging(*, level: int = logging.INFO) -> None:
     """Configure root logger with structured JSON output.
 
     Args:
@@ -65,14 +65,14 @@ def setup_logging(*, level: int = logging.INFO) -> None:
     root_logger.setLevel(level)
 
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(_build_formatter())
+    handler.setFormatter(await _build_formatter())
     handler.addFilter(RequestIdFilter())
 
     root_logger.handlers.clear()
     root_logger.addHandler(handler)
 
 
-def get_audit_logger() -> logging.Logger:
+async def get_audit_logger() -> logging.Logger:
     """Return the dedicated security audit logger.
 
     Returns:
@@ -81,13 +81,13 @@ def get_audit_logger() -> logging.Logger:
     logger = logging.getLogger("security.audit")
     if not logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(_build_formatter())
+        handler.setFormatter(await _build_formatter())
         logger.addHandler(handler)
         logger.propagate = False
     return logger
 
 
-def log_business_event(
+async def log_business_event(
     *,
     event: str,
     user_id: str | int | None = None,
@@ -102,7 +102,7 @@ def log_business_event(
         ip_address: Client IP address if available.
         details: Additional structured context.
     """
-    audit_logger = get_audit_logger()
+    audit_logger = await get_audit_logger()
     payload: dict[str, Any] = {"event": event}
     if user_id is not None:
         payload["user_id"] = str(user_id)
@@ -113,7 +113,7 @@ def log_business_event(
     audit_logger.info("business_event", extra={"business_event": payload})
 
 
-def log_security_event(
+async def log_security_event(
     *,
     event: str,
     user_id: str | None = None,
@@ -130,7 +130,7 @@ def log_security_event(
         ip_address: Client IP address if available.
         details: Additional structured context.
     """
-    audit_logger = get_audit_logger()
+    audit_logger = await get_audit_logger()
     payload: dict[str, Any] = {"event": event}
     if user_id:
         payload["user_id"] = user_id

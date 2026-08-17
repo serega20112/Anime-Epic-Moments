@@ -48,10 +48,10 @@ class AddFavoriteUseCase:
         favorite = Favorite(
             user_id=int(user_id),
             anime_id=int(anime_id),
-            title=self._normalize_text(title),
-            description=self._normalize_text(description),
-            cover_url=self._normalize_text(cover_url),
-            genres=self._normalize_genres(genres),
+            title=await self._normalize_text(title),
+            description=await self._normalize_text(description),
+            cover_url=await self._normalize_text(cover_url),
+            genres=await self._normalize_genres(genres),
         )
         result = await self.repo.add(favorite)
         if self.recommendation_service:
@@ -60,11 +60,11 @@ class AddFavoriteUseCase:
             await self.profile_overview_cache.invalidate_user(int(user_id), include_ai_summary=True)
         return result
 
-    def _normalize_text(self, value: str | None) -> str | None:
+    async def _normalize_text(self, value: str | None) -> str | None:
         text = str(value or "").strip()
         return text or None
 
-    def _normalize_genres(self, value: list[str] | str | None) -> list[str]:
+    async def _normalize_genres(self, value: list[str] | str | None) -> list[str]:
         if value is None:
             return []
         if isinstance(value, list):

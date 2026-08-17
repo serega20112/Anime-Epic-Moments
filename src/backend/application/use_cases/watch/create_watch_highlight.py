@@ -31,7 +31,7 @@ class CreateWatchHighlightUseCase:
             or command.start_timestamp is None
             or command.end_timestamp is None
         ):
-            return WatchResult.failure("invalid_payload", status_code=400)
+            return await WatchResult.failure("invalid_payload", status_code=400)
         highlight_result = await self.create_highlight_use_case.execute(
             CreateHighlightCommand(
                 user_id=command.user_id,
@@ -47,7 +47,7 @@ class CreateWatchHighlightUseCase:
             )
         )
         if not highlight_result.ok:
-            return WatchResult.failure(
+            return await WatchResult.failure(
                 highlight_result.error or "Не удалось создать хайлайт",
                 status_code=highlight_result.status_code,
             )
@@ -59,4 +59,4 @@ class CreateWatchHighlightUseCase:
                 title=command.title,
             )
         )
-        return WatchResult.success(highlight_result.data, status_code=201)
+        return await WatchResult.success(highlight_result.data, status_code=201)

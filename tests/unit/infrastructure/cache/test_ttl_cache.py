@@ -14,31 +14,31 @@ from backend.utils import ttl_cache as ttl_cache_module
         ([("set", "beta", 2), ("delete", "beta", None), ("get", "beta", "missing")], "missing"),
     ],
 )
-def test_ttl_cache_returns_values_for_live_entries(actions, expected):
+async def test_ttl_cache_returns_values_for_live_entries(actions, expected):
     """Проверяем, что кэш отдает актуальные записи и не отдает удаленные."""
     cache = TTLCache[str, object](ttl_seconds=5, max_entries=4)
 
     for action, key, value in actions:
         if action == "set":
-            cache.set(key, value)
+            await cache.set(key, value)
         elif action == "delete":
-            cache.delete(key)
+            await cache.delete(key)
         else:
-            assert cache.get(key, value) == expected
+            assert await cache.get(key, value) == expected
 
 
 @pytest.mark.unit
-def test_ttl_cache_expires_entries_with_time(monkeypatch):
+async def test_ttl_cache_expires_entries_with_time(monkeypatch):
     """Проверяем, что запись исчезает после истечения TTL."""
     current_time = {"value": 10.0}
     monkeypatch.setattr(ttl_cache_module, "monotonic", lambda: current_time["value"])
     cache = TTLCache[str, int](ttl_seconds=5, max_entries=4)
 
-    cache.set("anime", 7)
+    await cache.set("anime", 7)
     current_time["value"] = 16.0
 
-    assert cache.contains("anime") is False
-    assert cache.get("anime") is None
+    assert await cache.contains("anime") is False
+    assert await cache.get("anime") is None
 
 
 @pytest.mark.unit
@@ -57,27 +57,27 @@ def test_ttl_cache_expires_entries_with_time(monkeypatch):
         ),
     ],
 )
-def test_ttl_cache_deletes_matching_keys(keys, predicate, expected_keys):
+async def test_ttl_cache_deletes_matching_keys(keys, predicate, expected_keys):
     """Проверяем, что delete_matching удаляет только подходящие ключи."""
     cache = TTLCache[str, int](ttl_seconds=30, max_entries=8)
 
     for key, value in keys:
-        cache.set(key, value)
+        await cache.set(key, value)
 
-    cache.delete_matching(predicate)
+    await cache.delete_matching(predicate)
 
-    assert {key for key, _value in keys if cache.contains(key)} == expected_keys
+    assert {key for key, _value in keys if await cache.contains(key)} == expected_keys
 
 
 @pytest.mark.unit
-def test_ttl_cache_respects_max_entries():
+async def test_ttl_cache_respects_max_entries():
     """Проверяем, что кэш ограничивает размер и выталкивает старые записи."""
     cache = TTLCache[str, int](ttl_seconds=30, max_entries=2)
 
-    cache.set("first", 1)
-    cache.set("second", 2)
-    cache.set("third", 3)
+    await cache.set("first", 1)
+    await cache.set("second", 2)
+    await cache.set("third", 3)
 
-    assert cache.contains("first") is False
-    assert cache.get("second") == 2
-    assert cache.get("third") == 3
+    assert await cache.contains("first") is False
+    assert await cache.get("second") == 2
+    assert await cache.get("third") == 3

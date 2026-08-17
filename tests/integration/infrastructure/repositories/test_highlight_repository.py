@@ -36,9 +36,9 @@ class TestHighlightRepository:
         )
 
         loaded = await repo.get_by_id(highlight.id)
-        highlight.edit(12.0, 24.0, "after", "бой", "after", True, "hype")
-        highlight.add_like()
-        highlight.add_view()
+        await highlight.edit(12.0, 24.0, "after", "бой", "after", True, "hype")
+        await highlight.add_like()
+        await highlight.add_view()
         await repo.update(highlight)
         updated = await repo.get_by_id(highlight.id)
         await repo.delete(highlight.id)

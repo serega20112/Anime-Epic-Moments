@@ -24,6 +24,13 @@ class FailoverLLMClient:
         self.primary = primary
         self.fallback = fallback
 
+    async def aclose(self) -> None:
+        """Close the underlying HTTP clients of both providers."""
+        for client in (self.primary, self.fallback):
+            closer = getattr(client, "aclose", None)
+            if closer is not None:
+                await closer()
+
     async def build_search_queries_with_meta(
         self,
         description: str,

@@ -24,10 +24,10 @@ class Anime:
         self.cover_url = cover_url
         self.episode_count = episode_count
 
-    def add_genre(self, genre: str):
+    async def add_genre(self, genre: str):
         if genre not in self.genres:
             self.genres.append(genre)
 
-    def remove_genre(self, genre: str):
+    async def remove_genre(self, genre: str):
         if genre in self.genres:
             self.genres.remove(genre)

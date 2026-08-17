@@ -27,27 +27,27 @@ def _ticket(**overrides):
 
 
 class TestSupportEmailMailer:
-    def test_is_enabled_when_configured(self):
-        assert SupportEmailMailer().is_enabled() is True
+    async def test_is_enabled_when_configured(self):
+        assert await SupportEmailMailer().is_enabled() is True
 
-    def test_is_disabled_without_hosts(self, monkeypatch):
+    async def test_is_disabled_without_hosts(self, monkeypatch):
         monkeypatch.setattr(Settings, "smtp_host", "")
         monkeypatch.setattr(Settings, "support_email_to", [])
-        assert SupportEmailMailer().is_enabled() is False
+        assert await SupportEmailMailer().is_enabled() is False
 
-    def test_build_subject_truncates(self):
+    async def test_build_subject_truncates(self):
         mailer = SupportEmailMailer()
-        subject = mailer._build_subject(_ticket(subject="x" * 300))
+        subject = await mailer._build_subject(_ticket(subject="x" * 300))
         assert subject == f"AEM support #5: {'x' * 120}"
 
-    def test_build_subject_collapses_whitespace(self):
+    async def test_build_subject_collapses_whitespace(self):
         mailer = SupportEmailMailer()
-        subject = mailer._build_subject(_ticket(subject="a   b"))
+        subject = await mailer._build_subject(_ticket(subject="a   b"))
         assert subject == "AEM support #5: a b"
 
-    def test_build_plain_text_includes_fields(self):
+    async def test_build_plain_text_includes_fields(self):
         mailer = SupportEmailMailer()
-        text = mailer._build_plain_text(_ticket())
+        text = await mailer._build_plain_text(_ticket())
         assert "ID: 5" in text
         assert "Email: user@example.com" in text
         assert "User ID: 3" in text
@@ -55,9 +55,9 @@ class TestSupportEmailMailer:
         assert "Hello there" in text
         assert "Создан: 2025-01-02 03:04:05 UTC" in text
 
-    def test_build_plain_text_guest_user(self):
+    async def test_build_plain_text_guest_user(self):
         mailer = SupportEmailMailer()
-        text = mailer._build_plain_text(_ticket(user_id=None, page_url=None))
+        text = await mailer._build_plain_text(_ticket(user_id=None, page_url=None))
         assert "User ID: guest" in text
         assert "Страница" not in text
 

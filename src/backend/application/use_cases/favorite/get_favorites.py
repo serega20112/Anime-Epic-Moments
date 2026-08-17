@@ -16,7 +16,7 @@ class GetFavoritesUseCase:
             needs_remote_lookup = not favorite.title
             if needs_remote_lookup:
                 anime = await self.anime_api_client.get_by_id(favorite.anime_id)
-            watch_id = self._resolve_watch_id(
+            watch_id = await self._resolve_watch_id(
                 stored_anime_id=favorite.anime_id,
                 resolved_external_id=anime.external_id if anime else None,
             )
@@ -43,7 +43,7 @@ class GetFavoritesUseCase:
             )
         return result
 
-    def _resolve_watch_id(self, stored_anime_id: int, resolved_external_id: str | None) -> int:
+    async def _resolve_watch_id(self, stored_anime_id: int, resolved_external_id: str | None) -> int:
         """Выбирает id для построения watch-ссылки."""
         try:
             numeric_id = int(str(resolved_external_id or "").strip())

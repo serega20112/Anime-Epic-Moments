@@ -28,7 +28,7 @@ class SyncWatchSourcesUseCase:
 
     async def _execute(self, anime_id: int, episode: int, force: bool = False) -> WatchResult:
         if not await self.watch_source_sync_service.is_enabled():
-            return WatchResult.failure("provider_not_configured", status_code=400)
+            return await WatchResult.failure("provider_not_configured", status_code=400)
         anime = await self.anime_api_client.get_by_id(anime_id)
         try:
             sources = await asyncio.wait_for(
@@ -41,10 +41,10 @@ class SyncWatchSourcesUseCase:
                 timeout=10,
             )
         except TimeoutError:
-            return WatchResult.failure("provider_timeout", status_code=504)
+            return await WatchResult.failure("provider_timeout", status_code=504)
         if len(sources) == 0:
-            return WatchResult.failure("no_sources_found", status_code=404)
-        return WatchResult.success(
+            return await WatchResult.failure("no_sources_found", status_code=404)
+        return await WatchResult.success(
             {
                 "enabled": True,
                 "sources_count": len(sources),

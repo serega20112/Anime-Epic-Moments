@@ -1,8 +1,6 @@
 import re
 
-import requests
-
-from backend.infrastructure.external._async import external_method
+import httpx
 
 
 class HuggingFaceLLMClient:
@@ -35,10 +33,17 @@ class HuggingFaceLLMClient:
         self.provider = provider
         self.api_url = api_url
         self._success_mode = "hf_llm_text"
-        self.session = requests.Session()
-        self.session.trust_env = False
+        self.session = httpx.AsyncClient(
+            timeout=httpx.Timeout(30),
+            trust_env=False,
+            follow_redirects=True,
+        )
 
-    def build_search_query(
+    async def aclose(self) -> None:
+        """Close the underlying HTTP client."""
+        await self.session.aclose()
+
+    async def build_search_query(
         self,
         description: str,
         genre_hint: str | None = None,
@@ -49,7 +54,7 @@ class HuggingFaceLLMClient:
         allow_adult: bool = False,
     ) -> str:
         """Возвращает краткий англоязычный запрос для AniList по описанию пользователя."""
-        query, _, _ = self.build_search_query_with_meta(
+        query, _, _ = await self.build_search_query_with_meta(
             description=description,
             genre_hint=genre_hint,
             year_from=year_from,
@@ -60,7 +65,7 @@ class HuggingFaceLLMClient:
         )
         return query
 
-    def build_search_query_with_meta(
+    async def build_search_query_with_meta(
         self,
         description: str,
         genre_hint: str | None = None,
@@ -71,8 +76,7 @@ class HuggingFaceLLMClient:
         allow_adult: bool = False,
     ) -> tuple[str, str, str | None]:
         """Возвращает запрос и метаданные режима: hf_llm или fallback_*."""
-        queries, mode, error = self.__class__.build_search_queries_with_meta.__wrapped__(
-            self,
+        queries, mode, error = await self.build_search_queries_with_meta(
             description=description,
             genre_hint=genre_hint,
             year_from=year_from,
@@ -84,8 +88,7 @@ class HuggingFaceLLMClient:
         first = queries[0] if queries else ""
         return first, mode, error
 
-    @external_method
-    def build_search_queries_with_meta(
+    async def build_search_queries_with_meta(
         self,
         description: str,
         genre_hint: str | None = None,
@@ -100,12 +103,12 @@ class HuggingFaceLLMClient:
         if not base_description:
             return [], "fallback_empty", None
         if not self.api_key:
-            fallback_query = self._fallback_query(
+            fallback_query = await self._fallback_query(
                 base_description, genre_hint, year_from, year_to, min_rating
             )
             return [fallback_query], "fallback_no_token", None
 
-        user_payload = self._build_user_payload(
+        user_payload = await self._build_user_payload(
             description=base_description,
             genre_hint=genre_hint,
             year_from=year_from,
@@ -133,19 +136,19 @@ class HuggingFaceLLMClient:
         ]
 
         try:
-            model_route = self._resolve_model_route()
-            completion = self._create_completion(model_route=model_route, messages=messages)
-            message_content = self._extract_message_content(completion)
+            model_route = await self._resolve_model_route()
+            completion = await self._create_completion(model_route=model_route, messages=messages)
+            message_content = await self._extract_message_content(completion)
             if not message_content:
-                fallback_query = self._fallback_query(
+                fallback_query = await self._fallback_query(
                     base_description, genre_hint, year_from, year_to, min_rating
                 )
                 return [fallback_query], "fallback_empty_reply", None
-            parsed_queries = self._parse_queries(message_content)
+            parsed_queries = await self._parse_queries(message_content)
             if parsed_queries:
                 return parsed_queries, self._success_mode, None
         except Exception as exc:
-            fallback_query = self._fallback_query(
+            fallback_query = await self._fallback_query(
                 base_description, genre_hint, year_from, year_to, min_rating
             )
             return (
@@ -154,13 +157,12 @@ class HuggingFaceLLMClient:
                 f"{type(exc).__name__}: {exc}",
             )
 
-        fallback_query = self._fallback_query(
+        fallback_query = await self._fallback_query(
             base_description, genre_hint, year_from, year_to, min_rating
         )
         return [fallback_query], "fallback_invalid_json", None
 
-    @external_method
-    def describe_taste_profile(
+    async def describe_taste_profile(
         self,
         profile_data: dict[str, object],
         fallback: str,
@@ -186,12 +188,12 @@ class HuggingFaceLLMClient:
             },
         ]
         try:
-            completion = self._create_completion_with_timeout(
-                model_route=self._resolve_model_route(),
+            completion = await self._create_completion_with_timeout(
+                model_route=await self._resolve_model_route(),
                 messages=messages,
                 timeout_seconds=6,
             )
-            content = self._extract_message_content(completion)
+            content = await self._extract_message_content(completion)
             if not content:
                 return fallback
             normalized = " ".join(str(content).split())
@@ -199,7 +201,7 @@ class HuggingFaceLLMClient:
         except Exception:
             return fallback
 
-    def _fallback_query(
+    async def _fallback_query(
         self,
         description: str,
         genre_hint: str | None = None,
@@ -213,7 +215,7 @@ class HuggingFaceLLMClient:
             parts.append(genre_hint.strip())
         return " ".join(parts).strip()
 
-    def _build_user_payload(
+    async def _build_user_payload(
         self,
         description: str,
         genre_hint: str | None,
@@ -235,7 +237,7 @@ class HuggingFaceLLMClient:
         ]
         return "\n".join(parts)
 
-    def _resolve_model_route(self) -> str:
+    async def _resolve_model_route(self) -> str:
         """Возвращает model route в формате repo[:provider]."""
         raw_model = self.model.strip()
         if ":" in raw_model:
@@ -244,15 +246,15 @@ class HuggingFaceLLMClient:
             return f"{raw_model}:{self.provider.strip()}"
         return raw_model
 
-    def _create_completion(self, model_route: str, messages: list[dict]) -> dict:
+    async def _create_completion(self, model_route: str, messages: list[dict]) -> dict:
         """Отправляет запрос в Hugging Face Router и возвращает JSON-ответ."""
-        return self._create_completion_with_timeout(
+        return await self._create_completion_with_timeout(
             model_route=model_route,
             messages=messages,
             timeout_seconds=30,
         )
 
-    def _create_completion_with_timeout(
+    async def _create_completion_with_timeout(
         self,
         model_route: str,
         messages: list[dict],
@@ -270,13 +272,13 @@ class HuggingFaceLLMClient:
             "temperature": 0.1,
             "reasoning_effort": "low",
         }
-        response = self.session.post(
+        response = await self.session.post(
             self.api_url, headers=headers, json=payload, timeout=timeout_seconds
         )
         response.raise_for_status()
         return response.json()
 
-    def _extract_message_content(self, completion: dict) -> str:
+    async def _extract_message_content(self, completion: dict) -> str:
         """Извлекает content из HF chat completion JSON."""
         choices = completion.get("choices") if isinstance(completion, dict) else None
         if not isinstance(choices, list) or not choices:
@@ -295,7 +297,7 @@ class HuggingFaceLLMClient:
             return str(reasoning_content).strip()
         return ""
 
-    def _parse_queries(self, raw_content: str) -> list[str]:
+    async def _parse_queries(self, raw_content: str) -> list[str]:
         """Парсит несколько запросов из текста модели (по строкам)."""
         lines = []
         for raw_line in str(raw_content).splitlines():
@@ -305,7 +307,7 @@ class HuggingFaceLLMClient:
             if re.match(r"^\d+\.\s+", line):
                 line = line.split(". ", 1)[1].strip()
             normalized_line = " ".join(line.split())
-            if not self._looks_like_title_candidate(normalized_line):
+            if not await self._looks_like_title_candidate(normalized_line):
                 continue
             lines.append(normalized_line)
         unique: list[str] = []
@@ -320,7 +322,7 @@ class HuggingFaceLLMClient:
                 break
         return unique
 
-    def _looks_like_title_candidate(self, value: str) -> bool:
+    async def _looks_like_title_candidate(self, value: str) -> bool:
         """Отбрасывает заведомо не-title строки."""
         if not value:
             return False

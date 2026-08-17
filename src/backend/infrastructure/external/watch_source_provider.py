@@ -1,23 +1,13 @@
-from abc import ABC, abstractmethod
+"""Watch source provider contract re-export.
 
-from backend.domain.watch.value_object import DiscoveredWatchSource
+Абстрактный контракт провайдера живёт в domain
+(:class:`backend.domain.services.watch_source_provider.WatchSourceProviderInterface`).
+Здесь он лишь переэкспортируется, чтобы не менять импорты существующих клиентов
+(Kodik, AniLibria, YouTube и т.д.), которые реализуют этот интерфейс.
+"""
 
+from backend.domain.services.watch_source_provider import (
+    WatchSourceProviderInterface as WatchSourceProvider,
+)
 
-class WatchSourceProvider(ABC):
-    """Контракт провайдера внешних источников просмотра."""
-
-    provider_name: str
-
-    @abstractmethod
-    def is_enabled(self) -> bool:
-        """Возвращает доступность провайдера."""
-
-    @abstractmethod
-    async def search_sources(
-        self,
-        title: str,
-        episode: int,
-        year: int | None = None,
-        limit: int = 8,
-    ) -> list[DiscoveredWatchSource]:
-        """Ищет источники для конкретного аниме и эпизода."""
+__all__ = ["WatchSourceProvider"]

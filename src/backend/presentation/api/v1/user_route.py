@@ -18,7 +18,14 @@ user_router = APIRouter(prefix="/users", route_class=DishkaRoute)
 user_bp = user_router
 
 
-def _login_redirect(request: Request) -> RedirectResponse:
+async def _follow_subject(request: Request) -> str:
+    """Build a composite rate-limit subject for follow actions."""
+    ip = await client_ip(request)
+    user_id = getattr(await get_current_user(request), "id", "guest")
+    return f"{ip}::{user_id}"
+
+
+async def _login_redirect(request: Request) -> RedirectResponse:
     """Build a redirect to the login page.
 
     Args:
@@ -33,7 +40,7 @@ def _login_redirect(request: Request) -> RedirectResponse:
     )
 
 
-def _profile_redirect(request: Request, user_id: int) -> RedirectResponse:
+async def _profile_redirect(request: Request, user_id: int) -> RedirectResponse:
     """Build a redirect back to the public profile page.
 
     Args:
@@ -68,18 +75,18 @@ async def public_profile_page(
     Returns:
         HTMLResponse: Rendered public profile or 404 modal.
     """
-    viewer = get_current_user(request)
+    viewer = await get_current_user(request)
     result = await use_case.execute(
         profile_user_id=user_id,
         viewer_user_id=viewer.id if viewer else None,
     )
     if not result.ok:
-        return render_template(
+        return await render_template(
             request,
             "errors/500_modal.html",
             status_code=HTTPStatus.NOT_FOUND,
         )
-    return render_template(
+    return await render_template(
         request,
         "user/public_profile.html",
         public_profile=result.data,
@@ -91,9 +98,7 @@ async def public_profile_page(
     scope="user_follow",
     limit=30,
     window_seconds=60,
-    key_builder=lambda request: (
-        f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
-    ),
+    key_builder=_follow_subject,
 )
 async def follow_user(
     request: Request,
@@ -119,9 +124,7 @@ async def follow_user(
     scope="user_unfollow",
     limit=30,
     window_seconds=60,
-    key_builder=lambda request: (
-        f"{client_ip(request)}::{getattr(get_current_user(request), 'id', 'guest')}"
-    ),
+    key_builder=_follow_subject,
 )
 async def unfollow_user(
     request: Request,
@@ -161,17 +164,17 @@ async def _set_follow(
         JSONResponse: Following state or an error.
         RedirectResponse: Redirect to the profile page.
     """
-    viewer = get_current_user(request)
+    viewer = await get_current_user(request)
     if not viewer:
-        return _login_redirect(request)
+        return await _login_redirect(request)
     result = await use_case.execute(
         follower_user_id=viewer.id,
         followed_user_id=user_id,
         follow=follow,
     )
     if not result.ok:
-        flash(request, result.error or "Не удалось обновить подписку")
-        return _profile_redirect(request, user_id)
-    if wants_json(request):
+        await flash(request, result.error or "Не удалось обновить подписку")
+        return await _profile_redirect(request, user_id)
+    if await wants_json(request):
         return JSONResponse({"following": result.data})
-    return _profile_redirect(request, user_id)
+    return await _profile_redirect(request, user_id)

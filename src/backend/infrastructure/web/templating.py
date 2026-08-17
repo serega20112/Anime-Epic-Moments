@@ -35,7 +35,7 @@ def _get_session(request: Request) -> dict[str, Any] | None:
     return session if isinstance(session, dict) else None
 
 
-def flash(request: Request, message: str):
+async def flash(request: Request, message: str):
     """Add a flash message to the session for display on the next page load.
 
     Args:
@@ -50,7 +50,7 @@ def flash(request: Request, message: str):
     session["_flashes"] = messages
 
 
-def pop_flashed_messages(request: Request) -> list[str]:
+async def pop_flashed_messages(request: Request) -> list[str]:
     """Retrieve and clear all flash messages from the session.
 
     Args:
@@ -153,7 +153,7 @@ class TemplateRequestProxy:
         return str(value)
 
 
-def render_template(
+async def render_template(
     request: Request,
     template_name: str,
     *,
@@ -177,7 +177,7 @@ def render_template(
         HTMLResponse: Rendered HTML response.
     """
     proxy = TemplateRequestProxy(request)
-    messages = pop_flashed_messages(request)
+    messages = await pop_flashed_messages(request)
 
     def get_flashed_messages() -> list[str]:
         return list(messages)

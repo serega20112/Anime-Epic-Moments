@@ -112,7 +112,7 @@ class TestSearchAnimeByDescriptionUseCase:
             ],
         }[sort_by]
 
-        ordered = use_case._sort_results(
+        ordered = await use_case._sort_results(
             items=items,
             sort_by=sort_by,
             description="comedy",

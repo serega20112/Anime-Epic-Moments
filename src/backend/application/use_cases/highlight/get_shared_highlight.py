@@ -27,7 +27,7 @@ class GetSharedHighlightUseCase(GetUserHighlightsUseCase):
     async def _execute(self, highlight_id: int, viewer_user_id: int | None = None):
         highlight = await self.repo.get_by_id(highlight_id)
         if not highlight:
-            return HighlightResult.failure("highlight_not_found", status_code=404)
+            return await HighlightResult.failure("highlight_not_found", status_code=404)
         await self.repo.increment_views(highlight_id)
         dashboard = await self._build_dashboard(
             highlights=[highlight],
@@ -40,4 +40,4 @@ class GetSharedHighlightUseCase(GetUserHighlightsUseCase):
             include_spoilers=True,
             viewer_user_id=viewer_user_id,
         )
-        return HighlightResult.success(dashboard)
+        return await HighlightResult.success(dashboard)

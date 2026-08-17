@@ -1,25 +1,34 @@
-"""Abstract watch source provider interface."""
+"""Abstract watch source provider interface.
+
+Провайдеры внешних источников просмотра (Kodik, AniLibria, YouTube и т.д.)
+реализуют именно этот контракт. Интерфейс лежит в domain, потому что на него
+опирается application-сервис синхронизации источников
+(:class:`backend.application.services.watch_source_service.WatchSourceSyncService`),
+а инфраструктурные клиенты — лишь его реализации.
+"""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+
+from backend.domain.watch.value_object import DiscoveredWatchSource
 
 
 class WatchSourceProviderInterface(ABC):
-    """Interface for fetching watch sources from external providers."""
+    """Контракт провайдера внешних источников просмотра."""
+
+    provider_name: str
 
     @abstractmethod
-    async def get_sources(self, anime_id: int) -> list[Any]:
-        """Get watch sources for an anime.
-
-        Args:
-            anime_id: The anime identifier.
-
-        Returns:
-            list[Any]: List of watch source objects.
-        """
+    async def is_enabled(self) -> bool:
+        """Возвращает доступность провайдера."""
 
     @abstractmethod
-    async def close(self) -> None:
-        """Close provider resources and connections."""
+    async def search_sources(
+        self,
+        title: str,
+        episode: int,
+        year: int | None = None,
+        limit: int = 8,
+    ) -> list[DiscoveredWatchSource]:
+        """Ищет источники для конкретного аниме и эпизода."""

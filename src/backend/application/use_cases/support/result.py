@@ -32,7 +32,7 @@ class CreateSupportTicketResult:
     service_unavailable: bool = False
 
     @classmethod
-    def success(
+    async def success(
         cls,
         data: Any,
         message: str | None = None,
@@ -57,7 +57,7 @@ class CreateSupportTicketResult:
         )
 
     @classmethod
-    def failure(cls, error_message: str, status_code: int = 400) -> CreateSupportTicketResult:
+    async def failure(cls, error_message: str, status_code: int = 400) -> CreateSupportTicketResult:
         """Build a failed result.
 
         Args:

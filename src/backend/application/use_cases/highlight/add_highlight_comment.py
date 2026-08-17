@@ -41,12 +41,12 @@ class AddHighlightCommentUseCase:
         """
         normalized_content = str(command.content or "").strip()
         if not normalized_content:
-            return HighlightResult.failure("Комментарий не может быть пустым", status_code=400)
+            return await HighlightResult.failure("Комментарий не может быть пустым", status_code=400)
         if len(normalized_content) > 600:
-            return HighlightResult.failure("Комментарий слишком длинный", status_code=400)
+            return await HighlightResult.failure("Комментарий слишком длинный", status_code=400)
         highlight = await self.repo.get_by_id(command.highlight_id)
         if not highlight:
-            return HighlightResult.failure("highlight_not_found", status_code=404)
+            return await HighlightResult.failure("highlight_not_found", status_code=404)
         comment = await self.repo.add_comment(
             highlight_id=command.highlight_id,
             user_id=command.user_id,
@@ -56,4 +56,4 @@ class AddHighlightCommentUseCase:
             await self.highlight_dashboard_cache.invalidate_public()
         if self.profile_overview_cache is not None and highlight.user_id is not None:
             await self.profile_overview_cache.invalidate_user(highlight.user_id)
-        return HighlightResult.success(comment, status_code=201)
+        return await HighlightResult.success(comment, status_code=201)

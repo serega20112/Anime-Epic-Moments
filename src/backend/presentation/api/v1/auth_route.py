@@ -68,7 +68,7 @@ async def login_page(request: Request):
     Returns:
         HTMLResponse: Rendered login page.
     """
-    return render_template(request, "auth/login.html")
+    return await render_template(request, "auth/login.html")
 
 
 @auth_router.get("/register", name="auth.register_page")
@@ -81,7 +81,7 @@ async def register_page(request: Request):
     Returns:
         HTMLResponse: Rendered registration page.
     """
-    return render_template(request, "auth/register.html")
+    return await render_template(request, "auth/register.html")
 
 
 @auth_router.get("/password-reset", name="auth.password_reset_request_page")
@@ -94,7 +94,7 @@ async def password_reset_request_page(request: Request):
     Returns:
         HTMLResponse: Rendered password reset request page.
     """
-    return render_template(request, "auth/password_reset_request.html")
+    return await render_template(request, "auth/password_reset_request.html")
 
 
 @auth_router.get("/verify-email", name="auth.verify_email_page")
@@ -107,7 +107,7 @@ async def verify_email_page(request: Request):
     Returns:
         HTMLResponse: Rendered verification page.
     """
-    return render_template(
+    return await render_template(
         request,
         "auth/verify_email.html",
         email=str(request.query_params.get("email") or "").strip(),
@@ -125,7 +125,7 @@ async def password_reset_confirm_page(request: Request):
         HTMLResponse: Rendered confirmation page.
     """
     token = str(request.query_params.get("token", ""))
-    return render_template(request, "auth/password_reset_confirm.html", token=token)
+    return await render_template(request, "auth/password_reset_confirm.html", token=token)
 
 
 @auth_router.post("/login", name="auth.login_user")
@@ -149,25 +149,25 @@ async def login_user(request: Request, use_case: FromDishka[LoginUserUseCase]):
     """
     form = await request.form()
     try:
-        command = map_login_command(form)
+        command = await map_login_command(form)
     except FormValidationError as error:
-        flash(request, str(error))
-        return redirect(request, "auth.login_page")
+        await flash(request, str(error))
+        return await redirect(request, "auth.login_page")
     result = await use_case.execute(email=command.email, password=command.password)
     if result.ok:
-        log_security_event(
+        await log_security_event(
             event="login_success",
             user_id=str(result.data.id),
             email=command.email,
-            ip_address=client_ip(request),
+            ip_address=await client_ip(request),
         )
     else:
-        log_security_event(
+        await log_security_event(
             event="login_failed",
             email=command.email,
-            ip_address=client_ip(request),
+            ip_address=await client_ip(request),
         )
-    return resolve_auth(request, result)
+    return await resolve_auth(request, result)
 
 
 @auth_router.post("/register", name="auth.register_user")
@@ -191,17 +191,17 @@ async def register_user(request: Request, use_case: FromDishka[RequestEmailVerif
     """
     form = await request.form()
     try:
-        command = map_register_command(form)
+        command = await map_register_command(form)
     except FormValidationError as error:
-        return redirect_verify(request, str(error))
-    logger.info("register_verification_requested email=%s ip=%s", command.email, client_ip(request))
+        return await redirect_verify(request, str(error))
+    logger.info("register_verification_requested email=%s ip=%s", command.email, await client_ip(request))
     result = await use_case.execute(
         email=command.email,
         password=command.password,
         username=command.username,
         theme=command.theme,
     )
-    return resolve_verify(request, result)
+    return await resolve_verify(request, result)
 
 
 @auth_router.post("/verify-email", name="auth.verify_email")
@@ -217,11 +217,11 @@ async def verify_email(request: Request, use_case: FromDishka[VerifyEmailUseCase
     """
     form = await request.form()
     try:
-        command = map_verify_email_command(form)
+        command = await map_verify_email_command(form)
     except FormValidationError as error:
-        return redirect_verify(request, str(error))
+        return await redirect_verify(request, str(error))
     result = await use_case.execute(email=command.email, code=command.code)
-    return resolve_auth(request, result)
+    return await resolve_auth(request, result)
 
 
 @auth_router.post("/verify-email/resend", name="auth.resend_verification_email")
@@ -240,16 +240,16 @@ async def resend_verification_email(
     """
     form = await request.form()
     try:
-        command = map_resend_verification_command(form)
+        command = await map_resend_verification_command(form)
     except FormValidationError as error:
-        return redirect_verify(request, str(error))
-    log_security_event(
+        return await redirect_verify(request, str(error))
+    await log_security_event(
         event="email_verification_resend_requested",
         email=command.email,
-        ip_address=client_ip(request),
+        ip_address=await client_ip(request),
     )
     result = await use_case.execute(email=command.email)
-    return resolve_verify(request, result)
+    return await resolve_verify(request, result)
 
 
 @auth_router.post("/password-reset", name="auth.request_password_reset")
@@ -268,15 +268,15 @@ async def request_password_reset(
     """
     form = await request.form()
     try:
-        command = map_request_password_reset_command(
+        command = await map_request_password_reset_command(
             form, base_url=str(request.base_url).rstrip("/")
         )
     except FormValidationError:
-        return redirect(request, "auth.password_reset_request_page")
-    log_security_event(
+        return await redirect(request, "auth.password_reset_request_page")
+    await log_security_event(
         event="password_reset_requested",
         email=command.email,
-        ip_address=client_ip(request),
+        ip_address=await client_ip(request),
     )
     await use_case.execute(email=command.email, base_url=command.base_url)
     return redirect(request, "auth.password_reset_request_page")
@@ -295,12 +295,12 @@ async def confirm_password_reset(request: Request, use_case: FromDishka[ResetPas
     """
     form = await request.form()
     try:
-        command = map_confirm_password_reset_command(form)
+        command = await map_confirm_password_reset_command(form)
     except FormValidationError as error:
-        return redirect_confirm(request, str(error))
-    log_security_event(event="password_reset_success", ip_address=client_ip(request))
+        return await redirect_confirm(request, str(error))
+    await log_security_event(event="password_reset_success", ip_address=await client_ip(request))
     result = await use_case.execute(token=command.token, new_password=command.password)
-    return resolve(request, result)
+    return await resolve(request, result)
 
 
 @auth_router.post("/logout", name="auth.logout_user")
@@ -318,8 +318,8 @@ async def logout_user(request: Request, use_case: FromDishka[LogoutUserUseCase])
         access_token=str(request.cookies.get("access_token") or "").strip(),
         refresh_token=str(request.cookies.get("refresh_token") or "").strip(),
     )
-    response = redirect(request, "index.index")
-    clear_auth_cookies(response)
+    response = await redirect(request, "index.index")
+    await clear_auth_cookies(response)
     return response
 
 
@@ -338,7 +338,7 @@ async def refresh_session(request: Request, use_case: FromDishka[RefreshSessionU
     if not result.ok:
         return JSONResponse({"error": result.error_message}, status_code=UNAUTHORIZED)
     response = JSONResponse({"status": "ok"})
-    set_auth_cookies(response, result.data)
+    await set_auth_cookies(response, result.data)
     return response
 
 
@@ -355,9 +355,9 @@ async def profile_page(request: Request, use_case: FromDishka[GetProfileOverview
     """
     user = getattr(request.state, "user", None)
     if not user:
-        return redirect(request, "auth.login_page")
+        return await redirect(request, "auth.login_page")
     overview = await use_case.execute(user.id)
-    return render_template(
+    return await render_template(
         request,
         "auth/profile.html",
         profile_user=user,
@@ -378,12 +378,12 @@ async def update_profile(request: Request, use_case: FromDishka[UpdateUserProfil
     """
     user = getattr(request.state, "user", None)
     if not user:
-        return redirect(request, "auth.login_page")
+        return await redirect(request, "auth.login_page")
     form = await request.form()
-    command = map_update_profile_command(form, user_id=user.id)
+    command = await map_update_profile_command(form, user_id=user.id)
     result = await use_case.execute(
         user_id=command.user_id,
         username=command.username,
         avatar_url=command.avatar_url,
     )
-    return resolve(request, result)
+    return await resolve(request, result)

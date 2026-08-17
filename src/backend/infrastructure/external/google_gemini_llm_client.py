@@ -17,7 +17,7 @@ class GoogleGeminiLLMClient(HuggingFaceLLMClient):
         super().__init__(api_key=api_key, model=model, provider=None, api_url=api_url)
         self._success_mode = "gemini_llm_text"
 
-    def _create_completion_with_timeout(
+    async def _create_completion_with_timeout(
         self,
         model_route: str,
         messages: list[dict],
@@ -34,7 +34,7 @@ class GoogleGeminiLLMClient(HuggingFaceLLMClient):
             dict: Raw Gemini response JSON.
 
         Raises:
-            requests.HTTPError: When Gemini returns a non-2xx status.
+            httpx.HTTPError: When Gemini returns a non-2xx status.
         """
         url = f"{self.api_url}/models/{model_route}:generateContent?key={self.api_key}"
         system_parts: list[str] = []
@@ -57,7 +57,7 @@ class GoogleGeminiLLMClient(HuggingFaceLLMClient):
         }
         if system_parts:
             payload["systemInstruction"] = {"parts": [{"text": text} for text in system_parts]}
-        response = self.session.post(
+        response = await self.session.post(
             url,
             json=payload,
             timeout=timeout_seconds,
@@ -65,7 +65,7 @@ class GoogleGeminiLLMClient(HuggingFaceLLMClient):
         response.raise_for_status()
         return response.json()
 
-    def _extract_message_content(self, completion: dict) -> str:
+    async def _extract_message_content(self, completion: dict) -> str:
         """Extract the concatenated text from a Gemini response.
 
         Args:
@@ -90,6 +90,6 @@ class GoogleGeminiLLMClient(HuggingFaceLLMClient):
         ]
         return "\n".join(texts).strip()
 
-    def _resolve_model_route(self) -> str:
+    async def _resolve_model_route(self) -> str:
         """Return the model identifier ready for the generateContent URL."""
         return self.model.strip().removeprefix("models/").strip()

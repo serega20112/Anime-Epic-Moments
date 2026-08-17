@@ -94,7 +94,7 @@ async def ask_ai_recommendations(
     Returns:
         JSONResponse: Serialized recommendations or an error payload.
     """
-    command = map_ask_ai_command(await read_payload(request), user_id=user_id)
+    command = await map_ask_ai_command(await read_payload(request), user_id=user_id)
     result = await use_case.execute(command)
     if not result.ok:
         return JSONResponse({"error": result.error}, status_code=result.status_code)

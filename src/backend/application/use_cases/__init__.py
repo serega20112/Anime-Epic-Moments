@@ -58,6 +58,20 @@ from backend.application.use_cases.highlight.get_user_highlights import GetUserH
 from backend.application.use_cases.highlight.result import HighlightResult
 from backend.application.use_cases.highlight.set_highlight_like import SetHighlightLikeUseCase
 from backend.application.use_cases.highlight.set_saved_highlight import SetSavedHighlightUseCase
+from backend.application.use_cases.moment.delete_viewing_moment import DeleteViewingMomentUseCase
+from backend.application.use_cases.moment.get_user_viewing_moments import (
+    GetUserViewingMomentsUseCase,
+)
+from backend.application.use_cases.moment.publish_viewing_moment import PublishViewingMomentUseCase
+from backend.application.use_cases.moment.result import MomentResult
+from backend.application.use_cases.moment.save_viewing_moment import SaveViewingMomentUseCase
+from backend.application.use_cases.reaction.get_episode_reactions import (
+    GetEpisodeReactionsUseCase,
+)
+from backend.application.use_cases.reaction.result import ReactionResult
+from backend.application.use_cases.reaction.set_episode_reaction import (
+    SetEpisodeReactionUseCase,
+)
 from backend.application.use_cases.recommendation.ask_ai_recommendations import (
     AskAiRecommendationsUseCase,
 )
@@ -97,12 +111,14 @@ __all__ = [
     "CreateCollectionUseCase",
     "CreateSupportTicketUseCase",
     "DeleteHighlightUseCase",
+    "DeleteViewingMomentUseCase",
     "EditHighlightUseCase",
     "FilterAnimeCatalogUseCase",
     "GenerateRecommendationsUseCase",
     "GetAnimeDiscussionUseCase",
     "GetFavoritesUseCase",
     "GetFollowingHighlightsUseCase",
+    "GetEpisodeReactionsUseCase",
     "GetHighlightCommentsUseCase",
     "GetHighlightFeedUseCase",
     "GetHighlightLikersUseCase",
@@ -117,10 +133,14 @@ __all__ = [
     "GetSharedHighlightUseCase",
     "GetUserCollectionsUseCase",
     "GetUserHighlightsUseCase",
+    "GetUserViewingMomentsUseCase",
     "GetWatchPageUseCase",
     "HighlightResult",
     "LogoutUserUseCase",
+    "MomentResult",
+    "PublishViewingMomentUseCase",
     "RecommendationUseCaseResult",
+    "ReactionResult",
     "RefreshRecommendationsUseCase",
     "RefreshSessionUseCase",
     "RegisterUserUseCase",
@@ -130,7 +150,9 @@ __all__ = [
     "ResendEmailVerificationUseCase",
     "SearchAnimeByDescriptionUseCase",
     "SearchAnimeUseCase",
+    "SaveViewingMomentUseCase",
     "SetAnimeCommentLikeUseCase",
+    "SetEpisodeReactionUseCase",
     "SetHighlightLikeUseCase",
     "SetSavedHighlightUseCase",
     "SetUserFollowUseCase",

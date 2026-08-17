@@ -10,7 +10,7 @@ from backend.domain import normalize_support_channel
 _PAGE_URL_MAX_LENGTH = 500
 
 
-def build_support_form_data(
+async def build_support_form_data(
     *,
     command: CreateSupportTicketCommand,
     user_email: str | None = None,
@@ -27,16 +27,16 @@ def build_support_form_data(
         dict[str, str]: Normalized form data for re-rendering.
     """
     return {
-        "email": (_normalize_email(user_email) if user_email else command.email),
-        "username": (_normalize_username(user_username) if user_username else command.username),
+        "email": (await _normalize_email(user_email) if user_email else command.email),
+        "username": (await _normalize_username(user_username) if user_username else command.username),
         "subject": str(command.subject or "").strip(),
         "message": str(command.message or "").strip(),
         "channel": command.channel,
-        "page_url": _normalize_page_url(command.page_url),
+        "page_url": await _normalize_page_url(command.page_url),
     }
 
 
-def build_default_support_form(
+async def build_default_support_form(
     *,
     user_email: str | None = None,
     user_username: str | None = None,
@@ -55,16 +55,16 @@ def build_default_support_form(
         dict[str, str]: Normalized form data.
     """
     return {
-        "email": _normalize_email(user_email),
-        "username": _normalize_username(user_username),
+        "email": await _normalize_email(user_email),
+        "username": await _normalize_username(user_username),
         "subject": "",
         "message": "",
-        "channel": normalize_support_channel(channel_param),
-        "page_url": _normalize_page_url(page_param),
+        "channel": await normalize_support_channel(channel_param),
+        "page_url": await _normalize_page_url(page_param),
     }
 
 
-def _normalize_email(value: str | None) -> str:
+async def _normalize_email(value: str | None) -> str:
     """Normalize an email address.
 
     Args:
@@ -76,7 +76,7 @@ def _normalize_email(value: str | None) -> str:
     return str(value or "").strip().lower()
 
 
-def _normalize_username(value: str | None) -> str:
+async def _normalize_username(value: str | None) -> str:
     """Normalize a username by collapsing whitespace.
 
     Args:
@@ -88,7 +88,7 @@ def _normalize_username(value: str | None) -> str:
     return " ".join(str(value or "").strip().split())
 
 
-def _normalize_page_url(value: Any) -> str:
+async def _normalize_page_url(value: Any) -> str:
     """Normalize a page URL, truncating to the allowed length.
 
     Args:

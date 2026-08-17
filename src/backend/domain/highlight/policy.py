@@ -12,7 +12,7 @@ class HighlightPolicy:
     GUEST_MAX_PER_HOUR = 5
 
     @staticmethod
-    def can_add_highlight(user_id: int, highlights_this_hour: int) -> bool:
+    async def can_add_highlight(user_id: int, highlights_this_hour: int) -> bool:
         """Проверяет, можно ли добавить хайлайт.
 
         Если user_id=None → гость.
@@ -22,7 +22,7 @@ class HighlightPolicy:
         return True  #
 
     @staticmethod
-    def filter_spoiler_content(description: str) -> bool:
+    async def filter_spoiler_content(description: str) -> bool:
         """Проверяет описание на запрещённый контент.
 
         Возвращает True, если описание безопасно.
@@ -32,6 +32,6 @@ class HighlightPolicy:
         return not any(word in description_lower for word in banned_words)
 
     @staticmethod
-    def should_hide_spoiler(highlight: Highlight) -> bool:
+    async def should_hide_spoiler(highlight: Highlight) -> bool:
         """Возвращает True, если спойлер нужно скрывать в UI"""
         return highlight.is_spoiler

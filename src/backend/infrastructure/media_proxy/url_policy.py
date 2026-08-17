@@ -30,7 +30,7 @@ ALLOWED_MEDIA_HOST_SUFFIXES: tuple[str, ...] = (
 _DEFAULT_USER_AGENT = "Mozilla/5.0"
 
 
-def is_allowed_media_url(value: str) -> bool:
+async def is_allowed_media_url(value: str) -> bool:
     """Check whether a URL host is on the media allowlist.
 
     Args:
@@ -49,7 +49,7 @@ def is_allowed_media_url(value: str) -> bool:
     )
 
 
-def is_hls_manifest(upstream_url: str, content_type: str) -> bool:
+async def is_hls_manifest(upstream_url: str, content_type: str) -> bool:
     """Detect whether the upstream response is an HLS manifest.
 
     Args:
@@ -62,7 +62,7 @@ def is_hls_manifest(upstream_url: str, content_type: str) -> bool:
     return ".m3u8" in upstream_url.lower() or "mpegurl" in content_type
 
 
-def browser_user_agent(user_agent: str | None) -> str:
+async def browser_user_agent(user_agent: str | None) -> str:
     """Return a browser-like User-Agent, falling back to a default.
 
     Args:

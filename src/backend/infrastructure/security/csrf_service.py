@@ -17,7 +17,7 @@ class CSRFService:
         self.token_length: int = 32
         self.token_expire_minutes: int = 30
 
-    def generate_token(self, request_state: Any) -> str:
+    async def generate_token(self, request_state: Any) -> str:
         """Generate a secure random CSRF token and store it in request state.
 
         Args:
@@ -36,7 +36,7 @@ class CSRFService:
         }
         return token
 
-    def get_token_from_state(self, request_state: Any) -> str | None:
+    async def get_token_from_state(self, request_state: Any) -> str | None:
         """Retrieve the CSRF token value from request state.
 
         Args:
@@ -50,7 +50,7 @@ class CSRFService:
             return token_data["value"]
         return None
 
-    def validate_token(self, request_state: Any, token_from_request: str) -> bool:
+    async def validate_token(self, request_state: Any, token_from_request: str) -> bool:
         """Validate a CSRF token against the stored token in request state.
 
         Checks token existence, value match, and expiration.
@@ -79,7 +79,7 @@ class CSRFService:
 
         return True
 
-    def validate_form_csrf(self, request_state: Any, form_data: dict[str, Any]) -> bool:
+    async def validate_form_csrf(self, request_state: Any, form_data: dict[str, Any]) -> bool:
         """Validate CSRF token from form data.
 
         Args:
@@ -94,9 +94,9 @@ class CSRFService:
             logger.warning("csrf_token_missing_in_form")
             return False
 
-        return self.validate_token(request_state, form_token)
+        return await self.validate_token(request_state, form_token)
 
-    def validate_header_csrf(self, request_state: Any, authorization_header: str) -> bool:
+    async def validate_header_csrf(self, request_state: Any, authorization_header: str) -> bool:
         """Validate CSRF token from Authorization header.
 
         Expects header in format "Bearer <token>".
@@ -113,7 +113,7 @@ class CSRFService:
             return False
 
         token = authorization_header[7:]
-        return self.validate_token(request_state, token)
+        return await self.validate_token(request_state, token)
 
 
 csrf_service = CSRFService()

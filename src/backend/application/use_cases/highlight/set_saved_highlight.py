@@ -36,7 +36,7 @@ class SetSavedHighlightUseCase:
         """
         highlight = await self.repo.get_by_id(command.highlight_id)
         if not highlight:
-            return HighlightResult.failure("highlight_not_found", status_code=404)
+            return await HighlightResult.failure("highlight_not_found", status_code=404)
         result = await self.repo.set_saved(
             highlight_id=command.highlight_id,
             user_id=command.user_id,
@@ -44,4 +44,4 @@ class SetSavedHighlightUseCase:
         )
         if self.profile_overview_cache is not None:
             await self.profile_overview_cache.invalidate_user(command.user_id)
-        return HighlightResult.success(result)
+        return await HighlightResult.success(result)

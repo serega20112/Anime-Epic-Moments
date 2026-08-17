@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-def support_ticket_subject(*, ip_address: str, user_id: int | None) -> str:
+async def support_ticket_subject(*, ip_address: str, user_id: int | None) -> str:
     """Build a rate-limit subject key for support ticket creation.
 
     Authenticated users are keyed by user ID, guests by IP only.
@@ -20,7 +20,7 @@ def support_ticket_subject(*, ip_address: str, user_id: int | None) -> str:
     return f"{ip_address}::guest"
 
 
-def watch_anime_subject(*, ip_address: str, anime_id: int | None) -> str:
+async def watch_anime_subject(*, ip_address: str, anime_id: int | None) -> str:
     """Build a rate-limit subject key scoped to an anime.
 
     Args:
@@ -33,7 +33,7 @@ def watch_anime_subject(*, ip_address: str, anime_id: int | None) -> str:
     return f"{ip_address}::{anime_id or 'unknown'}"
 
 
-def watch_user_subject(*, ip_address: str, user_id: int | None) -> str:
+async def watch_user_subject(*, ip_address: str, user_id: int | None) -> str:
     """Build a rate-limit subject key scoped to the acting user.
 
     Authenticated users are keyed by user ID, guests by IP only.

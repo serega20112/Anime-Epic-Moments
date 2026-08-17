@@ -6,7 +6,7 @@ from backend.domain.support.entity import SupportTicket
 
 
 class TestSupportTicket:
-    def test_stores_fields(self):
+    async def test_stores_fields(self):
         ticket = SupportTicket(
             email="a@b.com",
             username="t",
@@ -30,7 +30,7 @@ class TestSupportTicket:
         assert ticket.delivery_error == "err"
         assert isinstance(ticket.created_at, datetime)
 
-    def test_defaults(self):
+    async def test_defaults(self):
         ticket = SupportTicket(email="a@b.com", username="t", subject="s", message="m")
         assert ticket.channel == "telegram"
         assert ticket.user_id is None
@@ -38,25 +38,25 @@ class TestSupportTicket:
         assert ticket.delivery_status == "pending"
         assert ticket.delivery_error is None
 
-    def test_mark_delivered(self):
+    async def test_mark_delivered(self):
         ticket = SupportTicket(email="a@b.com", username="t", subject="s", message="m")
         ticket.delivery_error = "old"
-        ticket.mark_delivered()
+        await ticket.mark_delivered()
         assert ticket.delivery_status == "sent"
         assert ticket.delivery_error is None
 
-    def test_mark_delivery_failed(self):
+    async def test_mark_delivery_failed(self):
         ticket = SupportTicket(email="a@b.com", username="t", subject="s", message="m")
-        ticket.mark_delivery_failed("  connection refused  ")
+        await ticket.mark_delivery_failed("  connection refused  ")
         assert ticket.delivery_status == "failed"
         assert ticket.delivery_error == "connection refused"
 
-    def test_mark_delivery_failed_blank_becomes_unknown(self):
+    async def test_mark_delivery_failed_blank_becomes_unknown(self):
         ticket = SupportTicket(email="a@b.com", username="t", subject="s", message="m")
-        ticket.mark_delivery_failed("   ")
+        await ticket.mark_delivery_failed("   ")
         assert ticket.delivery_error == "unknown"
 
-    def test_mark_delivery_failed_truncates_long_error(self):
+    async def test_mark_delivery_failed_truncates_long_error(self):
         ticket = SupportTicket(email="a@b.com", username="t", subject="s", message="m")
-        ticket.mark_delivery_failed("x" * 1000)
+        await ticket.mark_delivery_failed("x" * 1000)
         assert len(ticket.delivery_error) == 500

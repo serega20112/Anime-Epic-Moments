@@ -46,22 +46,19 @@ def test_anilibria_client_checks_release_relevance_by_title_and_year():
 async def test_anilibria_client_maps_release_to_discovered_sources(monkeypatch):
     """Проверяем, что AniLibriaClient собирает источники эпизода по данным релиза и эпизода."""
     client = AniLibriaClient()
-    monkeypatch.setattr(
-        client,
-        "_search_releases",
-        lambda title, limit: [
+
+    async def _fake_search_releases(title, limit):
+        return [
             {
                 "id": 77,
                 "year": 2024,
                 "name": {"main": "Gintama"},
                 "alias": "gintama-release",
             }
-        ],
-    )
-    monkeypatch.setattr(
-        client,
-        "_get_release_details",
-        lambda release_id: {
+        ]
+
+    async def _fake_release_details(release_id):
+        return {
             "episodes": [
                 {
                     "ordinal": 2,
@@ -70,8 +67,10 @@ async def test_anilibria_client_maps_release_to_discovered_sources(monkeypatch):
                     "hls_480": None,
                 }
             ]
-        },
-    )
+        }
+
+    monkeypatch.setattr(client, "_search_releases", _fake_search_releases)
+    monkeypatch.setattr(client, "_get_release_details", _fake_release_details)
 
     items = await client.search_sources(title="Gintama", episode=2, year=2024)
 

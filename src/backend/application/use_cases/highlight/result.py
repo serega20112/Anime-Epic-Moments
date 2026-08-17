@@ -28,7 +28,7 @@ class HighlightResult:
     error: str | None = None
 
     @classmethod
-    def success(cls, data: Any = None, status_code: int = 200) -> HighlightResult:
+    async def success(cls, data: Any = None, status_code: int = 200) -> HighlightResult:
         """Build a successful result.
 
         Args:
@@ -41,7 +41,7 @@ class HighlightResult:
         return cls(ok=True, status_code=status_code, data=data)
 
     @classmethod
-    def failure(cls, error: str, status_code: int = 400) -> HighlightResult:
+    async def failure(cls, error: str, status_code: int = 400) -> HighlightResult:
         """Build a failed result.
 
         Args:

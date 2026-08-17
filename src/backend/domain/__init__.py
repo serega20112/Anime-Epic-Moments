@@ -15,8 +15,13 @@ from backend.domain.highlight.value_object import (
     HighlightProfileSummary,
     HighlightStats,
 )
+from backend.domain.moment.entity import ViewingMoment
+from backend.domain.reaction.entity import EpisodeReaction, EpisodeReactionType
+from backend.domain.reaction.value_object import EpisodeReactionCount, EpisodeReactionSummary
 from backend.domain.recommendation.value_object import RecommendationResult
 from backend.domain.repositories.favorite_repository import FavoriteRepository
+from backend.domain.repositories.moment_repository import MomentRepository
+from backend.domain.repositories.reaction_repository import ReactionRepository
 from backend.domain.repositories.user_repository import UserRepository
 from backend.domain.repositories.watch_repository import WatchRepository
 from backend.domain.support.channel import is_support_channel, normalize_support_channel
@@ -39,6 +44,10 @@ from backend.domain.watch.entity import (
 )
 
 __all__ = [
+    "EpisodeReaction",
+    "EpisodeReactionCount",
+    "EpisodeReactionSummary",
+    "EpisodeReactionType",
     "Favorite",
     "FavoriteRepository",
     "FollowUserCard",
@@ -55,9 +64,11 @@ __all__ = [
     "HighlightPolicy",
     "HighlightProfileSummary",
     "HighlightStats",
+    "MomentRepository",
     "PendingEmailVerification",
     "ProfileOverview",
     "PublicProfileOverview",
+    "ReactionRepository",
     "RecommendationResult",
     "SmartProfile",
     "TopAnimeEntry",
@@ -66,6 +77,7 @@ __all__ = [
     "UserAnimeStatus",
     "UserRepository",
     "ViewingHeatmapCell",
+    "ViewingMoment",
     "ViewingSession",
     "WatchRepository",
     "WatchSource",

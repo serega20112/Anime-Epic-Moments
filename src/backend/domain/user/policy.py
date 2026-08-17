@@ -10,7 +10,7 @@ from backend.domain.user.value_object import (
 )
 
 
-def build_genre_affinities(genres: list[str], limit: int = 5) -> list[GenreAffinity]:
+async def build_genre_affinities(genres: list[str], limit: int = 5) -> list[GenreAffinity]:
     """Возвращает топ жанров пользователя по частоте."""
     counter = Counter(str(genre).strip() for genre in genres if str(genre).strip())
     return [
@@ -19,7 +19,7 @@ def build_genre_affinities(genres: list[str], limit: int = 5) -> list[GenreAffin
     ]
 
 
-def detect_profile_mood(
+async def detect_profile_mood(
     genres: list[str],
     emotions: list[str],
 ) -> ProfileMoodInsight:
@@ -91,7 +91,7 @@ def detect_profile_mood(
     )
 
 
-def build_achievement_badges(
+async def build_achievement_badges(
     profile_summary: HighlightProfileSummary,
     hours_watched: float,
     favorite_genres: list[GenreAffinity],

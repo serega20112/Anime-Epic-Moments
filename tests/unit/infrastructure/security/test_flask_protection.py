@@ -20,7 +20,7 @@ def test_client_ip_reads_x_forwarded_for():
 
     @app.get("/")
     async def index(request: Request):
-        return PlainTextResponse(client_ip(request))
+        return PlainTextResponse(await client_ip(request))
 
     with TestClient(app) as client:
         response = client.get("/", headers={"X-Forwarded-For": "10.0.0.1, 10.0.0.2"})

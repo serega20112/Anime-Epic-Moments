@@ -11,20 +11,19 @@ class RecommendationCache:
         self,
         store: KeyValueStore | None = None,
         ttl_seconds: float = 180.0,
-        max_entries: int | None = None,
     ):
         self.store = store or KeyValueStore(redis_url=None, namespace="recommendation")
         self.ttl_seconds = max(int(ttl_seconds), 1)
         self.prefix = "recommendation"
 
     async def get(self, user_id: int, limit: int) -> list[RecommendationResult] | None:
-        return await self.store.get(self._key(user_id=user_id, limit=limit))
+        return await self.store.get(await self._key(user_id=user_id, limit=limit))
 
     async def set(
         self, user_id: int, limit: int, value: list[RecommendationResult]
     ) -> list[RecommendationResult]:
         return await self.store.set(
-            self._key(user_id=user_id, limit=limit),
+            await self._key(user_id=user_id, limit=limit),
             list(value),
             ttl_seconds=self.ttl_seconds,
         )
@@ -36,5 +35,5 @@ class RecommendationCache:
     async def clear(self):
         await self.store.delete_prefix(f"{self.prefix}:")
 
-    def _key(self, user_id: int, limit: int) -> str:
+    async def _key(self, user_id: int, limit: int) -> str:
         return f"{self.prefix}:{int(user_id)}:{int(limit)}"

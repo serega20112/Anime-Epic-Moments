@@ -37,7 +37,7 @@ class SetUserFollowUseCase:
     ) -> UserResult:
         target_user = await self.user_repo.get_by_id(followed_user_id)
         if target_user is None:
-            return UserResult.failure("Пользователь для подписки не найден", status_code=404)
+            return await UserResult.failure("Пользователь для подписки не найден", status_code=404)
         if follow:
             result = await self.user_repo.follow(follower_user_id, followed_user_id)
         else:
@@ -45,4 +45,4 @@ class SetUserFollowUseCase:
         if self.profile_overview_cache is not None:
             await self.profile_overview_cache.invalidate_overview(int(follower_user_id))
             await self.profile_overview_cache.invalidate_overview(int(followed_user_id))
-        return UserResult.success(result)
+        return await UserResult.success(result)

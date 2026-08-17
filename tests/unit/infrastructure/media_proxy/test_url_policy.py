@@ -29,11 +29,11 @@ class TestAllowedMediaUrl:
             (None, False),
         ],
     )
-    def test_allowlist(self, url, expected):
-        assert is_allowed_media_url(url) is expected
+    async def test_allowlist(self, url, expected):
+        assert await is_allowed_media_url(url) is expected
 
 
-def test_allowed_host_suffixes_non_empty():
+async def test_allowed_host_suffixes_non_empty():
     assert len(ALLOWED_MEDIA_HOST_SUFFIXES) > 0
 
 
@@ -47,17 +47,17 @@ class TestIsHlsManifest:
             ("https://x.com/video.mp4", "video/mp4", False),
         ],
     )
-    def test_detection(self, url, content_type, expected):
-        assert is_hls_manifest(url, content_type) is expected
+    async def test_detection(self, url, content_type, expected):
+        assert await is_hls_manifest(url, content_type) is expected
 
 
 class TestBrowserUserAgent:
-    def test_uses_provided(self):
-        assert browser_user_agent("Firefox/1.0") == "Firefox/1.0"
+    async def test_uses_provided(self):
+        assert await browser_user_agent("Firefox/1.0") == "Firefox/1.0"
 
-    def test_strips_whitespace(self):
-        assert browser_user_agent("  Chrome/1.0  ") == "Chrome/1.0"
+    async def test_strips_whitespace(self):
+        assert await browser_user_agent("  Chrome/1.0  ") == "Chrome/1.0"
 
-    def test_falls_back_to_default(self):
-        assert browser_user_agent(None) == "Mozilla/5.0"
-        assert browser_user_agent("") == "Mozilla/5.0"
+    async def test_falls_back_to_default(self):
+        assert await browser_user_agent(None) == "Mozilla/5.0"
+        assert await browser_user_agent("") == "Mozilla/5.0"

@@ -33,10 +33,17 @@ class WatchSourceSyncService:
         )
 
     async def is_enabled(self) -> bool:
-        return any(provider.is_enabled() for provider in self.providers)
+        for provider in self.providers:
+            if await provider.is_enabled():
+                return True
+        return False
 
     async def get_enabled_provider_names(self) -> list[str]:
-        return [provider.provider_name for provider in self.providers if provider.is_enabled()]
+        return [
+            provider.provider_name
+            for provider in self.providers
+            if await provider.is_enabled()
+        ]
 
     async def get_provider_label(self) -> str | None:
         enabled = await self.get_enabled_provider_names()
@@ -58,13 +65,13 @@ class WatchSourceSyncService:
         providers_to_query = [
             provider
             for provider in self.providers
-            if provider.is_enabled()
+            if await provider.is_enabled()
             and (force or provider.provider_name.strip().lower() not in existing_provider_names)
         ]
         if not providers_to_query:
             return existing
 
-        title_variants = self._build_title_variants(anime.title)
+        title_variants = await self._build_title_variants(anime.title)
         pending_discoveries: list[
             tuple[tuple[str, int, int, int | None, tuple[str, ...]], object]
         ] = []
@@ -76,7 +83,7 @@ class WatchSourceSyncService:
                 anime.year,
                 tuple(title_variants),
             )
-            if not force and self.empty_result_cache.contains(empty_cache_key):
+            if not force and await self.empty_result_cache.contains(empty_cache_key):
                 continue
             pending_discoveries.append((empty_cache_key, provider))
 
@@ -102,13 +109,13 @@ class WatchSourceSyncService:
             discovered_batches,
         ):
             if not discovered:
-                self.empty_result_cache.set(empty_cache_key, True)
+                await self.empty_result_cache.set(empty_cache_key, True)
                 continue
-            self.empty_result_cache.delete(empty_cache_key)
+            await self.empty_result_cache.delete(empty_cache_key)
 
             for item in discovered:
                 translation_key = (
-                    canonicalize_translation_name(item.translation_name),
+                    await canonicalize_translation_name(item.translation_name),
                     item.translation_type,
                     item.language,
                 )
@@ -148,7 +155,7 @@ class WatchSourceSyncService:
 
         return await self.watch_repo.get_sources(anime_id=anime_id, episode=episode)
 
-    def _build_title_variants(self, title: str) -> list[str]:
+    async def _build_title_variants(self, title: str) -> list[str]:
         """Готовит несколько вариантов названия для внешнего поиска."""
         variants = [title.strip()]
         simplified = re.split(r"[:(\\[]", title, maxsplit=1)[0].strip()
@@ -199,7 +206,7 @@ class WatchSourceSyncService:
                 continue
             for item in variant_sources:
                 dedupe_key = (
-                    canonicalize_translation_name(item.translation_name),
+                    await canonicalize_translation_name(item.translation_name),
                     str(item.quality_label).strip().lower(),
                     str(item.stream_url).strip(),
                     str(item.provider_name).strip().lower(),
@@ -209,17 +216,24 @@ class WatchSourceSyncService:
                     continue
                 seen.add(dedupe_key)
                 discovered.append(item)
-        return sorted(
-            discovered,
-            key=lambda item: (
-                get_translation_priority(item.translation_name),
-                -self._quality_rank(item.quality_label),
-                item.provider_name.lower(),
-                item.source_name.lower(),
-            ),
-        )
+        ranked_items = [
+            (item, await self._quality_rank(item.quality_label), await get_translation_priority(item.translation_name))
+            for item in discovered
+        ]
+        return [
+            item
+            for item, _rank, _priority in sorted(
+                ranked_items,
+                key=lambda pair: (
+                    pair[2],
+                    -pair[1],
+                    pair[0].provider_name.lower(),
+                    pair[0].source_name.lower(),
+                ),
+            )
+        ]
 
-    def _quality_rank(self, value: str | None) -> int:
+    async def _quality_rank(self, value: str | None) -> int:
         """Преобразует метку качества в число для сортировки по убыванию."""
         digits = "".join(character for character in str(value or "") if character.isdigit())
         return int(digits) if digits else 0

@@ -28,7 +28,7 @@ class WatchResult:
     error: str | None = None
 
     @classmethod
-    def success(cls, data: Any = None, status_code: int = 200) -> WatchResult:
+    async def success(cls, data: Any = None, status_code: int = 200) -> WatchResult:
         """Build a successful result.
 
         Args:
@@ -41,7 +41,7 @@ class WatchResult:
         return cls(ok=True, status_code=status_code, data=data)
 
     @classmethod
-    def failure(cls, error: str, status_code: int = 400) -> WatchResult:
+    async def failure(cls, error: str, status_code: int = 400) -> WatchResult:
         """Build a failed result.
 
         Args:

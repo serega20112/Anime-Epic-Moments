@@ -47,15 +47,15 @@ class EditHighlightUseCase:
         """
         highlight = await self.repo.get_by_id(command.highlight_id)
         if not highlight:
-            return HighlightResult.failure("highlight_not_found", status_code=404)
+            return await HighlightResult.failure("highlight_not_found", status_code=404)
 
-        if not HighlightPolicy.filter_spoiler_content(f"{command.title} {command.description}"):
-            return HighlightResult.failure(
+        if not await HighlightPolicy.filter_spoiler_content(f"{command.title} {command.description}"):
+            return await HighlightResult.failure(
                 "Описание содержит запрещённый контент",
                 status_code=400,
             )
 
-        highlight.edit(
+        await highlight.edit(
             start_timestamp=command.start_timestamp,
             end_timestamp=command.end_timestamp,
             title=command.title or highlight.title or f"Момент {highlight.episode} серии",
@@ -77,4 +77,4 @@ class EditHighlightUseCase:
                 int(highlight.user_id),
                 include_ai_summary=True,
             )
-        return HighlightResult.success(result, status_code=204)
+        return await HighlightResult.success(result, status_code=204)

@@ -106,13 +106,11 @@ class TestFailoverLLMClient:
     async def test_works_with_real_huggingface_client(self, monkeypatch):
         """Проверяем интеграцию failover с настоящим HF-клиентом."""
         hf = HuggingFaceLLMClient(api_key="hf-token", model="openai/gpt-oss-120b", provider="x")
-        monkeypatch.setattr(
-            hf,
-            "_create_completion",
-            lambda model_route, messages: {
-                "choices": [{"message": {"content": "Gintama\nKonoSuba\nSaiki"}}]
-            },
-        )
+
+        async def _fake_create_completion(model_route, messages):
+            return {"choices": [{"message": {"content": "Gintama\nKonoSuba\nSaiki"}}]}
+
+        monkeypatch.setattr(hf, "_create_completion", _fake_create_completion)
         client = FailoverLLMClient(primary=_StubClient(api_key=None), fallback=hf)
 
         queries, mode, error = await client.build_search_queries_with_meta(description="comedy")

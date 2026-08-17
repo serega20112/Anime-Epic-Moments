@@ -16,7 +16,7 @@ class UserUseCaseProvider(Provider):
     """Provide user and public profile use cases."""
 
     @provide(scope=Scope.REQUEST)
-    def set_user_follow(
+    async def set_user_follow(
         self,
         user_repository: UserRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -35,7 +35,7 @@ class UserUseCaseProvider(Provider):
         return SetUserFollowUseCase(user_repository, unit_of_work, profile_overview_cache)
 
     @provide(scope=Scope.REQUEST)
-    def get_public_profile_overview(
+    async def get_public_profile_overview(
         self,
         get_profile_overview: GetProfileOverviewUseCase,
         user_repository: UserRepository,

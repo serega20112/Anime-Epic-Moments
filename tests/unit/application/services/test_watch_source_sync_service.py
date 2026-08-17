@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from backend.application.services.watch_source_sync_service import WatchSourceSyncService
+from backend.application.services.watch_source_service import WatchSourceSyncService
 from backend.infrastructure.external.errors import ExternalServiceUnavailableError
 
 
@@ -13,11 +13,11 @@ from backend.infrastructure.external.errors import ExternalServiceUnavailableErr
 class TestWatchSourceSyncService:
     """Юнит-тесты сервиса синхронизации источников для просмотра."""
 
-    def _service(self, providers, get_sources=None):
+    async def _service(self, providers, get_sources=None):
         watch_repo = AsyncMock()
         watch_repo.get_sources.return_value = get_sources if get_sources is not None else []
         service = WatchSourceSyncService(watch_repo, providers)
-        service.empty_result_cache.clear()
+        await service.empty_result_cache.clear()
         return service, watch_repo
 
     async def test_skips_disabled_providers(self):
@@ -26,9 +26,9 @@ class TestWatchSourceSyncService:
         Что ожидаем: search_sources не вызывается, возвращается только существующее.
         """
         provider = Mock()
-        provider.is_enabled.return_value = False
+        provider.is_enabled = AsyncMock(return_value=False)
         provider.search_sources = AsyncMock()
-        service, _watch_repo = self._service([provider])
+        service, _watch_repo = await self._service([provider])
 
         result = await service.sync_for_anime(
             anime_id=10, anime=SimpleNamespace(title="Gintama", year=2024), episode=1
@@ -45,9 +45,9 @@ class TestWatchSourceSyncService:
         """
         provider = Mock()
         provider.provider_name = "AniLibria"
-        provider.is_enabled.return_value = True
+        provider.is_enabled = AsyncMock(return_value=True)
         provider.search_sources = AsyncMock(return_value=[])
-        service, _watch_repo = self._service([provider])
+        service, _watch_repo = await self._service([provider])
 
         await service.sync_for_anime(
             anime_id=10, anime=SimpleNamespace(title="Mob Psycho 100", year=2024), episode=1
@@ -72,10 +72,10 @@ class TestWatchSourceSyncService:
         """
         provider = Mock()
         provider.provider_name = "AniLibria"
-        provider.is_enabled.return_value = True
+        provider.is_enabled = AsyncMock(return_value=True)
         provider.search_sources = AsyncMock()
         existing = [SimpleNamespace(provider_name="anilibria")]
-        service, _watch_repo = self._service([provider], get_sources=existing)
+        service, _watch_repo = await self._service([provider], get_sources=existing)
 
         result = await service.sync_for_anime(
             anime_id=10, anime=SimpleNamespace(title="Gintama", year=2024), episode=1
@@ -91,7 +91,7 @@ class TestWatchSourceSyncService:
         """
         provider = Mock()
         provider.provider_name = "AniLibria"
-        provider.is_enabled.return_value = True
+        provider.is_enabled = AsyncMock(return_value=True)
         provider.search_sources = AsyncMock(
             return_value=[
                 SimpleNamespace(
@@ -108,7 +108,7 @@ class TestWatchSourceSyncService:
                 )
             ]
         )
-        service, watch_repo = self._service([provider])
+        service, watch_repo = await self._service([provider])
         watch_repo.add_translation.side_effect = lambda _t: SimpleNamespace(id=5)
 
         await service.sync_for_anime(
@@ -126,12 +126,12 @@ class TestWatchSourceSyncService:
         """
         failing = Mock()
         failing.provider_name = "SameBand"
-        failing.is_enabled.return_value = True
+        failing.is_enabled = AsyncMock(return_value=True)
         failing.search_sources = AsyncMock(side_effect=ExternalServiceUnavailableError())
 
         healthy = Mock()
         healthy.provider_name = "AniLibria"
-        healthy.is_enabled.return_value = True
+        healthy.is_enabled = AsyncMock(return_value=True)
         healthy.search_sources = AsyncMock(
             return_value=[
                 SimpleNamespace(
@@ -148,7 +148,7 @@ class TestWatchSourceSyncService:
                 )
             ]
         )
-        service, watch_repo = self._service([failing, healthy])
+        service, watch_repo = await self._service([failing, healthy])
         watch_repo.add_translation.side_effect = lambda _t: SimpleNamespace(id=5)
 
         await service.sync_for_anime(

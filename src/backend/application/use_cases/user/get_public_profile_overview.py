@@ -30,7 +30,7 @@ class GetPublicProfileOverviewUseCase:
         try:
             profile = await self.profile_overview_use_case.execute(profile_user_id)
         except ValueError:
-            return UserResult.failure("Пользователь не найден", status_code=404)
+            return await UserResult.failure("Пользователь не найден", status_code=404)
         followers_count, following_count = await self.user_repo.get_follow_stats(profile_user_id)
         collections = await self.collection_repo.get_public_user_collections(profile_user_id)
         items_count_map = await self.collection_repo.get_items_count_map(
@@ -74,7 +74,7 @@ class GetPublicProfileOverviewUseCase:
             and viewer_user_id != profile_user_id
             and await self.user_repo.is_following(viewer_user_id, profile_user_id)
         )
-        return UserResult.success(
+        return await UserResult.success(
             PublicProfileOverview(
                 profile=profile,
                 public_collections=public_collections,

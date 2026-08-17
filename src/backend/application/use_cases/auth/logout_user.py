@@ -44,8 +44,10 @@ class LogoutUserUseCase:
             try:
                 await self.token_blocklist.revoke(
                     token,
-                    self.jwt_service.get_token_ttl_seconds(token, expected_type=expected_type),
+                    await self.jwt_service.get_token_ttl_seconds(
+                        token, expected_type=expected_type
+                    ),
                 )
             except Exception:
                 logger.warning("token_revoke_failed type=%s", expected_type, exc_info=True)
-        return AuthResult.success(redirect_endpoint="index.index")
+        return await AuthResult.success(redirect_endpoint="index.index")

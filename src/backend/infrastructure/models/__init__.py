@@ -5,6 +5,7 @@ from backend.infrastructure.models.sqlalchemy_models import (
     AnimeCollectionModel,
     AnimeDiscussionCommentModel,
     AnimeDiscussionLikeModel,
+    EpisodeReactionModel,
     FavoriteModel,
     HighlightCommentModel,
     HighlightContextModel,
@@ -16,6 +17,7 @@ from backend.infrastructure.models.sqlalchemy_models import (
     UserAnimeStatusModel,
     UserFollowModel,
     UserModel,
+    ViewingMomentModel,
     ViewingSessionModel,
     WatchSourceModel,
 )
@@ -25,6 +27,7 @@ __all__ = [
     "AnimeCollectionModel",
     "AnimeDiscussionCommentModel",
     "AnimeDiscussionLikeModel",
+    "EpisodeReactionModel",
     "FavoriteModel",
     "HighlightCommentModel",
     "HighlightContextModel",
@@ -36,6 +39,7 @@ __all__ = [
     "UserAnimeStatusModel",
     "UserFollowModel",
     "UserModel",
+    "ViewingMomentModel",
     "ViewingSessionModel",
     "WatchSourceModel",
 ]

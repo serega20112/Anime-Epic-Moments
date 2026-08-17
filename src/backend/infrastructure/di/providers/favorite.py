@@ -18,7 +18,7 @@ class FavoriteUseCaseProvider(Provider):
     """Provide favorite use cases."""
 
     @provide(scope=Scope.REQUEST)
-    def add_favorite(
+    async def add_favorite(
         self,
         favorite_repository: FavoriteRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -44,7 +44,7 @@ class FavoriteUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def remove_favorite(
+    async def remove_favorite(
         self,
         favorite_repository: FavoriteRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -70,7 +70,7 @@ class FavoriteUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def get_favorites(
+    async def get_favorites(
         self,
         favorite_repository: FavoriteRepository,
         anime_api_client: AnimeApiClient,

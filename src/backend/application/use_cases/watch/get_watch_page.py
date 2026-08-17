@@ -58,20 +58,24 @@ class GetWatchPageUseCase:
         translations = {
             item.id: item for item in await self.watch_repo.get_translations(anime_id=anime_id)
         }
-        sources = sorted(
-            sources,
-            key=lambda item: (
-                self._source_type_priority(item.source_type),
-                get_translation_priority(
-                    translations[item.translation_id].name
-                    if item.translation_id in translations
-                    else ""
-                ),
-                -self._quality_rank(item.quality_label),
-                item.provider_name.lower(),
-            ),
-        )
-        sources = self._dedupe_by_quality(sources)
+        keyed = []
+        for item in sources:
+            keyed.append(
+                (
+                    await self._source_type_priority(item.source_type),
+                    await get_translation_priority(
+                        translations[item.translation_id].name
+                        if item.translation_id in translations
+                        else ""
+                    ),
+                    -await self._quality_rank(item.quality_label),
+                    item.provider_name.lower(),
+                    item,
+                )
+            )
+        keyed.sort(key=lambda pair: pair[:4])
+        sources = [pair[4] for pair in keyed]
+        sources = await self._dedupe_by_quality(sources)
         session = (
             await self.watch_repo.get_session(
                 user_id=user_id, anime_id=anime_id, episode=query.episode
@@ -150,8 +154,8 @@ class GetWatchPageUseCase:
                     category=item.category,
                     likes_count=item.likes_count,
                     description=item.description or "",
-                    start_timestamp=self._format_timestamp(item.start_timestamp),
-                    end_timestamp=self._format_timestamp(item.end_timestamp),
+                    start_timestamp=await self._format_timestamp(item.start_timestamp),
+                    end_timestamp=await self._format_timestamp(item.end_timestamp),
                     emotion=item.emotion,
                     is_spoiler=item.is_spoiler,
                     translation_name=translation_name,
@@ -159,7 +163,7 @@ class GetWatchPageUseCase:
                 )
             )
 
-        episode_total = self._resolve_episode_total(
+        episode_total = await self._resolve_episode_total(
             anime=anime,
             sources=source_cards,
             episode=query.episode,
@@ -181,7 +185,7 @@ class GetWatchPageUseCase:
             genres=anime.genres if anime and anime.genres else [],
             episode=query.episode,
             episode_total=episode_total,
-            episode_options=self._build_episode_options(
+            episode_options=await self._build_episode_options(
                 total=episode_total,
                 current_episode=query.episode,
             ),
@@ -202,17 +206,17 @@ class GetWatchPageUseCase:
             discovery_provider_name=discovery_provider_name,
         )
 
-    def _format_timestamp(self, seconds: float) -> str:
+    async def _format_timestamp(self, seconds: float) -> str:
         minutes = int(seconds // 60)
         sec = int(seconds % 60)
         return f"{minutes:02d}:{sec:02d}"
 
-    def _quality_rank(self, value: str | None) -> int:
+    async def _quality_rank(self, value: str | None) -> int:
         """Преобразует строку качества в числовой ранг для сортировки."""
         digits = "".join(character for character in str(value or "") if character.isdigit())
         return int(digits) if digits else 0
 
-    def _source_type_priority(self, value: str | None) -> int:
+    async def _source_type_priority(self, value: str | None) -> int:
         """Возвращает приоритет типа источника для выбора дефолтного варианта."""
         priorities = {
             "stream": 0,
@@ -221,7 +225,7 @@ class GetWatchPageUseCase:
         }
         return priorities.get(str(value or "").strip().lower(), 3)
 
-    def _dedupe_by_quality(self, sources: list) -> list:
+    async def _dedupe_by_quality(self, sources: list) -> list:
         """Оставляет один источник на озвучку и качество (дубли качества убирает).
 
         Из-за нескольких релизов одного провайдера в БД может оказаться
@@ -241,7 +245,7 @@ class GetWatchPageUseCase:
             deduped.append(item)
         return deduped
 
-    def _resolve_episode_total(self, anime, sources, episode: int) -> int | None:
+    async def _resolve_episode_total(self, anime, sources, episode: int) -> int | None:
         """Определяет диапазон эпизодов для episode dropdown."""
         candidates = [max(int(episode), 1)]
         if anime and getattr(anime, "episode_count", None):
@@ -250,7 +254,7 @@ class GetWatchPageUseCase:
         episode_total = max(candidates) if candidates else 1
         return episode_total if episode_total > 0 else None
 
-    def _build_episode_options(
+    async def _build_episode_options(
         self,
         total: int | None,
         current_episode: int,

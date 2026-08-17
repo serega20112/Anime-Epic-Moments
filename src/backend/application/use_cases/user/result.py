@@ -28,7 +28,7 @@ class UserResult:
     error: str | None = None
 
     @classmethod
-    def success(cls, data: Any = None, status_code: int = 200) -> UserResult:
+    async def success(cls, data: Any = None, status_code: int = 200) -> UserResult:
         """Build a successful result.
 
         Args:
@@ -41,7 +41,7 @@ class UserResult:
         return cls(ok=True, status_code=status_code, data=data)
 
     @classmethod
-    def failure(cls, error: str, status_code: int = 400) -> UserResult:
+    async def failure(cls, error: str, status_code: int = 400) -> UserResult:
         """Build a failed result.
 
         Args:

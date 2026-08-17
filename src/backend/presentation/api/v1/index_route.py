@@ -25,7 +25,7 @@ async def index(request: Request, use_case: FromDishka[GetHomePageUseCase]):
         HTMLResponse: Rendered home page template.
     """
     current_season = await use_case.execute()
-    return render_template(
+    return await render_template(
         request,
         "index.html",
         popular_anime=[],

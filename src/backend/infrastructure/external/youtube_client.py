@@ -1,11 +1,10 @@
 import re
 
-import requests
+import httpx
 
 from backend.config import Settings
 from backend.domain.watch.policy import canonicalize_translation_name
 from backend.domain.watch.value_object import DiscoveredWatchSource
-from backend.infrastructure.external._async import external_method
 from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 
 
@@ -17,15 +16,21 @@ class YouTubeClient(WatchSourceProvider):
         self.api_url = Settings.youtube_api_url.rstrip("/")
         self.allowed_channel_ids = set(Settings.youtube_allowed_channel_ids)
         self.provider_name = "YouTube"
-        self.session = requests.Session()
-        self.session.trust_env = False
+        self.session = httpx.AsyncClient(
+            timeout=httpx.Timeout(6),
+            trust_env=False,
+            follow_redirects=True,
+        )
 
-    def is_enabled(self) -> bool:
+    async def is_enabled(self) -> bool:
         """Возвращает доступность YouTube-провайдера."""
         return bool(self.api_key)
 
-    @external_method
-    def search_sources(
+    async def aclose(self) -> None:
+        """Close the underlying HTTP client."""
+        await self.session.aclose()
+
+    async def search_sources(
         self,
         title: str,
         episode: int,
@@ -33,14 +38,14 @@ class YouTubeClient(WatchSourceProvider):
         limit: int = 6,
     ) -> list[DiscoveredWatchSource]:
         """Ищет embeddable-источники YouTube для конкретного эпизода."""
-        if not self.is_enabled():
+        if not await self.is_enabled():
             return []
 
         candidates: list[tuple[int, DiscoveredWatchSource]] = []
         seen_urls: set[str] = set()
-        for query in self._build_queries(title=title, episode=episode, year=year):
-            for item in self._search_videos(query=query, limit=limit):
-                mapped = self._map_video(
+        for query in await self._build_queries(title=title, episode=episode, year=year):
+            for item in await self._search_videos(query=query, limit=limit):
+                mapped = await self._map_video(
                     payload=item,
                     requested_title=title,
                     requested_episode=episode,
@@ -61,7 +66,7 @@ class YouTubeClient(WatchSourceProvider):
         )
         return [item[1] for item in candidates[:limit]]
 
-    def _build_queries(self, title: str, episode: int, year: int | None) -> list[str]:
+    async def _build_queries(self, title: str, episode: int, year: int | None) -> list[str]:
         """Формирует поисковые запросы YouTube для эпизода."""
         base_title = str(title or "").strip()
         if not base_title:
@@ -82,10 +87,10 @@ class YouTubeClient(WatchSourceProvider):
             unique_queries.append(normalized)
         return unique_queries
 
-    def _search_videos(self, query: str, limit: int) -> list[dict]:
+    async def _search_videos(self, query: str, limit: int) -> list[dict]:
         """Выполняет поиск embeddable-видео через YouTube Data API."""
         try:
-            response = self.session.get(
+            response = await self.session.get(
                 f"{self.api_url}/search",
                 params={
                     "key": self.api_key or "",
@@ -97,11 +102,10 @@ class YouTubeClient(WatchSourceProvider):
                     "maxResults": max(min(int(limit), 25), 1),
                     "q": query,
                 },
-                timeout=6,
             )
             response.raise_for_status()
             payload = response.json()
-        except (requests.RequestException, ValueError, TypeError):
+        except (httpx.HTTPError, ValueError, TypeError):
             return []
         items = payload.get("items") or []
         if not isinstance(items, list):
@@ -115,7 +119,7 @@ class YouTubeClient(WatchSourceProvider):
             in self.allowed_channel_ids
         ]
 
-    def _map_video(
+    async def _map_video(
         self,
         payload: dict,
         requested_title: str,
@@ -129,7 +133,7 @@ class YouTubeClient(WatchSourceProvider):
         if not video_id or not video_title:
             return None
 
-        score = self._score_video(
+        score = await self._score_video(
             video_title=video_title,
             channel_title=channel_title,
             requested_title=requested_title,
@@ -138,7 +142,7 @@ class YouTubeClient(WatchSourceProvider):
         if score <= 0:
             return None
 
-        raw_translation = canonicalize_translation_name(f"{video_title} {channel_title}".strip())
+        raw_translation = await canonicalize_translation_name(f"{video_title} {channel_title}".strip())
         translation_name = (
             raw_translation
             if raw_translation
@@ -147,7 +151,7 @@ class YouTubeClient(WatchSourceProvider):
         )
         translation_type = (
             "sub"
-            if self._looks_like_subtitles(f"{video_title} {channel_title}".strip())
+            if await self._looks_like_subtitles(f"{video_title} {channel_title}".strip())
             else "voice"
         )
         return (
@@ -166,7 +170,7 @@ class YouTubeClient(WatchSourceProvider):
             ),
         )
 
-    def _score_video(
+    async def _score_video(
         self,
         video_title: str,
         channel_title: str,
@@ -174,9 +178,9 @@ class YouTubeClient(WatchSourceProvider):
         requested_episode: int,
     ) -> int:
         """Оценивает релевантность ролика YouTube для конкретного эпизода."""
-        normalized_blob = self._normalize_text(f"{video_title} {channel_title}".strip())
+        normalized_blob = await self._normalize_text(f"{video_title} {channel_title}".strip())
         title_tokens = [
-            token for token in self._normalize_text(requested_title).split() if len(token) > 1
+            token for token in (await self._normalize_text(requested_title)).split() if len(token) > 1
         ]
         if not title_tokens:
             return 0
@@ -185,7 +189,7 @@ class YouTubeClient(WatchSourceProvider):
         if matched_tokens == 0:
             return 0
 
-        if not self._has_episode_marker(normalized_blob, requested_episode):
+        if not await self._has_episode_marker(normalized_blob, requested_episode):
             return 0
 
         banned_markers = (
@@ -209,11 +213,11 @@ class YouTubeClient(WatchSourceProvider):
         score = matched_tokens * 3
         if matched_tokens == len(title_tokens):
             score += 4
-        if canonicalize_translation_name(normalized_blob) != normalized_blob:
+        if await canonicalize_translation_name(normalized_blob) != normalized_blob:
             score += 2
         return score
 
-    def _has_episode_marker(self, value: str, episode: int) -> bool:
+    async def _has_episode_marker(self, value: str, episode: int) -> bool:
         """Проверяет, упоминается ли нужный эпизод в заголовке или названии канала."""
         episode_patterns = (
             rf"(?:episode|ep|серия|сер|сер\.|выпуск)\s*0*{episode}(?!\d)",
@@ -222,14 +226,14 @@ class YouTubeClient(WatchSourceProvider):
         )
         return any(re.search(pattern, value, flags=re.IGNORECASE) for pattern in episode_patterns)
 
-    def _looks_like_subtitles(self, value: str) -> bool:
+    async def _looks_like_subtitles(self, value: str) -> bool:
         """Определяет по тексту, относится ли ролик к субтитрам."""
-        normalized = self._normalize_text(value)
+        normalized = await self._normalize_text(value)
         return any(
             marker in normalized for marker in ("sub", "subs", "subtitles", "суб", "субтитры")
         )
 
-    def _normalize_text(self, value: str | None) -> str:
+    async def _normalize_text(self, value: str | None) -> str:
         """Нормализует текст для эвристического сравнения."""
         text = str(value or "").lower().strip()
         text = re.sub(r"[^a-zа-я0-9]+", " ", text, flags=re.IGNORECASE)

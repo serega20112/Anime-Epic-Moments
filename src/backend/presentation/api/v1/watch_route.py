@@ -43,6 +43,22 @@ watch_bp = watch_router
 logger = logging.getLogger("anime_epic_moments")
 
 
+async def _discover_sources_subject(request: Request) -> str:
+    """Build a composite rate-limit subject for source discovery."""
+    return await watch_anime_subject(
+        ip_address=await client_ip(request),
+        anime_id=request.path_params.get("anime_id"),
+    )
+
+
+async def _create_watch_highlight_subject(request: Request) -> str:
+    """Build a composite rate-limit subject for watch highlight creation."""
+    return await watch_user_subject(
+        ip_address=await client_ip(request),
+        user_id=getattr(await get_current_user(request), "id", None),
+    )
+
+
 @watch_router.get("/proxy", name="watch.proxy_stream")
 @watch_router.head("/proxy", name="watch.proxy_stream_head")
 async def proxy_stream(
@@ -90,8 +106,8 @@ async def watch_page(
     Returns:
         HTMLResponse: Rendered watch page template.
     """
-    user = get_current_user(request)
-    query = map_watch_page_query(request)
+    user = await get_current_user(request)
+    query = await map_watch_page_query(request)
     data = await watch_use_case.execute(
         anime_id=anime_id,
         query=query,
@@ -104,7 +120,7 @@ async def watch_page(
         limit=20,
     )
     discussion = discussion_result.data
-    return render_template(request, "anime/watch.html", watch=data, discussion=discussion)
+    return await render_template(request, "anime/watch.html", watch=data, discussion=discussion)
 
 
 @watch_router.post("/{anime_id}/status", name="watch.update_status")
@@ -123,10 +139,10 @@ async def update_status(
     Returns:
         JSONResponse: Updated status or an error.
     """
-    user = get_current_user(request)
+    user = await get_current_user(request)
     if not user:
         return JSONResponse({"error": "auth_required"}, status_code=401)
-    command = map_upsert_status_command(
+    command = await map_upsert_status_command(
         await read_payload(request),
         user_id=user.id,
         anime_id=anime_id,
@@ -158,10 +174,7 @@ async def add_source(_request: Request, anime_id: int):
     scope="watch_discover_sources",
     limit=15,
     window_seconds=60,
-    key_builder=lambda request: watch_anime_subject(
-        ip_address=client_ip(request),
-        anime_id=request.path_params.get("anime_id"),
-    ),
+    key_builder=_discover_sources_subject,
 )
 async def discover_sources(
     request: Request,
@@ -179,7 +192,7 @@ async def discover_sources(
         JSONResponse: Sources payload or an error.
     """
     payload = await read_payload(request)
-    episode = _to_int(str(payload.get("episode") or "")) or 1
+    episode = await _to_int(str(payload.get("episode") or "")) or 1
     result = await use_case.execute(
         anime_id=anime_id,
         episode=episode,
@@ -206,10 +219,10 @@ async def save_session(
     Returns:
         JSONResponse: Session ID or an error.
     """
-    user = get_current_user(request)
+    user = await get_current_user(request)
     if not user:
         return JSONResponse({"error": "auth_required"}, status_code=401)
-    command = map_save_session_command(
+    command = await map_save_session_command(
         await read_payload(request),
         user_id=user.id,
         anime_id=anime_id,
@@ -225,10 +238,7 @@ async def save_session(
     scope="watch_create_highlight",
     limit=20,
     window_seconds=60,
-    key_builder=lambda request: watch_user_subject(
-        ip_address=client_ip(request),
-        user_id=getattr(get_current_user(request), "id", None),
-    ),
+    key_builder=_create_watch_highlight_subject,
 )
 async def create_highlight(
     request: Request,
@@ -245,10 +255,10 @@ async def create_highlight(
     Returns:
         JSONResponse: Highlight ID or an error.
     """
-    user = get_current_user(request)
+    user = await get_current_user(request)
     if not user:
         return JSONResponse({"error": "auth_required"}, status_code=401)
-    command = map_create_watch_highlight_command(
+    command = await map_create_watch_highlight_command(
         await read_payload(request),
         user_id=user.id,
         anime_id=anime_id,
@@ -276,11 +286,11 @@ async def add_anime_comment(
         JSONResponse: Created comment or an error.
         RedirectResponse: Redirect for non-JSON clients.
     """
-    user = get_current_user(request)
+    user = await get_current_user(request)
     if not user:
         return JSONResponse({"error": "auth_required"}, status_code=401)
     payload = await read_payload(request)
-    command = map_add_anime_comment_command(
+    command = await map_add_anime_comment_command(
         payload,
         anime_id=anime_id,
         user_id=user.id,
@@ -288,9 +298,9 @@ async def add_anime_comment(
     result = await use_case.execute(command)
     if not result.ok:
         return JSONResponse({"error": result.error}, status_code=result.status_code)
-    if _wants_json(request):
+    if await _wants_json(request):
         return JSONResponse(vars(result.data), status_code=result.status_code)
-    return discussion_redirect(request, anime_id, payload)
+    return await discussion_redirect(request, anime_id, payload)
 
 
 @watch_router.post("/discussion/comments/{comment_id}/likes", name="watch.set_anime_comment_like")
@@ -312,10 +322,10 @@ async def set_anime_comment_like(
     Returns:
         JSONResponse: Updated comment or an error.
     """
-    user = get_current_user(request)
+    user = await get_current_user(request)
     if not user:
         return JSONResponse({"error": "auth_required"}, status_code=401)
-    command = map_set_comment_like_command(
+    command = await map_set_comment_like_command(
         request,
         comment_id=comment_id,
         user_id=user.id,
@@ -337,7 +347,8 @@ async def redirect_to_watch(request: Request, anime_id: int):
     Returns:
         RedirectResponse: SEE_OTHER redirect to the watch page.
     """
-    episode = map_watch_page_query(request).episode
+    query = await map_watch_page_query(request)
+    episode = query.episode
     url = request.app.url_path_for("watch.watch_page", anime_id=str(anime_id))
     return RedirectResponse(
         url=f"{url}?episode={episode}",
@@ -345,7 +356,7 @@ async def redirect_to_watch(request: Request, anime_id: int):
     )
 
 
-def _wants_json(request: Request) -> bool:
+async def _wants_json(request: Request) -> bool:
     """Determine if the client expects a JSON response.
 
     Args:

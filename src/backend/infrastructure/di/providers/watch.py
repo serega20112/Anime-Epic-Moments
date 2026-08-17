@@ -30,7 +30,7 @@ class WatchUseCaseProvider(Provider):
     """Provide watch use cases."""
 
     @provide(scope=Scope.REQUEST)
-    def get_watch_page(
+    async def get_watch_page(
         self,
         watch_repository: WatchRepository,
         highlight_repository: HighlightRepository,
@@ -59,7 +59,7 @@ class WatchUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def get_anime_discussion(
+    async def get_anime_discussion(
         self,
         watch_repository: WatchRepository,
     ) -> GetAnimeDiscussionUseCase:
@@ -74,7 +74,7 @@ class WatchUseCaseProvider(Provider):
         return GetAnimeDiscussionUseCase(watch_repository)
 
     @provide(scope=Scope.REQUEST)
-    def add_watch_source(
+    async def add_watch_source(
         self,
         watch_repository: WatchRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -91,7 +91,7 @@ class WatchUseCaseProvider(Provider):
         return AddWatchSourceUseCase(watch_repository, unit_of_work)
 
     @provide(scope=Scope.REQUEST)
-    def sync_watch_sources(
+    async def sync_watch_sources(
         self,
         anime_api_client: AnimeApiClient,
         watch_source_sync_service: WatchSourceSyncService,
@@ -114,7 +114,7 @@ class WatchUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def upsert_user_anime_status(
+    async def upsert_user_anime_status(
         self,
         watch_repository: WatchRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -137,7 +137,7 @@ class WatchUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def save_viewing_session(
+    async def save_viewing_session(
         self,
         watch_repository: WatchRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -160,7 +160,7 @@ class WatchUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def add_anime_comment(
+    async def add_anime_comment(
         self,
         watch_repository: WatchRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -177,7 +177,7 @@ class WatchUseCaseProvider(Provider):
         return AddAnimeCommentUseCase(watch_repository, unit_of_work)
 
     @provide(scope=Scope.REQUEST)
-    def set_anime_comment_like(
+    async def set_anime_comment_like(
         self,
         watch_repository: WatchRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -194,7 +194,7 @@ class WatchUseCaseProvider(Provider):
         return SetAnimeCommentLikeUseCase(watch_repository, unit_of_work)
 
     @provide(scope=Scope.REQUEST)
-    def create_watch_highlight(
+    async def create_watch_highlight(
         self,
         create_highlight: CreateHighlightUseCase,
         watch_repository: WatchRepository,

@@ -14,7 +14,7 @@ class SupportUseCaseProvider(Provider):
     """Provide support use cases."""
 
     @provide(scope=Scope.REQUEST)
-    def create_support_ticket(
+    async def create_support_ticket(
         self,
         support_repository: SupportRepository,
         telegram_support_notifier: TelegramSupportNotifier,

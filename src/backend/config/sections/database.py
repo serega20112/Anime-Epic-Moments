@@ -1,63 +1,51 @@
-"""Database connection settings."""
+"""Database connection settings.
+
+The project is fully async: only async driver URLs are produced here.
+"""
 
 from __future__ import annotations
 
 import os
 
 
-def build_default_database_url(*, async_mode: bool) -> str:
-    """Build a default PostgreSQL URL from individual environment variables.
-
-    Args:
-        async_mode: Whether to return an async driver URL.
+def build_default_database_url() -> str:
+    """Build a default PostgreSQL async URL from individual environment variables.
 
     Returns:
-        str: Database URL with the appropriate driver scheme.
+        str: Database URL with the asyncpg driver scheme.
     """
     user = os.getenv("POSTGRES_USER", "anime_epic_moments")
     password = os.getenv("POSTGRES_PASSWORD", "anime_epic_moments")
     host = os.getenv("POSTGRES_HOST", "localhost")
     port = os.getenv("POSTGRES_PORT", "5432")
     database = os.getenv("POSTGRES_DB", "anime_epic_moments")
-    scheme = "postgresql+asyncpg" if async_mode else "postgresql+psycopg"
-    return f"{scheme}://{user}:{password}@{host}:{port}/{database}"
+    return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{database}"
 
 
-def normalize_database_url(value: str | None, *, async_mode: bool) -> str:
-    """Normalize a database URL to the requested driver scheme.
+def normalize_database_url(value: str | None) -> str:
+    """Normalize a database URL to the async driver scheme.
 
     Args:
         value: Raw database URL from the environment.
-        async_mode: Whether to return an async driver URL.
 
     Returns:
-        str: Normalized database URL.
+        str: Normalized async database URL.
     """
     raw_value = str(value or "").strip()
     if not raw_value:
-        return build_default_database_url(async_mode=async_mode)
+        return build_default_database_url()
     if raw_value.startswith("postgres://"):
         raw_value = f"postgresql://{raw_value[len('postgres://') :]}"
-    if async_mode:
-        if raw_value.startswith("postgresql+asyncpg://"):
-            return raw_value
-        if raw_value.startswith("postgresql+psycopg://"):
-            return f"postgresql+asyncpg://{raw_value[len('postgresql+psycopg://') :]}"
-        if raw_value.startswith("postgresql://"):
-            return f"postgresql+asyncpg://{raw_value[len('postgresql://') :]}"
-        if raw_value.startswith("sqlite+aiosqlite:///"):
-            return raw_value
-        if raw_value.startswith("sqlite:///"):
-            return f"sqlite+aiosqlite:///{raw_value[len('sqlite:///') :]}"
+    if raw_value.startswith("postgresql+asyncpg://"):
         return raw_value
     if raw_value.startswith("postgresql+psycopg://"):
-        return raw_value
-    if raw_value.startswith("postgresql+asyncpg://"):
-        return f"postgresql+psycopg://{raw_value[len('postgresql+asyncpg://') :]}"
+        return f"postgresql+asyncpg://{raw_value[len('postgresql+psycopg://') :]}"
     if raw_value.startswith("postgresql://"):
-        return f"postgresql+psycopg://{raw_value[len('postgresql://') :]}"
+        return f"postgresql+asyncpg://{raw_value[len('postgresql://') :]}"
     if raw_value.startswith("sqlite+aiosqlite:///"):
-        return f"sqlite:///{raw_value[len('sqlite+aiosqlite:///') :]}"
+        return raw_value
+    if raw_value.startswith("sqlite:///"):
+        return f"sqlite+aiosqlite:///{raw_value[len('sqlite:///') :]}"
     return raw_value
 
 
@@ -67,16 +55,7 @@ def database_url() -> str:
     Returns:
         str: Normalized async database URL.
     """
-    return normalize_database_url(os.getenv("DATABASE_URL"), async_mode=True)
-
-
-def database_sync_url() -> str:
-    """Return the sync database URL.
-
-    Returns:
-        str: Normalized sync database URL.
-    """
-    return normalize_database_url(os.getenv("DATABASE_URL"), async_mode=False)
+    return normalize_database_url(os.getenv("DATABASE_URL"))
 
 
 def database_auto_init() -> bool:

@@ -23,7 +23,7 @@ engine: AsyncEngine | None = None
 SessionLocal: async_sessionmaker[AsyncSession] | None = None
 
 
-def create_db_engine(database_url: str) -> AsyncEngine:
+async def create_db_engine(database_url: str) -> AsyncEngine:
     """Create async SQLAlchemy engine for the configured driver."""
     engine_kwargs = {"echo": False}
     if database_url.startswith("sqlite"):
@@ -33,7 +33,7 @@ def create_db_engine(database_url: str) -> AsyncEngine:
     return create_async_engine(database_url, **engine_kwargs)
 
 
-def create_session_factory(
+async def create_session_factory(
     db_engine: AsyncEngine,
 ) -> async_sessionmaker[AsyncSession]:
     """Create async session factory bound to the engine."""
@@ -46,25 +46,25 @@ def create_session_factory(
     )
 
 
-def get_engine() -> AsyncEngine:
+async def get_engine() -> AsyncEngine:
     """Return process-wide async engine singleton."""
     global engine
     if engine is None:
-        engine = create_db_engine(Settings.database_url)
+        engine = await create_db_engine(Settings.database_url)
     return engine
 
 
-def get_session_factory() -> async_sessionmaker[AsyncSession]:
+async def get_session_factory() -> async_sessionmaker[AsyncSession]:
     """Return process-wide async sessionmaker singleton."""
     global SessionLocal
     if SessionLocal is None:
-        SessionLocal = create_session_factory(get_engine())
+        SessionLocal = await create_session_factory(await get_engine())
     return SessionLocal
 
 
 async def init_db():
     """Initialize tables for development and tests (create_all + legacy columns)."""
-    async_engine = get_engine()
+    async_engine = await get_engine()
     async with async_engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
         await connection.run_sync(_ensure_watch_source_columns)
@@ -80,7 +80,7 @@ async def verify_schema():
     Runs in production startup so a missing schema fails fast instead of
     producing opaque 500s on the first request.
     """
-    async_engine = get_engine()
+    async_engine = await get_engine()
     async with async_engine.connect() as connection:
         await connection.run_sync(_verify_schema_tables)
         logger.info("schema_verified")
@@ -109,7 +109,7 @@ def _verify_schema_tables(connection):
 
 async def get_session() -> AsyncIterator[AsyncSession]:
     """FastAPI dependency that yields a request-scoped AsyncSession."""
-    session_factory = get_session_factory()
+    session_factory = await get_session_factory()
     async with session_factory() as session:
         yield session
 

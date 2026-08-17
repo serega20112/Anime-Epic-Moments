@@ -27,7 +27,7 @@ class GetAnimeDiscussionUseCase:
                 limit=limit,
             )
         except Exception:
-            return WatchResult.success(
+            return await WatchResult.success(
                 AnimeDiscussionBoard(
                     anime_id=anime_id,
                     items=[],
@@ -35,7 +35,7 @@ class GetAnimeDiscussionUseCase:
                     total_comments=0,
                 )
             )
-        return WatchResult.success(
+        return await WatchResult.success(
             AnimeDiscussionBoard(
                 anime_id=anime_id,
                 items=items,

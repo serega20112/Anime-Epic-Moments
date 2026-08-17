@@ -14,7 +14,7 @@ from backend.application.dto import (
 )
 
 
-def map_watch_page_query(request) -> WatchPageQuery:
+async def map_watch_page_query(request) -> WatchPageQuery:
     """Build a watch page query from request query parameters.
 
     Args:
@@ -24,16 +24,16 @@ def map_watch_page_query(request) -> WatchPageQuery:
         WatchPageQuery: Parsed watch page query.
     """
     return WatchPageQuery(
-        episode=_to_int(request.query_params.get("episode")) or 1,
-        selected_source_id=_to_int(request.query_params.get("source_id")),
-        preferred_start_seconds=_safe_float(request.query_params.get("start_at")),
+        episode=await _to_int(request.query_params.get("episode")) or 1,
+        selected_source_id=await _to_int(request.query_params.get("source_id")),
+        preferred_start_seconds=await _safe_float(request.query_params.get("start_at")),
         discussion_sort=(
             str(request.query_params.get("discussion_sort") or "popular").strip().lower()
         ),
     )
 
 
-def map_upsert_status_command(
+async def map_upsert_status_command(
     payload: dict[str, Any] | None,
     *,
     user_id: int,
@@ -56,7 +56,7 @@ def map_upsert_status_command(
     )
 
 
-def map_save_session_command(
+async def map_save_session_command(
     payload: dict[str, Any] | None,
     *,
     user_id: int,
@@ -76,16 +76,16 @@ def map_save_session_command(
     return SaveViewingSessionCommand(
         user_id=user_id,
         anime_id=anime_id,
-        episode=_to_int(data.get("episode")),
-        watch_source_id=_to_int(data.get("watch_source_id")),
-        position_seconds=_to_float(data.get("position_seconds"), default=0.0),
-        volume=_to_float(data.get("volume"), default=1.0),
+        episode=await _to_int(data.get("episode")),
+        watch_source_id=await _to_int(data.get("watch_source_id")),
+        position_seconds=await _to_float(data.get("position_seconds"), default=0.0),
+        volume=await _to_float(data.get("volume"), default=1.0),
         quality_label=str(data.get("quality_label") or "Auto").strip() or "Auto",
-        is_paused=_to_bool(data.get("is_paused")),
+        is_paused=await _to_bool(data.get("is_paused")),
     )
 
 
-def map_create_watch_highlight_command(
+async def map_create_watch_highlight_command(
     payload: dict[str, Any] | None,
     *,
     user_id: int,
@@ -105,20 +105,20 @@ def map_create_watch_highlight_command(
     return CreateWatchHighlightCommand(
         user_id=user_id,
         anime_id=anime_id,
-        episode=_to_int(data.get("episode")),
+        episode=await _to_int(data.get("episode")),
         title=str(data.get("title") or "").strip(),
-        category=_optional_str(data.get("category")),
-        start_timestamp=_to_float(data.get("start_timestamp")),
-        end_timestamp=_to_float(data.get("end_timestamp")),
+        category=await _optional_str(data.get("category")),
+        start_timestamp=await _to_float(data.get("start_timestamp")),
+        end_timestamp=await _to_float(data.get("end_timestamp")),
         description=str(data.get("description") or "").strip(),
-        is_spoiler=_to_bool(data.get("is_spoiler")),
-        emotion=_optional_str(data.get("emotion")),
-        watch_source_id=_to_int(data.get("watch_source_id")),
-        translation_id=_to_int(data.get("translation_id")),
+        is_spoiler=await _to_bool(data.get("is_spoiler")),
+        emotion=await _optional_str(data.get("emotion")),
+        watch_source_id=await _to_int(data.get("watch_source_id")),
+        translation_id=await _to_int(data.get("translation_id")),
     )
 
 
-def map_add_anime_comment_command(
+async def map_add_anime_comment_command(
     payload: dict[str, Any] | None,
     *,
     anime_id: int,
@@ -141,7 +141,7 @@ def map_add_anime_comment_command(
     )
 
 
-def map_set_comment_like_command(
+async def map_set_comment_like_command(
     request,
     *,
     comment_id: int,
@@ -164,7 +164,7 @@ def map_set_comment_like_command(
     )
 
 
-def _optional_str(value: Any) -> str | None:
+async def _optional_str(value: Any) -> str | None:
     """Return a trimmed string or None for missing values.
 
     Args:
@@ -178,7 +178,7 @@ def _optional_str(value: Any) -> str | None:
     return str(value).strip() or None
 
 
-def _to_int(value: Any) -> int | None:
+async def _to_int(value: Any) -> int | None:
     """Convert a value to an int, returning None on failure.
 
     Args:
@@ -193,7 +193,7 @@ def _to_int(value: Any) -> int | None:
         return None
 
 
-def _safe_float(value: Any) -> float | None:
+async def _safe_float(value: Any) -> float | None:
     """Convert a value to a float, returning None on failure.
 
     Args:
@@ -208,7 +208,7 @@ def _safe_float(value: Any) -> float | None:
         return None
 
 
-def _to_float(value: Any, *, default: float | None = None) -> float | None:
+async def _to_float(value: Any, *, default: float | None = None) -> float | None:
     """Convert a value to a float, returning the default on failure.
 
     Args:
@@ -224,7 +224,7 @@ def _to_float(value: Any, *, default: float | None = None) -> float | None:
         return default
 
 
-def _to_bool(value: Any) -> bool:
+async def _to_bool(value: Any) -> bool:
     """Convert a value to a boolean.
 
     Args:

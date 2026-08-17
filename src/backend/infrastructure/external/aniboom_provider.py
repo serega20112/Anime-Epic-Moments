@@ -2,10 +2,9 @@ import html as html_mod
 import logging
 import re
 
-import requests
+import httpx
 
 from backend.domain.watch.value_object import DiscoveredWatchSource
-from backend.infrastructure.external._async import external_method
 from backend.infrastructure.external.errors import (
     ExternalServiceInvalidResponseError,
     ExternalServiceTimeoutError,
@@ -36,8 +35,11 @@ class AniBoomProvider(WatchSourceProvider):
         self.enabled = enabled
         self.timeout = timeout
         self.provider_name = "AniBoom"
-        self.session = requests.Session()
-        self.session.trust_env = False
+        self.session = httpx.AsyncClient(
+            timeout=httpx.Timeout(timeout),
+            trust_env=False,
+            follow_redirects=True,
+        )
         self._fetch_headers = {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Referer": "https://animego.me/",
@@ -48,11 +50,14 @@ class AniBoomProvider(WatchSourceProvider):
             "Origin": self.base_url,
         }
 
-    def is_enabled(self) -> bool:
+    async def aclose(self) -> None:
+        """Close the underlying HTTP client."""
+        await self.session.aclose()
+
+    async def is_enabled(self) -> bool:
         return bool(self.enabled and self.base_url)
 
-    @external_method
-    def search_sources(
+    async def search_sources(
         self,
         title: str,
         episode: int,
@@ -68,7 +73,7 @@ class AniBoomProvider(WatchSourceProvider):
         """
         return []
 
-    def extract_embed(self, embed_url: str, episode: int = 1) -> list[DiscoveredWatchSource]:
+    async def extract_embed(self, embed_url: str, episode: int = 1) -> list[DiscoveredWatchSource]:
         """Извлекает доступные видео-источники из embed-страницы AniBoom.
 
         Args:
@@ -79,9 +84,9 @@ class AniBoomProvider(WatchSourceProvider):
             list[DiscoveredWatchSource]: Найденные источники (HLS, при его
             отсутствии — DASH).
         """
-        page_text = self._fetch(embed_url)
+        page_text = await self._fetch(embed_url)
 
-        clean = self._clean_params(page_text)
+        clean = await self._clean_params(page_text)
         hls = _HLS_SRC_RE.search(clean)
         dash = _DASH_SRC_RE.search(clean)
 
@@ -110,18 +115,18 @@ class AniBoomProvider(WatchSourceProvider):
             )
         return discovered
 
-    def _clean_params(self, page_text: str) -> str:
+    async def _clean_params(self, page_text: str) -> str:
         match = _DATA_PARAMETERS_RE.search(page_text)
         if not match:
             raise ExternalServiceInvalidResponseError(service_name=self.provider_name)
         return html_mod.unescape(match.group(1)).replace("\\", "")
 
-    def _fetch(self, url: str) -> str:
+    async def _fetch(self, url: str) -> str:
         try:
-            response = self.session.get(url, headers=self._fetch_headers, timeout=self.timeout)
+            response = await self.session.get(url, headers=self._fetch_headers)
             response.raise_for_status()
             return response.text
-        except requests.Timeout as exc:
+        except httpx.TimeoutException as exc:
             raise ExternalServiceTimeoutError(service_name=self.provider_name) from exc
-        except requests.RequestException as exc:
+        except httpx.HTTPError as exc:
             raise ExternalServiceUnavailableError(service_name=self.provider_name) from exc

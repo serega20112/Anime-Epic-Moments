@@ -23,7 +23,6 @@ class Settings:
 
     secret_key: str = secret_key()
     database_url: str = database.database_url()
-    database_sync_url: str = database.database_sync_url()
     database_auto_init: bool = database.database_auto_init()
     redis_enabled: bool = redis_.redis_enabled()
     redis_required: bool = redis_.redis_required()

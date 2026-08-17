@@ -22,7 +22,7 @@ SEE_OTHER = HTTPStatus.SEE_OTHER
 jwt_service = JWTService()
 
 
-def resolve(request: Request, result: AuthResult) -> RedirectResponse:
+async def resolve(request: Request, result: AuthResult) -> RedirectResponse:
     """Apply a plain success/failure redirect result.
 
     Args:
@@ -34,13 +34,13 @@ def resolve(request: Request, result: AuthResult) -> RedirectResponse:
     """
     if result.ok:
         if result.message:
-            flash(request, result.message)
-        return redirect(request, result.redirect_endpoint or "index.index")
-    flash(request, result.error_message or "")
-    return redirect(request, result.error_endpoint or "auth.login_page")
+            await flash(request, result.message)
+        return await redirect(request, result.redirect_endpoint or "index.index")
+    await flash(request, result.error_message or "")
+    return await redirect(request, result.error_endpoint or "auth.login_page")
 
 
-def resolve_auth(request: Request, result: AuthResult) -> RedirectResponse:
+async def resolve_auth(request: Request, result: AuthResult) -> RedirectResponse:
     """Apply an auth result, setting JWT cookies on success.
 
     Args:
@@ -52,16 +52,16 @@ def resolve_auth(request: Request, result: AuthResult) -> RedirectResponse:
     """
     if result.ok:
         if result.message:
-            flash(request, result.message)
-        response = redirect(request, result.redirect_endpoint or "index.index")
+            await flash(request, result.message)
+        response = await redirect(request, result.redirect_endpoint or "index.index")
         if result.data is not None:
-            set_auth_cookies(response, result.data.id)
+            await set_auth_cookies(response, result.data.id)
         return response
-    flash(request, result.error_message or "")
-    return redirect(request, result.error_endpoint or "auth.login_page")
+    await flash(request, result.error_message or "")
+    return await redirect(request, result.error_endpoint or "auth.login_page")
 
 
-def resolve_verify(request: Request, result: AuthResult) -> RedirectResponse:
+async def resolve_verify(request: Request, result: AuthResult) -> RedirectResponse:
     """Apply a redirect toward the email verification page.
 
     Args:
@@ -73,13 +73,13 @@ def resolve_verify(request: Request, result: AuthResult) -> RedirectResponse:
     """
     if result.ok:
         if result.message:
-            flash(request, result.message)
-        return redirect_verify(request, result.redirect_email)
-    flash(request, result.error_message or "")
-    return redirect_verify(request, result.redirect_email)
+            await flash(request, result.message)
+        return await redirect_verify(request, result.redirect_email)
+    await flash(request, result.error_message or "")
+    return await redirect_verify(request, result.redirect_email)
 
 
-def redirect(request: Request, endpoint: str) -> RedirectResponse:
+async def redirect(request: Request, endpoint: str) -> RedirectResponse:
     """Build a see-other redirect to a named route.
 
     Args:
@@ -95,7 +95,7 @@ def redirect(request: Request, endpoint: str) -> RedirectResponse:
     )
 
 
-def redirect_verify(request: Request, email) -> RedirectResponse:
+async def redirect_verify(request: Request, email) -> RedirectResponse:
     """Build a redirect to the verify email page preserving the email.
 
     Args:
@@ -114,7 +114,7 @@ def redirect_verify(request: Request, email) -> RedirectResponse:
     )
 
 
-def redirect_confirm(request: Request, token) -> RedirectResponse:
+async def redirect_confirm(request: Request, token) -> RedirectResponse:
     """Build a redirect to the confirm password reset page.
 
     Args:
@@ -133,15 +133,15 @@ def redirect_confirm(request: Request, token) -> RedirectResponse:
     )
 
 
-def set_auth_cookies(response, user_id: int):
+async def set_auth_cookies(response, user_id: int):
     """Set access and refresh JWT cookies on the response.
 
     Args:
         response: HTTP response to attach cookies to.
         user_id: Authenticated user identifier.
     """
-    access_token = jwt_service.create_access_token(user_id)
-    refresh_token = jwt_service.create_refresh_token(user_id)
+    access_token = await jwt_service.create_access_token(user_id)
+    refresh_token = await jwt_service.create_refresh_token(user_id)
     cookie_kwargs = {
         "httponly": True,
         "secure": Settings.cookie_secure,
@@ -164,7 +164,7 @@ def set_auth_cookies(response, user_id: int):
     )
 
 
-def clear_auth_cookies(response):
+async def clear_auth_cookies(response):
     """Clear the auth cookies on the response.
 
     Args:

@@ -24,6 +24,8 @@ from backend.infrastructure.files.database import get_session_factory
 from backend.infrastructure.repositories.collection_repository import CollectionRepository
 from backend.infrastructure.repositories.favorite_repository import FavoriteRepository
 from backend.infrastructure.repositories.highlight_repository import HighlightRepository
+from backend.infrastructure.repositories.moment_repository import MomentRepository
+from backend.infrastructure.repositories.reaction_repository import ReactionRepository
 from backend.infrastructure.repositories.support_repository import SupportRepository
 from backend.infrastructure.repositories.user_repository import UserRepository
 from backend.infrastructure.repositories.watch_repository import WatchRepository
@@ -40,12 +42,12 @@ class RequestProvider(Provider):
         Yields:
             AsyncSession: Database session.
         """
-        factory = get_session_factory()
+        factory = await get_session_factory()
         async with factory() as session:
             yield session
 
     @provide(scope=Scope.REQUEST)
-    def unit_of_work(self, session: AsyncSession) -> UnitOfWorkInterface:
+    async def unit_of_work(self, session: AsyncSession) -> UnitOfWorkInterface:
         """Provide the transaction boundary for a request.
 
         Args:
@@ -57,7 +59,7 @@ class RequestProvider(Provider):
         return SqlAlchemyUnitOfWork(session)
 
     @provide(scope=Scope.REQUEST)
-    def user_repository(self, session: AsyncSession) -> UserRepository:
+    async def user_repository(self, session: AsyncSession) -> UserRepository:
         """Provide the user repository.
 
         Args:
@@ -69,7 +71,7 @@ class RequestProvider(Provider):
         return UserRepository(session)
 
     @provide(scope=Scope.REQUEST)
-    def highlight_repository(self, session: AsyncSession) -> HighlightRepository:
+    async def highlight_repository(self, session: AsyncSession) -> HighlightRepository:
         """Provide the highlight repository.
 
         Args:
@@ -81,7 +83,7 @@ class RequestProvider(Provider):
         return HighlightRepository(session)
 
     @provide(scope=Scope.REQUEST)
-    def favorite_repository(self, session: AsyncSession) -> FavoriteRepository:
+    async def favorite_repository(self, session: AsyncSession) -> FavoriteRepository:
         """Provide the favorite repository.
 
         Args:
@@ -93,7 +95,7 @@ class RequestProvider(Provider):
         return FavoriteRepository(session)
 
     @provide(scope=Scope.REQUEST)
-    def collection_repository(self, session: AsyncSession) -> CollectionRepository:
+    async def collection_repository(self, session: AsyncSession) -> CollectionRepository:
         """Provide the collection repository.
 
         Args:
@@ -105,7 +107,7 @@ class RequestProvider(Provider):
         return CollectionRepository(session)
 
     @provide(scope=Scope.REQUEST)
-    def watch_repository(self, session: AsyncSession) -> WatchRepository:
+    async def watch_repository(self, session: AsyncSession) -> WatchRepository:
         """Provide the watch repository.
 
         Args:
@@ -117,7 +119,7 @@ class RequestProvider(Provider):
         return WatchRepository(session)
 
     @provide(scope=Scope.REQUEST)
-    def support_repository(self, session: AsyncSession) -> SupportRepository:
+    async def support_repository(self, session: AsyncSession) -> SupportRepository:
         """Provide the support repository.
 
         Args:
@@ -129,7 +131,31 @@ class RequestProvider(Provider):
         return SupportRepository(session)
 
     @provide(scope=Scope.REQUEST)
-    def recommendation_service(
+    async def reaction_repository(self, session: AsyncSession) -> ReactionRepository:
+        """Provide the reaction repository.
+
+        Args:
+            session: Database session.
+
+        Returns:
+            ReactionRepository: Configured repository.
+        """
+        return ReactionRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    async def moment_repository(self, session: AsyncSession) -> MomentRepository:
+        """Provide the moment repository.
+
+        Args:
+            session: Database session.
+
+        Returns:
+            MomentRepository: Configured repository.
+        """
+        return MomentRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    async def recommendation_service(
         self,
         favorite_repository: FavoriteRepository,
         highlight_repository: HighlightRepository,
@@ -155,7 +181,7 @@ class RequestProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def watch_source_sync_service(
+    async def watch_source_sync_service(
         self,
         watch_repository: WatchRepository,
         kodik_client: KodikClient,

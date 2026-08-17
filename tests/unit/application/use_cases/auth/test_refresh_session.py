@@ -40,8 +40,8 @@ class TestRefreshSessionUseCase:
 
     async def test_rotates_token_on_success(self):
         jwt_service = Mock()
-        jwt_service.decode_refresh_token.return_value = 42
-        jwt_service.get_token_ttl_seconds.return_value = 3600
+        jwt_service.decode_refresh_token = AsyncMock(return_value=42)
+        jwt_service.get_token_ttl_seconds = AsyncMock(return_value=3600)
         blocklist = AsyncMock()
         blocklist.consume = AsyncMock(return_value=True)
         use_case = _build(jwt_service=jwt_service, token_blocklist=blocklist)

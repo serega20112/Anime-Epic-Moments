@@ -43,7 +43,7 @@ class ResendEmailVerificationUseCase:
         normalized_email = str(email or "").strip().lower()
         payload = await self.verification_store.get(normalized_email)
         if payload is None:
-            return AuthResult.failure(
+            return await AuthResult.failure(
                 "Не найдена ожидающая регистрация для этого email.",
                 "auth.verify_email_page",
                 redirect_email=normalized_email,
@@ -52,7 +52,7 @@ class ResendEmailVerificationUseCase:
             email=payload.email,
             username=payload.username,
             password_hash=payload.password_hash,
-            code=self._generate_code(),
+            code=await self._generate_code(),
             theme=payload.theme,
         )
         await self.verification_store.save(refreshed)
@@ -61,12 +61,12 @@ class ResendEmailVerificationUseCase:
             refreshed.code,
             theme=refreshed.theme,
         )
-        return AuthResult.success(
+        return await AuthResult.success(
             data=normalized_email,
             message="Новый код подтверждения отправлен.",
             redirect_endpoint="auth.verify_email_page",
             redirect_email=normalized_email,
         )
 
-    def _generate_code(self) -> str:
+    async def _generate_code(self) -> str:
         return f"{randbelow(1000000):06d}"

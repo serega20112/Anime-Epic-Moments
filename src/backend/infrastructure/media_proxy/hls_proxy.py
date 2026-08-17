@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 _WrappedCitation = re.compile(r'URI="(?P<uri>[^"]+)"')
 
 
-def rewrite_hls_manifest(
+async def rewrite_hls_manifest(
     manifest_text: str,
     upstream_url: str,
     proxy_url_builder: Callable[[str], str],

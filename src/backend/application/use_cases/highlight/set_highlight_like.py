@@ -41,7 +41,7 @@ class SetHighlightLikeUseCase:
         """
         highlight = await self.repo.get_by_id(command.highlight_id)
         if not highlight:
-            return HighlightResult.failure("highlight_not_found", status_code=404)
+            return await HighlightResult.failure("highlight_not_found", status_code=404)
         highlight = await self.repo.set_like(
             highlight_id=command.highlight_id,
             user_id=command.user_id,
@@ -53,4 +53,4 @@ class SetHighlightLikeUseCase:
             await self.profile_overview_cache.invalidate_overview(command.user_id)
             if highlight.user_id is not None and int(highlight.user_id) != int(command.user_id):
                 await self.profile_overview_cache.invalidate_overview(int(highlight.user_id))
-        return HighlightResult.success(highlight)
+        return await HighlightResult.success(highlight)

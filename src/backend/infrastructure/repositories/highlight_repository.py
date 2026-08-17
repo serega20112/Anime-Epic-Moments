@@ -55,7 +55,7 @@ class HighlightRepository:
         )
         self.session.add(db_highlight)
         await self.session.flush()
-        return self._to_entity(db_highlight)
+        return await self._to_entity(db_highlight)
 
     async def get_by_id(self, highlight_id: int) -> Highlight | None:
         """Fetch a highlight by identifier.
@@ -70,7 +70,7 @@ class HighlightRepository:
             select(HighlightModel).where(HighlightModel.id == highlight_id)
         )
         row = result.scalar_one_or_none()
-        return self._to_entity(row) if row else None
+        return await self._to_entity(row) if row else None
 
     async def update(self, highlight: Highlight) -> Highlight:
         """Update a highlight.
@@ -99,7 +99,7 @@ class HighlightRepository:
         db_highlight.likes_count = highlight.likes_count
         db_highlight.views_count = highlight.views_count
         await self.session.flush()
-        return self._to_entity(db_highlight)
+        return await self._to_entity(db_highlight)
 
     async def delete(self, highlight_id: int):
         """Delete a highlight and its related rows.
@@ -139,7 +139,7 @@ class HighlightRepository:
         result = await self.session.execute(
             select(HighlightModel).where(HighlightModel.user_id == user_id)
         )
-        return [self._to_entity(row) for row in result.scalars().all()]
+        return [await self._to_entity(row) for row in result.scalars().all()]
 
     async def get_by_users(self, user_ids: list[int], limit: int | None = None) -> list[Highlight]:
         """Return highlights created by the given users.
@@ -161,7 +161,7 @@ class HighlightRepository:
         if limit is not None:
             query = query.limit(limit)
         result = await self.session.execute(query)
-        return [self._to_entity(row) for row in result.scalars().all()]
+        return [await self._to_entity(row) for row in result.scalars().all()]
 
     async def get_public_top(self, limit: int = 20) -> list[Highlight]:
         """Return the most popular public highlights.
@@ -173,7 +173,7 @@ class HighlightRepository:
             list[Highlight]: Ranked highlights.
         """
         result = await self.session.execute(select(HighlightModel))
-        return self._order_by_popularity(result.scalars().all(), limit=limit)
+        return await self._order_by_popularity(result.scalars().all(), limit=limit)
 
     async def get_public_recent(self, limit: int = 20) -> list[Highlight]:
         """Return the most recent highlights.
@@ -187,7 +187,7 @@ class HighlightRepository:
         result = await self.session.execute(
             select(HighlightModel).order_by(HighlightModel.created_at.desc()).limit(limit)
         )
-        return [self._to_entity(row) for row in result.scalars().all()]
+        return [await self._to_entity(row) for row in result.scalars().all()]
 
     async def get_by_anime_episode(
         self, anime_id: int, episode: int, user_id: int | None = None
@@ -209,7 +209,7 @@ class HighlightRepository:
         if user_id is not None:
             query = query.where(HighlightModel.user_id == user_id)
         result = await self.session.execute(query.order_by(HighlightModel.created_at.desc()))
-        return [self._to_entity(row) for row in result.scalars().all()]
+        return [await self._to_entity(row) for row in result.scalars().all()]
 
     async def get_saved_by_user(self, user_id: int, limit: int | None = None) -> list[Highlight]:
         """Return highlights saved by a user.
@@ -230,7 +230,7 @@ class HighlightRepository:
         if limit is not None:
             query = query.limit(limit)
         result = await self.session.execute(query)
-        return [self._to_entity(row) for row in result.scalars().all()]
+        return [await self._to_entity(row) for row in result.scalars().all()]
 
     async def get_liked_by_user(self, user_id: int, limit: int | None = None) -> list[Highlight]:
         """Return highlights liked by a user.
@@ -251,7 +251,7 @@ class HighlightRepository:
         if limit is not None:
             query = query.limit(limit)
         result = await self.session.execute(query)
-        return [self._to_entity(row) for row in result.scalars().all()]
+        return [await self._to_entity(row) for row in result.scalars().all()]
 
     async def get_from_anime_ids(self, anime_ids: list[int], limit: int = 20) -> list[Highlight]:
         """Return popular highlights from the given anime.
@@ -268,7 +268,7 @@ class HighlightRepository:
         result = await self.session.execute(
             select(HighlightModel).where(HighlightModel.anime_id.in_(anime_ids))
         )
-        return self._order_by_popularity(result.scalars().all(), limit=limit)
+        return await self._order_by_popularity(result.scalars().all(), limit=limit)
 
     async def set_like(self, highlight_id: int, user_id: int, liked: bool) -> Highlight:
         """Set or remove a like on a highlight.
@@ -314,7 +314,7 @@ class HighlightRepository:
             )
         await self.session.flush()
         await self.session.refresh(db_highlight)
-        return self._to_entity(db_highlight)
+        return await self._to_entity(db_highlight)
 
     async def get_likers(self, highlight_id: int, limit: int = 20) -> list[HighlightLikeUser]:
         """Return users who liked a highlight.
@@ -512,7 +512,7 @@ class HighlightRepository:
         await self.session.flush()
         await self.session.refresh(db_highlight)
 
-        return self._to_entity(db_highlight)
+        return await self._to_entity(db_highlight)
 
     async def get_profile_summary(self, user_id: int) -> HighlightProfileSummary:
         """Return highlight statistics for a user profile.
@@ -625,15 +625,16 @@ class HighlightRepository:
         result = await self.session.execute(statement)
         return int(result.scalar() or 0)
 
-    def _order_by_popularity(self, rows: Iterable[HighlightModel], limit: int) -> list[Highlight]:
-        ranked = sorted(
-            rows,
-            key=lambda row: self._popularity_score(row),
-            reverse=True,
-        )
-        return [self._to_entity(row) for row in ranked[:limit]]
+    async def _order_by_popularity(self, rows: Iterable[HighlightModel], limit: int) -> list[Highlight]:
+        keyed = [
+            (await self._popularity_score(row), row)
+            for row in rows
+        ]
+        keyed.sort(key=lambda pair: pair[0], reverse=True)
+        ranked = [row for _score, row in keyed]
+        return [await self._to_entity(row) for row in ranked[:limit]]
 
-    def _popularity_score(self, row: HighlightModel) -> float:
+    async def _popularity_score(self, row: HighlightModel) -> float:
         age_hours = max(
             (datetime.utcnow() - (row.created_at or datetime.utcnow())).total_seconds() / 3600,
             0.0,
@@ -643,7 +644,7 @@ class HighlightRepository:
             float(row.likes_count or 0) * 4.0 + float(row.views_count or 0) * 2.0 + freshness_bonus
         )
 
-    def _to_entity(self, row: HighlightModel | None) -> Highlight:
+    async def _to_entity(self, row: HighlightModel | None) -> Highlight:
         if row is None:
             raise ValueError("Highlight не найден")
         highlight = Highlight(

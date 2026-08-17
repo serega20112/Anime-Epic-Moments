@@ -34,7 +34,7 @@ class SupportRepository:
         )
         self.session.add(db_ticket)
         await self.session.flush()
-        return self._to_entity(db_ticket)
+        return await self._to_entity(db_ticket)
 
     async def update(self, ticket: SupportTicket) -> SupportTicket:
         """Обновляет статус доставки существующего тикета.
@@ -58,9 +58,9 @@ class SupportRepository:
         db_ticket.delivery_error = ticket.delivery_error
         db_ticket.page_url = ticket.page_url
         await self.session.flush()
-        return self._to_entity(db_ticket)
+        return await self._to_entity(db_ticket)
 
-    def _to_entity(self, db_ticket: SupportTicketModel) -> SupportTicket:
+    async def _to_entity(self, db_ticket: SupportTicketModel) -> SupportTicket:
         """Преобразует SQLAlchemy-модель в доменную сущность.
 
         Args:

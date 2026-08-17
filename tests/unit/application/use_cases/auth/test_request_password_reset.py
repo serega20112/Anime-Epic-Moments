@@ -49,8 +49,8 @@ class TestRequestPasswordResetUseCase:
         )
         user_repo = AsyncMock()
         user_repo.get_by_email.return_value = SimpleNamespace(id=7, email="user@example.com")
-        jwt_service = Mock()
-        jwt_service.create_password_reset_token.return_value = "reset-token"
+        jwt_service = AsyncMock()
+        jwt_service.create_password_reset_token = AsyncMock(return_value="reset-token")
         mailer = AsyncMock()
         use_case = RequestPasswordResetUseCase(user_repo, jwt_service, mailer)
 

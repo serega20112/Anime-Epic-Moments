@@ -50,7 +50,10 @@ class TestRequestEmailVerification:
         use_case = RequestEmailVerificationUseCase(
             user_repo, password_service, verification_store, mailer
         )
-        monkeypatch.setattr(use_case, "_generate_code", lambda: "123456")
+        async def _fake_code():
+            return "123456"
+
+        monkeypatch.setattr(use_case, "_generate_code", _fake_code)
 
         result = await use_case.execute(email, "password123", username, theme=theme)
 

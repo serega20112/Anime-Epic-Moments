@@ -13,7 +13,7 @@ _INVALID_CREDENTIALS_MESSAGE = "Неверный email или пароль"
 _DUMMY_PASSWORD_HASH = "$2b$12$YkpE4gT/crtJTugOQ0Uh5ObWVyl1NJXIXc/xc4MbchXOi4R2JXns2"
 
 
-def _welcome_message(username: str) -> str:
+async def _welcome_message(username: str) -> str:
     """Build the login success flash message.
 
     Args:
@@ -68,14 +68,14 @@ class LoginUserUseCase:
         password_matches = await self.password_service.verify_password(password, stored_hash)
         if not user or not password_matches:
             await self._record_failure(email)
-            return AuthResult.failure(
+            return await AuthResult.failure(
                 _INVALID_CREDENTIALS_MESSAGE,
                 "auth.login_page",
             )
         await self._reset_on_success(email)
-        return AuthResult.success(
+        return await AuthResult.success(
             data=user,
-            message=_welcome_message(user.username),
+            message=await _welcome_message(user.username),
             redirect_endpoint="index.index",
         )
 
@@ -92,7 +92,7 @@ class LoginUserUseCase:
             return None
         is_locked, _unlock_at = await self.account_lock_service.is_account_locked(email)
         if is_locked:
-            return AuthResult.failure(_ACCOUNT_LOCKED_MESSAGE, "auth.login_page")
+            return await AuthResult.failure(_ACCOUNT_LOCKED_MESSAGE, "auth.login_page")
         return None
 
     async def _record_failure(self, email: str) -> None:

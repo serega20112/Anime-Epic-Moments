@@ -57,7 +57,7 @@ class SamebandProvider(WatchSourceProvider):
         """Close the underlying HTTP client."""
         await self._session.aclose()
 
-    def is_enabled(self) -> bool:
+    async def is_enabled(self) -> bool:
         return bool(self.enabled and self.base_url)
 
     async def search_sources(
@@ -78,7 +78,7 @@ class SamebandProvider(WatchSourceProvider):
         Returns:
             list[DiscoveredWatchSource]: Найденные источники.
         """
-        if not self.is_enabled():
+        if not await self.is_enabled():
             return []
 
         anime_urls = await self._search(title, limit=limit)
@@ -88,7 +88,7 @@ class SamebandProvider(WatchSourceProvider):
             playlist = await self._get_playlist(anime_url)
             if not playlist:
                 continue
-            qualities = self._episode_qualities(playlist, episode=episode)
+            qualities = await self._episode_qualities(playlist, episode=episode)
             if not qualities:
                 continue
             for quality_label, stream_url in qualities:
@@ -134,7 +134,7 @@ class SamebandProvider(WatchSourceProvider):
             match = _HREF_RE.search(chunk)
             if not match:
                 continue
-            href = self._to_absolute(match.group(1))
+            href = await self._to_absolute(match.group(1))
             if "/anime/" not in href or href in seen:
                 continue
             seen.add(href)
@@ -147,17 +147,17 @@ class SamebandProvider(WatchSourceProvider):
         iframes = _IFRAME_SRC_RE.findall(page_text)
         if not iframes:
             return None
-        player_url = self._to_absolute(iframes[-1])
+        player_url = await self._to_absolute(iframes[-1])
 
         player_text = await self._fetch(player_url)
         match = _PLAYER_JS_RE.search(player_text)
         if not match:
             raise ExternalServiceInvalidResponseError(service_name=self.provider_name)
-        playlist_url = self._to_absolute(match.group(1))
+        playlist_url = await self._to_absolute(match.group(1))
 
-        return self._parse_playlist(await self._fetch(playlist_url))
+        return await self._parse_playlist(await self._fetch(playlist_url))
 
-    def _parse_playlist(self, text: str) -> list[dict]:
+    async def _parse_playlist(self, text: str) -> list[dict]:
         try:
             payload = json.loads(text)
             if isinstance(payload, list):
@@ -169,7 +169,7 @@ class SamebandProvider(WatchSourceProvider):
             raise ExternalServiceInvalidResponseError(service_name=self.provider_name)
         return [{"file": value} for value in matches]
 
-    def _episode_qualities(self, playlist: list[dict], episode: int) -> list[tuple[str, str]]:
+    async def _episode_qualities(self, playlist: list[dict], episode: int) -> list[tuple[str, str]]:
         index = int(episode) - 1
         if index < 0 or index >= len(playlist):
             return []
@@ -181,7 +181,7 @@ class SamebandProvider(WatchSourceProvider):
             if not entry_match:
                 continue
             quality_label = f"{entry_match.group(1)}p"
-            stream_url = self._to_absolute(entry_match.group(2))
+            stream_url = await self._to_absolute(entry_match.group(2))
             if quality_label in seen or not stream_url:
                 continue
             seen.add(quality_label)
@@ -198,7 +198,7 @@ class SamebandProvider(WatchSourceProvider):
         except httpx.HTTPError as exc:
             raise ExternalServiceUnavailableError(service_name=self.provider_name) from exc
 
-    def _to_absolute(self, value: str | None) -> str:
+    async def _to_absolute(self, value: str | None) -> str:
         if not value:
             return ""
         text = str(value).strip()

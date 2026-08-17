@@ -9,6 +9,7 @@ from backend.domain.watch.entity import (
     WatchSource,
 )
 from backend.domain.watch.value_object import (
+    DiaryEntry,
     ViewingHeatmapPoint,
     WatchedAnimeStat,
 )
@@ -18,6 +19,10 @@ class WatchRepository(ABC):
     @abstractmethod
     async def get_status(self, user_id: int, anime_id: int) -> UserAnimeStatus | None:
         """Возвращает статус просмотра пользователя."""
+
+    @abstractmethod
+    async def get_statuses_by_user(self, user_id: int) -> list[UserAnimeStatus]:
+        """Возвращает записи дневника пользователя."""
 
     @abstractmethod
     async def upsert_status(self, status: UserAnimeStatus) -> UserAnimeStatus:

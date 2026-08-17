@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from functools import wraps
@@ -14,7 +15,7 @@ from backend.infrastructure.web import flash
 logger = logging.getLogger("anime_epic_moments")
 
 
-def client_ip(request: Request) -> str:
+async def client_ip(request: Request) -> str:
     """Return client IP taking X-Forwarded-For into account."""
     forwarded_for = request.headers.get("X-Forwarded-For", "")
     if forwarded_for:
@@ -28,7 +29,7 @@ def rate_limit(
     scope: str,
     limit: int,
     window_seconds: int,
-    key_builder: Callable[[Request], str] | None = None,
+    key_builder: Callable[[Request], Awaitable[str]] | None = None,
     response_mode: str = "json",
     redirect_endpoint: str | None = None,
     message: str = "Слишком много запросов. Попробуйте позже.",
@@ -48,7 +49,7 @@ def rate_limit(
             if limiter is None:
                 return await view(*args, **kwargs)
 
-            subject = key_builder(request) if key_builder else client_ip(request)
+            subject = await (key_builder(request) if key_builder else client_ip(request))
             decision = await limiter.hit(
                 scope=scope,
                 subject=subject,
@@ -65,7 +66,7 @@ def rate_limit(
                 decision.retry_after,
             )
             if response_mode == "redirect":
-                flash(request, message)
+                await flash(request, message)
                 target = (
                     str(request.app.url_path_for(redirect_endpoint))
                     if redirect_endpoint

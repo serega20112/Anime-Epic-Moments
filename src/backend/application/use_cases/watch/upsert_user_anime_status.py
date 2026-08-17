@@ -28,7 +28,7 @@ class UpsertUserAnimeStatusUseCase:
     async def _execute(self, command: UpsertUserAnimeStatusCommand) -> WatchResult:
         normalized_status = str(command.status or "").strip()
         if not normalized_status:
-            return WatchResult.failure("status_required", status_code=400)
+            return await WatchResult.failure("status_required", status_code=400)
         result = await self.watch_repo.upsert_status(
             UserAnimeStatus(
                 user_id=command.user_id,
@@ -38,4 +38,4 @@ class UpsertUserAnimeStatusUseCase:
         )
         if self.profile_overview_cache is not None:
             await self.profile_overview_cache.invalidate_overview(command.user_id)
-        return WatchResult.success(result)
+        return await WatchResult.success(result)

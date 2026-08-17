@@ -9,7 +9,7 @@ class JWTServiceInterface(ABC):
     """Interface for JWT token creation and verification."""
 
     @abstractmethod
-    def create_access_token(self, user_id: int) -> str:
+    async def create_access_token(self, user_id: int) -> str:
         """Create an access token for a user.
 
         Args:
@@ -20,7 +20,7 @@ class JWTServiceInterface(ABC):
         """
 
     @abstractmethod
-    def create_refresh_token(self, user_id: int) -> str:
+    async def create_refresh_token(self, user_id: int) -> str:
         """Create a refresh token for a user.
 
         Args:
@@ -31,7 +31,7 @@ class JWTServiceInterface(ABC):
         """
 
     @abstractmethod
-    def decode_token(self, token: str) -> int:
+    async def decode_token(self, token: str) -> int:
         """Decode an access token and return the user id.
 
         Args:
@@ -45,7 +45,7 @@ class JWTServiceInterface(ABC):
         """
 
     @abstractmethod
-    def decode_refresh_token(self, token: str) -> int:
+    async def decode_refresh_token(self, token: str) -> int:
         """Decode a refresh token and return the user id.
 
         Args:
@@ -56,7 +56,7 @@ class JWTServiceInterface(ABC):
         """
 
     @abstractmethod
-    def create_password_reset_token(self, user_id: int, expires_minutes: int) -> str:
+    async def create_password_reset_token(self, user_id: int, expires_minutes: int) -> str:
         """Create a password reset token.
 
         Args:
@@ -68,7 +68,7 @@ class JWTServiceInterface(ABC):
         """
 
     @abstractmethod
-    def decode_password_reset_token(self, token: str) -> int:
+    async def decode_password_reset_token(self, token: str) -> int:
         """Decode a password reset token and return the user id.
 
         Args:
@@ -79,7 +79,7 @@ class JWTServiceInterface(ABC):
         """
 
     @abstractmethod
-    def get_token_ttl_seconds(self, token: str, expected_type: str | None = None) -> int:
+    async def get_token_ttl_seconds(self, token: str, expected_type: str | None = None) -> int:
         """Get remaining TTL of a token in seconds.
 
         Args:

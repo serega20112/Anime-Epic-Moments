@@ -45,7 +45,10 @@ class TestResendEmailVerification:
         verification_store.save.side_effect = lambda payload: payload
         mailer = AsyncMock()
         use_case = ResendEmailVerificationUseCase(verification_store, mailer)
-        monkeypatch.setattr(use_case, "_generate_code", lambda: "654321")
+        async def _fake_code():
+            return "654321"
+
+        monkeypatch.setattr(use_case, "_generate_code", _fake_code)
 
         result = await use_case.execute(email=" User@Example.com ")
 

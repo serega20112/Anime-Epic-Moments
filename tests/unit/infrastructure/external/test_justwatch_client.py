@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 
 from backend.infrastructure.external import JustWatchClient
 
@@ -32,7 +32,7 @@ def test_justwatch_client_caches_provider_map():
     """Проверяем, что JustWatchClient кеширует карту провайдеров и не дергает endpoint повторно."""
     client = JustWatchClient()
     client.partner_token = "token"
-    client.session.get = Mock(
+    client.session.get = AsyncMock(
         return_value=_FakeResponse(
             [
                 {"id": 1, "clear_name": "Netflix"},
@@ -53,10 +53,9 @@ def test_justwatch_client_maps_offers_to_external_sources(monkeypatch):
     """Проверяем, что JustWatchClient превращает офферы в discovered external sources без дублей."""
     client = JustWatchClient()
     client.partner_token = "token"
-    monkeypatch.setattr(
-        client,
-        "_get_offers",
-        lambda title, year: {
+
+    async def _fake_get_offers(title, year):
+        return {
             "title": "Gintama",
             "offers": [
                 {
@@ -74,9 +73,13 @@ def test_justwatch_client_maps_offers_to_external_sources(monkeypatch):
                     "package_short_name": "Premium",
                 },
             ],
-        },
-    )
-    monkeypatch.setattr(client, "_get_provider_map", lambda: {1: "Netflix"})
+        }
+
+    async def _fake_provider_map():
+        return {1: "Netflix"}
+
+    monkeypatch.setattr(client, "_get_offers", _fake_get_offers)
+    monkeypatch.setattr(client, "_get_provider_map", _fake_provider_map)
 
     items = client.search_sources(title="Gintama", episode=2, year=2024)
 

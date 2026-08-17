@@ -48,7 +48,7 @@ class HighlightUseCaseProvider(Provider):
     """Provide highlight use cases."""
 
     @provide(scope=Scope.REQUEST)
-    def create_highlight(
+    async def create_highlight(
         self,
         highlight_repository: HighlightRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -77,7 +77,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def delete_highlight(
+    async def delete_highlight(
         self,
         highlight_repository: HighlightRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -106,7 +106,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def edit_highlight(
+    async def edit_highlight(
         self,
         highlight_repository: HighlightRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -135,7 +135,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def get_user_highlights(
+    async def get_user_highlights(
         self,
         highlight_repository: HighlightRepository,
         anime_api_client: AnimeApiClient,
@@ -158,7 +158,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def get_public_top_highlights(
+    async def get_public_top_highlights(
         self,
         highlight_repository: HighlightRepository,
         anime_api_client: AnimeApiClient,
@@ -184,7 +184,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def get_saved_highlights(
+    async def get_saved_highlights(
         self,
         highlight_repository: HighlightRepository,
         anime_api_client: AnimeApiClient,
@@ -207,7 +207,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def get_liked_highlights(
+    async def get_liked_highlights(
         self,
         highlight_repository: HighlightRepository,
         anime_api_client: AnimeApiClient,
@@ -230,7 +230,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def get_shared_highlight(
+    async def get_shared_highlight(
         self,
         highlight_repository: HighlightRepository,
         anime_api_client: AnimeApiClient,
@@ -256,7 +256,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def get_highlight_feed(
+    async def get_highlight_feed(
         self,
         highlight_repository: HighlightRepository,
         anime_api_client: AnimeApiClient,
@@ -282,7 +282,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def get_following_highlights(
+    async def get_following_highlights(
         self,
         highlight_repository: HighlightRepository,
         anime_api_client: AnimeApiClient,
@@ -305,7 +305,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def set_highlight_like(
+    async def set_highlight_like(
         self,
         highlight_repository: HighlightRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -331,7 +331,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def add_highlight_comment(
+    async def add_highlight_comment(
         self,
         highlight_repository: HighlightRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -357,7 +357,7 @@ class HighlightUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def get_highlight_comments(
+    async def get_highlight_comments(
         self,
         highlight_repository: HighlightRepository,
     ) -> GetHighlightCommentsUseCase:
@@ -372,7 +372,7 @@ class HighlightUseCaseProvider(Provider):
         return GetHighlightCommentsUseCase(highlight_repository)
 
     @provide(scope=Scope.REQUEST)
-    def get_highlight_likers(
+    async def get_highlight_likers(
         self,
         highlight_repository: HighlightRepository,
     ) -> GetHighlightLikersUseCase:
@@ -387,7 +387,7 @@ class HighlightUseCaseProvider(Provider):
         return GetHighlightLikersUseCase(highlight_repository)
 
     @provide(scope=Scope.REQUEST)
-    def get_highlight_notifications(
+    async def get_highlight_notifications(
         self,
         highlight_repository: HighlightRepository,
     ) -> GetHighlightNotificationsUseCase:
@@ -402,7 +402,7 @@ class HighlightUseCaseProvider(Provider):
         return GetHighlightNotificationsUseCase(highlight_repository)
 
     @provide(scope=Scope.REQUEST)
-    def set_saved_highlight(
+    async def set_saved_highlight(
         self,
         highlight_repository: HighlightRepository,
         unit_of_work: UnitOfWorkInterface,

@@ -48,7 +48,7 @@ class SearchAnimeByDescriptionUseCase:
         sort_by = query.sort_by
         limit = query.limit
 
-        explicit_adult_intent = self.safety_policy.has_explicit_adult_intent(
+        explicit_adult_intent = await self.safety_policy.has_explicit_adult_intent(
             base_description, genre_hint
         )
         if explicit_adult_intent and age_rating != "18+":
@@ -85,8 +85,8 @@ class SearchAnimeByDescriptionUseCase:
         else:
             logger.info("ai_search mode=%s queries=%s", llm_mode, query_preview)
 
-        queries = self._build_queries(llm_queries, base_description)
-        title_queries = self._build_title_queries(base_description, llm_queries, genre_hint)
+        queries = await self._build_queries(llm_queries, base_description)
+        title_queries = await self._build_title_queries(base_description, llm_queries, genre_hint)
         expanded_limit = max(limit * 2, limit)
 
         results: list[Anime] = []
@@ -94,7 +94,7 @@ class SearchAnimeByDescriptionUseCase:
             batch = await self.api_client.search_by_title(
                 title=candidate, include_adult=include_adult, limit=expanded_limit
             )
-            results = self._merge_unique(results, batch)
+            results = await self._merge_unique(results, batch)
 
         for candidate in queries:
             batch = await self.api_client.search_by_description(
@@ -105,7 +105,7 @@ class SearchAnimeByDescriptionUseCase:
                 include_adult=include_adult,
                 limit=expanded_limit,
             )
-            results = self._merge_unique(results, batch)
+            results = await self._merge_unique(results, batch)
 
         if not results:
             for candidate in queries:
@@ -114,12 +114,12 @@ class SearchAnimeByDescriptionUseCase:
                     include_adult=include_adult,
                     limit=expanded_limit,
                 )
-                results = self._merge_unique(results, batch)
+                results = await self._merge_unique(results, batch)
 
         if not include_adult:
-            results = [item for item in results if not self.safety_policy.is_probably_nsfw(item)]
+            results = [item for item in results if not await self.safety_policy.is_probably_nsfw(item)]
 
-        ordered = self._sort_results(
+        ordered = await self._sort_results(
             items=results,
             sort_by=sort_by,
             description=base_description,
@@ -128,33 +128,33 @@ class SearchAnimeByDescriptionUseCase:
         )
         return SearchAnimeByDescriptionResult(items=ordered[:limit])
 
-    def _build_queries(self, optimized_queries: list[str], raw_description: str) -> list[str]:
+    async def _build_queries(self, optimized_queries: list[str], raw_description: str) -> list[str]:
         """Собирает список уникальных запросов: исходный текст пользователя + LLM-варианты."""
         variants: list[str] = []
         seen: set[str] = set()
         candidates = [raw_description, *optimized_queries]
         for value in candidates:
-            normalized = self._normalize(value)
+            normalized = await self._normalize(value)
             if normalized and normalized not in seen:
                 seen.add(normalized)
                 variants.append(value.strip())
         return variants
 
-    def _build_title_queries(
+    async def _build_title_queries(
         self, raw_description: str, optimized_queries: list[str], genre_hint: str | None
     ) -> list[str]:
         """Собирает кандидаты названий для прямого title-поиска."""
         variants: list[str] = []
         seen: set[str] = set()
 
-        for hint in self.safety_policy.suggest_title_hints(raw_description, genre_hint):
-            normalized = self._normalize(hint)
+        for hint in await self.safety_policy.suggest_title_hints(raw_description, genre_hint):
+            normalized = await self._normalize(hint)
             if normalized and normalized not in seen:
                 seen.add(normalized)
                 variants.append(hint.strip())
 
         for candidate in optimized_queries:
-            normalized = self._normalize(candidate)
+            normalized = await self._normalize(candidate)
             words_count = len(candidate.split())
             if not normalized or normalized in seen:
                 continue
@@ -165,7 +165,7 @@ class SearchAnimeByDescriptionUseCase:
 
         return variants
 
-    def _merge_unique(self, base: list[Anime], incoming: list[Anime]) -> list[Anime]:
+    async def _merge_unique(self, base: list[Anime], incoming: list[Anime]) -> list[Anime]:
         """Объединяет списки аниме без дубликатов."""
         merged = list(base)
         seen = {
@@ -180,7 +180,7 @@ class SearchAnimeByDescriptionUseCase:
             merged.append(item)
         return merged
 
-    def _sort_results(
+    async def _sort_results(
         self,
         items: list[Anime],
         sort_by: str,
@@ -193,15 +193,19 @@ class SearchAnimeByDescriptionUseCase:
             return sorted(items, key=lambda x: x.rating or 0, reverse=True)
         if sort_by == "year":
             return sorted(items, key=lambda x: x.year or 0, reverse=True)
-        query_tokens = self._tokenize(f"{description} {genre_hint or ''}")
-        normalized_hints = [self._normalize(hint) for hint in llm_title_hints]
-        return sorted(
-            items,
-            key=lambda x: self._match_score(x, query_tokens, normalized_hints),
-            reverse=True,
-        )
+        query_tokens = await self._tokenize(f"{description} {genre_hint or ''}")
+        normalized_hints = [await self._normalize(hint) for hint in llm_title_hints]
+        keyed = [
+            (
+                await self._match_score(item, query_tokens, normalized_hints),
+                item,
+            )
+            for item in items
+        ]
+        keyed.sort(key=lambda pair: pair[0], reverse=True)
+        return [item for _score, item in keyed]
 
-    def _match_score(
+    async def _match_score(
         self, anime: Anime, query_tokens: list[str], normalized_hints: list[str]
     ) -> float:
         """Считает score релевантности: токены описания + совпадения с LLM-подсказками."""
@@ -209,10 +213,10 @@ class SearchAnimeByDescriptionUseCase:
         if not query_tokens and not normalized_hints:
             return base_rating
 
-        title = self._normalize(anime.title or "")
+        title = await self._normalize(anime.title or "")
         genres = " ".join(anime.genres or [])
         synopsis = re.sub(r"<[^>]+>", " ", anime.description or "")
-        haystack = self._normalize(f"{anime.title or ''} {genres} {synopsis}")
+        haystack = await self._normalize(f"{anime.title or ''} {genres} {synopsis}")
 
         score = 0.0
         for token in query_tokens:
@@ -231,7 +235,7 @@ class SearchAnimeByDescriptionUseCase:
 
         return score + base_rating * 0.1
 
-    def _tokenize(self, value: str) -> list[str]:
+    async def _tokenize(self, value: str) -> list[str]:
         """Извлекает поисковые токены из русского/английского текста."""
         tokens = re.findall(r"[a-zA-Zа-яА-Я0-9]{3,}", value.lower())
         seen: set[str] = set()
@@ -243,5 +247,5 @@ class SearchAnimeByDescriptionUseCase:
             result.append(token)
         return result
 
-    def _normalize(self, value: str) -> str:
+    async def _normalize(self, value: str) -> str:
         return " ".join((value or "").lower().split())

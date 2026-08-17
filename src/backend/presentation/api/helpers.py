@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import Request
 
 
-def get_current_user(request: Request):
+async def get_current_user(request: Request):
     """Return the current authenticated user.
 
     Args:
@@ -45,7 +45,7 @@ async def read_payload(request: Request) -> Any:
             return {}
 
 
-def wants_json(request: Request) -> bool:
+async def wants_json(request: Request) -> bool:
     """Determine if the client expects a JSON response.
 
     Args:

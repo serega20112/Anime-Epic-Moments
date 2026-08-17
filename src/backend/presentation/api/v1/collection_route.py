@@ -48,12 +48,12 @@ async def collections_page(
         RedirectResponse: Login redirect for guests.
         HTMLResponse: Rendered collections list template.
     """
-    user = get_current_user(request)
+    user = await get_current_user(request)
     if not user:
-        return redirect_login(request)
+        return await redirect_login(request)
     collections = await collections_use_case.execute(user.id)
     favorites = await favorites_use_case.execute(user.id)
-    return render_template(
+    return await render_template(
         request,
         "collection/list.html",
         collections=collections,
@@ -73,12 +73,12 @@ async def create_collection(request: Request, use_case: FromDishka[CreateCollect
         Response: 401 for guests.
         RedirectResponse: Redirect to the collections page.
     """
-    user = get_current_user(request)
+    user = await get_current_user(request)
     if not user:
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
-    command = map_create_collection_command(await request.form(), user_id=user.id)
+    command = await map_create_collection_command(await request.form(), user_id=user.id)
     await use_case.execute(command)
-    return redirect_collections(request)
+    return await redirect_collections(request)
 
 
 @collection_router.post("/{collection_id}/items", name="collection.add_collection_item")
@@ -98,12 +98,12 @@ async def add_collection_item(
         Response: 401 for guests.
         RedirectResponse: Redirect to the collections page.
     """
-    user = get_current_user(request)
+    user = await get_current_user(request)
     if not user:
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
-    command = map_add_collection_item_command(await request.form(), collection_id=collection_id)
+    command = await map_add_collection_item_command(await request.form(), collection_id=collection_id)
     await use_case.execute(command)
-    return redirect_collections(request)
+    return await redirect_collections(request)
 
 
 @collection_router.post(
@@ -126,12 +126,12 @@ async def remove_collection_item(
         Response: 401 for guests.
         RedirectResponse: Redirect to the collections page.
     """
-    user = get_current_user(request)
+    user = await get_current_user(request)
     if not user:
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
-    command = map_remove_collection_item_command(await request.form(), collection_id=collection_id)
+    command = await map_remove_collection_item_command(await request.form(), collection_id=collection_id)
     await use_case.execute(command)
-    return redirect_collections(request)
+    return await redirect_collections(request)
 
 
 @collection_router.get("/share/{collection_id}", name="collection.shared_collection_page")
@@ -151,10 +151,10 @@ async def shared_collection_page(
         HTMLResponse: Rendered shared collection template.
     """
     details = await use_case.execute(collection_id)
-    return render_template(request, "collection/share.html", collection=details)
+    return await render_template(request, "collection/share.html", collection=details)
 
 
-def redirect_login(request: Request) -> RedirectResponse:
+async def redirect_login(request: Request) -> RedirectResponse:
     """Build a redirect to the login page.
 
     Args:
@@ -169,7 +169,7 @@ def redirect_login(request: Request) -> RedirectResponse:
     )
 
 
-def redirect_collections(request: Request) -> RedirectResponse:
+async def redirect_collections(request: Request) -> RedirectResponse:
     """Build a redirect to the collections page.
 
     Args:

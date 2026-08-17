@@ -30,7 +30,7 @@ class FormValidationError(ValueError):
     """Raised when an HTML form fails validation."""
 
 
-def _field_text(form: dict, name: str) -> str:
+async def _field_text(form: dict, name: str) -> str:
     """Return a stripped string form field.
 
     Args:
@@ -43,30 +43,30 @@ def _field_text(form: dict, name: str) -> str:
     return str(form.get(name) or "").strip()
 
 
-def _normalize_email(value: object) -> str:
+async def _normalize_email(value: object) -> str:
     return str(value or "").strip().lower()
 
 
-def _normalize_theme(value: object) -> str:
+async def _normalize_theme(value: object) -> str:
     normalized = str(value or "").strip().lower()
     return normalized if normalized in THEMES else DEFAULT_THEME
 
 
-def _extract_digits(value: object) -> str:
+async def _extract_digits(value: object) -> str:
     return "".join(character for character in str(value or "") if character.isdigit())
 
 
-def _require_valid_email(email: str) -> None:
+async def _require_valid_email(email: str) -> None:
     if not email or len(email) > EMAIL_MAX_LENGTH:
         raise FormValidationError("Некорректный email")
 
 
-def _clean_optional(value: object) -> str | None:
+async def _clean_optional(value: object) -> str | None:
     cleaned = str(value or "").strip()
     return cleaned or None
 
 
-def map_login_command(form: dict) -> LoginCommand:
+async def map_login_command(form: dict) -> LoginCommand:
     """Validate and build a login command from form data.
 
     Args:
@@ -78,14 +78,14 @@ def map_login_command(form: dict) -> LoginCommand:
     Raises:
         FormValidationError: If email or password is missing or email is too long.
     """
-    email = _field_text(form, "email").lower()
+    email = await _field_text(form, "email").lower()
     password = str(form.get("password") or "")
     if not email or len(email) > EMAIL_MAX_LENGTH or not password:
         raise FormValidationError("Некорректные данные для входа")
     return LoginCommand(email=email, password=password)
 
 
-def map_register_command(form: dict) -> RegisterCommand:
+async def map_register_command(form: dict) -> RegisterCommand:
     """Validate and build a registration command from form data.
 
     Args:
@@ -97,11 +97,11 @@ def map_register_command(form: dict) -> RegisterCommand:
     Raises:
         FormValidationError: If any required field is invalid.
     """
-    email = _normalize_email(form.get("email"))
+    email = await _normalize_email(form.get("email"))
     password = str(form.get("password") or "")
-    username = _field_text(form, "username")
-    theme = _normalize_theme(form.get("theme"))
-    _require_valid_email(email)
+    username = await _field_text(form, "username")
+    theme = await _normalize_theme(form.get("theme"))
+    await _require_valid_email(email)
     if len(password) < PASSWORD_MIN_LENGTH or len(password) > PASSWORD_MAX_LENGTH:
         raise FormValidationError("Пароль должен быть не короче 8 символов")
     if not username or len(username) > USERNAME_MAX_LENGTH:
@@ -114,7 +114,7 @@ def map_register_command(form: dict) -> RegisterCommand:
     )
 
 
-def map_verify_email_command(form: dict) -> VerifyEmailCommand:
+async def map_verify_email_command(form: dict) -> VerifyEmailCommand:
     """Validate and build an email verification command from form data.
 
     Args:
@@ -126,15 +126,15 @@ def map_verify_email_command(form: dict) -> VerifyEmailCommand:
     Raises:
         FormValidationError: If email or code is invalid.
     """
-    email = _normalize_email(form.get("email"))
-    code = _extract_digits(form.get("code"))
-    _require_valid_email(email)
+    email = await _normalize_email(form.get("email"))
+    code = await _extract_digits(form.get("code"))
+    await _require_valid_email(email)
     if len(code) != VERIFICATION_CODE_DIGITS:
         raise FormValidationError("Код подтверждения должен содержать 6 цифр")
     return VerifyEmailCommand(email=email, code=code)
 
 
-def map_resend_verification_command(form: dict) -> ResendVerificationCommand:
+async def map_resend_verification_command(form: dict) -> ResendVerificationCommand:
     """Validate and build a resend verification command from form data.
 
     Args:
@@ -146,12 +146,12 @@ def map_resend_verification_command(form: dict) -> ResendVerificationCommand:
     Raises:
         FormValidationError: If email is missing or invalid.
     """
-    email = _normalize_email(form.get("email"))
-    _require_valid_email(email)
+    email = await _normalize_email(form.get("email"))
+    await _require_valid_email(email)
     return ResendVerificationCommand(email=email)
 
 
-def map_request_password_reset_command(form: dict, *, base_url: str) -> RequestPasswordResetCommand:
+async def map_request_password_reset_command(form: dict, *, base_url: str) -> RequestPasswordResetCommand:
     """Validate and build a password reset request command from form data.
 
     Args:
@@ -164,12 +164,12 @@ def map_request_password_reset_command(form: dict, *, base_url: str) -> RequestP
     Raises:
         FormValidationError: If email is missing or invalid.
     """
-    email = _normalize_email(form.get("email"))
-    _require_valid_email(email)
+    email = await _normalize_email(form.get("email"))
+    await _require_valid_email(email)
     return RequestPasswordResetCommand(email=email, base_url=base_url)
 
 
-def map_confirm_password_reset_command(form: dict) -> ConfirmPasswordResetCommand:
+async def map_confirm_password_reset_command(form: dict) -> ConfirmPasswordResetCommand:
     """Validate and build a password reset confirmation command from form data.
 
     Args:
@@ -181,7 +181,7 @@ def map_confirm_password_reset_command(form: dict) -> ConfirmPasswordResetComman
     Raises:
         FormValidationError: If password or repeat do not match requirements.
     """
-    token = _field_text(form, "token")
+    token = await _field_text(form, "token")
     password = str(form.get("password") or "")
     password_repeat = str(form.get("password_repeat") or "")
     if password != password_repeat:
@@ -191,7 +191,7 @@ def map_confirm_password_reset_command(form: dict) -> ConfirmPasswordResetComman
     return ConfirmPasswordResetCommand(token=token, password=password)
 
 
-def map_update_profile_command(form: dict, *, user_id: int) -> UpdateProfileCommand:
+async def map_update_profile_command(form: dict, *, user_id: int) -> UpdateProfileCommand:
     """Validate and build a profile update command from form data.
 
     Args:
@@ -201,8 +201,8 @@ def map_update_profile_command(form: dict, *, user_id: int) -> UpdateProfileComm
     Returns:
         UpdateProfileCommand: Validated command.
     """
-    username = _field_text(form, "username")
-    avatar_url = _clean_optional(form.get("avatar_url"))
+    username = await _field_text(form, "username")
+    avatar_url = await _clean_optional(form.get("avatar_url"))
     return UpdateProfileCommand(
         user_id=user_id,
         username=username,

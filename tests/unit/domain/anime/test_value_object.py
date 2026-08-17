@@ -20,7 +20,7 @@ class TestSearchAnimeByDescriptionResult:
             (True, "Подтвердите возраст"),
         ],
     )
-    def test_to_dict_serializes_payload(
+    async def test_to_dict_serializes_payload(
         self,
         anime_factory,
         requires_age_confirmation,
@@ -37,7 +37,7 @@ class TestSearchAnimeByDescriptionResult:
             message=message,
         )
 
-        payload = result.to_dict()
+        payload = await result.to_dict()
 
         assert payload["items"][0]["title"] == "Result Title"
         assert payload["requires_age_confirmation"] is requires_age_confirmation
@@ -48,7 +48,7 @@ class TestAnimeDiscussionValueObjects:
     """Юнит-тесты value objects обсуждения аниме."""
 
     @pytest.mark.unit
-    def test_board_stores_comments_and_sorting(self):
+    async def test_board_stores_comments_and_sorting(self):
         """Что тестируем: value objects AnimeDiscussionComment и AnimeDiscussionBoard.
 
         Что передаём: комментарий с данными пользователя и доску обсуждения с сортировкой.

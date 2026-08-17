@@ -46,8 +46,8 @@ class TestUserRepository:
                 password_hash="hash-1",
             )
         )
-        user.change_username("after")
-        user.update_avatar("https://example.com/avatar.png")
+        await user.change_username("after")
+        await user.update_avatar("https://example.com/avatar.png")
 
         updated = await repo.update(user)
         loaded = await repo.get_by_id(user.id)

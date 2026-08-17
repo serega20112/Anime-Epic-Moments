@@ -26,13 +26,13 @@ def _ticket(**overrides):
 
 
 class TestTelegramSupportNotifier:
-    def test_is_enabled(self):
-        assert TelegramSupportNotifier().is_enabled() is True
+    async def test_is_enabled(self):
+        assert await TelegramSupportNotifier().is_enabled() is True
 
-    def test_is_disabled_without_bot(self, monkeypatch):
+    async def test_is_disabled_without_bot(self, monkeypatch):
         monkeypatch.setattr(Settings, "telegram_support_bot_token", "")
         monkeypatch.setattr(Settings, "telegram_support_admin_chat_ids", [])
-        assert TelegramSupportNotifier().is_enabled() is False
+        assert await TelegramSupportNotifier().is_enabled() is False
 
     def test_truncate_short(self):
         notifier = TelegramSupportNotifier()
@@ -77,7 +77,7 @@ class TestTelegramSupportNotifier:
                 return {"ok": True}
 
         class _Session:
-            def post(self, *args, **kwargs):
+            async def post(self, *args, **kwargs):
                 made.append(kwargs.get("json", {}).get("chat_id"))
                 return _Response()
 
@@ -94,7 +94,7 @@ class TestTelegramSupportNotifier:
                 raise RuntimeError("boom")
 
         class _Session:
-            def post(self, *args, **kwargs):
+            async def post(self, *args, **kwargs):
                 return _Response()
 
         monkeypatch.setattr(notifier, "session", _Session())

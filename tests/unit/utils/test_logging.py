@@ -18,7 +18,7 @@ class _CaptureHandler(logging.Handler):
 
 @pytest.mark.unit
 class TestRequestIdFilter:
-    def test_defaults_to_dash(self):
+    async def test_defaults_to_dash(self):
         filter_ = logging_module.RequestIdFilter()
         filter_.request_id = None
         filter_.user_id = None
@@ -28,7 +28,7 @@ class TestRequestIdFilter:
         assert record.request_id == "-"
         assert record.user_id == "-"
 
-    def test_uses_set_context_values(self):
+    async def test_uses_set_context_values(self):
         filter_ = logging_module.RequestIdFilter()
         filter_.request_id = "req-123"
         filter_.user_id = "user-456"
@@ -41,8 +41,8 @@ class TestRequestIdFilter:
 
 @pytest.mark.unit
 class TestSetupLogging:
-    def test_clears_handlers_and_configures_root(self):
-        logging_module.setup_logging(level=logging.DEBUG)
+    async def test_clears_handlers_and_configures_root(self):
+        await logging_module.setup_logging(level=logging.DEBUG)
 
         root = logging.getLogger()
         assert root.level == logging.DEBUG
@@ -57,22 +57,22 @@ class TestSetupLogging:
 
 @pytest.mark.unit
 class TestAuditLogger:
-    def test_get_audit_logger_sets_propagate_false_once(self):
-        logger = logging_module.get_audit_logger()
+    async def test_get_audit_logger_sets_propagate_false_once(self):
+        logger = await logging_module.get_audit_logger()
         assert isinstance(logger, logging.Logger)
         assert logger.propagate is False
         assert len(logger.handlers) == 1
 
-        again = logging_module.get_audit_logger()
+        again = await logging_module.get_audit_logger()
         assert again is logger
         assert len(again.handlers) == 1
 
-    def test_log_business_event_writes_payload(self):
-        logger = logging_module.get_audit_logger()
+    async def test_log_business_event_writes_payload(self):
+        logger = await logging_module.get_audit_logger()
         captured = _CaptureHandler()
         logger.addHandler(captured)
         try:
-            logging_module.log_business_event(
+            await logging_module.log_business_event(
                 event="support_ticket_created",
                 user_id=42,
                 ip_address="127.0.0.1",
@@ -90,24 +90,24 @@ class TestAuditLogger:
         assert payload["ip_address"] == "127.0.0.1"
         assert payload["ticket_id"] == "T-1"
 
-    def test_log_business_event_omits_missing_optional_fields(self):
-        logger = logging_module.get_audit_logger()
+    async def test_log_business_event_omits_missing_optional_fields(self):
+        logger = await logging_module.get_audit_logger()
         captured = _CaptureHandler()
         logger.addHandler(captured)
         try:
-            logging_module.log_business_event(event="simple_event")
+            await logging_module.log_business_event(event="simple_event")
         finally:
             logger.removeHandler(captured)
 
         payload = captured.records[0].business_event
         assert payload == {"event": "simple_event"}
 
-    def test_log_security_event_writes_all_fields(self):
-        logger = logging_module.get_audit_logger()
+    async def test_log_security_event_writes_all_fields(self):
+        logger = await logging_module.get_audit_logger()
         captured = _CaptureHandler()
         logger.addHandler(captured)
         try:
-            logging_module.log_security_event(
+            await logging_module.log_security_event(
                 event="login_failed",
                 user_id="7",
                 email="u@example.com",
@@ -124,12 +124,12 @@ class TestAuditLogger:
         assert payload["ip_address"] == "10.0.0.1"
         assert payload["attempts"] == 3
 
-    def test_log_security_event_omits_empty_optional_fields(self):
-        logger = logging_module.get_audit_logger()
+    async def test_log_security_event_omits_empty_optional_fields(self):
+        logger = await logging_module.get_audit_logger()
         captured = _CaptureHandler()
         logger.addHandler(captured)
         try:
-            logging_module.log_security_event(event="account_locked")
+            await logging_module.log_security_event(event="account_locked")
         finally:
             logger.removeHandler(captured)
 
@@ -138,7 +138,7 @@ class TestAuditLogger:
 
 
 @pytest.mark.unit
-def test_utils_facade_re_exports_logging_helpers():
+async def test_utils_facade_re_exports_logging_helpers():
     from backend import utils
 
     assert utils.setup_logging is logging_module.setup_logging

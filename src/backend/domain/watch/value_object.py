@@ -2,6 +2,37 @@ from dataclasses import dataclass
 
 
 @dataclass
+class DiaryEntry:
+    """An anime entry in the user's diary list.
+
+    Attributes:
+        status: Diary status label.
+        current_episode: Episode reached by the user.
+        rating: Optional personal rating.
+        note: Optional personal note.
+        started_at: When the user started watching.
+        completed_at: When the user finished watching.
+        last_watched_at: Last viewing time.
+        anime_id: Anime identifier.
+        title: Anime title.
+        cover_url: Optional anime cover.
+        episode_count: Optional total episodes.
+    """
+
+    status: str
+    current_episode: int | None
+    rating: float | None
+    note: str | None
+    started_at: str | None
+    completed_at: str | None
+    last_watched_at: str | None
+    anime_id: int
+    title: str = ""
+    cover_url: str | None = None
+    episode_count: int | None = None
+
+
+@dataclass
 class DiscoveredWatchSource:
     episode: int
     translation_name: str

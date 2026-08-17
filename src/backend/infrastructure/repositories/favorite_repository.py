@@ -25,7 +25,7 @@ class FavoriteRepository:
             title=favorite.title,
             description=favorite.description,
             cover_url=favorite.cover_url,
-            genres_json=self._dump_genres(favorite.genres),
+            genres_json=await self._dump_genres(favorite.genres),
         )
         self.session.add(db_fav)
         await self.session.flush()
@@ -70,18 +70,18 @@ class FavoriteRepository:
                 title=r.title,
                 description=r.description,
                 cover_url=r.cover_url,
-                genres=self._load_genres(r.genres_json),
+                genres=await self._load_genres(r.genres_json),
             )
             for r in result.scalars().all()
         ]
 
-    def _dump_genres(self, genres: list[str] | None) -> str | None:
+    async def _dump_genres(self, genres: list[str] | None) -> str | None:
         if not genres:
             return None
         cleaned = [str(genre).strip() for genre in genres if str(genre).strip()]
         return json.dumps(cleaned, ensure_ascii=False) if cleaned else None
 
-    def _load_genres(self, payload: str | None) -> list[str]:
+    async def _load_genres(self, payload: str | None) -> list[str]:
         if not payload:
             return []
         try:

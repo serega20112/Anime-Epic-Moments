@@ -28,7 +28,7 @@ class HighlightDashboardCache:
         include_spoilers: bool,
     ) -> HighlightDashboard | None:
         return await self.store.get(
-            self._key(
+            await self._key(
                 limit=limit,
                 anime_id=anime_id,
                 emotion=emotion,
@@ -53,7 +53,7 @@ class HighlightDashboardCache:
         value: HighlightDashboard,
     ) -> HighlightDashboard:
         return await self.store.set(
-            self._key(
+            await self._key(
                 limit=limit,
                 anime_id=anime_id,
                 emotion=emotion,
@@ -70,7 +70,7 @@ class HighlightDashboardCache:
     async def invalidate_public(self):
         await self.store.delete_prefix(f"{self.prefix}:")
 
-    def _key(
+    async def _key(
         self,
         limit: int,
         anime_id: int | None,

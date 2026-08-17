@@ -28,5 +28,5 @@ class SetAnimeCommentLikeUseCase:
                 liked=command.liked,
             )
         except ValueError:
-            return WatchResult.failure("comment_not_found", status_code=404)
-        return WatchResult.success(comment)
+            return await WatchResult.failure("comment_not_found", status_code=404)
+        return await WatchResult.success(comment)

@@ -6,7 +6,7 @@ from fastapi import Request
 from fastapi.responses import RedirectResponse
 
 
-def discussion_redirect(request: Request, anime_id: int, payload) -> RedirectResponse:
+async def discussion_redirect(request: Request, anime_id: int, payload) -> RedirectResponse:
     """Build a redirect back to the watch page after adding a comment.
 
     Args:
@@ -17,7 +17,7 @@ def discussion_redirect(request: Request, anime_id: int, payload) -> RedirectRes
     Returns:
         RedirectResponse: SEE_OTHER redirect to the watch page.
     """
-    episode = _to_int(str((payload or {}).get("episode") or "") or "1")
+    episode = await _to_int(str((payload or {}).get("episode") or "") or "1")
     discussion_sort = str((payload or {}).get("discussion_sort") or "popular")
     return RedirectResponse(
         url=(
@@ -29,7 +29,7 @@ def discussion_redirect(request: Request, anime_id: int, payload) -> RedirectRes
     )
 
 
-def _to_int(value) -> int:
+async def _to_int(value) -> int:
     """Convert a value to an int, defaulting to 1.
 
     Args:

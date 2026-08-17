@@ -15,6 +15,40 @@ from backend.infrastructure.web.templating import (
 
 _STATIC_DIR = Path(__file__).resolve().parents[4] / "src" / "frontend" / "static"
 
+_NAV_ROUTE_NAMES = {
+    "anime.search_anime_page": ("/anime/search", ("GET",)),
+    "anime.catalog_page": ("/anime/catalog", ("GET",)),
+    "anime.search_by_description_page": ("/anime/search/description", ("GET",)),
+    "highlight.get_public_top_highlights": ("/highlights/top", ("GET",)),
+    "highlight.get_highlight_feed": ("/highlights/feed", ("GET",)),
+    "highlight.get_user_highlights": ("/highlights/{user_id}", ("GET",)),
+    "highlight.get_liked_highlights": ("/highlights/liked", ("GET",)),
+    "highlight.get_saved_highlights": ("/highlights/saved", ("GET",)),
+    "highlight.get_highlight_notifications": ("/highlights/notifications", ("GET",)),
+    "favorite.get_favorites": ("/favorites/{user_id}", ("GET",)),
+    "collection.collections_page": ("/collections", ("GET",)),
+    "collection.create_collection": ("/collections", ("POST",)),
+    "auth.profile_page": ("/auth/profile", ("GET",)),
+    "auth.login_page": ("/auth/login", ("GET",)),
+    "auth.register_page": ("/auth/register", ("GET",)),
+    "auth.logout_user": ("/auth/logout", ("POST",)),
+    "auth.password_reset_request_page": ("/auth/password-reset", ("GET",)),
+    "auth.confirm_password_reset": ("/auth/password-reset/confirm", ("POST",)),
+    "support.support_page": ("/support", ("GET",)),
+    "user.public_profile_page": ("/users/{user_id}", ("GET",)),
+    "user.follow_user": ("/users/{user_id}/follow", ("POST",)),
+    "user.unfollow_user": ("/users/{user_id}/unfollow", ("POST",)),
+    "watch.watch_page": ("/watch/{anime_id}", ("GET",)),
+    "collection.shared_collection_page": ("/collections/share/{collection_id}", ("GET",)),
+}
+
+
+def _register_placeholder(app: FastAPI, name: str, rule: str, methods: tuple[str, ...]) -> None:
+    async def _placeholder(**_kwargs):
+        return ""
+
+    app.add_api_route(rule, _placeholder, methods=list(methods), name=name)
+
 
 def _build_app() -> FastAPI:
     app = FastAPI()
@@ -26,18 +60,21 @@ def _build_app() -> FastAPI:
         session_cookie="aem_session",
     )
 
-    @app.get("/")
+    @app.get("/", name="index.index")
     async def index(request: Request):
-        flash(request, "Hello!")
-        return pop_flashed_messages(request)
+        await flash(request, "Hello!")
+        return await pop_flashed_messages(request)
 
     @app.get("/render")
     async def render(request: Request):
-        return render_template(request, "errors/404.html", title="Test")
+        return await render_template(request, "errors/404.html", title="Test")
 
     @app.get("/item/{item_id}")
     async def item(request: Request, item_id: int):
         return {"item_id": item_id}
+
+    for name, (rule, methods) in _NAV_ROUTE_NAMES.items():
+        _register_placeholder(app, name, rule, methods)
 
     return app
 
@@ -67,9 +104,9 @@ def test_template_request_proxy_path_and_referrer():
         assert res.status_code == 200
 
 
-def test_flash_requires_dict_session():
+async def test_flash_requires_dict_session():
     from types import SimpleNamespace
 
     request = SimpleNamespace(scope={"session": "not-a-dict"})
-    flash(request, "ignored")
-    assert pop_flashed_messages(request) == []
+    await flash(request, "ignored")
+    assert await pop_flashed_messages(request) == []

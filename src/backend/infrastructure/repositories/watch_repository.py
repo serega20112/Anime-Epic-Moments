@@ -52,13 +52,23 @@ class WatchRepository:
         row = result.scalar_one_or_none()
         if not row:
             return None
-        return UserAnimeStatus(
-            id=row.id,
-            user_id=row.user_id,
-            anime_id=row.anime_id,
-            status=row.status,
-            updated_at=row.updated_at,
+        return await self._map_status(row)
+
+    async def get_statuses_by_user(self, user_id: int) -> list[UserAnimeStatus]:
+        """Fetch all diary entries of a user.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            list[UserAnimeStatus]: Diary entries ordered by update time.
+        """
+        result = await self.session.execute(
+            select(UserAnimeStatusModel)
+            .where(UserAnimeStatusModel.user_id == user_id)
+            .order_by(UserAnimeStatusModel.updated_at.desc(), UserAnimeStatusModel.id.desc())
         )
+        return [await self._map_status(row) for row in result.scalars().all()]
 
     async def upsert_status(self, status: UserAnimeStatus) -> UserAnimeStatus:
         """Create or update an anime status.
@@ -78,6 +88,12 @@ class WatchRepository:
         row = result.scalar_one_or_none()
         if row:
             row.status = status.status
+            row.current_episode = status.current_episode
+            row.started_at = status.started_at
+            row.completed_at = status.completed_at
+            row.last_watched_at = status.last_watched_at
+            row.rating = status.rating
+            row.note = status.note
             row.updated_at = datetime.utcnow()
             await self.session.flush()
             status.id = row.id
@@ -88,12 +104,42 @@ class WatchRepository:
             user_id=status.user_id,
             anime_id=status.anime_id,
             status=status.status,
+            current_episode=status.current_episode,
+            started_at=status.started_at,
+            completed_at=status.completed_at,
+            last_watched_at=status.last_watched_at,
+            rating=status.rating,
+            note=status.note,
         )
         self.session.add(row)
         await self.session.flush()
         status.id = row.id
         status.updated_at = row.updated_at
         return status
+
+    @staticmethod
+    async def _map_status(row: UserAnimeStatusModel) -> UserAnimeStatus:
+        """Map a status row to a domain object.
+
+        Args:
+            row: Status model row.
+
+        Returns:
+            UserAnimeStatus: Mapped domain object.
+        """
+        return UserAnimeStatus(
+            id=row.id,
+            user_id=row.user_id,
+            anime_id=row.anime_id,
+            status=row.status,
+            updated_at=row.updated_at,
+            current_episode=row.current_episode,
+            started_at=row.started_at,
+            completed_at=row.completed_at,
+            last_watched_at=row.last_watched_at,
+            rating=row.rating,
+            note=row.note,
+        )
 
     async def get_translations(self, anime_id: int) -> list[Translation]:
         """Fetch translations for an anime.
@@ -595,7 +641,7 @@ class WatchRepository:
         elif not liked and existing is not None:
             await self.session.delete(existing)
         await self.session.flush()
-        refreshed = await self._get_anime_comments(
+        refreshed = await self.get_anime_comments(
             anime_id=comment.anime_id,
             viewer_user_id=user_id,
             limit=200,

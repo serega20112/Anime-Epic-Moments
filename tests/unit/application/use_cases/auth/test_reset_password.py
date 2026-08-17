@@ -44,8 +44,8 @@ class TestResetPasswordUseCase:
         Что ожидаем: результат failure, пароль не обновляется.
         """
         user_repo = AsyncMock()
-        jwt_service = Mock()
-        password_service = Mock()
+        jwt_service = AsyncMock()
+        password_service = AsyncMock()
         blocklist = Mock()
         blocklist.consume = AsyncMock(return_value=False)
         use_case = ResetPasswordUseCase(
@@ -64,8 +64,8 @@ class TestResetPasswordUseCase:
         """
         user_repo = AsyncMock()
         user_repo.get_by_id.return_value = None
-        jwt_service = Mock()
-        jwt_service.decode_password_reset_token.return_value = 17
+        jwt_service = AsyncMock()
+        jwt_service.decode_password_reset_token = AsyncMock(return_value=17)
         use_case = ResetPasswordUseCase(user_repo, jwt_service, Mock(), _blocklist(), AsyncMock())
 
         result = await use_case.execute("token", "new-password")
@@ -80,9 +80,9 @@ class TestResetPasswordUseCase:
         """
         user_repo = AsyncMock()
         user_repo.get_by_id.return_value = SimpleNamespace(id=17)
-        jwt_service = Mock()
-        jwt_service.decode_password_reset_token.return_value = 17
-        jwt_service.get_token_ttl_seconds.return_value = 1800
+        jwt_service = AsyncMock()
+        jwt_service.decode_password_reset_token = AsyncMock(return_value=17)
+        jwt_service.get_token_ttl_seconds = AsyncMock(return_value=1800)
         password_service = AsyncMock()
         password_service.hash_password.return_value = "new-hash"
         blocklist = _blocklist()

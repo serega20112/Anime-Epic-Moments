@@ -28,7 +28,7 @@ class RecommendationUseCaseResult:
     error: str | None = None
 
     @classmethod
-    def success(cls, data: Any = None, status_code: int = 200) -> RecommendationUseCaseResult:
+    async def success(cls, data: Any = None, status_code: int = 200) -> RecommendationUseCaseResult:
         """Build a successful result.
 
         Args:
@@ -41,7 +41,7 @@ class RecommendationUseCaseResult:
         return cls(ok=True, status_code=status_code, data=data)
 
     @classmethod
-    def failure(cls, error: str, status_code: int = 400) -> RecommendationUseCaseResult:
+    async def failure(cls, error: str, status_code: int = 400) -> RecommendationUseCaseResult:
         """Build a failed result.
 
         Args:

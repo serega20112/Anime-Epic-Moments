@@ -81,9 +81,9 @@ class GetProfileOverviewUseCase:
             own_highlights=own_highlights,
             watched_stats=watched_stats,
         )
-        genre_pool = self._collect_genres(favorites=favorites, anime_map=anime_map)
-        favorite_genres = build_genre_affinities(genre_pool)
-        mood = detect_profile_mood(
+        genre_pool = await self._collect_genres(favorites=favorites, anime_map=anime_map)
+        favorite_genres = await build_genre_affinities(genre_pool)
+        mood = await detect_profile_mood(
             genres=genre_pool,
             emotions=[item.emotion or "" for item in own_highlights],
         )
@@ -91,7 +91,7 @@ class GetProfileOverviewUseCase:
             sum(item.watched_seconds for item in watched_stats) / 3600,
             1,
         )
-        top_anime = self._build_top_anime(
+        top_anime = await self._build_top_anime(
             favorites=favorites,
             own_highlights=own_highlights,
             watched_stats=watched_stats,
@@ -137,7 +137,7 @@ class GetProfileOverviewUseCase:
                 ViewingHeatmapCell(date=item.date, interactions=item.interactions)
                 for item in heatmap
             ],
-            achievements=build_achievement_badges(
+            achievements=await build_achievement_badges(
                 profile_summary=summary,
                 hours_watched=hours_watched,
                 favorite_genres=favorite_genres,
@@ -194,7 +194,7 @@ class GetProfileOverviewUseCase:
             anime_map[anime_id] = None if isinstance(anime, BaseException) else anime
         return anime_map
 
-    def _collect_genres(self, favorites, anime_map: dict[int, object | None]) -> list[str]:
+    async def _collect_genres(self, favorites, anime_map: dict[int, object | None]) -> list[str]:
         genres: list[str] = []
         for favorite in favorites:
             if favorite.genres:
@@ -208,7 +208,7 @@ class GetProfileOverviewUseCase:
                 genres.extend(anime.genres)
         return genres
 
-    def _build_top_anime(
+    async def _build_top_anime(
         self, favorites, own_highlights, watched_stats, anime_map
     ) -> list[TopAnimeEntry]:
         weights: dict[int, float] = {}

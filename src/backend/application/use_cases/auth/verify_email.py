@@ -53,20 +53,20 @@ class VerifyEmailUseCase:
         normalized_code = str(code or "").strip()
         payload = await self.verification_store.get(normalized_email)
         if payload is None:
-            return AuthResult.failure(
+            return await AuthResult.failure(
                 "Код подтверждения истёк. Запроси новый.",
                 "auth.verify_email_page",
                 redirect_email=normalized_email,
             )
         if payload.code != normalized_code:
-            return AuthResult.failure(
+            return await AuthResult.failure(
                 "Неверный код подтверждения.",
                 "auth.verify_email_page",
                 redirect_email=normalized_email,
             )
         if await self.user_repo.get_by_email(normalized_email):
             await self.verification_store.delete(normalized_email)
-            return AuthResult.failure(
+            return await AuthResult.failure(
                 f"Пользователь с email {normalized_email} уже существует",
                 "auth.verify_email_page",
                 redirect_email=normalized_email,
@@ -79,7 +79,7 @@ class VerifyEmailUseCase:
         )
         created_user = await self.user_repo.add(user)
         await self.verification_store.delete(normalized_email)
-        return AuthResult.success(
+        return await AuthResult.success(
             data=created_user,
             message=f"Добро пожаловать, {created_user.username}!",
             redirect_endpoint="index.index",

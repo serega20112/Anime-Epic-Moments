@@ -23,7 +23,7 @@ class GetSeasonPopularUseCase:
         """
         self.api_client = api_client
 
-    def _current_season(self) -> str:
+    async def _current_season(self) -> str:
         """Determine the current season name from the current month.
 
         Returns:
@@ -51,7 +51,7 @@ class GetSeasonPopularUseCase:
             ValidationError: If the season name is invalid.
         """
         year = query.year or datetime.now().year
-        season = query.season or self._current_season()
+        season = query.season or await self._current_season()
         if season not in _VALID_SEASONS:
             raise ValidationError(f"Invalid season: {season}")
         return await self.api_client.get_season_popular(

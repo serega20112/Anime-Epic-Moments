@@ -55,26 +55,26 @@ class UpdateUserProfileUseCase:
         """
         user = await self.user_repo.get_by_id(user_id)
         if not user:
-            return AuthResult.failure("Пользователь не найден", "auth.profile_page")
+            return await AuthResult.failure("Пользователь не найден", "auth.profile_page")
 
         cleaned_username = username.strip()
         if not cleaned_username:
-            return AuthResult.failure(
+            return await AuthResult.failure(
                 "Имя пользователя не может быть пустым",
                 "auth.profile_page",
             )
 
         try:
-            user.change_username(cleaned_username)
+            await user.change_username(cleaned_username)
         except InvalidUsernameError as exc:
-            return AuthResult.failure(str(exc), "auth.profile_page")
+            return await AuthResult.failure(str(exc), "auth.profile_page")
 
         normalized_avatar = avatar_url.strip() if avatar_url else None
-        user.update_avatar(normalized_avatar)
+        await user.update_avatar(normalized_avatar)
         updated_user = await self.user_repo.update(user)
         if self.profile_overview_cache is not None:
             await self.profile_overview_cache.invalidate_overview(user_id)
-        return AuthResult.success(
+        return await AuthResult.success(
             data=updated_user,
             message="Профиль обновлён",
             redirect_endpoint="auth.profile_page",

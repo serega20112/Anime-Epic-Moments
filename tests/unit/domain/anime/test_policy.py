@@ -18,7 +18,7 @@ class TestAnimeSafetyPolicy:
             ("романтика", "ecchi", True),
         ],
     )
-    def test_has_explicit_adult_intent_detects_explicit_queries(
+    async def test_has_explicit_adult_intent_detects_explicit_queries(
         self,
         description,
         genre_hint,
@@ -29,7 +29,7 @@ class TestAnimeSafetyPolicy:
         Что передаём: текст запроса и необязательный жанр-подсказку (в том числе явно взрослые маркеры).
         Что ожидаем: метод различает обычный и явно взрослый запрос, возвращая ожидаемый bool.
         """
-        result = AnimeSafetyPolicy.has_explicit_adult_intent(description, genre_hint)
+        result = await AnimeSafetyPolicy.has_explicit_adult_intent(description, genre_hint)
 
         assert result is expected
 
@@ -42,7 +42,7 @@ class TestAnimeSafetyPolicy:
             ("Normal Title", "explicit romance", ["Drama"], True),
         ],
     )
-    def test_is_probably_nsfw_uses_title_description_and_genres(
+    async def test_is_probably_nsfw_uses_title_description_and_genres(
         self,
         title,
         description,
@@ -56,16 +56,16 @@ class TestAnimeSafetyPolicy:
         """
         anime = Anime(external_id="11", title=title, description=description, genres=genres)
 
-        assert AnimeSafetyPolicy.is_probably_nsfw(anime) is expected
+        assert await AnimeSafetyPolicy.is_probably_nsfw(anime) is expected
 
     @pytest.mark.unit
-    def test_suggest_title_hints_extracts_unique_quoted_titles(self):
+    async def test_suggest_title_hints_extracts_unique_quoted_titles(self):
         """Что тестируем: метод suggest_title_hints.
 
         Что передаём: текст с названиями в разных типах кавычек и повторяющимся «Gintama».
         Что ожидаем: извлекаются уникальные нормализованные названия в порядке появления.
         """
-        result = AnimeSafetyPolicy.suggest_title_hints(
+        result = await AnimeSafetyPolicy.suggest_title_hints(
             'хочу что-то как "Gintama" и «KonoSuba», но не "Gintama"',
             genre_hint="'Saiki Kusuo no Psi-nan'",
         )

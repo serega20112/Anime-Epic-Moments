@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 
+import httpx
 import pytest
-import requests
 
 from backend.infrastructure.external import AniBoomProvider
 from backend.infrastructure.external.errors import (
@@ -48,7 +48,7 @@ def _embed_html() -> str:
 
 def test_aniboom_extracts_hls_from_embed() -> None:
     provider = _client()
-    provider.session.get = Mock(return_value=_FakeTextResponse(_embed_html()))
+    provider.session.get = AsyncMock(return_value=_FakeTextResponse(_embed_html()))
 
     items = provider.extract_embed("https://aniboom.one/embed/x?episode=1&translation=30")
 
@@ -70,7 +70,7 @@ def test_aniboom_extract_falls_back_to_dash() -> None:
     ).replace('"', "&quot;")
     page = f'<div id="video" data-parameters="{data}"></div>'
     provider = _client()
-    provider.session.get = Mock(return_value=_FakeTextResponse(page))
+    provider.session.get = AsyncMock(return_value=_FakeTextResponse(page))
 
     items = provider.extract_embed("https://aniboom.one/embed/x")
 
@@ -81,14 +81,14 @@ def test_aniboom_extract_no_sources_without_stream() -> None:
     data = json.dumps({"id": "x"}).replace('"', "&quot;")
     page = f'<div id="video" data-parameters="{data}"></div>'
     provider = _client()
-    provider.session.get = Mock(return_value=_FakeTextResponse(page))
+    provider.session.get = AsyncMock(return_value=_FakeTextResponse(page))
 
     assert provider.extract_embed("https://aniboom.one/embed/x") == []
 
 
 def test_aniboom_unparsable_page_raises() -> None:
     provider = _client()
-    provider.session.get = Mock(return_value=_FakeTextResponse("<html>no player</html>"))
+    provider.session.get = AsyncMock(return_value=_FakeTextResponse("<html>no player</html>"))
 
     with pytest.raises(ExternalServiceInvalidResponseError):
         provider.extract_embed("https://aniboom.one/embed/x")
@@ -96,7 +96,7 @@ def test_aniboom_unparsable_page_raises() -> None:
 
 def test_aniboom_timeout_raises() -> None:
     provider = _client()
-    provider.session.get = Mock(side_effect=requests.Timeout())
+    provider.session.get = AsyncMock(side_effect=httpx.TimeoutException("timeout"))
 
     with pytest.raises(ExternalServiceTimeoutError):
         provider.extract_embed("https://aniboom.one/embed/x")
@@ -104,7 +104,7 @@ def test_aniboom_timeout_raises() -> None:
 
 def test_aniboom_unavailable_raises() -> None:
     provider = _client()
-    provider.session.get = Mock(side_effect=requests.ConnectionError())
+    provider.session.get = AsyncMock(side_effect=httpx.ConnectError("boom"))
 
     with pytest.raises(ExternalServiceUnavailableError):
         provider.extract_embed("https://aniboom.one/embed/x")

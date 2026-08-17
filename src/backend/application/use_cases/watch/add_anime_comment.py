@@ -23,12 +23,12 @@ class AddAnimeCommentUseCase:
     async def _execute(self, command: AddAnimeCommentCommand) -> WatchResult:
         normalized_content = str(command.content or "").strip()
         if not normalized_content or len(normalized_content) < 2:
-            return WatchResult.failure(
+            return await WatchResult.failure(
                 "Комментарий должен быть от 2 до 600 символов",
                 status_code=400,
             )
         if len(normalized_content) > 600:
-            return WatchResult.failure(
+            return await WatchResult.failure(
                 "Комментарий должен быть от 2 до 600 символов",
                 status_code=400,
             )
@@ -37,4 +37,4 @@ class AddAnimeCommentUseCase:
             user_id=command.user_id,
             content=normalized_content,
         )
-        return WatchResult.success(comment, status_code=201)
+        return await WatchResult.success(comment, status_code=201)

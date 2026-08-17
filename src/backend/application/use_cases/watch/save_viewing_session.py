@@ -27,7 +27,7 @@ class SaveViewingSessionUseCase:
 
     async def _execute(self, command: SaveViewingSessionCommand) -> WatchResult:
         if command.episode is None or command.watch_source_id is None:
-            return WatchResult.failure("invalid_payload", status_code=400)
+            return await WatchResult.failure("invalid_payload", status_code=400)
         session = await self.watch_repo.upsert_session(
             ViewingSession(
                 user_id=command.user_id,
@@ -42,4 +42,4 @@ class SaveViewingSessionUseCase:
         )
         if self.profile_overview_cache is not None:
             await self.profile_overview_cache.invalidate_overview(command.user_id)
-        return WatchResult.success(session)
+        return await WatchResult.success(session)

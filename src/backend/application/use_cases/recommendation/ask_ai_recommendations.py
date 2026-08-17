@@ -113,11 +113,11 @@ class AskAiRecommendationsUseCase:
     ) -> RecommendationUseCaseResult:
         normalized_query = str(command.query or "").strip()
         if not normalized_query:
-            return RecommendationUseCaseResult.failure(
+            return await RecommendationUseCaseResult.failure(
                 "invalid_query",
                 status_code=400,
             )
-        return RecommendationUseCaseResult.success(
+        return await RecommendationUseCaseResult.success(
             await self._build_recommendations(
                 user_id=command.user_id,
                 normalized_query=normalized_query,
@@ -138,15 +138,15 @@ class AskAiRecommendationsUseCase:
         )
         existing_ids = {int(item.anime_id) for item in favorites}
         top_genres = Counter(genre for favorite in favorites for genre in (favorite.genres or []))
-        search_plan = self._build_search_plan(
+        search_plan = await self._build_search_plan(
             normalized_query=normalized_query,
             generated_queries=queries,
         )
         if not search_plan:
             return []
 
-        query_terms = self._extract_terms(normalized_query)
-        subject_terms = self._extract_subject_terms(normalized_query)
+        query_terms = await self._extract_terms(normalized_query)
+        subject_terms = await self._extract_subject_terms(normalized_query)
         has_explicit_subject = bool(subject_terms)
         scored_candidates: dict[int, dict[str, object]] = {}
 
@@ -162,21 +162,21 @@ class AskAiRecommendationsUseCase:
                     title=search_query,
                     limit=max(limit * 2, 8),
                 )
-            query_variant_terms = self._extract_terms(search_query)
+            query_variant_terms = await self._extract_terms(search_query)
             for anime in candidates:
                 anime_id = int(anime.external_id or 0)
                 if anime_id <= 0 or anime_id in existing_ids:
                     continue
                 genre_overlap = len(set(anime.genres or []) & set(top_genres.keys()))
-                query_relevance = self._score_term_overlap(
+                query_relevance = await self._score_term_overlap(
                     query_terms=query_terms,
                     anime=anime,
                 )
-                variant_relevance = self._score_term_overlap(
+                variant_relevance = await self._score_term_overlap(
                     query_terms=query_variant_terms,
                     anime=anime,
                 )
-                subject_hits = self._score_subject_overlap(
+                subject_hits = await self._score_subject_overlap(
                     subject_terms=subject_terms,
                     anime=anime,
                 )
@@ -203,7 +203,7 @@ class AskAiRecommendationsUseCase:
                     "query_source": query_source,
                     "recommendation": RecommendationResult(
                         anime_id=anime_id,
-                        reason=self._build_reason(
+                        reason=await self._build_reason(
                             prompt=normalized_query,
                             anime_title=anime.title or f"Anime #{anime_id}",
                             genres=anime.genres or [],
@@ -237,7 +237,7 @@ class AskAiRecommendationsUseCase:
         recommendations.sort(key=lambda item: item.similarity_score, reverse=True)
         return recommendations[: max(int(limit), 1)]
 
-    def _build_search_plan(
+    async def _build_search_plan(
         self,
         normalized_query: str,
         generated_queries: list[str],
@@ -256,27 +256,27 @@ class AskAiRecommendationsUseCase:
             unique.append({"query": sanitized, "source": source})
         return unique
 
-    def _extract_terms(self, value: str) -> list[str]:
+    async def _extract_terms(self, value: str) -> list[str]:
         normalized_terms: list[str] = []
         seen: set[str] = set()
         for raw_term in re.findall(r"[a-zA-Zа-яА-Я0-9-]+", str(value or "").lower()):
-            term = self._normalize_term(raw_term)
+            term = await self._normalize_term(raw_term)
             if len(term) < 3 or term in self._STOP_WORDS or term in seen:
                 continue
             seen.add(term)
             normalized_terms.append(term)
         return normalized_terms
 
-    def _extract_subject_terms(self, query: str) -> list[str]:
+    async def _extract_subject_terms(self, query: str) -> list[str]:
         subject_terms: list[str] = []
         for pattern in self._SUBJECT_PATTERNS:
             match = pattern.search(str(query or ""))
             if not match:
                 continue
-            subject_terms.extend(self._extract_terms(match.group(1)))
+            subject_terms.extend(await self._extract_terms(match.group(1)))
         return subject_terms
 
-    def _normalize_term(self, value: str) -> str:
+    async def _normalize_term(self, value: str) -> str:
         term = str(value or "").strip().lower()
         for suffix in (
             "ами",
@@ -324,11 +324,11 @@ class AskAiRecommendationsUseCase:
                 return term[: -len(suffix)]
         return term
 
-    def _score_term_overlap(self, query_terms: list[str], anime) -> float:
+    async def _score_term_overlap(self, query_terms: list[str], anime) -> float:
         if not query_terms:
             return 0.0
         anime_terms = set(
-            self._extract_terms(
+            await self._extract_terms(
                 " ".join(
                     [
                         str(anime.title or ""),
@@ -345,11 +345,11 @@ class AskAiRecommendationsUseCase:
             return 0.0
         return matches / max(len(query_terms), 1)
 
-    def _score_subject_overlap(self, subject_terms: list[str], anime) -> int:
+    async def _score_subject_overlap(self, subject_terms: list[str], anime) -> int:
         if not subject_terms:
             return 0
         anime_terms = set(
-            self._extract_terms(
+            await self._extract_terms(
                 " ".join(
                     [
                         str(anime.title or ""),
@@ -361,7 +361,7 @@ class AskAiRecommendationsUseCase:
         )
         return sum(1 for term in subject_terms if term in anime_terms)
 
-    def _build_reason(
+    async def _build_reason(
         self,
         prompt: str,
         anime_title: str,

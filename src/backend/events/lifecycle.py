@@ -15,7 +15,7 @@ from backend.utils import setup_logging
 logger = logging.getLogger("anime_epic_moments")
 
 
-def _resolve_log_level(level_name: str) -> int:
+async def _resolve_log_level(level_name: str) -> int:
     """Resolve a logging level name to its numeric value.
 
     Args:
@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     Yields:
         None: The lifespan body.
     """
-    setup_logging(level=_resolve_log_level(Settings.log_level))
+    await setup_logging(level=await _resolve_log_level(Settings.log_level))
     if Settings.database_auto_init:
         await init_db()
     else:

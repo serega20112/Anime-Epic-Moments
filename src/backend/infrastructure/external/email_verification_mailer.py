@@ -1,9 +1,9 @@
+import asyncio
 import smtplib
 from email.message import EmailMessage
 from html import escape
 
 from backend.config import Settings
-from backend.infrastructure.external._async import external_method
 from backend.infrastructure.external.errors import (
     ExternalServiceConfigurationError,
     ExternalServiceUnavailableError,
@@ -13,8 +13,7 @@ from backend.infrastructure.external.errors import (
 class EmailVerificationMailer:
     """Отправляет письмо с кодом подтверждения email."""
 
-    @external_method
-    def send_verification_code(
+    async def send_verification_code(
         self,
         email: str,
         code: str,
@@ -26,7 +25,7 @@ class EmailVerificationMailer:
                 "SMTP settings are not configured", service_name="smtp"
             )
 
-        normalized_theme = self._normalize_theme(theme)
+        normalized_theme = await self._normalize_theme(theme)
         message = EmailMessage()
         message["Subject"] = "Anime Epic Moments: подтверждение email"
         message["From"] = Settings.smtp_from_email
@@ -35,30 +34,38 @@ class EmailVerificationMailer:
             "Подтверди email для Anime Epic Moments.\n\n"
             f"Код подтверждения: {code}\n\n"
             f"Код действует {Settings.email_verification_expire_minutes} минут.\n"
-            f"Тема письма: {self._theme_label(normalized_theme)}."
+            f"Тема письма: {await self._theme_label(normalized_theme)}."
         )
         message.add_alternative(
-            self._build_html_message(code=code, theme=normalized_theme),
+            await self._build_html_message(code=code, theme=normalized_theme),
             subtype="html",
         )
 
         try:
-            with smtplib.SMTP(Settings.smtp_host, Settings.smtp_port, timeout=30) as smtp:
-                if Settings.smtp_use_tls:
-                    smtp.starttls()
-                if Settings.smtp_username and Settings.smtp_password:
-                    smtp.login(Settings.smtp_username, Settings.smtp_password)
-                smtp.send_message(message)
+            await asyncio.to_thread(self._deliver_via_smtp, message)
         except (OSError, smtplib.SMTPException) as error:
             raise ExternalServiceUnavailableError(
                 "Не удалось отправить письмо с кодом подтверждения. Проверь SMTP-настройки и сетевой доступ.",
                 service_name="smtp",
             ) from error
 
-    def _build_html_message(self, code: str, theme: str) -> str:
-        palette = self._palette(theme)
-        title = escape(self._theme_title(theme))
-        label = escape(self._theme_label(theme))
+    def _deliver_via_smtp(self, message: EmailMessage) -> None:
+        """Отправляет письмо через SMTP (блокирующий вызов).
+
+        В стандартной библиотеке нет асинхронного SMTP-клиента, поэтому
+        блокирующая операция изолирована в asyncio.to_thread.
+        """
+        with smtplib.SMTP(Settings.smtp_host, Settings.smtp_port, timeout=30) as smtp:
+            if Settings.smtp_use_tls:
+                smtp.starttls()
+            if Settings.smtp_username and Settings.smtp_password:
+                smtp.login(Settings.smtp_username, Settings.smtp_password)
+            smtp.send_message(message)
+
+    async def _build_html_message(self, code: str, theme: str) -> str:
+        palette = await self._palette(theme)
+        title = escape(await self._theme_title(theme))
+        label = escape(await self._theme_label(theme))
         safe_code = escape(code)
         safe_minutes = escape(str(Settings.email_verification_expire_minutes))
         return (
@@ -100,11 +107,11 @@ class EmailVerificationMailer:
             "</html>"
         )
 
-    def _normalize_theme(self, value: str | None) -> str:
+    async def _normalize_theme(self, value: str | None) -> str:
         normalized = str(value or "").strip().lower()
         return normalized if normalized in {"neon", "dark", "light", "rose"} else "neon"
 
-    def _theme_label(self, theme: str) -> str:
+    async def _theme_label(self, theme: str) -> str:
         labels = {
             "neon": "Неоновая тема",
             "dark": "Тёмная тема",
@@ -113,7 +120,7 @@ class EmailVerificationMailer:
         }
         return labels[theme]
 
-    def _theme_title(self, theme: str) -> str:
+    async def _theme_title(self, theme: str) -> str:
         titles = {
             "neon": "Подтверждение почты в неоновом стиле",
             "dark": "Подтверждение почты в тёмной теме",
@@ -122,7 +129,7 @@ class EmailVerificationMailer:
         }
         return titles[theme]
 
-    def _palette(self, theme: str) -> dict[str, str]:
+    async def _palette(self, theme: str) -> dict[str, str]:
         palettes = {
             "neon": {
                 "page_background": "#050816",

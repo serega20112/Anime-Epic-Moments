@@ -31,6 +31,14 @@ from backend.application.dto.highlight_commands import (
     SetHighlightLikeCommand,
     SetSavedHighlightCommand,
 )
+from backend.application.dto.moment_commands import (
+    PublishViewingMomentCommand,
+    SaveViewingMomentCommand,
+)
+from backend.application.dto.reaction_commands import (
+    GetEpisodeReactionsQuery,
+    SetEpisodeReactionCommand,
+)
 from backend.application.dto.recommendation_commands import AskAiRecommendationsCommand
 from backend.application.dto.support_commands import CreateSupportTicketCommand
 from backend.application.dto.watch_commands import (
@@ -55,19 +63,23 @@ __all__ = [
     "CreateWatchHighlightCommand",
     "DeleteHighlightCommand",
     "EditHighlightCommand",
+    "GetEpisodeReactionsQuery",
     "GetSeasonPopularQuery",
     "HighlightDashboardQuery",
     "HighlightFeedQuery",
     "HighlightListQuery",
     "LoginCommand",
+    "PublishViewingMomentCommand",
     "RegisterCommand",
     "RemoveCollectionItemCommand",
     "RequestPasswordResetCommand",
     "ResendVerificationCommand",
     "SaveViewingSessionCommand",
+    "SaveViewingMomentCommand",
     "SearchAnimeByDescriptionQuery",
     "SearchAnimeQuery",
     "SetAnimeCommentLikeCommand",
+    "SetEpisodeReactionCommand",
     "SetHighlightLikeCommand",
     "SetSavedHighlightCommand",
     "UpdateProfileCommand",

@@ -71,9 +71,9 @@ class MediaProxyClient:
         Returns:
             Response: Proxied media response or an error response.
         """
-        if not is_allowed_media_url(upstream_url):
+        if not await is_allowed_media_url(upstream_url):
             return Response(status_code=403)
-        request_headers = {"User-Agent": browser_user_agent(request.headers.get("User-Agent"))}
+        request_headers = {"User-Agent": await browser_user_agent(request.headers.get("User-Agent"))}
         if request.headers.get("Range"):
             request_headers["Range"] = request.headers["Range"]
         try:
@@ -92,8 +92,8 @@ class MediaProxyClient:
             return JSONResponse({"error": "stream_unavailable"}, status_code=502)
 
         content_type = str(upstream_response.headers.get("Content-Type") or "").lower()
-        if is_hls_manifest(upstream_url=upstream_url, content_type=content_type):
-            proxied_manifest = rewrite_hls_manifest(
+        if await is_hls_manifest(upstream_url=upstream_url, content_type=content_type):
+            proxied_manifest = await rewrite_hls_manifest(
                 upstream_response.text,
                 upstream_url,
                 proxy_url_builder,
@@ -106,7 +106,7 @@ class MediaProxyClient:
 
         return StreamingResponse(
             self._stream(upstream_url, request_headers),
-            headers=_passthrough_headers(upstream_response),
+            headers=await _passthrough_headers(upstream_response),
             status_code=upstream_status,
         )
 
@@ -136,7 +136,7 @@ class MediaProxyClient:
         await self._client.aclose()
 
 
-def _passthrough_headers(upstream_response) -> dict[str, str]:
+async def _passthrough_headers(upstream_response) -> dict[str, str]:
     """Copy safe response headers from the upstream response.
 
     Args:

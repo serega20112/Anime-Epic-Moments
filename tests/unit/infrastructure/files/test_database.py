@@ -43,7 +43,7 @@ class _FakeEngine:
 class TestDatabaseBootstrap:
     """Юнит-тесты async-инициализации базы данных."""
 
-    def test_create_db_engine_uses_driver_specific_options(self, monkeypatch):
+    async def test_create_db_engine_uses_driver_specific_options(self, monkeypatch):
         """Что тестируем: create_db_engine выставляет connect_args для sqlite и pool_pre_ping для Postgres.
         Что передаём: два разных URL подключения.
         Что ожидаем: корректные kwargs для create_async_engine.
@@ -55,15 +55,15 @@ class TestDatabaseBootstrap:
             lambda database_url, **kwargs: calls.append((database_url, kwargs)) or object(),
         )
 
-        database_module.create_db_engine("sqlite:///test.db")
-        database_module.create_db_engine("postgresql+asyncpg://user:pass@db:5432/app")
+        await database_module.create_db_engine("sqlite:///test.db")
+        await database_module.create_db_engine("postgresql+asyncpg://user:pass@db:5432/app")
 
         assert calls == [
             ("sqlite:///test.db", {"echo": False, "connect_args": {"check_same_thread": False}}),
             ("postgresql+asyncpg://user:pass@db:5432/app", {"echo": False, "pool_pre_ping": True}),
         ]
 
-    def test_create_session_factory_binds_engine(self, monkeypatch):
+    async def test_create_session_factory_binds_engine(self, monkeypatch):
         """Что тестируем: create_session_factory привязывает sessionmaker к engine.
         Что передаём: строку-заглушку engine.
         Что ожидаем: factory возвращает объект с привязкой к engine.
@@ -75,46 +75,51 @@ class TestDatabaseBootstrap:
             lambda **kwargs: captured.update(kwargs) or object(),
         )
 
-        database_module.create_session_factory("engine")
+        await database_module.create_session_factory("engine")
 
         assert captured["bind"] == "engine"
 
-    def test_get_engine_creates_singleton_once(self, monkeypatch):
+    async def test_get_engine_creates_singleton_once(self, monkeypatch):
         """Что тестируем: get_engine лениво создает engine и переиспользует его.
         Что передаём: пустые глобалы и замоканный create_db_engine.
         Что ожидаем: engine создается один раз, повторные вызовы возвращают тот же объект.
         """
         calls = []
         monkeypatch.setattr(database_module, "engine", None)
-        monkeypatch.setattr(
-            database_module,
-            "create_db_engine",
-            lambda database_url: calls.append(database_url) or "engine",
-        )
 
-        first = database_module.get_engine()
-        second = database_module.get_engine()
+        async def _create_db_engine(database_url):
+            calls.append(database_url)
+            return "engine"
+
+        monkeypatch.setattr(database_module, "create_db_engine", _create_db_engine)
+
+        first = await database_module.get_engine()
+        second = await database_module.get_engine()
 
         assert first == "engine"
         assert second == "engine"
         assert calls == [database_module.Settings.database_url]
 
-    def test_get_session_factory_creates_singleton_once(self, monkeypatch):
+    async def test_get_session_factory_creates_singleton_once(self, monkeypatch):
         """Что тестируем: get_session_factory лениво создает sessionmaker и переиспользует его.
         Что передаём: пустой глобал SessionLocal.
         Что ожидаем: factory создается один раз.
         """
         calls = []
         monkeypatch.setattr(database_module, "SessionLocal", None)
-        monkeypatch.setattr(
-            database_module,
-            "create_session_factory",
-            lambda engine: calls.append(engine) or object(),
-        )
-        monkeypatch.setattr(database_module, "get_engine", lambda: "engine")
 
-        first = database_module.get_session_factory()
-        second = database_module.get_session_factory()
+        async def _create_session_factory(engine):
+            calls.append(engine)
+            return object()
+
+        async def _get_engine():
+            return "engine"
+
+        monkeypatch.setattr(database_module, "create_session_factory", _create_session_factory)
+        monkeypatch.setattr(database_module, "get_engine", _get_engine)
+
+        first = await database_module.get_session_factory()
+        second = await database_module.get_session_factory()
 
         assert first == second
         assert calls == ["engine"]
@@ -198,7 +203,10 @@ class TestDatabaseBootstrap:
             async def __aexit__(self, exc_type, exc, tb):
                 return False
 
-        monkeypatch.setattr(database_module, "get_session_factory", lambda: lambda: _FakeSession())
+        async def _get_session_factory():
+            return lambda: _FakeSession()
+
+        monkeypatch.setattr(database_module, "get_session_factory", _get_session_factory)
 
         session = await anext(database_module.get_session())
 

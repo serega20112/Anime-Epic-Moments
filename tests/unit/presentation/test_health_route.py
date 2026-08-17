@@ -65,7 +65,10 @@ class TestHealthEndpoints:
         assert response.json() == {"status": "ok"}
 
     def test_ready_ok_when_database_and_memory_store_available(self, monkeypatch):
-        monkeypatch.setattr(health_route, "get_session_factory", lambda: _FakeFactory())
+        async def _fake_factory():
+            return _FakeFactory()
+
+        monkeypatch.setattr(health_route, "get_session_factory", _fake_factory)
         store = KeyValueStore(redis_url=None)
         with self._build_client(store) as client:
             response = client.get("/ready")
@@ -76,11 +79,10 @@ class TestHealthEndpoints:
         }
 
     def test_ready_fails_when_database_unreachable(self, monkeypatch):
-        monkeypatch.setattr(
-            health_route,
-            "get_session_factory",
-            lambda: _FakeFactory(error=RuntimeError("db down")),
-        )
+        async def _fake_factory():
+            return _FakeFactory(error=RuntimeError("db down"))
+
+        monkeypatch.setattr(health_route, "get_session_factory", _fake_factory)
         store = KeyValueStore(redis_url=None)
         with self._build_client(store) as client:
             response = client.get("/ready")
@@ -89,7 +91,10 @@ class TestHealthEndpoints:
         assert response.json()["checks"]["database"] == "unreachable"
 
     def test_ready_fails_when_redis_unreachable(self, monkeypatch):
-        monkeypatch.setattr(health_route, "get_session_factory", lambda: _FakeFactory())
+        async def _fake_factory():
+            return _FakeFactory()
+
+        monkeypatch.setattr(health_route, "get_session_factory", _fake_factory)
         store = KeyValueStore(redis_url="redis://127.0.0.1:1")
 
         async def _fail_ping():

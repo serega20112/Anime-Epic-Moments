@@ -32,7 +32,7 @@ class AnimeUseCaseProvider(Provider):
     """Provide anime, recommendation, and profile overview use cases."""
 
     @provide(scope=Scope.REQUEST)
-    def get_profile_overview(
+    async def get_profile_overview(
         self,
         user_repository: UserRepository,
         highlight_repository: HighlightRepository,
@@ -67,7 +67,7 @@ class AnimeUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def search_anime(self, anime_api_client: AnimeApiClient) -> SearchAnimeUseCase:
+    async def search_anime(self, anime_api_client: AnimeApiClient) -> SearchAnimeUseCase:
         """Provide the search anime use case.
 
         Args:
@@ -79,7 +79,7 @@ class AnimeUseCaseProvider(Provider):
         return SearchAnimeUseCase(anime_api_client)
 
     @provide(scope=Scope.REQUEST)
-    def search_anime_by_description(
+    async def search_anime_by_description(
         self,
         anime_api_client: AnimeApiClient,
         llm_client: FailoverLLMClient,
@@ -96,7 +96,7 @@ class AnimeUseCaseProvider(Provider):
         return SearchAnimeByDescriptionUseCase(anime_api_client, llm_client)
 
     @provide(scope=Scope.REQUEST)
-    def autocomplete_anime(
+    async def autocomplete_anime(
         self,
         anime_api_client: AnimeApiClient,
     ) -> AutocompleteAnimeUseCase:
@@ -111,7 +111,7 @@ class AnimeUseCaseProvider(Provider):
         return AutocompleteAnimeUseCase(anime_api_client)
 
     @provide(scope=Scope.REQUEST)
-    def get_home_page(self) -> GetHomePageUseCase:
+    async def get_home_page(self) -> GetHomePageUseCase:
         """Provide the home page use case.
 
         Returns:
@@ -120,7 +120,7 @@ class AnimeUseCaseProvider(Provider):
         return GetHomePageUseCase()
 
     @provide(scope=Scope.REQUEST)
-    def filter_anime_catalog(
+    async def filter_anime_catalog(
         self,
         anime_api_client: AnimeApiClient,
     ) -> FilterAnimeCatalogUseCase:
@@ -135,7 +135,7 @@ class AnimeUseCaseProvider(Provider):
         return FilterAnimeCatalogUseCase(anime_api_client)
 
     @provide(scope=Scope.REQUEST)
-    def get_season_popular(
+    async def get_season_popular(
         self,
         anime_api_client: AnimeApiClient,
     ) -> GetSeasonPopularUseCase:
@@ -150,7 +150,7 @@ class AnimeUseCaseProvider(Provider):
         return GetSeasonPopularUseCase(anime_api_client)
 
     @provide(scope=Scope.REQUEST)
-    def generate_recommendations(
+    async def generate_recommendations(
         self,
         recommendation_service: RecommendationService,
     ) -> GenerateRecommendationsUseCase:
@@ -165,7 +165,7 @@ class AnimeUseCaseProvider(Provider):
         return GenerateRecommendationsUseCase(recommendation_service)
 
     @provide(scope=Scope.REQUEST)
-    def ask_ai_recommendations(
+    async def ask_ai_recommendations(
         self,
         favorite_repository: FavoriteRepository,
         anime_api_client: AnimeApiClient,
@@ -188,7 +188,7 @@ class AnimeUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def refresh_recommendations(
+    async def refresh_recommendations(
         self,
         recommendation_service: RecommendationService,
     ) -> RefreshRecommendationsUseCase:

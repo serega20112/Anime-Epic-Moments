@@ -45,14 +45,14 @@ class CreateHighlightUseCase:
         Returns:
             HighlightResult: Result with the created highlight.
         """
-        if not HighlightPolicy.can_add_highlight(command.user_id, command.highlights_this_hour):
-            return HighlightResult.failure(
+        if not await HighlightPolicy.can_add_highlight(command.user_id, command.highlights_this_hour):
+            return await HighlightResult.failure(
                 "Превышен лимит добавления хайлайтов для гостя",
                 status_code=403,
             )
 
-        if not HighlightPolicy.filter_spoiler_content(f"{command.title} {command.description}"):
-            return HighlightResult.failure(
+        if not await HighlightPolicy.filter_spoiler_content(f"{command.title} {command.description}"):
+            return await HighlightResult.failure(
                 "Описание содержит запрещённый контент",
                 status_code=400,
             )
@@ -80,4 +80,4 @@ class CreateHighlightUseCase:
                 int(command.user_id),
                 include_ai_summary=True,
             )
-        return HighlightResult.success(result, status_code=201)
+        return await HighlightResult.success(result, status_code=201)

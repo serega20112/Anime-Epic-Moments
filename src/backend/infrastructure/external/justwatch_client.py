@@ -1,10 +1,9 @@
 import re
 
-import requests
+import httpx
 
 from backend.config import Settings
 from backend.domain.watch.value_object import DiscoveredWatchSource
-from backend.infrastructure.external._async import external_method
 from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 
 
@@ -17,15 +16,21 @@ class JustWatchClient(WatchSourceProvider):
         self.locale = Settings.justwatch_locale
         self.provider_name = "JustWatch"
         self._provider_cache: dict[int, str] | None = None
-        self.session = requests.Session()
-        self.session.trust_env = False
+        self.session = httpx.AsyncClient(
+            timeout=httpx.Timeout(6),
+            trust_env=False,
+            follow_redirects=True,
+        )
 
-    def is_enabled(self) -> bool:
+    async def is_enabled(self) -> bool:
         """Возвращает доступность JustWatch-провайдера."""
         return bool(self.partner_token)
 
-    @external_method
-    def search_sources(
+    async def aclose(self) -> None:
+        """Close the underlying HTTP client."""
+        await self.session.aclose()
+
+    async def search_sources(
         self,
         title: str,
         episode: int,
@@ -33,10 +38,10 @@ class JustWatchClient(WatchSourceProvider):
         limit: int = 8,
     ) -> list[DiscoveredWatchSource]:
         """Возвращает внешние офферы просмотра для тайтла."""
-        if not self.is_enabled() or not year:
+        if not await self.is_enabled() or not year:
             return []
 
-        payload = self._get_offers(title=title, year=year)
+        payload = await self._get_offers(title=title, year=year)
         if not payload:
             return []
 
@@ -44,7 +49,7 @@ class JustWatchClient(WatchSourceProvider):
         if not isinstance(offers, list):
             return []
 
-        provider_map = self._get_provider_map()
+        provider_map = await self._get_provider_map()
         title_label = str(
             payload.get("title")
             or payload.get("original_title")
@@ -56,11 +61,11 @@ class JustWatchClient(WatchSourceProvider):
         for offer in offers:
             if not isinstance(offer, dict):
                 continue
-            target_url = self._extract_offer_url(offer)
+            target_url = await self._extract_offer_url(offer)
             provider_name = provider_map.get(int(offer.get("provider_id") or 0))
             if not target_url or not provider_name:
                 continue
-            quality_label = self._format_offer_label(offer)
+            quality_label = await self._format_offer_label(offer)
             dedupe_key = (provider_name, target_url, quality_label)
             if dedupe_key in seen:
                 continue
@@ -82,38 +87,36 @@ class JustWatchClient(WatchSourceProvider):
                 break
         return discovered
 
-    def _get_offers(self, title: str, year: int) -> dict | None:
+    async def _get_offers(self, title: str, year: int) -> dict | None:
         """Запрашивает офферы просмотра для сериала по названию и году релиза."""
         try:
-            response = self.session.get(
+            response = await self.session.get(
                 f"{self.api_url}/offers/object_type/show/locale/{self.locale}",
                 params={
                     "token": self.partner_token or "",
                     "title": title,
                     "release_year": int(year),
                 },
-                timeout=6,
             )
             response.raise_for_status()
             payload = response.json()
-        except (requests.RequestException, ValueError, TypeError):
+        except (httpx.HTTPError, ValueError, TypeError):
             return None
         return payload if isinstance(payload, dict) else None
 
-    def _get_provider_map(self) -> dict[int, str]:
+    async def _get_provider_map(self) -> dict[int, str]:
         """Подтягивает и кеширует карту provider_id -> название провайдера."""
         if self._provider_cache is not None:
             return self._provider_cache
 
         try:
-            response = self.session.get(
+            response = await self.session.get(
                 f"{self.api_url}/providers/locale/{self.locale}",
                 params={"token": self.partner_token or ""},
-                timeout=6,
             )
             response.raise_for_status()
             payload = response.json()
-        except (requests.RequestException, ValueError, TypeError):
+        except (httpx.HTTPError, ValueError, TypeError):
             self._provider_cache = {}
             return self._provider_cache
 
@@ -131,7 +134,7 @@ class JustWatchClient(WatchSourceProvider):
             self._provider_cache = {}
         return self._provider_cache
 
-    def _extract_offer_url(self, offer: dict) -> str | None:
+    async def _extract_offer_url(self, offer: dict) -> str | None:
         """Извлекает переход на внешний сервис из объекта оффера."""
         urls = offer.get("urls") or {}
         if not isinstance(urls, dict):
@@ -143,19 +146,19 @@ class JustWatchClient(WatchSourceProvider):
             return str(value).strip()
         return None
 
-    def _format_offer_label(self, offer: dict) -> str:
+    async def _format_offer_label(self, offer: dict) -> str:
         """Формирует компактную подпись оффера для селекта качества/варианта."""
         monetization = str(offer.get("monetization_type") or "").strip().lower()
         presentation = str(offer.get("presentation_type") or "").strip().lower()
         package = str(offer.get("package_short_name") or "").strip()
         parts = [
-            self._humanize_token(monetization),
-            self._humanize_token(presentation),
+            await self._humanize_token(monetization),
+            await self._humanize_token(presentation),
             package,
         ]
         return " • ".join(part for part in parts if part) or "Open"
 
-    def _humanize_token(self, value: str | None) -> str:
+    async def _humanize_token(self, value: str | None) -> str:
         """Преобразует технический токен оффера в читаемую подпись."""
         text = str(value or "").strip()
         if not text:

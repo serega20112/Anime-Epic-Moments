@@ -2,7 +2,8 @@
 
 ## Описание
 
-Этот документ описывает основные пользовательские сценарии, которые уже поддерживает продукт. Это самый быстрый способ понять, для чего система существует, помимо ее технической структуры.
+Этот документ описывает основные пользовательские сценарии, которые уже поддерживает продукт. Это самый быстрый способ
+понять, для чего система существует, помимо ее технической структуры.
 
 ## Как это работает
 
@@ -64,7 +65,7 @@
 - `src/backend/application/use_cases/recommendation`
 - `src/backend/application/use_cases/collection`
 - `src/backend/application/services/recommendation_service.py`
-- `src/backend/application/services/watch_source_sync_service.py`
+- `../src/backend/application/services/watch_source_service.py`
 
 ## Связанные документы
 

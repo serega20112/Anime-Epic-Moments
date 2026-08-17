@@ -39,14 +39,14 @@ class User:
                 f"Username должен быть от 3 до 20 символов, сейчас {len(username)}"
             )
 
-    def check_password(self, password: str) -> bool:
+    async def check_password(self, password: str) -> bool:
         raise NotImplementedError(
             "Password verification must be performed in application layer via PasswordService"
         )
 
-    def update_avatar(self, avatar_url: str):
+    async def update_avatar(self, avatar_url: str):
         self.avatar_url = avatar_url
 
-    def change_username(self, new_username: str):
+    async def change_username(self, new_username: str):
         self._validate_username(new_username)
         self.username = new_username

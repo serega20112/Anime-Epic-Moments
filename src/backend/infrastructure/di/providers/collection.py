@@ -21,7 +21,7 @@ class CollectionUseCaseProvider(Provider):
     """Provide collection use cases."""
 
     @provide(scope=Scope.REQUEST)
-    def create_collection(
+    async def create_collection(
         self,
         collection_repository: CollectionRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -38,7 +38,7 @@ class CollectionUseCaseProvider(Provider):
         return CreateCollectionUseCase(collection_repository, unit_of_work)
 
     @provide(scope=Scope.REQUEST)
-    def add_collection_item(
+    async def add_collection_item(
         self,
         collection_repository: CollectionRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -55,7 +55,7 @@ class CollectionUseCaseProvider(Provider):
         return AddCollectionItemUseCase(collection_repository, unit_of_work)
 
     @provide(scope=Scope.REQUEST)
-    def remove_collection_item(
+    async def remove_collection_item(
         self,
         collection_repository: CollectionRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -72,7 +72,7 @@ class CollectionUseCaseProvider(Provider):
         return RemoveCollectionItemUseCase(collection_repository, unit_of_work)
 
     @provide(scope=Scope.REQUEST)
-    def get_user_collections(
+    async def get_user_collections(
         self,
         collection_repository: CollectionRepository,
     ) -> GetUserCollectionsUseCase:
@@ -87,7 +87,7 @@ class CollectionUseCaseProvider(Provider):
         return GetUserCollectionsUseCase(collection_repository)
 
     @provide(scope=Scope.REQUEST)
-    def get_shared_collection(
+    async def get_shared_collection(
         self,
         collection_repository: CollectionRepository,
     ) -> GetSharedCollectionUseCase:

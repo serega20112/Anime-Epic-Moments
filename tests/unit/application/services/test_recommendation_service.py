@@ -18,7 +18,7 @@ class TestRecommendationService:
         Что передаём: пользователя с ранее закэшированными рекомендациями.
         Что ожидаем: возвращается кэш, а репозитории/клиент не вызываются.
         """
-        cache = RecommendationCache(ttl_seconds=60, max_entries=8)
+        cache = RecommendationCache(ttl_seconds=60)
         cached_item = SimpleNamespace(anime_id=7, title="Cached")
         cache.set(user_id=1, limit=5, value=[cached_item])
         favorite_repo = Mock()
@@ -42,7 +42,7 @@ class TestRecommendationService:
         Что передаём: force_refresh=True/False при наличии кэша.
         Что ожидаем: при force_refresh перезапрос топ-аниме и свежий результат, иначе кэш.
         """
-        cache = RecommendationCache(ttl_seconds=60, max_entries=8)
+        cache = RecommendationCache(ttl_seconds=60)
         cached_item = SimpleNamespace(anime_id=9, title="Cached")
         cache.set(user_id=1, limit=3, value=[cached_item])
         favorite_repo = Mock()
@@ -67,7 +67,7 @@ class TestRecommendationService:
         Что передаём: два последовательных запроса, не дающих рекомендаций.
         Что ожидаем: репозитории вызываются один раз, возвращается пустой список.
         """
-        cache = RecommendationCache(ttl_seconds=60, max_entries=8)
+        cache = RecommendationCache(ttl_seconds=60)
         favorite_repo = Mock()
         highlight_repo = Mock()
         anime_client = Mock()
@@ -88,7 +88,7 @@ class TestRecommendationService:
         Что передаём: пользователя с закэшированными рекомендациями.
         Что ожидаем: после invalidate кэш для этого пользователя пуст.
         """
-        cache = RecommendationCache(ttl_seconds=60, max_entries=8)
+        cache = RecommendationCache(ttl_seconds=60)
         cache.set(user_id=3, limit=5, value=[SimpleNamespace(anime_id=3)])
         service = RecommendationService(Mock(), Mock(), Mock(), cache)
 

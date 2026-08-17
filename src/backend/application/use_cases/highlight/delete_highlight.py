@@ -46,7 +46,7 @@ class DeleteHighlightUseCase:
         """
         highlight = await self.repo.get_by_id(command.highlight_id)
         if not highlight:
-            return HighlightResult.failure("highlight_not_found", status_code=404)
+            return await HighlightResult.failure("highlight_not_found", status_code=404)
         await self.repo.delete(command.highlight_id)
         if self.recommendation_service and highlight.user_id is not None:
             await self.recommendation_service.invalidate_user(int(highlight.user_id))
@@ -57,4 +57,4 @@ class DeleteHighlightUseCase:
                 int(highlight.user_id),
                 include_ai_summary=True,
             )
-        return HighlightResult.success(status_code=204)
+        return await HighlightResult.success(status_code=204)

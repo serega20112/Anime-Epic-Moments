@@ -207,7 +207,49 @@ class UserAnimeStatusModel(Base):
     )
     anime_id = Column(Integer, nullable=False)
     status = Column(String, nullable=False)
+    current_episode = Column(Integer, nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    last_watched_at = Column(DateTime, nullable=True)
+    rating = Column(Float, nullable=True)
+    note = Column(String(500), nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class EpisodeReactionModel(Base):
+    __tablename__ = "episode_reactions"
+    __table_args__ = (
+        UniqueConstraint("user_id", "anime_id", "episode", name="uq_episode_reaction"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    anime_id = Column(Integer, nullable=False)
+    episode = Column(Integer, nullable=False)
+    reaction_type = Column(String, nullable=False)
+    timestamp = Column(Float, nullable=False, default=0.0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ViewingMomentModel(Base):
+    __tablename__ = "viewing_moments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    anime_id = Column(Integer, nullable=False)
+    episode = Column(Integer, nullable=False)
+    timestamp = Column(Float, nullable=False, default=0.0)
+    watch_source_id = Column(
+        Integer, ForeignKey("watch_sources.id", ondelete="SET NULL"), nullable=True
+    )
+    caption = Column(String(200), nullable=True)
+    sticker = Column(String(40), nullable=True)
+    screenshot_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class TranslationModel(Base):

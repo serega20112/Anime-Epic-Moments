@@ -24,7 +24,7 @@ TITLE_MAX_LENGTH = 120
 DESCRIPTION_MAX_LENGTH = 600
 
 
-def map_create_highlight_command(payload, *, user_id: int | None) -> CreateHighlightCommand | None:
+async def map_create_highlight_command(payload, *, user_id: int | None) -> CreateHighlightCommand | None:
     """Build a create highlight command from a JSON payload.
 
     Args:
@@ -35,28 +35,28 @@ def map_create_highlight_command(payload, *, user_id: int | None) -> CreateHighl
         CreateHighlightCommand | None: Validated command or None on invalid input.
     """
     payload = payload or {}
-    anime_id = _to_int(payload.get("anime_id"))
-    episode = _to_int(payload.get("episode"))
-    start_timestamp = _safe_to_seconds(payload.get("start_timestamp"))
-    end_timestamp = _safe_to_seconds(payload.get("end_timestamp"))
+    anime_id = await _to_int(payload.get("anime_id"))
+    episode = await _to_int(payload.get("episode"))
+    start_timestamp = await _safe_to_seconds(payload.get("start_timestamp"))
+    end_timestamp = await _safe_to_seconds(payload.get("end_timestamp"))
     if anime_id is None or episode is None or start_timestamp is None or end_timestamp is None:
         return None
     return CreateHighlightCommand(
-        user_id=_to_int(payload.get("user_id"), fallback=user_id),
+        user_id=await _to_int(payload.get("user_id"), fallback=user_id),
         anime_id=anime_id,
         episode=episode,
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
-        title=_trim(payload.get("title"), TITLE_MAX_LENGTH),
-        category=_optional(payload.get("category")),
-        description=_trim(payload.get("description"), DESCRIPTION_MAX_LENGTH),
-        is_spoiler=_to_bool(payload.get("is_spoiler"), default=False),
-        emotion=_optional(payload.get("emotion")),
-        highlights_this_hour=_to_int(payload.get("highlights_this_hour")) or 0,
+        title=await _trim(payload.get("title"), TITLE_MAX_LENGTH),
+        category=await _optional(payload.get("category")),
+        description=await _trim(payload.get("description"), DESCRIPTION_MAX_LENGTH),
+        is_spoiler=await _to_bool(payload.get("is_spoiler"), default=False),
+        emotion=await _optional(payload.get("emotion")),
+        highlights_this_hour=await _to_int(payload.get("highlights_this_hour")) or 0,
     )
 
 
-def map_edit_highlight_command(payload, *, highlight_id: int) -> EditHighlightCommand:
+async def map_edit_highlight_command(payload, *, highlight_id: int) -> EditHighlightCommand:
     """Build an edit highlight command from a JSON payload.
 
     Args:
@@ -69,18 +69,18 @@ def map_edit_highlight_command(payload, *, highlight_id: int) -> EditHighlightCo
     payload = payload or {}
     return EditHighlightCommand(
         highlight_id=highlight_id,
-        episode=_to_int(payload.get("episode")),
-        start_timestamp=_to_seconds(payload.get("start_timestamp")),
-        end_timestamp=_to_seconds(payload.get("end_timestamp")),
-        title=_trim(payload.get("title"), TITLE_MAX_LENGTH),
-        category=_optional(payload.get("category")),
-        description=_trim(payload.get("description"), DESCRIPTION_MAX_LENGTH),
-        is_spoiler=_to_bool(payload.get("is_spoiler"), default=False),
-        emotion=_optional(payload.get("emotion")),
+        episode=await _to_int(payload.get("episode")),
+        start_timestamp=await _to_seconds(payload.get("start_timestamp")),
+        end_timestamp=await _to_seconds(payload.get("end_timestamp")),
+        title=await _trim(payload.get("title"), TITLE_MAX_LENGTH),
+        category=await _optional(payload.get("category")),
+        description=await _trim(payload.get("description"), DESCRIPTION_MAX_LENGTH),
+        is_spoiler=await _to_bool(payload.get("is_spoiler"), default=False),
+        emotion=await _optional(payload.get("emotion")),
     )
 
 
-def map_delete_highlight_command(*, highlight_id: int) -> DeleteHighlightCommand:
+async def map_delete_highlight_command(*, highlight_id: int) -> DeleteHighlightCommand:
     """Build a delete highlight command.
 
     Args:
@@ -92,7 +92,7 @@ def map_delete_highlight_command(*, highlight_id: int) -> DeleteHighlightCommand
     return DeleteHighlightCommand(highlight_id=highlight_id)
 
 
-def map_set_like_command(
+async def map_set_like_command(
     request: Request, *, highlight_id: int, user_id: int
 ) -> SetHighlightLikeCommand:
     """Build a set like command from the request method.
@@ -112,7 +112,7 @@ def map_set_like_command(
     )
 
 
-def map_set_saved_command(
+async def map_set_saved_command(
     request: Request, *, highlight_id: int, user_id: int
 ) -> SetSavedHighlightCommand:
     """Build a set saved command from the request method.
@@ -132,7 +132,7 @@ def map_set_saved_command(
     )
 
 
-def map_add_comment_command(
+async def map_add_comment_command(
     payload, *, highlight_id: int, user_id: int
 ) -> AddHighlightCommentCommand:
     """Build an add comment command from a JSON payload.
@@ -148,11 +148,11 @@ def map_add_comment_command(
     return AddHighlightCommentCommand(
         highlight_id=highlight_id,
         user_id=user_id,
-        content=_trim((payload or {}).get("content"), DESCRIPTION_MAX_LENGTH),
+        content=await _trim((payload or {}).get("content"), DESCRIPTION_MAX_LENGTH),
     )
 
 
-def map_dashboard_query(
+async def map_dashboard_query(
     request: Request,
     *,
     viewer_user_id: int | None,
@@ -167,19 +167,19 @@ def map_dashboard_query(
         HighlightDashboardQuery: Validated query.
     """
     return HighlightDashboardQuery(
-        anime_id=_to_int(request.query_params.get("anime_id")),
-        emotion=_optional(request.query_params.get("emotion")),
-        category=_optional(request.query_params.get("category")),
-        sort_by=_optional(request.query_params.get("sort")) or "recent",
-        created_date=_optional(request.query_params.get("date")),
-        query=_optional(request.query_params.get("query")),
-        include_spoilers=_to_bool(request.query_params.get("include_spoilers"), default=False),
-        limit=_clamp_int(request.query_params.get("limit"), default=20, minimum=1, maximum=24),
+        anime_id=await _to_int(request.query_params.get("anime_id")),
+        emotion=await _optional(request.query_params.get("emotion")),
+        category=await _optional(request.query_params.get("category")),
+        sort_by=await _optional(request.query_params.get("sort")) or "recent",
+        created_date=await _optional(request.query_params.get("date")),
+        query=await _optional(request.query_params.get("query")),
+        include_spoilers=await _to_bool(request.query_params.get("include_spoilers"), default=False),
+        limit=await _clamp_int(request.query_params.get("limit"), default=20, minimum=1, maximum=24),
         viewer_user_id=viewer_user_id,
     )
 
 
-def map_list_query(request: Request, *, include_spoilers_default: bool) -> HighlightListQuery:
+async def map_list_query(request: Request, *, include_spoilers_default: bool) -> HighlightListQuery:
     """Build a saved/liked list query from request query parameters.
 
     Args:
@@ -190,19 +190,19 @@ def map_list_query(request: Request, *, include_spoilers_default: bool) -> Highl
         HighlightListQuery: Validated query.
     """
     return HighlightListQuery(
-        anime_id=_to_int(request.query_params.get("anime_id")),
-        emotion=_optional(request.query_params.get("emotion")),
-        category=_optional(request.query_params.get("category")),
-        sort_by=_optional(request.query_params.get("sort")) or "recent",
-        created_date=_optional(request.query_params.get("date")),
-        query=_optional(request.query_params.get("query")),
-        include_spoilers=_to_bool(
+        anime_id=await _to_int(request.query_params.get("anime_id")),
+        emotion=await _optional(request.query_params.get("emotion")),
+        category=await _optional(request.query_params.get("category")),
+        sort_by=await _optional(request.query_params.get("sort")) or "recent",
+        created_date=await _optional(request.query_params.get("date")),
+        query=await _optional(request.query_params.get("query")),
+        include_spoilers=await _to_bool(
             request.query_params.get("include_spoilers"), default=include_spoilers_default
         ),
     )
 
 
-def map_feed_query(request: Request, *, viewer_user_id: int | None) -> HighlightFeedQuery:
+async def map_feed_query(request: Request, *, viewer_user_id: int | None) -> HighlightFeedQuery:
     """Build a social feed query from request query parameters.
 
     Args:
@@ -213,30 +213,30 @@ def map_feed_query(request: Request, *, viewer_user_id: int | None) -> Highlight
         HighlightFeedQuery: Validated query.
     """
     return HighlightFeedQuery(
-        anime_id=_to_int(request.query_params.get("anime_id")),
-        category=_optional(request.query_params.get("category")),
-        include_spoilers=_to_bool(request.query_params.get("include_spoilers"), default=False),
-        limit=_clamp_int(request.query_params.get("limit"), default=12, minimum=1, maximum=24),
+        anime_id=await _to_int(request.query_params.get("anime_id")),
+        category=await _optional(request.query_params.get("category")),
+        include_spoilers=await _to_bool(request.query_params.get("include_spoilers"), default=False),
+        limit=await _clamp_int(request.query_params.get("limit"), default=12, minimum=1, maximum=24),
         viewer_user_id=viewer_user_id,
     )
 
 
-def _trim(value, max_length: int) -> str:
+async def _trim(value, max_length: int) -> str:
     return str(value or "").strip()[:max_length]
 
 
-def _optional(value) -> str | None:
+async def _optional(value) -> str | None:
     cleaned = str(value or "").strip()
     return cleaned or None
 
 
-def _to_bool(value, *, default: bool) -> bool:
+async def _to_bool(value, *, default: bool) -> bool:
     if value in (None, ""):
         return default
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _to_int(value, *, fallback=None) -> int | None:
+async def _to_int(value, *, fallback=None) -> int | None:
     if value in (None, ""):
         return fallback
     try:
@@ -245,14 +245,14 @@ def _to_int(value, *, fallback=None) -> int | None:
         return fallback
 
 
-def _clamp_int(value, *, default: int, minimum: int, maximum: int) -> int:
-    parsed = _to_int(value)
+async def _clamp_int(value, *, default: int, minimum: int, maximum: int) -> int:
+    parsed = await _to_int(value)
     if parsed is None:
         return default
     return max(min(parsed, maximum), minimum)
 
 
-def _to_seconds(value) -> float:
+async def _to_seconds(value) -> float:
     if isinstance(value, (int, float)):
         return float(value)
     text = str(value or "").strip()
@@ -262,8 +262,8 @@ def _to_seconds(value) -> float:
     return float(text)
 
 
-def _safe_to_seconds(value) -> float | None:
+async def _safe_to_seconds(value) -> float | None:
     try:
-        return _to_seconds(value)
+        return await _to_seconds(value)
     except (TypeError, ValueError):
         return None

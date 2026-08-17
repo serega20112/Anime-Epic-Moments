@@ -32,7 +32,7 @@ class AuthUseCaseProvider(Provider):
     """Provide authentication and account use cases."""
 
     @provide(scope=Scope.REQUEST)
-    def register_user(
+    async def register_user(
         self,
         user_repository: UserRepository,
         password_service: PasswordService,
@@ -51,7 +51,7 @@ class AuthUseCaseProvider(Provider):
         return RegisterUserUseCase(user_repository, password_service, unit_of_work)
 
     @provide(scope=Scope.REQUEST)
-    def request_email_verification(
+    async def request_email_verification(
         self,
         user_repository: UserRepository,
         password_service: PasswordService,
@@ -77,7 +77,7 @@ class AuthUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def resend_email_verification(
+    async def resend_email_verification(
         self,
         email_verification_store: EmailVerificationStore,
         email_verification_mailer: EmailVerificationMailer,
@@ -97,7 +97,7 @@ class AuthUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def verify_email(
+    async def verify_email(
         self,
         user_repository: UserRepository,
         email_verification_store: EmailVerificationStore,
@@ -116,7 +116,7 @@ class AuthUseCaseProvider(Provider):
         return VerifyEmailUseCase(user_repository, email_verification_store, unit_of_work)
 
     @provide(scope=Scope.REQUEST)
-    def login_user(
+    async def login_user(
         self,
         user_repository: UserRepository,
         password_service: PasswordService,
@@ -135,7 +135,7 @@ class AuthUseCaseProvider(Provider):
         return LoginUserUseCase(user_repository, password_service, account_lock_service)
 
     @provide(scope=Scope.REQUEST)
-    def logout_user(
+    async def logout_user(
         self,
         jwt_service: JWTService,
         token_blocklist: TokenBlocklist,
@@ -152,7 +152,7 @@ class AuthUseCaseProvider(Provider):
         return LogoutUserUseCase(jwt_service, token_blocklist)
 
     @provide(scope=Scope.REQUEST)
-    def refresh_session(
+    async def refresh_session(
         self,
         jwt_service: JWTService,
         token_blocklist: TokenBlocklist,
@@ -169,7 +169,7 @@ class AuthUseCaseProvider(Provider):
         return RefreshSessionUseCase(jwt_service, token_blocklist)
 
     @provide(scope=Scope.REQUEST)
-    def update_user_profile(
+    async def update_user_profile(
         self,
         user_repository: UserRepository,
         unit_of_work: UnitOfWorkInterface,
@@ -188,7 +188,7 @@ class AuthUseCaseProvider(Provider):
         return UpdateUserProfileUseCase(user_repository, unit_of_work, profile_overview_cache)
 
     @provide(scope=Scope.REQUEST)
-    def request_password_reset(
+    async def request_password_reset(
         self,
         user_repository: UserRepository,
         jwt_service: JWTService,
@@ -211,7 +211,7 @@ class AuthUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    def reset_password(
+    async def reset_password(
         self,
         user_repository: UserRepository,
         jwt_service: JWTService,

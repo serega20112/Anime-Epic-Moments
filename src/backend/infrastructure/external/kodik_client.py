@@ -3,11 +3,10 @@ import json
 import re
 from urllib.parse import urlencode, urljoin
 
-import requests
+import httpx
 
 from backend.config import Settings
 from backend.domain.watch.value_object import DiscoveredWatchSource
-from backend.infrastructure.external._async import external_method
 from backend.infrastructure.external.kodik_token_store import KodikTokenStore
 from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 
@@ -26,21 +25,28 @@ class KodikClient(WatchSourceProvider):
         self.api_url = Settings.kodik_api_url.rstrip("/")
         self.provider_name = "Kodik"
         self.default_video_info_endpoint = "/ftor"
-        self.session = requests.Session()
-        self.session.trust_env = False
+        self.session = httpx.AsyncClient(
+            timeout=httpx.Timeout(6),
+            trust_env=False,
+            follow_redirects=True,
+        )
         self._working_token: str | None = None
         self._token_store = KodikTokenStore(
             tokens_path=Settings.kodik_tokens_path,
             configured_token=self.api_token,
         )
 
-    def is_enabled(self) -> bool:
-        return bool(self.api_token) or bool(self._token_store.candidates())
+    async def is_enabled(self) -> bool:
+        return bool(self.api_token) or bool(await self._token_store.candidates())
 
-    def is_configured(self) -> bool:
-        return self.is_enabled()
+    async def is_configured(self) -> bool:
+        return await self.is_enabled()
 
-    def _probe_token(self, token: str) -> bool:
+    async def aclose(self) -> None:
+        """Close the underlying HTTP client."""
+        await self.session.aclose()
+
+    async def _probe_token(self, token: str) -> bool:
         """Проверяет токен на живом API (всего один лёгкий запрос)."""
         probe_params: dict[str, str | int] = {
             "token": token,
@@ -49,27 +55,26 @@ class KodikClient(WatchSourceProvider):
             "limit": 1,
         }
         try:
-            response = self.session.get(
+            response = await self.session.get(
                 f"{self.api_url}/search",
                 params=probe_params,
-                timeout=6,
             )
             status_code = getattr(response, "status_code", 200)
             if status_code != 200:
                 return False
             payload = response.json()
-        except (requests.RequestException, ValueError, TypeError):
+        except (httpx.HTTPError, ValueError, TypeError):
             return False
-        if KodikTokenStore.token_looks_invalid(payload):
+        if await KodikTokenStore.token_looks_invalid(payload):
             return False
         return True
 
-    def _resolve_token(self) -> str | None:
+    async def _resolve_token(self) -> str | None:
         """Возвращает подтверждённый рабочий токен или первый заданный."""
         if self._working_token:
             return self._working_token
-        for token in self._token_store.candidates():
-            if self._probe_token(token):
+        for token in await self._token_store.candidates():
+            if await self._probe_token(token):
                 self._working_token = token
                 return token
         suggested = self.api_token
@@ -77,8 +82,7 @@ class KodikClient(WatchSourceProvider):
             return suggested
         return self._working_token
 
-    @external_method
-    def search_sources(
+    async def search_sources(
         self,
         title: str,
         episode: int,
@@ -86,10 +90,10 @@ class KodikClient(WatchSourceProvider):
         limit: int = 60,
     ) -> list[DiscoveredWatchSource]:
         """Ищет источники эпизода через Kodik и возвращает доступные качества."""
-        if not self.is_enabled():
+        if not await self.is_enabled():
             return []
 
-        token = self._resolve_token()
+        token = await self._resolve_token()
         if not token:
             return []
 
@@ -109,25 +113,24 @@ class KodikClient(WatchSourceProvider):
             params["year"] = year
 
         try:
-            response = self.session.get(
+            response = await self.session.get(
                 f"{self.api_url}/search",
                 params=params,
-                timeout=6,
             )
             response.raise_for_status()
             payload = response.json()
-        except (requests.RequestException, ValueError, TypeError):
+        except (httpx.HTTPError, ValueError, TypeError):
             return []
 
         results = payload.get("results", []) or []
         discovered: list[DiscoveredWatchSource] = []
         seen: set[tuple[str, str, str]] = set()
         for material in results:
-            if not self._looks_relevant(
+            if not await self._looks_relevant(
                 material=material, requested_title=title, requested_year=year
             ):
                 continue
-            material_link = self._extract_episode_link(
+            material_link = await self._extract_episode_link(
                 material=material, episode=episode
             ) or material.get("link")
             if not material_link:
@@ -135,17 +138,17 @@ class KodikClient(WatchSourceProvider):
 
             translation = material.get("translation") or {}
             translation_name = str(translation.get("title") or "Unknown").strip() or "Unknown"
-            translation_type = self._map_translation_type(
+            translation_type = await self._map_translation_type(
                 str(translation.get("type") or "voice").strip()
             )
             source_name = str(material.get("id") or material_link).strip()
-            quality_map = self._get_video_links(material_link)
+            quality_map = await self._get_video_links(material_link)
             if not quality_map:
                 continue
 
             for quality_label, sources in quality_map.items():
                 for source in sources:
-                    stream_url = self._normalize_link(source.get("src"))
+                    stream_url = await self._normalize_link(source.get("src"))
                     if not stream_url:
                         continue
                     dedupe_key = (translation_name, quality_label, stream_url)
@@ -165,7 +168,7 @@ class KodikClient(WatchSourceProvider):
                     )
         return discovered
 
-    def _looks_relevant(
+    async def _looks_relevant(
         self,
         material: dict,
         requested_title: str,
@@ -180,7 +183,7 @@ class KodikClient(WatchSourceProvider):
             and abs(material_year - requested_year) > 1
         )
 
-        normalized_requested = self._normalize_title(requested_title)
+        normalized_requested = await self._normalize_title(requested_title)
         candidates = [
             material.get("title"),
             material.get("title_orig"),
@@ -195,7 +198,7 @@ class KodikClient(WatchSourceProvider):
             ]
         )
         for candidate in candidates:
-            normalized_candidate = self._normalize_title(candidate)
+            normalized_candidate = await self._normalize_title(candidate)
             if normalized_candidate and (
                 normalized_requested in normalized_candidate
                 or normalized_candidate in normalized_requested
@@ -206,7 +209,7 @@ class KodikClient(WatchSourceProvider):
         # a separate material per translation and titles may vary slightly.
         return bool(material.get("link"))
 
-    def _extract_episode_link(self, material: dict, episode: int) -> str | None:
+    async def _extract_episode_link(self, material: dict, episode: int) -> str | None:
         seasons = material.get("seasons") or {}
         if not isinstance(seasons, dict) or not seasons:
             return None
@@ -215,7 +218,7 @@ class KodikClient(WatchSourceProvider):
         last_season = material.get("last_season")
         if last_season is not None:
             preferred_keys.append(str(last_season))
-        preferred_keys.extend(sorted(seasons.keys(), key=self._season_sort_key))
+        preferred_keys.extend(sorted(seasons.keys(), key=lambda value: (int(value) if value.isdigit() else 10**9, value)))
 
         for season_key in preferred_keys:
             season = seasons.get(season_key)
@@ -231,24 +234,24 @@ class KodikClient(WatchSourceProvider):
                 return raw_episode.get("link")
         return None
 
-    def _get_video_links(self, link: str) -> dict[str, list[dict[str, str]]]:
-        normalized_link = self._normalize_link(link)
+    async def _get_video_links(self, link: str) -> dict[str, list[dict[str, str]]]:
+        normalized_link = await self._normalize_link(link)
         if not normalized_link:
             return {}
 
-        parsed = self._parse_link(normalized_link)
+        parsed = await self._parse_link(normalized_link)
         if not parsed:
             return {}
 
-        links = self._request_video_links(
+        links = await self._request_video_links(
             host=parsed["host"],
             params={key: value for key, value in parsed.items() if key not in {"host", "quality"}},
             endpoint=self.default_video_info_endpoint,
         )
         if not links:
-            actual_endpoint = self._get_actual_video_info_endpoint(normalized_link)
+            actual_endpoint = await self._get_actual_video_info_endpoint(normalized_link)
             if actual_endpoint and actual_endpoint != self.default_video_info_endpoint:
-                links = self._request_video_links(
+                links = await self._request_video_links(
                     host=parsed["host"],
                     params={
                         key: value
@@ -271,12 +274,12 @@ class KodikClient(WatchSourceProvider):
                 encoded_src = item.get("src")
                 if not encoded_src:
                     continue
-                decoded_src = self._decode_kodik_src(str(encoded_src))
+                decoded_src = await self._decode_kodik_src(str(encoded_src))
                 if not decoded_src:
                     continue
                 decoded_items.append(
                     {
-                        "src": self._normalize_link(decoded_src),
+                        "src": await self._normalize_link(decoded_src),
                         "type": str(item.get("type") or "application/x-mpegURL"),
                     }
                 )
@@ -284,7 +287,7 @@ class KodikClient(WatchSourceProvider):
                 decoded_links[str(quality_label)] = decoded_items
         return decoded_links
 
-    def _request_video_links(
+    async def _request_video_links(
         self,
         host: str,
         params: dict[str, str],
@@ -293,19 +296,18 @@ class KodikClient(WatchSourceProvider):
         video_info_url = f"https://{host}{endpoint}?{urlencode(params)}"
         for _attempt in range(2):
             try:
-                response = self.session.get(
+                response = await self.session.get(
                     video_info_url,
-                    timeout=6,
                 )
                 response.raise_for_status()
                 payload = response.json()
                 links = payload.get("links")
                 return links if isinstance(links, dict) else None
-            except (requests.RequestException, ValueError, TypeError, json.JSONDecodeError):
+            except (httpx.HTTPError, ValueError, TypeError, json.JSONDecodeError):
                 continue
         return None
 
-    def _parse_link(self, link: str) -> dict[str, str] | None:
+    async def _parse_link(self, link: str) -> dict[str, str] | None:
         match = self._link_pattern.match(link)
         if not match:
             return None
@@ -317,15 +319,14 @@ class KodikClient(WatchSourceProvider):
             "quality": match.group("quality"),
         }
 
-    def _get_actual_video_info_endpoint(self, normalized_link: str) -> str | None:
+    async def _get_actual_video_info_endpoint(self, normalized_link: str) -> str | None:
         try:
-            player_page = self.session.get(
+            player_page = await self.session.get(
                 normalized_link,
-                timeout=6,
             )
             player_page.raise_for_status()
             page_text = player_page.text
-        except requests.RequestException:
+        except httpx.HTTPError:
             return None
 
         player_chunk_match = re.search(
@@ -338,13 +339,12 @@ class KodikClient(WatchSourceProvider):
 
         chunk_url = urljoin(normalized_link, player_chunk_match.group("link"))
         try:
-            chunk_response = self.session.get(
+            chunk_response = await self.session.get(
                 chunk_url,
-                timeout=6,
             )
             chunk_response.raise_for_status()
             chunk_text = chunk_response.text
-        except requests.RequestException:
+        except httpx.HTTPError:
             return None
 
         endpoint_match = re.search(
@@ -361,7 +361,7 @@ class KodikClient(WatchSourceProvider):
             return "/kor"
         return decoded or "/kor"
 
-    def _decode_kodik_src(self, encoded_src: str) -> str | None:
+    async def _decode_kodik_src(self, encoded_src: str) -> str | None:
         shifted = []
         for char in encoded_src:
             if "A" <= char <= "Z":
@@ -383,7 +383,7 @@ class KodikClient(WatchSourceProvider):
         except (ValueError, UnicodeDecodeError):
             return None
 
-    def _normalize_link(self, value: str | None) -> str | None:
+    async def _normalize_link(self, value: str | None) -> str | None:
         if not value:
             return None
         text = str(value).strip()
@@ -393,19 +393,13 @@ class KodikClient(WatchSourceProvider):
             return f"https://kodikplayer.com{text}"
         return text
 
-    def _normalize_title(self, title: str | None) -> str:
+    async def _normalize_title(self, title: str | None) -> str:
         text = str(title or "").lower().strip()
         text = re.sub(r"[^a-zа-я0-9]+", " ", text, flags=re.IGNORECASE)
         return " ".join(text.split())
 
-    def _map_translation_type(self, value: str) -> str:
+    async def _map_translation_type(self, value: str) -> str:
         lowered = value.lower()
         if lowered == "subtitles":
             return "sub"
         return lowered or "voice"
-
-    def _season_sort_key(self, value: str) -> tuple[int, str]:
-        try:
-            return int(value), value
-        except ValueError:
-            return 10**9, value

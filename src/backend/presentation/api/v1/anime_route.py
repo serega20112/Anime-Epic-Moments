@@ -36,7 +36,7 @@ async def search_anime_page(request: Request):
     Returns:
         HTMLResponse: Rendered search page.
     """
-    return render_template(
+    return await render_template(
         request,
         "anime/search.html",
         initial_title=request.query_params.get("title", ""),
@@ -53,7 +53,7 @@ async def search_by_description_page(request: Request):
     Returns:
         HTMLResponse: Rendered search page.
     """
-    return render_template(request, "anime/search_by_description.html")
+    return await render_template(request, "anime/search_by_description.html")
 
 
 @anime_router.get("/catalog", name="anime.catalog_page")
@@ -66,7 +66,7 @@ async def catalog_page(request: Request):
     Returns:
         HTMLResponse: Rendered catalog page.
     """
-    return render_template(
+    return await render_template(
         request,
         "anime/catalog.html",
         initial_filters={
@@ -97,7 +97,7 @@ async def search_anime(
     Returns:
         list[dict]: List of anime dictionaries.
     """
-    query = build_search_anime_query(request)
+    query = await build_search_anime_query(request)
     results = await use_case.execute(query)
     return [vars(anime) for anime in results]
 
@@ -122,9 +122,9 @@ async def search_anime_by_description(
     Returns:
         dict: Search result payload.
     """
-    query = build_search_anime_by_description_query(request)
+    query = await build_search_anime_by_description_query(request)
     result = await use_case.execute(query)
-    return result.to_dict()
+    return await result.to_dict()
 
 
 @anime_router.get("/api/autocomplete", name="anime.autocomplete_anime")
@@ -147,7 +147,7 @@ async def autocomplete_anime(
     Returns:
         list[dict]: List of anime suggestions.
     """
-    query = build_autocomplete_anime_query(request)
+    query = await build_autocomplete_anime_query(request)
     suggestions = await use_case.execute(query)
     return [vars(anime) for anime in suggestions]
 
@@ -172,7 +172,7 @@ async def filter_anime_catalog(
     Returns:
         list[dict]: List of anime dictionaries.
     """
-    query = build_filter_anime_catalog_query(request)
+    query = await build_filter_anime_catalog_query(request)
     results = await use_case.execute(query)
     return [vars(anime) for anime in results]
 
@@ -197,6 +197,6 @@ async def get_season_popular(
     Returns:
         list[dict]: List of anime dictionaries.
     """
-    query = build_get_season_popular_query(request)
+    query = await build_get_season_popular_query(request)
     results = await use_case.execute(query)
     return [vars(anime) for anime in results]

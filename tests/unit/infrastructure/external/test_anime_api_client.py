@@ -8,8 +8,12 @@ import pytest
 from backend.infrastructure.external import AnimeApiClient
 
 
-def _response(payload, status_code: int = 200):
-    return httpx.Response(status_code, json=payload)
+def _response(payload, status_code: int = 200, method: str = "GET"):
+    return httpx.Response(
+        status_code,
+        json=payload,
+        request=httpx.Request(method, "http://testserver/"),
+    )
 
 
 @pytest.mark.unit

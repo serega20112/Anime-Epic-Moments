@@ -14,7 +14,7 @@ class SearchAnimeByDescriptionResult:
         self.requires_age_confirmation = requires_age_confirmation
         self.message = message
 
-    def to_dict(self) -> dict:
+    async def to_dict(self) -> dict:
         return {
             "items": [vars(item) for item in self.items],
             "requires_age_confirmation": self.requires_age_confirmation,

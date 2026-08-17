@@ -96,7 +96,19 @@ from backend.infrastructure.models import (
         ),
         (
             UserAnimeStatusModel,
-            {"id", "user_id", "anime_id", "status", "updated_at"},
+            {
+                "id",
+                "user_id",
+                "anime_id",
+                "status",
+                "current_episode",
+                "started_at",
+                "completed_at",
+                "last_watched_at",
+                "rating",
+                "note",
+                "updated_at",
+            },
         ),
         (
             TranslationModel,

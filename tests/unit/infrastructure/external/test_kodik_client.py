@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import base64
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -74,11 +74,11 @@ def test_kodik_client_decodes_shifted_base64_source():
     assert decoded == original
 
 
-def test_kodik_client_search_sources_maps_results(monkeypatch):
+async def test_kodik_client_search_sources_maps_results(monkeypatch):
     """Проверяем, что KodikClient превращает поисковый payload в набор discovered sources."""
     client = KodikClient()
     client.api_token = "token"
-    client.session.get = Mock(
+    client.session.get = AsyncMock(
         return_value=_FakeResponse(
             {
                 "results": [
@@ -91,16 +91,16 @@ def test_kodik_client_search_sources_maps_results(monkeypatch):
             }
         )
     )
-    monkeypatch.setattr(
-        client,
-        "_get_video_links",
-        lambda link: {
+
+    async def _fake_video_links(link):
+        return {
             "1080": [{"src": "https://cdn.example.com/1080.m3u8"}],
             "720": [{"src": "https://cdn.example.com/720.m3u8"}],
-        },
-    )
+        }
 
-    items = client.search_sources(title="Gintama", episode=2)
+    monkeypatch.setattr(client, "_get_video_links", _fake_video_links)
+
+    items = await client.search_sources(title="Gintama", episode=2)
 
     assert [(item.translation_name, item.quality_label) for item in items] == [
         ("AniLibria", "1080"),

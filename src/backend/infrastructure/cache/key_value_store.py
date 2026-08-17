@@ -12,30 +12,30 @@ _DATACLASS_MARKER = "__dataclass__"
 _DATETIME_MARKER = "__datetime__"
 
 
-def _encode(value: Any) -> Any:
+async def _encode(value: Any) -> Any:
     """Convert a value to JSON-native types, tagging dataclasses and datetimes."""
     if dataclasses.is_dataclass(value) and not isinstance(value, type):
         return {
             _DATACLASS_MARKER: f"{value.__class__.__module__}.{value.__class__.__qualname__}",
             "__fields__": {
-                field.name: _encode(getattr(value, field.name))
+                field.name: await _encode(getattr(value, field.name))
                 for field in dataclasses.fields(value)
             },
         }
     if isinstance(value, datetime.datetime):
         return {_DATETIME_MARKER: value.isoformat()}
     if isinstance(value, (tuple, set)):
-        return [_encode(item) for item in value]
+        return [await _encode(item) for item in value]
     if isinstance(value, list):
-        return [_encode(item) for item in value]
+        return [await _encode(item) for item in value]
     if isinstance(value, dict):
-        return {str(key): _encode(item) for key, item in value.items()}
+        return {str(key): await _encode(item) for key, item in value.items()}
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     raise TypeError(f"cannot serialize value of type {type(value).__name__}")
 
 
-def _resolve_class(qualified_name: str) -> type:
+async def _resolve_class(qualified_name: str) -> type:
     """Resolve a ``module.QualifiedName`` string to the actual class."""
     module_name, class_name = qualified_name.rsplit(".", 1)
     module = importlib.import_module(module_name)
@@ -46,30 +46,30 @@ def _resolve_class(qualified_name: str) -> type:
     return module
 
 
-def _decode(value: Any) -> Any:
+async def _decode(value: Any) -> Any:
     """Rebuild dataclasses and datetimes from a JSON-decoded structure."""
     if isinstance(value, dict):
         if _DATETIME_MARKER in value:
             return datetime.datetime.fromisoformat(value[_DATETIME_MARKER])
         if _DATACLASS_MARKER in value:
-            cls = _resolve_class(value[_DATACLASS_MARKER])
-            fields = {key: _decode(item) for key, item in value["__fields__"].items()}
+            cls = await _resolve_class(value[_DATACLASS_MARKER])
+            fields = {key: await _decode(item) for key, item in value["__fields__"].items()}
             return cls(**fields)
-        return {key: _decode(item) for key, item in value.items()}
+        return {key: await _decode(item) for key, item in value.items()}
     if isinstance(value, list):
-        return [_decode(item) for item in value]
+        return [await _decode(item) for item in value]
     return value
 
 
-def _serialize(value: Any) -> str:
+async def _serialize(value: Any) -> str:
     """Serialize a value to a JSON string with explicit tagging."""
-    return json.dumps(_encode(value), ensure_ascii=False, separators=(",", ":"))
+    return json.dumps(await _encode(value), ensure_ascii=False, separators=(",", ":"))
 
 
-def _deserialize(raw_value: str, default: Any) -> Any:
+async def _deserialize(raw_value: str, default: Any) -> Any:
     """Deserialize a JSON string, returning the default on corrupt payloads."""
     try:
-        return _decode(json.loads(raw_value))
+        return await _decode(json.loads(raw_value))
     except (ValueError, TypeError, KeyError, AttributeError, ImportError):
         return default
 
@@ -135,17 +135,17 @@ class KeyValueStore:
                 raise
             return None
 
-    def _normalize_key(self, key: str) -> str:
+    async def _normalize_key(self, key: str) -> str:
         normalized = str(key or "").strip()
         return f"{self.namespace}:{normalized}" if self.namespace else normalized
 
-    def _normalize_ttl(self, ttl_seconds: float | int | None) -> int | None:
+    async def _normalize_ttl(self, ttl_seconds: float | int | None) -> int | None:
         if ttl_seconds is None:
             return None
         return max(int(ttl_seconds), 0)
 
-    def _get_memory_item(self, key: str) -> tuple[bool, Any]:
-        self._prune_memory()
+    async def _get_memory_item(self, key: str) -> tuple[bool, Any]:
+        await self._prune_memory()
         item = self._items.get(key)
         if item is None:
             return False, None
@@ -155,7 +155,7 @@ class KeyValueStore:
             return False, None
         return True, value
 
-    def _prune_memory(self):
+    async def _prune_memory(self):
         now = monotonic()
         expired_keys = [
             key
@@ -174,7 +174,7 @@ class KeyValueStore:
         Returns:
             bool: True when the key exists.
         """
-        normalized_key = self._normalize_key(key)
+        normalized_key = await self._normalize_key(key)
         if self._redis is not None:
             try:
                 return bool(await self._redis.exists(normalized_key))
@@ -182,7 +182,7 @@ class KeyValueStore:
                 self._redis = None
 
         with self._lock:
-            found, _value = self._get_memory_item(normalized_key)
+            found, _value = await self._get_memory_item(normalized_key)
             return found
 
     async def get(self, key: str, default: Any = None) -> Any:
@@ -195,19 +195,19 @@ class KeyValueStore:
         Returns:
             Any: Stored value or default.
         """
-        normalized_key = self._normalize_key(key)
+        normalized_key = await self._normalize_key(key)
         if self._redis is not None:
             try:
                 raw_value = await self._redis.get(normalized_key)
                 if raw_value is None:
                     return default
                 raw_text = raw_value.decode("utf-8") if isinstance(raw_value, bytes) else raw_value
-                return _deserialize(raw_text, default)
+                return await _deserialize(raw_text, default)
             except Exception:
                 self._redis = None
 
         with self._lock:
-            found, value = self._get_memory_item(normalized_key)
+            found, value = await self._get_memory_item(normalized_key)
             return value if found else default
 
     async def set(
@@ -226,15 +226,15 @@ class KeyValueStore:
         Returns:
             Any: The stored value.
         """
-        normalized_key = self._normalize_key(key)
-        ttl_value = self._normalize_ttl(ttl_seconds)
+        normalized_key = await self._normalize_key(key)
+        ttl_value = await self._normalize_ttl(ttl_seconds)
         if ttl_value == 0:
             await self.delete(key)
             return value
 
         if self._redis is not None:
             try:
-                payload = _serialize(value).encode("utf-8")
+                payload = (await _serialize(value)).encode("utf-8")
                 if ttl_value is None:
                     await self._redis.set(normalized_key, payload)
                 else:
@@ -245,7 +245,7 @@ class KeyValueStore:
 
         expires_at = None if ttl_value is None else monotonic() + ttl_value
         with self._lock:
-            self._prune_memory()
+            await self._prune_memory()
             self._items[normalized_key] = (expires_at, value)
         return value
 
@@ -266,8 +266,8 @@ class KeyValueStore:
         Returns:
             bool: True if the key was claimed, False if it already existed.
         """
-        normalized_key = self._normalize_key(key)
-        ttl_value = self._normalize_ttl(ttl_seconds)
+        normalized_key = await self._normalize_key(key)
+        ttl_value = await self._normalize_ttl(ttl_seconds)
         if ttl_value == 0:
             return False
 
@@ -284,7 +284,7 @@ class KeyValueStore:
 
         expires_at = None if ttl_value is None else monotonic() + ttl_value
         with self._lock:
-            self._prune_memory()
+            await self._prune_memory()
             if normalized_key in self._items:
                 return False
             self._items[normalized_key] = (expires_at, True)
@@ -296,7 +296,7 @@ class KeyValueStore:
         Args:
             key: Key to remove.
         """
-        normalized_key = self._normalize_key(key)
+        normalized_key = await self._normalize_key(key)
         if self._redis is not None:
             try:
                 await self._redis.delete(normalized_key)
@@ -313,7 +313,7 @@ class KeyValueStore:
         Args:
             prefix: Key prefix to remove.
         """
-        normalized_prefix = self._normalize_key(prefix)
+        normalized_prefix = await self._normalize_key(prefix)
         if self._redis is not None:
             try:
                 keys = [key async for key in self._redis.scan_iter(f"{normalized_prefix}*")]
@@ -324,7 +324,7 @@ class KeyValueStore:
                 self._redis = None
 
         with self._lock:
-            self._prune_memory()
+            await self._prune_memory()
             for key in [
                 item_key
                 for item_key in self._items.keys()
@@ -348,7 +348,7 @@ class KeyValueStore:
         Returns:
             int: The new counter value.
         """
-        normalized_key = self._normalize_key(key)
+        normalized_key = await self._normalize_key(key)
         ttl_value = max(int(ttl_seconds), 1)
         if self._redis is not None:
             try:
@@ -360,11 +360,11 @@ class KeyValueStore:
                 self._redis = None
 
         with self._lock:
-            found, current_value = self._get_memory_item(normalized_key)
+            _found, current_value = await self._get_memory_item(normalized_key)
             next_value = int(current_value or 0) + int(amount)
             self._items[normalized_key] = (
                 monotonic() + ttl_value,
-                next_value if found else next_value,
+                next_value,
             )
             return next_value
 
@@ -377,7 +377,7 @@ class KeyValueStore:
         Returns:
             int: Remaining TTL in seconds.
         """
-        normalized_key = self._normalize_key(key)
+        normalized_key = await self._normalize_key(key)
         if self._redis is not None:
             try:
                 ttl_value = int(await self._redis.ttl(normalized_key))
@@ -386,7 +386,7 @@ class KeyValueStore:
                 self._redis = None
 
         with self._lock:
-            found, _value = self._get_memory_item(normalized_key)
+            found, _value = await self._get_memory_item(normalized_key)
             if not found:
                 return 0
             expires_at = self._items.get(normalized_key, (None, None))[0]

@@ -11,19 +11,23 @@ from backend.events import lifecycle
 
 @pytest.mark.unit
 class TestResolveLogLevel:
-    def test_known_level(self):
-        assert lifecycle._resolve_log_level("DEBUG") == logging.DEBUG
+    async def test_known_level(self):
+        assert await lifecycle._resolve_log_level("DEBUG") == logging.DEBUG
 
-    def test_unknown_level_defaults_to_info(self):
-        assert lifecycle._resolve_log_level("VERBOSE") == logging.INFO
+    async def test_unknown_level_defaults_to_info(self):
+        assert await lifecycle._resolve_log_level("VERBOSE") == logging.INFO
 
 
 @pytest.mark.unit
 class TestLifespan:
-    def test_startup_initializes_logging_and_db(self, monkeypatch):
+    async def test_startup_initializes_logging_and_db(self, monkeypatch):
         setup_calls = []
         init_calls = []
-        monkeypatch.setattr(lifecycle, "setup_logging", lambda **kwargs: setup_calls.append(kwargs))
+
+        async def _setup_logging(**kwargs):
+            setup_calls.append(kwargs)
+
+        monkeypatch.setattr(lifecycle, "setup_logging", _setup_logging)
         monkeypatch.setattr(lifecycle, "init_db", _Recorder(init_calls))
         monkeypatch.setattr(lifecycle.Settings, "database_auto_init", True)
 
@@ -34,10 +38,14 @@ class TestLifespan:
         assert len(setup_calls) == 1
         assert len(init_calls) == 1
 
-    def test_startup_skips_db_when_auto_init_disabled(self, monkeypatch):
+    async def test_startup_skips_db_when_auto_init_disabled(self, monkeypatch):
         init_calls = []
         verify_calls = []
-        monkeypatch.setattr(lifecycle, "setup_logging", lambda **kwargs: None)
+
+        async def _setup_logging(**kwargs):
+            return None
+
+        monkeypatch.setattr(lifecycle, "setup_logging", _setup_logging)
         monkeypatch.setattr(lifecycle, "init_db", _Recorder(init_calls))
         monkeypatch.setattr(lifecycle, "verify_schema", _Recorder(verify_calls))
         monkeypatch.setattr(lifecycle.Settings, "database_auto_init", False)
@@ -49,9 +57,13 @@ class TestLifespan:
         assert init_calls == []
         assert len(verify_calls) == 1
 
-    def test_startup_fails_fast_on_missing_schema(self, monkeypatch):
+    async def test_startup_fails_fast_on_missing_schema(self, monkeypatch):
         calls = []
-        monkeypatch.setattr(lifecycle, "setup_logging", lambda **kwargs: None)
+
+        async def _setup_logging(**kwargs):
+            return None
+
+        monkeypatch.setattr(lifecycle, "setup_logging", _setup_logging)
         monkeypatch.setattr(lifecycle, "verify_schema", _Raise(RuntimeError("schema missing")))
         monkeypatch.setattr(lifecycle.Settings, "database_auto_init", False)
 
@@ -80,5 +92,5 @@ class _Raise:
 
 
 @pytest.mark.unit
-def test_lifespan_module_importable():
+async def test_lifespan_module_importable():
     assert callable(lifecycle.lifespan)

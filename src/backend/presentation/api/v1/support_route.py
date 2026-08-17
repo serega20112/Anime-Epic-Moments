@@ -26,6 +26,14 @@ support_router = APIRouter(prefix="/support", route_class=DishkaRoute)
 support_bp = support_router
 
 
+async def _support_ticket_subject(request: Request) -> str:
+    """Build a composite rate-limit subject for support ticket creation."""
+    return await support_ticket_subject(
+        ip_address=await client_ip(request),
+        user_id=getattr(await get_current_user(request), "id", None),
+    )
+
+
 @support_router.get("", name="support.support_page")
 async def support_page(request: Request):
     """Render the support ticket creation page.
@@ -36,7 +44,7 @@ async def support_page(request: Request):
     Returns:
         HTMLResponse: Rendered support page template.
     """
-    return _render_support_page(request)
+    return await _render_support_page(request)
 
 
 @support_router.post("", name="support.create_support_ticket")
@@ -44,10 +52,7 @@ async def support_page(request: Request):
     scope="support_ticket_create",
     limit=Settings.support_ticket_rate_limit,
     window_seconds=Settings.auth_window_seconds,
-    key_builder=lambda request: support_ticket_subject(
-        ip_address=client_ip(request),
-        user_id=getattr(get_current_user(request), "id", None),
-    ),
+    key_builder=_support_ticket_subject,
     response_mode="redirect",
     redirect_endpoint="support.support_page",
 )
@@ -64,9 +69,9 @@ async def create_support_ticket(
     Returns:
         RedirectResponse: Redirect to support page after creation.
     """
-    user = get_current_user(request)
+    user = await get_current_user(request)
     user_id = getattr(user, "id", None)
-    command = map_create_support_ticket_command(
+    command = await map_create_support_ticket_command(
         dict(await request.form()),
         user_id=user_id,
         user_email=getattr(user, "email", None),
@@ -76,10 +81,10 @@ async def create_support_ticket(
     result = await use_case.execute(command)
 
     if not result.ok:
-        flash(request, result.error_message or "Не удалось создать тикет поддержки")
-        return _render_support_page(
+        await flash(request, result.error_message or "Не удалось создать тикет поддержки")
+        return await _render_support_page(
             request,
-            form_data=build_support_form_data(
+            form_data=await build_support_form_data(
                 command=command,
                 user_email=getattr(user, "email", None),
                 user_username=getattr(user, "username", None),
@@ -88,23 +93,23 @@ async def create_support_ticket(
         )
 
     ticket = result.data
-    log_business_event(
+    await log_business_event(
         event="support_ticket_created",
         user_id=ticket.user_id,
-        ip_address=client_ip(request),
+        ip_address=await client_ip(request),
         details={
             "ticket_id": getattr(ticket, "id", None),
             "delivery_status": ticket.delivery_status,
         },
     )
-    flash(request, result.message or "Тикет отправлен в поддержку.")
+    await flash(request, result.message or "Тикет отправлен в поддержку.")
     return RedirectResponse(
         url=request.app.url_path_for("support.support_page"),
         status_code=HTTPStatus.SEE_OTHER,
     )
 
 
-def _render_support_page(
+async def _render_support_page(
     request: Request,
     form_data: dict[str, str] | None = None,
     status_code: int = HTTPStatus.OK,
@@ -119,15 +124,15 @@ def _render_support_page(
     Returns:
         HTMLResponse: Rendered support page template.
     """
-    return render_template(
+    return await render_template(
         request,
         "support/create.html",
-        support_form=form_data or _default_form(request),
+        support_form=form_data or await _default_form(request),
         status_code=status_code,
     )
 
 
-def _default_form(request: Request) -> dict[str, str]:
+async def _default_form(request: Request) -> dict[str, str]:
     """Build default form data for the GET support page.
 
     Args:
@@ -136,8 +141,8 @@ def _default_form(request: Request) -> dict[str, str]:
     Returns:
         dict[str, str]: Normalized default form data.
     """
-    user = get_current_user(request)
-    return build_default_support_form(
+    user = await get_current_user(request)
+    return await build_default_support_form(
         user_email=getattr(user, "email", ""),
         user_username=getattr(user, "username", ""),
         channel_param=request.query_params.get("channel"),

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from functools import wraps
 
+import jwt
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
@@ -19,8 +20,8 @@ def auth_required(handler):
         if not token:
             return JSONResponse({"error": "Authorization token required"}, status_code=401)
         try:
-            user_id = jwt_service.decode_token(token)
-        except Exception:
+            user_id = await jwt_service.decode_token(token)
+        except jwt.InvalidTokenError:
             return JSONResponse({"error": "Invalid or expired token"}, status_code=401)
 
         kwargs["user_id"] = user_id

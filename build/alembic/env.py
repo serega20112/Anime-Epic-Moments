@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 from logging.config import fileConfig
 from pathlib import Path
 import sys
 
 from alembic import context
 from sqlalchemy.exc import NoSuchModuleError
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SRC_PATH = PROJECT_ROOT / "src"
@@ -22,7 +24,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", Settings.database_sync_url.replace("%", "%%"))
+config.set_main_option("sqlalchemy.url", Settings.database_url.replace("%", "%%"))
 
 target_metadata = Base.metadata
 
@@ -41,29 +43,39 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def run_migrations_online() -> None:
+def do_run_migrations(connection) -> None:
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_async_migrations() -> None:
     configuration = config.get_section(config.config_ini_section, {})
     try:
-        connectable = engine_from_config(
+        connectable = async_engine_from_config(
             configuration,
             prefix="sqlalchemy.",
             poolclass=pool.NullPool,
         )
     except (ImportError, NoSuchModuleError) as exc:
         raise RuntimeError(
-            "PostgreSQL driver is not available. Install dependencies from requirements.txt "
-            "or run `pip install psycopg psycopg-binary` in the active venv."
+            "PostgreSQL async driver is not available. Install dependencies "
+            "from requirements.txt or run `pip install asyncpg` in the active venv."
         ) from exc
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=True,
-        )
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
 
-        with context.begin_transaction():
-            context.run_migrations()
+    await connectable.dispose()
+
+
+def run_migrations_online() -> None:
+    asyncio.run(run_async_migrations())
 
 
 if context.is_offline_mode():

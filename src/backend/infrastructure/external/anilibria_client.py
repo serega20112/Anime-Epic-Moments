@@ -1,11 +1,10 @@
 import re
 from urllib.parse import urlparse
 
-import requests
+import httpx
 
 from backend.config import Settings
 from backend.domain.watch.value_object import DiscoveredWatchSource
-from backend.infrastructure.external._async import external_method
 from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 
 
@@ -20,8 +19,11 @@ class AniLibriaClient(WatchSourceProvider):
         self.api_url = (api_url or Settings.anilibria_api_url).rstrip("/")
         self.provider_name = provider_name or "AniLibria"
         self.asset_origin = self._origin(self.api_url)
-        self.session = requests.Session()
-        self.session.trust_env = False
+        self.session = httpx.AsyncClient(
+            timeout=httpx.Timeout(6),
+            trust_env=False,
+            follow_redirects=True,
+        )
 
     @staticmethod
     def _origin(url: str) -> str:
@@ -29,28 +31,31 @@ class AniLibriaClient(WatchSourceProvider):
         parsed = urlparse(url)
         return f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else ""
 
-    def is_enabled(self) -> bool:
+    async def is_enabled(self) -> bool:
         return bool(self.api_url)
 
-    @external_method
-    def search_sources(
+    async def aclose(self) -> None:
+        """Close the underlying HTTP client."""
+        await self.session.aclose()
+
+    async def search_sources(
         self,
         title: str,
         episode: int,
         year: int | None = None,
         limit: int = 6,
     ) -> list[DiscoveredWatchSource]:
-        if not self.is_enabled():
+        if not await self.is_enabled():
             return []
 
-        search_payload = self._search_releases(title=title, limit=limit)
+        search_payload = await self._search_releases(title=title, limit=limit)
         if not search_payload:
             return []
 
         discovered: list[DiscoveredWatchSource] = []
         seen: set[tuple[str, str, str]] = set()
         for release in search_payload:
-            if not self._looks_relevant(
+            if not await self._looks_relevant(
                 release=release, requested_title=title, requested_year=year
             ):
                 continue
@@ -59,7 +64,7 @@ class AniLibriaClient(WatchSourceProvider):
             if not release_id:
                 continue
 
-            release_details = self._get_release_details(release_id=int(release_id))
+            release_details = await self._get_release_details(release_id=int(release_id))
             if not release_details:
                 continue
 
@@ -84,7 +89,7 @@ class AniLibriaClient(WatchSourceProvider):
                 ("720", "hls_720"),
                 ("480", "hls_480"),
             ):
-                stream_url = self._normalize_link(target_episode.get(field_name))
+                stream_url = await self._normalize_link(target_episode.get(field_name))
                 if not stream_url:
                     continue
                 dedupe_key = (translation_name, quality_label, stream_url)
@@ -105,33 +110,31 @@ class AniLibriaClient(WatchSourceProvider):
 
         return discovered
 
-    def _search_releases(self, title: str, limit: int) -> list[dict]:
+    async def _search_releases(self, title: str, limit: int) -> list[dict]:
         try:
-            response = self.session.get(
+            response = await self.session.get(
                 f"{self.api_url}/app/search/releases",
                 params={"query": title, "limit": max(int(limit), 1)},
-                timeout=6,
             )
             response.raise_for_status()
             payload = response.json()
-        except (requests.RequestException, ValueError, TypeError):
+        except (httpx.HTTPError, ValueError, TypeError):
             return []
         return payload if isinstance(payload, list) else []
 
-    def _get_release_details(self, release_id: int) -> dict | None:
+    async def _get_release_details(self, release_id: int) -> dict | None:
         try:
-            response = self.session.get(
+            response = await self.session.get(
                 f"{self.api_url}/anime/releases/{release_id}",
                 params={"include": "episodes"},
-                timeout=6,
             )
             response.raise_for_status()
             payload = response.json()
-        except (requests.RequestException, ValueError, TypeError):
+        except (httpx.HTTPError, ValueError, TypeError):
             return None
         return payload if isinstance(payload, dict) else None
 
-    def _looks_relevant(
+    async def _looks_relevant(
         self, release: dict, requested_title: str, requested_year: int | None
     ) -> bool:
         release_year = release.get("year")
@@ -142,7 +145,7 @@ class AniLibriaClient(WatchSourceProvider):
         ):
             return False
 
-        requested = self._normalize_title(requested_title)
+        requested = await self._normalize_title(requested_title)
         name = release.get("name") or {}
         candidates = [
             name.get("main"),
@@ -151,7 +154,7 @@ class AniLibriaClient(WatchSourceProvider):
             release.get("alias"),
         ]
         for candidate in candidates:
-            normalized_candidate = self._normalize_title(candidate)
+            normalized_candidate = await self._normalize_title(candidate)
             if normalized_candidate and (
                 requested in normalized_candidate or normalized_candidate in requested
             ):
@@ -159,12 +162,12 @@ class AniLibriaClient(WatchSourceProvider):
 
         return requested_year is None
 
-    def _normalize_title(self, title: str | None) -> str:
+    async def _normalize_title(self, title: str | None) -> str:
         text = str(title or "").lower().strip()
         text = re.sub(r"[^a-zа-я0-9]+", " ", text, flags=re.IGNORECASE)
         return " ".join(text.split())
 
-    def _normalize_link(self, value: str | None) -> str | None:
+    async def _normalize_link(self, value: str | None) -> str | None:
         if not value:
             return None
         text = str(value).strip()

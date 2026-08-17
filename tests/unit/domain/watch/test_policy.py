@@ -23,14 +23,14 @@ class TestNormalizeTranslationName:
             (None, ""),
         ],
     )
-    def test_cleans_and_normalizes_input(self, value, expected):
+    async def test_cleans_and_normalizes_input(self, value, expected):
         """Что тестируем: функцию normalize_translation_name.
 
         Что передаём: названия с лишними пробелами, знаками препинания и None.
         Что ожидаем: строка приводится к нижнему регистру и нормализованному виду,
         None -> пустая строка.
         """
-        assert normalize_translation_name(value) == expected
+        assert await normalize_translation_name(value) == expected
 
 
 class TestTranslationPriorityPolicy:
@@ -48,7 +48,7 @@ class TestTranslationPriorityPolicy:
             ("Custom Fansub", "Custom Fansub", False),
         ],
     )
-    def test_priority_and_canonical_name_follow_preferred_groups(
+    async def test_priority_and_canonical_name_follow_preferred_groups(
         self,
         value,
         expected_label,
@@ -60,10 +60,10 @@ class TestTranslationPriorityPolicy:
         Что ожидаем: для предпочитаемых групп приоритет меньше длины списка предпочитаемых групп
         и каноническое имя из списка, для прочих - оригинальное имя.
         """
-        priority, normalized = get_translation_priority(value)
+        priority, normalized = await get_translation_priority(value)
 
-        assert canonicalize_translation_name(value) == expected_label
-        assert is_preferred_translation(value) is preferred
+        assert await canonicalize_translation_name(value) == expected_label
+        assert await is_preferred_translation(value) is preferred
         if preferred:
             assert priority < len(PREFERRED_TRANSLATION_GROUPS)
             assert normalized != ""

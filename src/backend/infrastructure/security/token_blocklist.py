@@ -23,7 +23,7 @@ class TokenBlocklist(TokenBlocklistInterface):
         ttl_value = max(int(ttl_seconds), 0)
         if not normalized_token or ttl_value <= 0:
             return
-        await self.store.set(self._key(normalized_token), True, ttl_seconds=ttl_value)
+        await self.store.set(await self._key(normalized_token), True, ttl_seconds=ttl_value)
 
     async def consume(self, token: str, ttl_seconds: int) -> bool:
         """Atomically revoke a token unless it was already revoked.
@@ -42,7 +42,7 @@ class TokenBlocklist(TokenBlocklistInterface):
         ttl_value = max(int(ttl_seconds), 0)
         if not normalized_token or ttl_value <= 0:
             return False
-        return await self.store.consume(self._key(normalized_token), ttl_seconds=ttl_value)
+        return await self.store.consume(await self._key(normalized_token), ttl_seconds=ttl_value)
 
     async def is_revoked(self, token: str) -> bool:
         """Check whether a token is currently revoked.
@@ -56,7 +56,7 @@ class TokenBlocklist(TokenBlocklistInterface):
         normalized_token = str(token or "").strip()
         if not normalized_token:
             return False
-        return bool(await self.store.get(self._key(normalized_token), False))
+        return bool(await self.store.get(await self._key(normalized_token), False))
 
-    def _key(self, token: str) -> str:
+    async def _key(self, token: str) -> str:
         return f"jwt_blocklist:{sha256(token.encode('utf-8')).hexdigest()}"

@@ -47,7 +47,7 @@ class RequestEmailVerificationUseCase:
         normalized_email = str(email or "").strip().lower()
         normalized_username = str(username or "").strip()
         if await self.user_repo.get_by_email(normalized_email):
-            return AuthResult.failure(
+            return await AuthResult.failure(
                 f"Пользователь с email {normalized_email} уже существует",
                 "auth.register_page",
             )
@@ -56,8 +56,8 @@ class RequestEmailVerificationUseCase:
             email=normalized_email,
             username=normalized_username,
             password_hash=await self.password_service.hash_password(password),
-            code=self._generate_code(),
-            theme=self._normalize_theme(theme),
+            code=await self._generate_code(),
+            theme=await self._normalize_theme(theme),
         )
         await self.verification_store.save(payload)
         await self.mailer.send_verification_code(
@@ -65,7 +65,7 @@ class RequestEmailVerificationUseCase:
             payload.code,
             theme=payload.theme,
         )
-        return AuthResult.success(
+        return await AuthResult.success(
             data=normalized_email,
             message=(
                 "Мы отправили код подтверждения на почту. Введи его, чтобы завершить регистрацию."
@@ -74,9 +74,9 @@ class RequestEmailVerificationUseCase:
             redirect_email=normalized_email,
         )
 
-    def _generate_code(self) -> str:
+    async def _generate_code(self) -> str:
         return f"{randbelow(1000000):06d}"
 
-    def _normalize_theme(self, value: str | None) -> str:
+    async def _normalize_theme(self, value: str | None) -> str:
         normalized = str(value or "").strip().lower()
         return normalized if normalized in {"neon", "dark", "light", "rose"} else "neon"

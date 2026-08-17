@@ -55,37 +55,37 @@ class ResetPasswordUseCase:
         """
         normalized_token = str(token or "").strip()
         if not normalized_token:
-            return AuthResult.failure(
+            return await AuthResult.failure(
                 "Ссылка для сброса пароля недействительна или устарела",
                 "auth.password_reset_confirm_page",
             )
         try:
-            user_id = self.jwt_service.decode_password_reset_token(normalized_token)
+            user_id = await self.jwt_service.decode_password_reset_token(normalized_token)
         except jwt.PyJWTError:
-            return AuthResult.failure(
+            return await AuthResult.failure(
                 "Ссылка для сброса пароля недействительна или устарела",
                 "auth.password_reset_confirm_page",
             )
 
         user = await self.user_repo.get_by_id(user_id)
         if not user:
-            return AuthResult.failure(
+            return await AuthResult.failure(
                 "Пользователь не найден",
                 "auth.password_reset_confirm_page",
             )
 
-        ttl_seconds = self.jwt_service.get_token_ttl_seconds(
+        ttl_seconds = await self.jwt_service.get_token_ttl_seconds(
             normalized_token, expected_type="password_reset"
         )
         if not await self.token_blocklist.consume(normalized_token, ttl_seconds):
-            return AuthResult.failure(
+            return await AuthResult.failure(
                 "Ссылка для сброса пароля уже использована",
                 "auth.password_reset_confirm_page",
             )
 
         password_hash = await self.password_service.hash_password(new_password)
         await self.user_repo.update_password(user_id=user_id, password_hash=password_hash)
-        return AuthResult.success(
+        return await AuthResult.success(
             message="Пароль обновлен. Теперь можно войти.",
             redirect_endpoint="auth.login_page",
         )

@@ -10,7 +10,7 @@ class TestHighlightValidation:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("start", [10.0, 12.0])
-    def test_requires_end_timestamp_greater_than_start(self, start):
+    async def test_requires_end_timestamp_greater_than_start(self, start):
         """Что тестируем: валидацию временного интервала при создании Highlight.
 
         Что передаём: интервал, где end_timestamp не больше start_timestamp.
@@ -30,7 +30,7 @@ class TestHighlightEdit:
     """Юнит-тесты метода edit сущности Highlight."""
 
     @pytest.mark.unit
-    def test_edit_updates_fields_and_revalidates_interval(self):
+    async def test_edit_updates_fields_and_revalidates_interval(self):
         """Что тестируем: метод edit.
 
         Что передаём: новые значения таймкодов, заголовка, категории, описания, is_spoiler и emotion.
@@ -48,7 +48,7 @@ class TestHighlightEdit:
             is_spoiler=False,
         )
 
-        highlight.edit(
+        await highlight.edit(
             start_timestamp=8.0,
             end_timestamp=20.0,
             title="after",
@@ -79,7 +79,7 @@ class TestHighlightCounters:
             (["like", "view", "like"], 2, 1),
         ],
     )
-    def test_counters_update_for_likes_and_views(
+    async def test_counters_update_for_likes_and_views(
         self,
         operations,
         expected_likes,
@@ -100,9 +100,9 @@ class TestHighlightCounters:
 
         for operation in operations:
             if operation == "like":
-                highlight.add_like()
+                await highlight.add_like()
             else:
-                highlight.add_view()
+                await highlight.add_view()
 
         assert highlight.likes_count == expected_likes
         assert highlight.views_count == expected_views

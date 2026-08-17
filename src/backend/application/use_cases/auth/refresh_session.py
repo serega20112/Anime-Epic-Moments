@@ -39,12 +39,12 @@ class RefreshSessionUseCase:
         """
         token = str(refresh_token or "").strip()
         if not token:
-            return AuthResult.failure("auth_required", "auth.refresh_session")
+            return await AuthResult.failure("auth_required", "auth.refresh_session")
         try:
-            user_id = self.jwt_service.decode_refresh_token(token)
+            user_id = await self.jwt_service.decode_refresh_token(token)
         except jwt.PyJWTError:
-            return AuthResult.failure("invalid_token", "auth.refresh_session")
-        ttl_seconds = self.jwt_service.get_token_ttl_seconds(token, expected_type="refresh")
+            return await AuthResult.failure("invalid_token", "auth.refresh_session")
+        ttl_seconds = await self.jwt_service.get_token_ttl_seconds(token, expected_type="refresh")
         if not await self.token_blocklist.consume(token, ttl_seconds):
-            return AuthResult.failure("invalid_token", "auth.refresh_session")
-        return AuthResult.success(data=user_id)
+            return await AuthResult.failure("invalid_token", "auth.refresh_session")
+        return await AuthResult.success(data=user_id)

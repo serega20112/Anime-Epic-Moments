@@ -103,7 +103,7 @@ class GetUserHighlightsUseCase:
                 continue
             filtered.append(highlight)
 
-        filtered = self._sort_highlights(filtered, sort_by=sort_by)
+        filtered = await self._sort_highlights(filtered, sort_by=sort_by)
         engagement_map = await self.repo.get_engagement_map(
             [highlight.id for highlight in filtered if highlight.id is not None],
             viewer_user_id=viewer_user_id,
@@ -134,8 +134,8 @@ class GetUserHighlightsUseCase:
                     title=highlight.title or f"Момент {highlight.episode} серии",
                     category=highlight.category,
                     episode=highlight.episode,
-                    start_timestamp=self._format_timestamp(highlight.start_timestamp),
-                    end_timestamp=self._format_timestamp(highlight.end_timestamp),
+                    start_timestamp=await self._format_timestamp(highlight.start_timestamp),
+                    end_timestamp=await self._format_timestamp(highlight.end_timestamp),
                     duration_seconds=duration,
                     description=highlight.description or "",
                     is_spoiler=highlight.is_spoiler,
@@ -146,7 +146,7 @@ class GetUserHighlightsUseCase:
                     comments_count=engagement.comments_count if engagement else 0,
                     is_liked=engagement.is_liked if engagement else False,
                     is_saved=engagement.is_saved if engagement else False,
-                    watch_url=self._build_watch_url(
+                    watch_url=await self._build_watch_url(
                         watch_id=watch_id,
                         episode=highlight.episode,
                         start_timestamp=highlight.start_timestamp,
@@ -189,12 +189,12 @@ class GetUserHighlightsUseCase:
             include_spoilers=include_spoilers,
         )
 
-    def _format_timestamp(self, seconds: float) -> str:
+    async def _format_timestamp(self, seconds: float) -> str:
         minutes = int(seconds // 60)
         sec = int(seconds % 60)
         return f"{minutes:02d}:{sec:02d}"
 
-    def _build_watch_url(
+    async def _build_watch_url(
         self,
         watch_id: int,
         episode: int,
@@ -203,13 +203,14 @@ class GetUserHighlightsUseCase:
         start_at = max(int(float(start_timestamp or 0.0)), 0)
         return f"/watch/{watch_id}?episode={episode}&start_at={start_at}"
 
-    def _sort_highlights(self, highlights, sort_by: str):
+    async def _sort_highlights(self, highlights, sort_by: str):
         if sort_by == "popular":
-            return sorted(
-                highlights,
-                key=self._popularity_score,
-                reverse=True,
-            )
+            keyed = [
+                (await self._popularity_score(item), item)
+                for item in highlights
+            ]
+            keyed.sort(key=lambda pair: pair[0], reverse=True)
+            return [item for _score, item in keyed]
         return sorted(highlights, key=lambda item: item.created_at, reverse=True)
 
     async def _load_owner_map(self, highlights) -> dict[int, object]:
@@ -222,7 +223,7 @@ class GetUserHighlightsUseCase:
             if user.id is not None
         }
 
-    def _popularity_score(self, highlight) -> float:
+    async def _popularity_score(self, highlight) -> float:
         age_hours = max(
             (datetime.utcnow() - highlight.created_at).total_seconds() / 3600,
             0.0,

@@ -98,7 +98,7 @@ class TestMediaProxyClient:
         assert isinstance(response, StreamingResponse)
         assert response.status_code == 200
 
-    def test_passthrough_headers_pick_safe_ones(self):
+    async def test_passthrough_headers_pick_safe_ones(self):
         from backend.infrastructure.media_proxy.media_proxy_client import _passthrough_headers
 
         upstream = _upstream_response(
@@ -108,7 +108,7 @@ class TestMediaProxyClient:
                 "Set-Cookie": "evil=1",
             }
         )
-        headers = _passthrough_headers(upstream)
+        headers = await _passthrough_headers(upstream)
         assert headers["Content-Type"] == "video/mp4"
         assert headers["Content-Length"] == "100"
         assert "Set-Cookie" not in headers
