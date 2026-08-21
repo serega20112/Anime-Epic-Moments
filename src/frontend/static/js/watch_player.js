@@ -969,6 +969,7 @@
     initTabs();
     initDiscover();
     initStatus();
+    initFavoriteBadge();
     initHighlightForm();
     initDiscussion();
     initPlayer();
