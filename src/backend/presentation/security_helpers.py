@@ -174,15 +174,13 @@ async def get_allowed_origins(request: Request) -> set[str]:
         set[str]: Allowed origin URLs.
     """
     host_url = f"{request.url.scheme}://{request.url.netloc}/"
-    return {
-        origin
-        for origin in (
-            await normalize_origin(host_url),
-            await normalize_origin(Settings.app_base_url),
-            *(await normalize_origin(item) for item in Settings.app_allowed_origins),
-        )
-        if origin
-    }
+    candidates = [
+        await normalize_origin(host_url),
+        await normalize_origin(Settings.app_base_url),
+    ]
+    for item in Settings.app_allowed_origins:
+        candidates.append(await normalize_origin(item))
+    return {origin for origin in candidates if origin}
 
 
 async def is_static_request(request: Request) -> bool:
