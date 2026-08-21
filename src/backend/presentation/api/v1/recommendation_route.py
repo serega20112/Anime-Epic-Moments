@@ -20,12 +20,17 @@ recommendation_router = APIRouter(prefix="/api/v1/recommendations", route_class=
 recommendation_bp = recommendation_router
 
 
+async def _recommendation_key(request: Request) -> str:
+    """Build a composite rate-limit subject: IP + target user id."""
+    return f"{await client_ip(request)}::{request.path_params.get('user_id')}"
+
+
 @recommendation_router.post("/generate/{user_id}", name="recommendation.generate_recommendations")
 @rate_limit(
     scope="recommendation_generate",
     limit=20,
     window_seconds=60,
-    key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
+    key_builder=_recommendation_key,
 )
 async def generate_recommendations(
     request: Request,
@@ -51,7 +56,7 @@ async def generate_recommendations(
     scope="recommendation_refresh",
     limit=10,
     window_seconds=60,
-    key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
+    key_builder=_recommendation_key,
 )
 async def refresh_recommendations(
     request: Request,
@@ -77,7 +82,7 @@ async def refresh_recommendations(
     scope="recommendation_ask_ai",
     limit=20,
     window_seconds=60,
-    key_builder=lambda request: f"{client_ip(request)}::{request.path_params.get('user_id')}",
+    key_builder=_recommendation_key,
 )
 async def ask_ai_recommendations(
     request: Request,
