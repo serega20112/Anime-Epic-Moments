@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from typing import Any
 
 from dishka import Provider, Scope, provide
 
@@ -25,6 +26,7 @@ from backend.infrastructure.external.email_verification_mailer import EmailVerif
 from backend.infrastructure.external.failover_llm_client import FailoverLLMClient
 from backend.infrastructure.external.google_gemini_llm_client import GoogleGeminiLLMClient
 from backend.infrastructure.external.huggingface_llm_client import HuggingFaceLLMClient
+from backend.infrastructure.external.openrouter_llm_client import OpenRouterLLMClient
 from backend.infrastructure.external.youtube_client import YouTubeClient
 from backend.infrastructure.media_proxy import MediaProxyClient
 from backend.infrastructure.security.account_lock_service import AccountLockService
@@ -155,24 +157,38 @@ class AppProvider(Provider):
 
     @provide(scope=Scope.APP)
     async def llm_client(self) -> AsyncIterator[FailoverLLMClient]:
-        """Provide the LLM client with Gemini primary and Hugging Face fallback.
+        """Provide the LLM client with provider failover chain.
+
+        Priority: OpenRouter (if key configured) -> Google Gemini -> Hugging Face.
 
         Yields:
             FailoverLLMClient: Failover client for AI-powered search.
         """
-        client = FailoverLLMClient(
-            primary=GoogleGeminiLLMClient(
-                api_key=Settings.google_api_key,
-                model=Settings.google_model,
-                api_url=Settings.google_api_url,
-            ),
-            fallback=HuggingFaceLLMClient(
-                api_key=Settings.hf_token,
-                model=Settings.hf_model,
-                provider=Settings.hf_provider,
-                api_url=Settings.hf_api_url,
-            ),
+        gemini = GoogleGeminiLLMClient(
+            api_key=Settings.google_api_key,
+            model=Settings.google_model,
+            api_url=Settings.google_api_url,
         )
+        huggingface = HuggingFaceLLMClient(
+            api_key=Settings.hf_token,
+            model=Settings.hf_model,
+            provider=Settings.hf_provider,
+            api_url=Settings.hf_api_url,
+        )
+        if Settings.openrouter_api_key:
+            primary: Any = OpenRouterLLMClient(
+                api_key=Settings.openrouter_api_key,
+                model=Settings.openrouter_model,
+                api_url=Settings.openrouter_api_url,
+            )
+            fallback = gemini if Settings.google_api_key else huggingface
+        elif Settings.google_api_key:
+            primary = gemini
+            fallback = huggingface
+        else:
+            primary = gemini
+            fallback = huggingface
+        client = FailoverLLMClient(primary=primary, fallback=fallback)
         yield client
         await client.aclose()
 

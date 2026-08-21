@@ -41,6 +41,34 @@ def hf_api_url() -> str:
     return os.getenv("HF_API_URL", "https://router.huggingface.co/v1/chat/completions")
 
 
+def openrouter_api_key() -> str | None:
+    """Return the OpenRouter API key.
+
+    Returns:
+        str | None: OpenRouter API key or None.
+    """
+    value = os.getenv("OPENROUTER_API_KEY", "").strip()
+    return value or None
+
+
+def openrouter_model() -> str:
+    """Return the OpenRouter model identifier (vendor/model).
+
+    Returns:
+        str: OpenRouter model name.
+    """
+    return os.getenv("OPENROUTER_MODEL", "openrouter/auto")
+
+
+def openrouter_api_url() -> str:
+    """Return the OpenRouter chat completions endpoint.
+
+    Returns:
+        str: OpenRouter API URL.
+    """
+    return os.getenv("OPENROUTER_API_URL", "https://openrouter.ai/api/v1/chat/completions")
+
+
 def google_api_key() -> str | None:
     """Return the Google Gemini API key.
 
