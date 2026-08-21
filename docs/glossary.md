@@ -30,7 +30,7 @@
 - `src/backend/domain`
 - `src/backend/application/use_cases`
 - `src/backend/infrastructure/external`
-- `src/backend/infrastructure/models/sqlalchemy_models.py`
+- `src/backend/infrastructure/models/` — SQLAlchemy-модели по зонам (фасад в `__init__.py`)
 
 ## Связанные документы
 

@@ -115,7 +115,7 @@ ruff.toml                   Конфиг линта
 - App factory (FastAPI): `src/backend/presentation/app_factory.py` / `create_app`
 - Граф зависимостей (dishka): `src/backend/infrastructure/di/`
 - Runtime-настройки: `src/backend/config/` (`Settings`)
-- SQLAlchemy-модели: `src/backend/infrastructure/models/sqlalchemy_models.py`
+- SQLAlchemy-модели: `src/backend/infrastructure/models/` (фасад — `__init__.py`, по папке на зону)
 - HTTP-маршруты: `src/backend/presentation/api/v1/`
 - Use cases: `src/backend/application/use_cases/`
 - Внешние провайдеры (LLM, Kodik, AniLibria, YouTube): `src/backend/infrastructure/external/`
