@@ -809,7 +809,7 @@
         emotion: activeEmotion,
         is_spoiler: document.getElementById("hf-spoiler").checked,
         watch_source_id: source ? source.id : null,
-        translation_id: null,
+        translation_id: source ? source.translationId : null,
       };
       AEM.api("/watch/" + cfg.animeId + "/highlights", { method: "POST", body: body })
         .then(function (result) {
