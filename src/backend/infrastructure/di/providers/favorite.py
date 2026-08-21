@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.services.recommendation_service import RecommendationService
 from backend.application.use_cases import GetFavoritesUseCase
 from backend.application.use_cases.favorite.add_favorite import AddFavoriteUseCase
 from backend.application.use_cases.favorite.remove_favorite import RemoveFavoriteUseCase
-from backend.domain.unit_of_work import UnitOfWorkInterface
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from backend.infrastructure.external import AnimeApiClient
 from backend.infrastructure.repositories.favorite_repository import FavoriteRepository

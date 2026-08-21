@@ -10,7 +10,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
 
 from backend.application.use_cases import DeleteHighlightUseCase, EditHighlightUseCase
-from backend.application.use_cases.highlight.create_highlight import CreateHighlightUseCase
+from backend.application.use_cases.highlight.crud.create_highlight import CreateHighlightUseCase
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
 from backend.presentation.api.helpers import get_current_user, read_payload
 from backend.presentation.api.requests.highlight_mapper import (

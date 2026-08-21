@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.use_cases.auth.resend_email_verification import (
+from backend.application.use_cases.auth.verification.resend_email_verification import (
     ResendEmailVerificationUseCase,
 )
 from backend.domain import PendingEmailVerification
@@ -45,6 +45,7 @@ class TestResendEmailVerification:
         verification_store.save.side_effect = lambda payload: payload
         mailer = AsyncMock()
         use_case = ResendEmailVerificationUseCase(verification_store, mailer)
+
         async def _fake_code():
             return "654321"
 

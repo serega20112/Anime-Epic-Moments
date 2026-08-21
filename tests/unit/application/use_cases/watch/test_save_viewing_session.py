@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.dto import SaveViewingSessionCommand
-from backend.application.use_cases.watch.save_viewing_session import (
+from backend.application.use_cases.watch.session.save_viewing_session import (
     SaveViewingSessionUseCase,
 )
 

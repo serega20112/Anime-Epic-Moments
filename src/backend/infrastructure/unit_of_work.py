@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.domain.unit_of_work import UnitOfWorkInterface
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 
 
 class SqlAlchemyUnitOfWork(UnitOfWorkInterface):

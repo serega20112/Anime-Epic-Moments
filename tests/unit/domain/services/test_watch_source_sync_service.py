@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from backend.domain.services.watch_source_sync_service import WatchSourceSyncServiceInterface
+from backend.application.interface.services.watch_source_sync_service import (
+    WatchSourceSyncServiceInterface,
+)
 
 
 class TestWatchSourceSyncServiceInterface:

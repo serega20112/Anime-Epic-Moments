@@ -1,6 +1,6 @@
-from backend.domain import FavoriteRepository
-from backend.domain.favorite.value_object import FavoriteAnimeCard
-from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.interface.repositories.favorite_repository import FavoriteRepository
+from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.domain.value_objects.favorite.favorite_card import FavoriteAnimeCard
 
 
 class GetFavoritesUseCase:
@@ -43,7 +43,9 @@ class GetFavoritesUseCase:
             )
         return result
 
-    async def _resolve_watch_id(self, stored_anime_id: int, resolved_external_id: str | None) -> int:
+    async def _resolve_watch_id(
+        self, stored_anime_id: int, resolved_external_id: str | None
+    ) -> int:
         """Выбирает id для построения watch-ссылки."""
         try:
             numeric_id = int(str(resolved_external_id or "").strip())

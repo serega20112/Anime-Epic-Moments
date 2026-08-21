@@ -6,6 +6,7 @@ from typing import Any
 
 from backend.application.dto import CreateSupportTicketCommand
 from backend.domain import normalize_support_channel
+from backend.domain.policies.user_credentials_policy import normalize_email, normalize_username
 
 
 async def map_create_support_ticket_command(
@@ -27,7 +28,9 @@ async def map_create_support_ticket_command(
         CreateSupportTicketCommand: Command (validation happens in the use case).
     """
     email = await _normalize_email(user_email if user_id is not None else form.get("email"))
-    username = await _normalize_username(user_username if user_id is not None else form.get("username"))
+    username = await _normalize_username(
+        user_username if user_id is not None else form.get("username")
+    )
     subject = str(form.get("subject") or "").strip()
     message = str(form.get("message") or "").strip()
     channel = await normalize_support_channel(form.get("channel"))
@@ -52,7 +55,7 @@ async def _normalize_email(value: str | None) -> str:
     Returns:
         str: Normalized email.
     """
-    return str(value or "").strip().lower()
+    return await normalize_email(value)
 
 
 async def _normalize_username(value: str | None) -> str:
@@ -64,7 +67,7 @@ async def _normalize_username(value: str | None) -> str:
     Returns:
         str: Normalized username.
     """
-    return " ".join(str(value or "").strip().split())
+    return await normalize_username(value)
 
 
 async def _normalize_page_url(value: str | None) -> str | None:

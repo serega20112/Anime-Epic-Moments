@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.favorite.entity import Favorite
+from backend.domain.entities.favorite.favorite import Favorite
 
 
 class TestFavorite:

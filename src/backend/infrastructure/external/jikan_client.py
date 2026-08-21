@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import httpx
 
-from backend.domain.anime.entity import Anime
+from backend.domain.entities.anime.anime import Anime
 from backend.infrastructure.external.mapping.anime import (
     build_anime_from_jikan_item,
     is_nsfw_jikan,
@@ -22,15 +22,40 @@ class JikanAnimeClient:
     """
 
     genre_id_map = {
-        "Action": 1, "Adventure": 2, "Cars": 3, "Comedy": 4,
-        "Dementia": 5, "Demons": 6, "Mystery": 7, "Drama": 8,
-        "Ecchi": 9, "Fantasy": 10, "Gender Bender": 11, "Harem": 35,
-        "Historical": 13, "Horror": 14, "Kids": 15, "Magic": 16,
-        "Martial Arts": 17, "Mecha": 18, "Music": 19,
-        "Parody": 20, "Psychological": 40, "Romance": 22, "Samurai": 21,
-        "School": 23, "Sci-Fi": 24, "Seinen": 42, "Shoujo": 25,
-        "Shounen": 27, "Slice of Life": 36, "Space": 29, "Sports": 30,
-        "Super Power": 31, "Supernatural": 37, "Thriller": 41,
+        "Action": 1,
+        "Adventure": 2,
+        "Cars": 3,
+        "Comedy": 4,
+        "Dementia": 5,
+        "Demons": 6,
+        "Mystery": 7,
+        "Drama": 8,
+        "Ecchi": 9,
+        "Fantasy": 10,
+        "Gender Bender": 11,
+        "Harem": 35,
+        "Historical": 13,
+        "Horror": 14,
+        "Kids": 15,
+        "Magic": 16,
+        "Martial Arts": 17,
+        "Mecha": 18,
+        "Music": 19,
+        "Parody": 20,
+        "Psychological": 40,
+        "Romance": 22,
+        "Samurai": 21,
+        "School": 23,
+        "Sci-Fi": 24,
+        "Seinen": 42,
+        "Shoujo": 25,
+        "Shounen": 27,
+        "Slice of Life": 36,
+        "Space": 29,
+        "Sports": 30,
+        "Super Power": 31,
+        "Supernatural": 37,
+        "Thriller": 41,
         "Vampire": 32,
     }
 

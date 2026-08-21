@@ -1,5 +1,5 @@
+from backend.application.interface.repositories.moment_repository import MomentRepository
 from backend.application.use_cases.moment.result import MomentResult
-from backend.domain import MomentRepository
 
 
 class GetUserViewingMomentsUseCase:

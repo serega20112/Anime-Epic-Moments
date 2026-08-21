@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.dto import AddAnimeCommentCommand
-from backend.application.use_cases.watch.add_anime_comment import AddAnimeCommentUseCase
+from backend.application.use_cases.watch.discussion.add_anime_comment import AddAnimeCommentUseCase
 
 
 @pytest.mark.unit

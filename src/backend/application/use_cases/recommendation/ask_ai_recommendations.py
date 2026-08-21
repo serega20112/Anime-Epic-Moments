@@ -3,11 +3,14 @@ from __future__ import annotations
 import re
 from collections import Counter
 
+from starlette import status
+
 from backend.application.dto import AskAiRecommendationsCommand
+from backend.application.interface.repositories.favorite_repository import FavoriteRepository
+from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.interface.services import LLMClientInterface as HuggingFaceLLMClient
 from backend.application.use_cases.recommendation.result import RecommendationUseCaseResult
-from backend.domain import FavoriteRepository, RecommendationResult
-from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
-from backend.domain.services import LLMClientInterface as HuggingFaceLLMClient
+from backend.domain import RecommendationResult
 
 
 class AskAiRecommendationsUseCase:
@@ -115,7 +118,7 @@ class AskAiRecommendationsUseCase:
         if not normalized_query:
             return await RecommendationUseCaseResult.failure(
                 "invalid_query",
-                status_code=400,
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
         return await RecommendationUseCaseResult.success(
             await self._build_recommendations(

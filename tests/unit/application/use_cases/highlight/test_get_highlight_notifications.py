@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.use_cases.highlight.get_highlight_notifications import (
+from backend.application.use_cases.highlight.social.get_highlight_notifications import (
     GetHighlightNotificationsUseCase,
 )
 

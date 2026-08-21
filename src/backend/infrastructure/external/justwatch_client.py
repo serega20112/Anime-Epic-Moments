@@ -3,7 +3,7 @@ import re
 import httpx
 
 from backend.config import Settings
-from backend.domain.watch.value_object import DiscoveredWatchSource
+from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
 from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 
 

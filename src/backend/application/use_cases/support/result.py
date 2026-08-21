@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from starlette import status
+
 
 @dataclass
 class CreateSupportTicketResult:
@@ -25,7 +27,7 @@ class CreateSupportTicketResult:
     """
 
     ok: bool
-    status_code: int = 200
+    status_code: int = status.HTTP_200_OK
     data: Any = None
     error_message: str | None = None
     message: str | None = None
@@ -50,14 +52,16 @@ class CreateSupportTicketResult:
         """
         return cls(
             ok=True,
-            status_code=200,
+            status_code=status.HTTP_200_OK,
             data=data,
             message=message,
             service_unavailable=service_unavailable,
         )
 
     @classmethod
-    async def failure(cls, error_message: str, status_code: int = 400) -> CreateSupportTicketResult:
+    async def failure(
+        cls, error_message: str, status_code: int = status.HTTP_400_BAD_REQUEST
+    ) -> CreateSupportTicketResult:
         """Build a failed result.
 
         Args:

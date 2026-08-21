@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 
-from backend.domain.services import TokenBlocklistInterface
+from backend.application.interface.services import TokenBlocklistInterface
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases import (
     AddCollectionItemUseCase,
     GetUserCollectionsUseCase,
@@ -13,7 +14,6 @@ from backend.application.use_cases.collection.create_collection import CreateCol
 from backend.application.use_cases.collection.get_shared_collection import (
     GetSharedCollectionUseCase,
 )
-from backend.domain.unit_of_work import UnitOfWorkInterface
 from backend.infrastructure.repositories.collection_repository import CollectionRepository
 
 

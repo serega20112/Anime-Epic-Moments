@@ -11,20 +11,22 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from backend.application.use_cases import LogoutUserUseCase, RefreshSessionUseCase
-from backend.application.use_cases.auth.get_profile_overview import GetProfileOverviewUseCase
-from backend.application.use_cases.auth.login_user import LoginUserUseCase
-from backend.application.use_cases.auth.request_email_verification import (
-    RequestEmailVerificationUseCase,
-)
-from backend.application.use_cases.auth.request_password_reset import (
+from backend.application.use_cases.auth.login_register.login_user import LoginUserUseCase
+from backend.application.use_cases.auth.password_reset.request_password_reset import (
     RequestPasswordResetUseCase,
 )
-from backend.application.use_cases.auth.resend_email_verification import (
+from backend.application.use_cases.auth.password_reset.reset_password import ResetPasswordUseCase
+from backend.application.use_cases.auth.profile.get_profile_overview import (
+    GetProfileOverviewUseCase,
+)
+from backend.application.use_cases.auth.profile.update_user_profile import UpdateUserProfileUseCase
+from backend.application.use_cases.auth.verification.request_email_verification import (
+    RequestEmailVerificationUseCase,
+)
+from backend.application.use_cases.auth.verification.resend_email_verification import (
     ResendEmailVerificationUseCase,
 )
-from backend.application.use_cases.auth.reset_password import ResetPasswordUseCase
-from backend.application.use_cases.auth.update_user_profile import UpdateUserProfileUseCase
-from backend.application.use_cases.auth.verify_email import VerifyEmailUseCase
+from backend.application.use_cases.auth.verification.verify_email import VerifyEmailUseCase
 from backend.config import Settings
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
 from backend.infrastructure.web import flash, render_template
@@ -194,7 +196,9 @@ async def register_user(request: Request, use_case: FromDishka[RequestEmailVerif
         command = await map_register_command(form)
     except FormValidationError as error:
         return await redirect_verify(request, str(error))
-    logger.info("register_verification_requested email=%s ip=%s", command.email, await client_ip(request))
+    logger.info(
+        "register_verification_requested email=%s ip=%s", command.email, await client_ip(request)
+    )
     result = await use_case.execute(
         email=command.email,
         password=command.password,

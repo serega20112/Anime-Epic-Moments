@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.anime.entity import Anime
-from backend.domain.anime.policy import AnimeSafetyPolicy
+from backend.domain.entities.anime.anime import Anime
+from backend.domain.policies.anime_safety_policy import AnimeSafetyPolicy
 
 
 class TestAnimeSafetyPolicy:

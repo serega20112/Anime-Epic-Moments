@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from backend.domain.services.password_reset_mailer import PasswordResetMailerInterface
+from backend.application.interface.services.password_reset_mailer import (
+    PasswordResetMailerInterface,
+)
 
 
 class TestPasswordResetMailerInterface:

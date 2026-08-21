@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from backend.domain.support.entity import SupportTicket
+from backend.domain.entities.support.support_ticket import SupportTicket
 
 
 class TestSupportTicket:

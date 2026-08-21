@@ -73,7 +73,9 @@ class MediaProxyClient:
         """
         if not await is_allowed_media_url(upstream_url):
             return Response(status_code=403)
-        request_headers = {"User-Agent": await browser_user_agent(request.headers.get("User-Agent"))}
+        request_headers = {
+            "User-Agent": await browser_user_agent(request.headers.get("User-Agent"))
+        }
         if request.headers.get("Range"):
             request_headers["Range"] = request.headers["Range"]
         try:

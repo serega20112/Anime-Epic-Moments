@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from backend.domain.services.profile_overview_cache import ProfileOverviewCacheInterface
+from backend.application.interface.services.profile_overview_cache import (
+    ProfileOverviewCacheInterface,
+)
 
 
 class TestProfileOverviewCacheInterface:

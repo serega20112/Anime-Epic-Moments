@@ -1,9 +1,9 @@
-from backend.domain.collection.value_object import (
+from backend.application.interface.repositories.collection_repository import CollectionRepository
+from backend.domain.value_objects.collection.cards import (
     CollectionCard,
     CollectionDetails,
     CollectionItemCard,
 )
-from backend.domain.repositories.collection_repository import CollectionRepository
 
 
 class GetUserCollectionsUseCase:

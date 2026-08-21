@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases import (
     DeleteViewingMomentUseCase,
     GetUserViewingMomentsUseCase,
     PublishViewingMomentUseCase,
     SaveViewingMomentUseCase,
 )
-from backend.application.use_cases.highlight.create_highlight import CreateHighlightUseCase
-from backend.domain.unit_of_work import UnitOfWorkInterface
+from backend.application.use_cases.highlight.crud.create_highlight import CreateHighlightUseCase
 from backend.infrastructure.repositories.moment_repository import MomentRepository
 
 

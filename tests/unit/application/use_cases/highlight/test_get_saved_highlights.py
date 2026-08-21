@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from unittest.mock import Mock
 
-from backend.application.use_cases.highlight.get_saved_highlights import GetSavedHighlightsUseCase
+from backend.application.use_cases.highlight.feed.get_saved_highlights import (
+    GetSavedHighlightsUseCase,
+)
 
 
 def test_get_saved_highlights_use_case_builds_dashboard_for_current_user(monkeypatch):

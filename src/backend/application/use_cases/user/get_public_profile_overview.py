@@ -1,12 +1,13 @@
-from backend.application.use_cases.auth.get_profile_overview import GetProfileOverviewUseCase
-from backend.application.use_cases.user.result import UserResult
-from backend.domain import (
-    FollowUserCard,
-    PublicProfileOverview,
-    UserRepository,
+from starlette import status
+
+from backend.application.interface.repositories.collection_repository import CollectionRepository
+from backend.application.interface.repositories.user_repository import UserRepository
+from backend.application.use_cases.auth.profile.get_profile_overview import (
+    GetProfileOverviewUseCase,
 )
-from backend.domain.collection.value_object import CollectionCard
-from backend.domain.repositories.collection_repository import CollectionRepository
+from backend.application.use_cases.user.result import UserResult
+from backend.domain import FollowUserCard, PublicProfileOverview
+from backend.domain.value_objects.collection.cards import CollectionCard
 
 
 class GetPublicProfileOverviewUseCase:
@@ -30,7 +31,9 @@ class GetPublicProfileOverviewUseCase:
         try:
             profile = await self.profile_overview_use_case.execute(profile_user_id)
         except ValueError:
-            return await UserResult.failure("Пользователь не найден", status_code=404)
+            return await UserResult.failure(
+                "Пользователь не найден", status_code=status.HTTP_404_NOT_FOUND
+            )
         followers_count, following_count = await self.user_repo.get_follow_stats(profile_user_id)
         collections = await self.collection_repo.get_public_user_collections(profile_user_id)
         items_count_map = await self.collection_repo.get_items_count_map(

@@ -4,17 +4,17 @@ from dataclasses import asdict
 
 import pytest
 
-from backend.domain.highlight.value_object import (
+from backend.domain.value_objects.highlight.cards import HighlightCard
+from backend.domain.value_objects.highlight.profile_summary import (
     HighlightActivityItem,
-    HighlightCard,
     HighlightProfileSummary,
 )
-from backend.domain.user.value_object import (
+from backend.domain.value_objects.user.pending_email_verification import PendingEmailVerification
+from backend.domain.value_objects.user.profile_overview import ProfileOverview
+from backend.domain.value_objects.user.smart_profile import (
     AchievementBadge,
     GenreAffinity,
-    PendingEmailVerification,
     ProfileMoodInsight,
-    ProfileOverview,
     SmartProfile,
     TopAnimeEntry,
     ViewingHeatmapCell,

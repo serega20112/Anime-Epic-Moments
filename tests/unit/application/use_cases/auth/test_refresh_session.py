@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, Mock
 
 import jwt
 
-from backend.application.use_cases.auth.refresh_session import RefreshSessionUseCase
+from backend.application.use_cases.auth.login_register.refresh_session import RefreshSessionUseCase
 
 
 def _build(jwt_service=None, token_blocklist=None):

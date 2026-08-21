@@ -6,7 +6,7 @@ from urllib.parse import urlencode, urljoin
 import httpx
 
 from backend.config import Settings
-from backend.domain.watch.value_object import DiscoveredWatchSource
+from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
 from backend.infrastructure.external.kodik_token_store import KodikTokenStore
 from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 
@@ -218,7 +218,11 @@ class KodikClient(WatchSourceProvider):
         last_season = material.get("last_season")
         if last_season is not None:
             preferred_keys.append(str(last_season))
-        preferred_keys.extend(sorted(seasons.keys(), key=lambda value: (int(value) if value.isdigit() else 10**9, value)))
+        preferred_keys.extend(
+            sorted(
+                seasons.keys(), key=lambda value: (int(value) if value.isdigit() else 10**9, value)
+            )
+        )
 
         for season_key in preferred_keys:
             season = seasons.get(season_key)

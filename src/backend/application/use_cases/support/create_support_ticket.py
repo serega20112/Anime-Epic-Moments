@@ -4,18 +4,20 @@ import logging
 import re
 from urllib.parse import urlparse
 
+from starlette import status
+
 from backend.application.dto import CreateSupportTicketCommand
-from backend.application.use_cases.support.result import CreateSupportTicketResult
-from backend.domain import is_support_channel
-from backend.domain.repositories.support_repository import SupportRepository
-from backend.domain.services import (
+from backend.application.interface.repositories.support_repository import SupportRepository
+from backend.application.interface.services import (
     SupportEmailMailerInterface as SupportEmailMailer,
 )
-from backend.domain.services.telegram_support_notifier import (
+from backend.application.interface.services.telegram_support_notifier import (
     TelegramSupportNotifierInterface as TelegramSupportNotifier,
 )
-from backend.domain.support.entity import SupportTicket
-from backend.domain.unit_of_work import UnitOfWorkInterface
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
+from backend.application.use_cases.support.result import CreateSupportTicketResult
+from backend.domain import is_support_channel
+from backend.domain.entities.support.support_ticket import SupportTicket
 
 
 class InvalidSupportTicketError(Exception):
@@ -64,7 +66,7 @@ class CreateSupportTicketUseCase:
             )
             return await CreateSupportTicketResult.failure(
                 "Не удалось создать тикет поддержки. Попробуй позже.",
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     async def _run(self, command: CreateSupportTicketCommand) -> CreateSupportTicketResult:
@@ -83,7 +85,9 @@ class CreateSupportTicketUseCase:
             await self._validate_channel(normalized_channel)
             await self._validate_page_url(normalized_page_url)
         except InvalidSupportTicketError as error:
-            return await CreateSupportTicketResult.failure(str(error), status_code=400)
+            return await CreateSupportTicketResult.failure(
+                str(error), status_code=status.HTTP_400_BAD_REQUEST
+            )
 
         ticket = await self.support_repo.add(
             SupportTicket(

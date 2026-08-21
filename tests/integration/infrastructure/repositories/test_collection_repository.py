@@ -3,7 +3,8 @@ from __future__ import annotations
 import pytest
 
 from backend.domain import User
-from backend.domain.collection.entity import AnimeCollection, AnimeCollectionItem
+from backend.domain.aggregates.collection.collection import AnimeCollection
+from backend.domain.entities.collection.collection_item import AnimeCollectionItem
 from backend.infrastructure.repositories.collection_repository import CollectionRepository
 from backend.infrastructure.repositories.user_repository import UserRepository
 

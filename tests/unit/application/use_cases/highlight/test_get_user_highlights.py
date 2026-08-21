@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import datetime
 from unittest.mock import Mock
 
-from backend.application.use_cases.highlight.get_user_highlights import GetUserHighlightsUseCase
+from backend.application.use_cases.highlight.feed.get_user_highlights import (
+    GetUserHighlightsUseCase,
+)
 from backend.domain import Highlight
 
 

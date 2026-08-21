@@ -13,7 +13,7 @@ from backend.application.use_cases import (
     SetEpisodeReactionUseCase,
 )
 from backend.domain import EpisodeReactionType
-from backend.domain.reaction.value_object import EpisodeReactionCount
+from backend.domain.value_objects.reaction.reaction_summary import EpisodeReactionCount
 
 
 @pytest.mark.unit
@@ -32,9 +32,7 @@ class TestGetEpisodeReactionsUseCase:
         reaction_repo.get_user_reaction.return_value = SimpleReaction(EpisodeReactionType.FIRE)
         use_case = GetEpisodeReactionsUseCase(reaction_repo)
 
-        result = await use_case.execute(
-            GetEpisodeReactionsQuery(anime_id=9, episode=2, user_id=1)
-        )
+        result = await use_case.execute(GetEpisodeReactionsQuery(anime_id=9, episode=2, user_id=1))
 
         assert result.ok is True
         assert result.data.counts[0].count == 3
@@ -48,9 +46,7 @@ class TestGetEpisodeReactionsUseCase:
         reaction_repo = AsyncMock()
         use_case = GetEpisodeReactionsUseCase(reaction_repo)
 
-        result = await use_case.execute(
-            GetEpisodeReactionsQuery(anime_id=9, episode=0, user_id=1)
-        )
+        result = await use_case.execute(GetEpisodeReactionsQuery(anime_id=9, episode=0, user_id=1))
 
         assert result.ok is False
         assert result.status_code == 400
@@ -143,4 +139,3 @@ class SimpleReaction:
 
     def __init__(self, reaction_type):
         self.reaction_type = reaction_type
-

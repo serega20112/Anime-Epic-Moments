@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from backend.domain.anime.entity import Anime
+from backend.domain.entities.anime.anime import Anime
 
 
 async def sanitize_query(query: str | None) -> str:

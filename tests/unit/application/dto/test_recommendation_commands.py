@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.application.dto.recommendation_commands import AskAiRecommendationsCommand
+from backend.application.dto.recommendation import AskAiRecommendationsCommand
 
 
 class TestAskAiRecommendationsCommand:

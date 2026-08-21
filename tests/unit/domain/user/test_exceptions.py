@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.user.exceptions import InvalidEmailError, InvalidUsernameError
+from backend.domain.aggregates.user.exceptions import InvalidEmailError, InvalidUsernameError
 
 
 class TestUserExceptions:

@@ -28,7 +28,9 @@ async def build_support_form_data(
     """
     return {
         "email": (await _normalize_email(user_email) if user_email else command.email),
-        "username": (await _normalize_username(user_username) if user_username else command.username),
+        "username": (
+            await _normalize_username(user_username) if user_username else command.username
+        ),
         "subject": str(command.subject or "").strip(),
         "message": str(command.message or "").strip(),
         "channel": command.channel,

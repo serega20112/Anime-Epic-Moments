@@ -15,7 +15,7 @@ from backend.application.use_cases import (
     SetHighlightLikeUseCase,
     SetSavedHighlightUseCase,
 )
-from backend.application.use_cases.highlight.get_highlight_comments import (
+from backend.application.use_cases.highlight.social.get_highlight_comments import (
     GetHighlightCommentsUseCase,
 )
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.services.recommendation_service import RecommendationService
 from backend.application.use_cases import (
     DeleteHighlightUseCase,
@@ -11,31 +12,36 @@ from backend.application.use_cases import (
     GetPublicTopHighlightsUseCase,
     SetHighlightLikeUseCase,
 )
-from backend.application.use_cases.highlight.add_highlight_comment import (
-    AddHighlightCommentUseCase,
-)
-from backend.application.use_cases.highlight.create_highlight import CreateHighlightUseCase
-from backend.application.use_cases.highlight.edit_highlight import EditHighlightUseCase
-from backend.application.use_cases.highlight.get_highlight_comments import (
-    GetHighlightCommentsUseCase,
-)
-from backend.application.use_cases.highlight.get_highlight_feed import GetHighlightFeedUseCase
-from backend.application.use_cases.highlight.get_highlight_likers import GetHighlightLikersUseCase
-from backend.application.use_cases.highlight.get_highlight_notifications import (
-    GetHighlightNotificationsUseCase,
-)
-from backend.application.use_cases.highlight.get_saved_highlights import (
+from backend.application.use_cases.highlight.crud.create_highlight import CreateHighlightUseCase
+from backend.application.use_cases.highlight.crud.edit_highlight import EditHighlightUseCase
+from backend.application.use_cases.highlight.feed.get_highlight_feed import GetHighlightFeedUseCase
+from backend.application.use_cases.highlight.feed.get_saved_highlights import (
     GetSavedHighlightsUseCase,
 )
-from backend.application.use_cases.highlight.get_shared_highlight import (
+from backend.application.use_cases.highlight.feed.get_shared_highlight import (
     GetSharedHighlightUseCase,
 )
-from backend.application.use_cases.highlight.get_user_highlights import GetUserHighlightsUseCase
-from backend.application.use_cases.highlight.set_saved_highlight import SetSavedHighlightUseCase
+from backend.application.use_cases.highlight.feed.get_user_highlights import (
+    GetUserHighlightsUseCase,
+)
+from backend.application.use_cases.highlight.social.add_highlight_comment import (
+    AddHighlightCommentUseCase,
+)
+from backend.application.use_cases.highlight.social.get_highlight_comments import (
+    GetHighlightCommentsUseCase,
+)
+from backend.application.use_cases.highlight.social.get_highlight_likers import (
+    GetHighlightLikersUseCase,
+)
+from backend.application.use_cases.highlight.social.get_highlight_notifications import (
+    GetHighlightNotificationsUseCase,
+)
+from backend.application.use_cases.highlight.social.set_saved_highlight import (
+    SetSavedHighlightUseCase,
+)
 from backend.application.use_cases.user.get_following_highlights import (
     GetFollowingHighlightsUseCase,
 )
-from backend.domain.unit_of_work import UnitOfWorkInterface
 from backend.infrastructure.cache import HighlightDashboardCache
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from backend.infrastructure.external import AnimeApiClient

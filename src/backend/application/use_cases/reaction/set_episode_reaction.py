@@ -1,7 +1,10 @@
+from starlette import status
+
 from backend.application.dto import SetEpisodeReactionCommand
+from backend.application.interface.repositories.reaction_repository import ReactionRepository
 from backend.application.use_cases.reaction.result import ReactionResult
-from backend.domain import EpisodeReaction, EpisodeReactionType, ReactionRepository
-from backend.domain.reaction.value_object import EpisodeReactionSummary
+from backend.domain import EpisodeReaction, EpisodeReactionType
+from backend.domain.value_objects.reaction.reaction_summary import EpisodeReactionSummary
 
 
 class SetEpisodeReactionUseCase:
@@ -20,7 +23,9 @@ class SetEpisodeReactionUseCase:
             ReactionResult: Updated reaction summary.
         """
         if command.episode <= 0:
-            return await ReactionResult.failure("invalid_episode", status_code=400)
+            return await ReactionResult.failure(
+                "invalid_episode", status_code=status.HTTP_400_BAD_REQUEST
+            )
 
         reaction_type = await EpisodeReactionType.from_value(command.reaction_type)
         if not command.liked:
@@ -30,7 +35,9 @@ class SetEpisodeReactionUseCase:
                 command.episode,
             )
         elif reaction_type is None:
-            return await ReactionResult.failure("invalid_reaction_type", status_code=400)
+            return await ReactionResult.failure(
+                "invalid_reaction_type", status_code=status.HTTP_400_BAD_REQUEST
+            )
         else:
             await self.reaction_repo.set_reaction(
                 EpisodeReaction(

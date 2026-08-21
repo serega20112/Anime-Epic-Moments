@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases import (
     LogoutUserUseCase,
     RefreshSessionUseCase,
@@ -14,9 +15,8 @@ from backend.application.use_cases import (
     UpdateUserProfileUseCase,
     VerifyEmailUseCase,
 )
-from backend.application.use_cases.auth.login_user import LoginUserUseCase
-from backend.application.use_cases.auth.reset_password import ResetPasswordUseCase
-from backend.domain.unit_of_work import UnitOfWorkInterface
+from backend.application.use_cases.auth.login_register.login_user import LoginUserUseCase
+from backend.application.use_cases.auth.password_reset.reset_password import ResetPasswordUseCase
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from backend.infrastructure.external import PasswordResetMailer
 from backend.infrastructure.external.email_verification_mailer import EmailVerificationMailer

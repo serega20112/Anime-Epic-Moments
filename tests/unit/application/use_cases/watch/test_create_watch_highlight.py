@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.dto import CreateWatchHighlightCommand
-from backend.application.use_cases.watch.create_watch_highlight import (
+from backend.application.use_cases.watch.highlight.create_watch_highlight import (
     CreateWatchHighlightUseCase,
 )
 

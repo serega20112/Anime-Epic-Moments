@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.anime.value_object import (
+from backend.domain.value_objects.anime.discussion import (
     AnimeDiscussionBoard,
     AnimeDiscussionComment,
-    SearchAnimeByDescriptionResult,
 )
+from backend.domain.value_objects.anime.search_result import SearchAnimeByDescriptionResult
 
 
 class TestSearchAnimeByDescriptionResult:

@@ -4,14 +4,12 @@ from dataclasses import asdict
 
 import pytest
 
-from backend.domain.highlight.value_object import (
+from backend.domain.value_objects.highlight.cards import HighlightCard, HighlightStats
+from backend.domain.value_objects.highlight.dashboard import HighlightDashboard
+from backend.domain.value_objects.highlight.feed import HighlightAnimeGroup, HighlightFeedPage
+from backend.domain.value_objects.highlight.profile_summary import (
     HighlightActivityItem,
-    HighlightAnimeGroup,
-    HighlightCard,
-    HighlightDashboard,
-    HighlightFeedPage,
     HighlightProfileSummary,
-    HighlightStats,
 )
 
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from backend.domain.services.email_verification_store import EmailVerificationStoreInterface
+from backend.application.interface.services.email_verification_store import (
+    EmailVerificationStoreInterface,
+)
 
 
 class TestEmailVerificationStoreInterface:

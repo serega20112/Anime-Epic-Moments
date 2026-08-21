@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.dto import SetHighlightLikeCommand
-from backend.application.use_cases.highlight.set_highlight_like import SetHighlightLikeUseCase
+from backend.application.use_cases.highlight.social.set_highlight_like import (
+    SetHighlightLikeUseCase,
+)
 
 
 @pytest.mark.unit

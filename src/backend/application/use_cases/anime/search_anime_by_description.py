@@ -1,12 +1,12 @@
 import logging
 import re
 
-from backend.application.dto.anime_queries import SearchAnimeByDescriptionQuery
-from backend.domain.anime.entity import Anime
-from backend.domain.anime.policy import AnimeSafetyPolicy
-from backend.domain.anime.value_object import SearchAnimeByDescriptionResult
-from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
-from backend.domain.services import LLMClientInterface as HuggingFaceLLMClient
+from backend.application.dto.anime import SearchAnimeByDescriptionQuery
+from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.interface.services import LLMClientInterface as HuggingFaceLLMClient
+from backend.domain.entities.anime.anime import Anime
+from backend.domain.policies.anime_safety_policy import AnimeSafetyPolicy
+from backend.domain.value_objects.anime.search_result import SearchAnimeByDescriptionResult
 
 logger = logging.getLogger("anime_epic_moments")
 
@@ -117,7 +117,9 @@ class SearchAnimeByDescriptionUseCase:
                 results = await self._merge_unique(results, batch)
 
         if not include_adult:
-            results = [item for item in results if not await self.safety_policy.is_probably_nsfw(item)]
+            results = [
+                item for item in results if not await self.safety_policy.is_probably_nsfw(item)
+            ]
 
         ordered = await self._sort_results(
             items=results,

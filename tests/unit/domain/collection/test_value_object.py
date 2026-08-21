@@ -4,7 +4,7 @@ from dataclasses import asdict
 
 import pytest
 
-from backend.domain.collection.value_object import (
+from backend.domain.value_objects.collection.cards import (
     CollectionCard,
     CollectionDetails,
     CollectionItemCard,

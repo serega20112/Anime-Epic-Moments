@@ -49,9 +49,7 @@ class TestMomentRepository:
         first = await repo.save_moment(
             ViewingMoment(user_id=user.id, anime_id=7, episode=3, timestamp=1.0)
         )
-        await repo.save_moment(
-            ViewingMoment(user_id=user.id, anime_id=7, episode=4, timestamp=2.0)
-        )
+        await repo.save_moment(ViewingMoment(user_id=user.id, anime_id=7, episode=4, timestamp=2.0))
 
         moments = await repo.get_moments_by_user(user.id)
         assert len(moments) == 2

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.highlight.entity import Highlight
-from backend.domain.highlight.policy import HighlightPolicy
+from backend.domain.aggregates.highlight.highlight import Highlight
+from backend.domain.policies.highlight_policy import HighlightPolicy
 
 
 class TestHighlightPolicy:

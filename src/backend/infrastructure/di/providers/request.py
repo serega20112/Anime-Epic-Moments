@@ -7,9 +7,9 @@ from collections.abc import AsyncIterator
 from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.services import WatchSourceSyncService
 from backend.application.services.recommendation_service import RecommendationService
-from backend.domain.unit_of_work import UnitOfWorkInterface
 from backend.infrastructure.cache import RecommendationCache
 from backend.infrastructure.external import (
     AniBoomProvider,

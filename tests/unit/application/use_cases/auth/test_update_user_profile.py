@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.use_cases.auth.update_user_profile import (
+from backend.application.use_cases.auth.profile.update_user_profile import (
     UpdateUserProfileUseCase,
 )
 from backend.domain import User

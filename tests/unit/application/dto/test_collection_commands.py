@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.application.dto.collection_commands import (
+from backend.application.dto.collection import (
     AddCollectionItemCommand,
     CreateCollectionCommand,
     RemoveCollectionItemCommand,

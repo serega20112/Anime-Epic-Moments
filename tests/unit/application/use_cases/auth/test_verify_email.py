@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.use_cases.auth.verify_email import VerifyEmailUseCase
+from backend.application.use_cases.auth.verification.verify_email import VerifyEmailUseCase
 from backend.domain import PendingEmailVerification, User
 
 

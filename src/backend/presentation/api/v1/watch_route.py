@@ -16,9 +16,13 @@ from backend.application.use_cases import (
     SyncWatchSourcesUseCase,
     UpsertUserAnimeStatusUseCase,
 )
-from backend.application.use_cases.watch.create_watch_highlight import CreateWatchHighlightUseCase
-from backend.application.use_cases.watch.get_watch_page import GetWatchPageUseCase
-from backend.application.use_cases.watch.save_viewing_session import SaveViewingSessionUseCase
+from backend.application.use_cases.watch.highlight.create_watch_highlight import (
+    CreateWatchHighlightUseCase,
+)
+from backend.application.use_cases.watch.page.get_watch_page import GetWatchPageUseCase
+from backend.application.use_cases.watch.session.save_viewing_session import (
+    SaveViewingSessionUseCase,
+)
 from backend.infrastructure.media_proxy import MediaProxyClient
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
 from backend.infrastructure.security.rate_limit_keys import (

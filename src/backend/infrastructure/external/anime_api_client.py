@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from backend.domain.anime.entity import Anime
+from backend.domain.entities.anime.anime import Anime
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.external.anilist_client import (
     AniListAnimeClient,
@@ -63,7 +63,7 @@ class AnimeApiClient:
         await self.session.aclose()
 
     async def search_by_title(
-            self, title: str, limit: int = 10, include_adult: bool = False
+        self, title: str, limit: int = 10, include_adult: bool = False
     ) -> list[Anime]:
         """Search anime by title, falling back to AniList when Jikan yields nothing.
 
@@ -130,13 +130,13 @@ class AnimeApiClient:
         return list(await self._set_cached(cache_key, result, ttl_seconds=900))
 
     async def search_by_description(
-            self,
-            description: str,
-            year_from: int | None = None,
-            year_to: int | None = None,
-            min_rating: int | None = None,
-            include_adult: bool = False,
-            limit: int = 10,
+        self,
+        description: str,
+        year_from: int | None = None,
+        year_to: int | None = None,
+        min_rating: int | None = None,
+        include_adult: bool = False,
+        limit: int = 10,
     ) -> list[Anime]:
         """Search anime by free-form description through AniList GraphQL.
 
@@ -183,11 +183,11 @@ class AnimeApiClient:
         result = []
         for anime in items:
             if not await passes_filters(
-                    season_year=anime.year,
-                    normalized_score=anime.rating,
-                    year_from=year_from,
-                    year_to=year_to,
-                    min_rating=min_rating,
+                season_year=anime.year,
+                normalized_score=anime.rating,
+                year_from=year_from,
+                year_to=year_to,
+                min_rating=min_rating,
             ):
                 continue
             result.append(anime)
@@ -247,17 +247,17 @@ class AnimeApiClient:
         return list(await self._set_cached(cache_key, result, ttl_seconds=900))
 
     async def filter_catalog(
-            self,
-            *,
-            genre: str = "",
-            media_type: str = "",
-            status: str = "",
-            year_from: int | None = None,
-            year_to: int | None = None,
-            min_score: float | None = None,
-            sort: str = "rating",
-            order: str = "desc",
-            limit: int = 30,
+        self,
+        *,
+        genre: str = "",
+        media_type: str = "",
+        status: str = "",
+        year_from: int | None = None,
+        year_to: int | None = None,
+        min_score: float | None = None,
+        sort: str = "rating",
+        order: str = "desc",
+        limit: int = 30,
     ) -> list[Anime]:
         """Browse anime with Anixart-like filters, racing Jikan and AniList.
 

@@ -1,7 +1,9 @@
+from starlette import status
+
 from backend.application.dto import GetEpisodeReactionsQuery
+from backend.application.interface.repositories.reaction_repository import ReactionRepository
 from backend.application.use_cases.reaction.result import ReactionResult
-from backend.domain import ReactionRepository
-from backend.domain.reaction.value_object import EpisodeReactionSummary
+from backend.domain.value_objects.reaction.reaction_summary import EpisodeReactionSummary
 
 
 class GetEpisodeReactionsUseCase:
@@ -20,7 +22,9 @@ class GetEpisodeReactionsUseCase:
             ReactionResult: Aggregated reaction summary.
         """
         if query.episode <= 0:
-            return await ReactionResult.failure("invalid_episode", status_code=400)
+            return await ReactionResult.failure(
+                "invalid_episode", status_code=status.HTTP_400_BAD_REQUEST
+            )
         counts = await self.reaction_repo.get_reaction_counts(query.anime_id, query.episode)
         user_reaction = None
         if query.user_id is not None:

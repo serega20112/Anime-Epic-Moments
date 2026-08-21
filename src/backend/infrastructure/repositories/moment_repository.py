@@ -1,7 +1,7 @@
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.domain.moment.entity import ViewingMoment
+from backend.domain.entities.moment.viewing_moment import ViewingMoment
 from backend.infrastructure.models import ViewingMomentModel
 
 

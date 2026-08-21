@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.services.recommendation_cache import RecommendationCacheInterface
+from backend.application.interface.services.recommendation_cache import RecommendationCacheInterface
 
 
 class TestRecommendationCacheInterface:

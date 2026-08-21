@@ -6,7 +6,7 @@ from email.message import EmailMessage
 import pytest
 
 from backend.config import Settings
-from backend.domain.support.entity import SupportTicket
+from backend.domain.entities.support.support_ticket import SupportTicket
 from backend.infrastructure.external.support_email_mailer import SupportEmailMailer
 
 

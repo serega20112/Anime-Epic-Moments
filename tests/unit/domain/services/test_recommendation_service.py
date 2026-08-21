@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from backend.domain.services.recommendation_service import RecommendationServiceInterface
+from backend.application.interface.services.recommendation_service import (
+    RecommendationServiceInterface,
+)
 
 
 class TestRecommendationServiceInterface:

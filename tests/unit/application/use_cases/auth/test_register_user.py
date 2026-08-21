@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from backend.application.use_cases.auth.register_user import (
+from backend.application.use_cases.auth.login_register.register_user import (
     EmailAlreadyExistsError,
     RegisterUserUseCase,
 )

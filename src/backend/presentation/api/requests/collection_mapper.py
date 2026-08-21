@@ -55,7 +55,9 @@ async def map_add_collection_item_command(form, *, collection_id: int) -> AddCol
     )
 
 
-async def map_remove_collection_item_command(form, *, collection_id: int) -> RemoveCollectionItemCommand:
+async def map_remove_collection_item_command(
+    form, *, collection_id: int
+) -> RemoveCollectionItemCommand:
     """Build a remove collection item command from form data.
 
     Args:

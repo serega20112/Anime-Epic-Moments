@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.dto import EditHighlightCommand
-from backend.application.use_cases.highlight.edit_highlight import EditHighlightUseCase
+from backend.application.use_cases.highlight.crud.edit_highlight import EditHighlightUseCase
 from backend.domain import Highlight
 
 

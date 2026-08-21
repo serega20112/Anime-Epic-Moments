@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.use_cases.auth.request_email_verification import (
+from backend.application.use_cases.auth.result import AuthResult
+from backend.application.use_cases.auth.verification.request_email_verification import (
     RequestEmailVerificationUseCase,
 )
-from backend.application.use_cases.auth.result import AuthResult
 from backend.domain import PendingEmailVerification
 
 
@@ -50,6 +50,7 @@ class TestRequestEmailVerification:
         use_case = RequestEmailVerificationUseCase(
             user_repo, password_service, verification_store, mailer
         )
+
         async def _fake_code():
             return "123456"
 

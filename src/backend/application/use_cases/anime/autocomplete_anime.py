@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from backend.application.dto.anime_queries import AutocompleteAnimeQuery
-from backend.domain.anime.entity import Anime
-from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.dto.anime import AutocompleteAnimeQuery
+from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.domain.entities.anime.anime import Anime
 
 
 class AutocompleteAnimeUseCase:

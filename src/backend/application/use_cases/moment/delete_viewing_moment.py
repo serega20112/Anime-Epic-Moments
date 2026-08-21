@@ -1,6 +1,8 @@
+from starlette import status
+
+from backend.application.interface.repositories.moment_repository import MomentRepository
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases.moment.result import MomentResult
-from backend.domain import MomentRepository
-from backend.domain.unit_of_work import UnitOfWorkInterface
 
 
 class DeleteViewingMomentUseCase:
@@ -23,5 +25,7 @@ class DeleteViewingMomentUseCase:
         async with self.unit_of_work:
             deleted = await self.moment_repo.delete_moment(moment_id, user_id)
             if not deleted:
-                return await MomentResult.failure("moment_not_found", status_code=404)
+                return await MomentResult.failure(
+                    "moment_not_found", status_code=status.HTTP_404_NOT_FOUND
+                )
             return await MomentResult.success({"deleted": True})

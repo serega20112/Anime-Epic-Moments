@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.repositories.support_repository import SupportRepository
+from backend.application.interface.repositories.support_repository import SupportRepository
 
 
 class TestSupportRepository:

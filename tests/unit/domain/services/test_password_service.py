@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.services.password_service import PasswordServiceInterface
+from backend.application.interface.services.password_service import PasswordServiceInterface
 
 
 class TestPasswordServiceInterface:

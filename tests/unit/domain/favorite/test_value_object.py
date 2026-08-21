@@ -4,7 +4,7 @@ from dataclasses import asdict
 
 import pytest
 
-from backend.domain.favorite.value_object import FavoriteAnimeCard
+from backend.domain.value_objects.favorite.favorite_card import FavoriteAnimeCard
 
 
 class TestFavoriteAnimeCard:

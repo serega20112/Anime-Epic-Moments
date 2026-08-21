@@ -4,7 +4,7 @@ import re
 
 import httpx
 
-from backend.domain.watch.value_object import DiscoveredWatchSource
+from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
 from backend.infrastructure.external.errors import (
     ExternalServiceInvalidResponseError,
     ExternalServiceTimeoutError,

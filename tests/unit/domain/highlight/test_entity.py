@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.highlight.entity import Highlight, InvalidHighlightTimeError
+from backend.domain.aggregates.highlight.highlight import Highlight, InvalidHighlightTimeError
 
 
 class TestHighlightValidation:

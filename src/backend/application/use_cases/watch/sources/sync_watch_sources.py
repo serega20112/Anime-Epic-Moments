@@ -1,0 +1,61 @@
+import asyncio
+
+from starlette import status
+
+from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.interface.services import (
+    WatchSourceSyncServiceInterface as WatchSourceSyncService,
+)
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
+from backend.application.use_cases.watch.result import WatchResult
+
+
+class SyncWatchSourcesUseCase:
+    """Подтягивает источники просмотра из внешнего провайдера."""
+
+    def __init__(
+        self,
+        anime_api_client: AnimeApiClient,
+        watch_source_sync_service: WatchSourceSyncService,
+        unit_of_work: UnitOfWorkInterface,
+    ):
+        self.anime_api_client = anime_api_client
+        self.watch_source_sync_service = watch_source_sync_service
+        self.unit_of_work = unit_of_work
+
+    async def execute(self, anime_id: int, episode: int, force: bool = False) -> WatchResult:
+        """Sync watch sources within a transaction."""
+        async with self.unit_of_work:
+            return await self._execute(anime_id, episode, force)
+
+    async def _execute(self, anime_id: int, episode: int, force: bool = False) -> WatchResult:
+        if not await self.watch_source_sync_service.is_enabled():
+            return await WatchResult.failure(
+                "provider_not_configured", status_code=status.HTTP_400_BAD_REQUEST
+            )
+        anime = await self.anime_api_client.get_by_id(anime_id)
+        try:
+            sources = await asyncio.wait_for(
+                self.watch_source_sync_service.sync_for_anime(
+                    anime_id=anime_id,
+                    anime=anime,
+                    episode=episode,
+                    force=force,
+                ),
+                timeout=10,
+            )
+        except TimeoutError:
+            return await WatchResult.failure(
+                "provider_timeout", status_code=status.HTTP_504_GATEWAY_TIMEOUT
+            )
+        if len(sources) == 0:
+            return await WatchResult.failure(
+                "no_sources_found", status_code=status.HTTP_404_NOT_FOUND
+            )
+        return await WatchResult.success(
+            {
+                "enabled": True,
+                "sources_count": len(sources),
+                "provider_names": await self.watch_source_sync_service.get_enabled_provider_names(),
+            }
+        )

@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.use_cases.highlight.get_highlight_likers import GetHighlightLikersUseCase
+from backend.application.use_cases.highlight.social.get_highlight_likers import (
+    GetHighlightLikersUseCase,
+)
 
 
 @pytest.mark.unit

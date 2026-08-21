@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.services.llm_client import LLMClientInterface
+from backend.application.interface.services.llm_client import LLMClientInterface
 
 
 class TestLLMClientInterface:

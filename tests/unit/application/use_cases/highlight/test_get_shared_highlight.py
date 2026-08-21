@@ -5,7 +5,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.use_cases.highlight.get_shared_highlight import GetSharedHighlightUseCase
+from backend.application.use_cases.highlight.feed.get_shared_highlight import (
+    GetSharedHighlightUseCase,
+)
 
 
 @pytest.mark.unit

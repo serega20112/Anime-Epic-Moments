@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.recommendation.value_object import RecommendationResult
+from backend.domain.value_objects.recommendation.recommendation_result import RecommendationResult
 
 
 class TestRecommendationResult:

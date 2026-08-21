@@ -1,12 +1,13 @@
 """Data transfer objects for application layer commands and queries."""
 
-from backend.application.dto.anime_queries import (
+from backend.application.dto.anime import (
     AutocompleteAnimeQuery,
+    FilterAnimeCatalogQuery,
     GetSeasonPopularQuery,
     SearchAnimeByDescriptionQuery,
     SearchAnimeQuery,
 )
-from backend.application.dto.auth_commands import (
+from backend.application.dto.auth import (
     ConfirmPasswordResetCommand,
     LoginCommand,
     RegisterCommand,
@@ -15,12 +16,12 @@ from backend.application.dto.auth_commands import (
     UpdateProfileCommand,
     VerifyEmailCommand,
 )
-from backend.application.dto.collection_commands import (
+from backend.application.dto.collection import (
     AddCollectionItemCommand,
     CreateCollectionCommand,
     RemoveCollectionItemCommand,
 )
-from backend.application.dto.highlight_commands import (
+from backend.application.dto.highlight import (
     AddHighlightCommentCommand,
     CreateHighlightCommand,
     DeleteHighlightCommand,
@@ -31,17 +32,17 @@ from backend.application.dto.highlight_commands import (
     SetHighlightLikeCommand,
     SetSavedHighlightCommand,
 )
-from backend.application.dto.moment_commands import (
+from backend.application.dto.moment import (
     PublishViewingMomentCommand,
     SaveViewingMomentCommand,
 )
-from backend.application.dto.reaction_commands import (
+from backend.application.dto.reaction import (
     GetEpisodeReactionsQuery,
     SetEpisodeReactionCommand,
 )
-from backend.application.dto.recommendation_commands import AskAiRecommendationsCommand
-from backend.application.dto.support_commands import CreateSupportTicketCommand
-from backend.application.dto.watch_commands import (
+from backend.application.dto.recommendation import AskAiRecommendationsCommand
+from backend.application.dto.support import CreateSupportTicketCommand
+from backend.application.dto.watch import (
     AddAnimeCommentCommand,
     CreateWatchHighlightCommand,
     SaveViewingSessionCommand,
@@ -63,6 +64,7 @@ __all__ = [
     "CreateWatchHighlightCommand",
     "DeleteHighlightCommand",
     "EditHighlightCommand",
+    "FilterAnimeCatalogQuery",
     "GetEpisodeReactionsQuery",
     "GetSeasonPopularQuery",
     "HighlightDashboardQuery",

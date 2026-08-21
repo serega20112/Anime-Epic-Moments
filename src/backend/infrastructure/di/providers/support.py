@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases import CreateSupportTicketUseCase
-from backend.domain.unit_of_work import UnitOfWorkInterface
 from backend.infrastructure.external import SupportEmailMailer, TelegramSupportNotifier
 from backend.infrastructure.repositories.support_repository import SupportRepository
 

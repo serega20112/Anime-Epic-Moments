@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.application.dto.anime_queries import (
+from backend.application.dto.anime import (
     AutocompleteAnimeQuery,
     GetSeasonPopularQuery,
     SearchAnimeByDescriptionQuery,

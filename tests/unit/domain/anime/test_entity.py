@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.anime.entity import Anime
+from backend.domain.entities.anime.anime import Anime
 
 
 class TestAnimeEntity:

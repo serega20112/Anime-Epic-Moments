@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.dto import DeleteHighlightCommand
-from backend.application.use_cases.highlight.delete_highlight import DeleteHighlightUseCase
+from backend.application.use_cases.highlight.crud.delete_highlight import DeleteHighlightUseCase
 from backend.domain import Highlight
 
 

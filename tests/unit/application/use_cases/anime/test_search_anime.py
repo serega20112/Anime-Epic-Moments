@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.dto.anime_queries import SearchAnimeQuery
+from backend.application.dto.anime import SearchAnimeQuery
 from backend.application.use_cases.anime.search_anime import SearchAnimeUseCase
 
 

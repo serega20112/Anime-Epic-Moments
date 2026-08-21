@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import httpx
 
-from backend.domain.anime.entity import Anime
+from backend.domain.entities.anime.anime import Anime
 from backend.infrastructure.external.errors import ExternalServiceError
 from backend.infrastructure.external.mapping.anime import (
     build_anime_from_anilist_item,
@@ -309,8 +309,7 @@ class AniListAnimeClient:
             return []
 
         return [
-            await build_anime_from_anilist_item(item, fallback_to_anilist_id=True)
-            for item in data
+            await build_anime_from_anilist_item(item, fallback_to_anilist_id=True) for item in data
         ]
 
     async def filter_catalog(
@@ -340,7 +339,13 @@ class AniListAnimeClient:
         Returns:
             list[Anime]: Filtered and sorted anime, or an empty list on failure.
         """
-        format_map = {"tv": "TV", "movie": "MOVIE", "ova": "OVA", "ona": "ONA", "special": "SPECIAL"}
+        format_map = {
+            "tv": "TV",
+            "movie": "MOVIE",
+            "ova": "OVA",
+            "ona": "ONA",
+            "special": "SPECIAL",
+        }
         status_map = {"airing": "RELEASING", "complete": "FINISHED", "upcoming": "NOT_YET_RELEASED"}
         sort_map = {
             "rating": "SCORE_DESC",
@@ -402,8 +407,7 @@ class AniListAnimeClient:
                 }
               }
             }
-            """
-            .replace("__DECLARATIONS__", ", ".join(declarations))
+            """.replace("__DECLARATIONS__", ", ".join(declarations))
             .replace("__ARGS__", " ".join(args))
             .replace("PLACEHOLDER_SORT", sort_map.get(sort, "SCORE_DESC"))
         )

@@ -3,8 +3,8 @@ import re
 import httpx
 
 from backend.config import Settings
-from backend.domain.watch.policy import canonicalize_translation_name
-from backend.domain.watch.value_object import DiscoveredWatchSource
+from backend.domain.policies.watch_policy import canonicalize_translation_name
+from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
 from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 
 
@@ -142,7 +142,9 @@ class YouTubeClient(WatchSourceProvider):
         if score <= 0:
             return None
 
-        raw_translation = await canonicalize_translation_name(f"{video_title} {channel_title}".strip())
+        raw_translation = await canonicalize_translation_name(
+            f"{video_title} {channel_title}".strip()
+        )
         translation_name = (
             raw_translation
             if raw_translation
@@ -180,7 +182,9 @@ class YouTubeClient(WatchSourceProvider):
         """Оценивает релевантность ролика YouTube для конкретного эпизода."""
         normalized_blob = await self._normalize_text(f"{video_title} {channel_title}".strip())
         title_tokens = [
-            token for token in (await self._normalize_text(requested_title)).split() if len(token) > 1
+            token
+            for token in (await self._normalize_text(requested_title)).split()
+            if len(token) > 1
         ]
         if not title_tokens:
             return 0

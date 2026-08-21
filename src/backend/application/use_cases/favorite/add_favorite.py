@@ -1,13 +1,14 @@
 import json
 
-from backend.domain import Favorite, FavoriteRepository
-from backend.domain.services import (
+from backend.application.interface.repositories.favorite_repository import FavoriteRepository
+from backend.application.interface.services import (
     RecommendationServiceInterface as RecommendationService,
 )
-from backend.domain.services.profile_overview_cache import (
+from backend.application.interface.services.profile_overview_cache import (
     ProfileOverviewCacheInterface as ProfileOverviewCache,
 )
-from backend.domain.unit_of_work import UnitOfWorkInterface
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
+from backend.domain import Favorite
 
 
 class AddFavoriteUseCase:

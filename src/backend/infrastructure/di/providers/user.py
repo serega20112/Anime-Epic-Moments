@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases import GetPublicProfileOverviewUseCase, SetUserFollowUseCase
-from backend.application.use_cases.auth.get_profile_overview import GetProfileOverviewUseCase
-from backend.domain.unit_of_work import UnitOfWorkInterface
+from backend.application.use_cases.auth.profile.get_profile_overview import (
+    GetProfileOverviewUseCase,
+)
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from backend.infrastructure.repositories.collection_repository import CollectionRepository
 from backend.infrastructure.repositories.user_repository import UserRepository

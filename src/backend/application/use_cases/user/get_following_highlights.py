@@ -1,9 +1,12 @@
 from dataclasses import dataclass
 
-from backend.application.use_cases.highlight.get_user_highlights import GetUserHighlightsUseCase
-from backend.domain import FollowUserCard, UserRepository
-from backend.domain.repositories.highlight_repository import HighlightRepository
-from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.interface.repositories.highlight_repository import HighlightRepository
+from backend.application.interface.repositories.user_repository import UserRepository
+from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.use_cases.highlight.feed.get_user_highlights import (
+    GetUserHighlightsUseCase,
+)
+from backend.domain import FollowUserCard
 
 
 @dataclass

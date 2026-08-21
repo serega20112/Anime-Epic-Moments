@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.repositories.highlight_repository import HighlightRepository
+from backend.application.interface.repositories.highlight_repository import HighlightRepository
 
 
 class TestHighlightRepository:

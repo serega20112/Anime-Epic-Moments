@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.dto.anime_queries import AutocompleteAnimeQuery
+from backend.application.dto.anime import AutocompleteAnimeQuery
 from backend.application.use_cases.anime.autocomplete_anime import AutocompleteAnimeUseCase
 
 

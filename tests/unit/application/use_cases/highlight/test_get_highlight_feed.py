@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.use_cases.highlight.get_highlight_feed import GetHighlightFeedUseCase
+from backend.application.use_cases.highlight.feed.get_highlight_feed import GetHighlightFeedUseCase
 
 
 @pytest.mark.unit

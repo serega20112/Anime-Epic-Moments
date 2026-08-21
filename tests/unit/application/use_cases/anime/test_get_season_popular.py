@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 import backend.application.use_cases.anime.get_season_popular as module
-from backend.application.dto.anime_queries import GetSeasonPopularQuery
+from backend.application.dto.anime import GetSeasonPopularQuery
 from backend.application.use_cases.anime.get_season_popular import (
     _VALID_SEASONS,
     GetSeasonPopularUseCase,

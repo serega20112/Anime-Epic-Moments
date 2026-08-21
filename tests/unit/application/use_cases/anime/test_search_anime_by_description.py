@@ -4,11 +4,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.dto.anime_queries import SearchAnimeByDescriptionQuery
+from backend.application.dto.anime import SearchAnimeByDescriptionQuery
 from backend.application.use_cases.anime.search_anime_by_description import (
     SearchAnimeByDescriptionUseCase,
 )
-from backend.domain.anime.entity import Anime
+from backend.domain.entities.anime.anime import Anime
 
 
 @pytest.mark.unit

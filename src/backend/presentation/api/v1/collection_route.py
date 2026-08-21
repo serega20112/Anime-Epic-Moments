@@ -101,7 +101,9 @@ async def add_collection_item(
     user = await get_current_user(request)
     if not user:
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
-    command = await map_add_collection_item_command(await request.form(), collection_id=collection_id)
+    command = await map_add_collection_item_command(
+        await request.form(), collection_id=collection_id
+    )
     await use_case.execute(command)
     return await redirect_collections(request)
 
@@ -129,7 +131,9 @@ async def remove_collection_item(
     user = await get_current_user(request)
     if not user:
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
-    command = await map_remove_collection_item_command(await request.form(), collection_id=collection_id)
+    command = await map_remove_collection_item_command(
+        await request.form(), collection_id=collection_id
+    )
     await use_case.execute(command)
     return await redirect_collections(request)
 

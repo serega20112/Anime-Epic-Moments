@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from backend.domain import RecommendationResult
-from backend.domain.services import (
+from backend.application.interface.services import (
     RecommendationServiceInterface as RecommendationService,
 )
+from backend.domain import RecommendationResult
 
 
 class GenerateRecommendationsUseCase:

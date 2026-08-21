@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.repositories.favorite_repository import FavoriteRepository
+from backend.application.interface.repositories.favorite_repository import FavoriteRepository
 
 
 class TestFavoriteRepository:

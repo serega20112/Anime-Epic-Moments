@@ -1,12 +1,13 @@
 from collections import Counter
 
-from backend.domain import FavoriteRepository, RecommendationResult
-from backend.domain.anime.entity import Anime
-from backend.domain.repositories.highlight_repository import HighlightRepository
-from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
-from backend.domain.services import (
+from backend.application.interface.repositories.favorite_repository import FavoriteRepository
+from backend.application.interface.repositories.highlight_repository import HighlightRepository
+from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.interface.services import (
     RecommendationCacheInterface as RecommendationCache,
 )
+from backend.domain import RecommendationResult
+from backend.domain.entities.anime.anime import Anime
 
 
 class RecommendationService:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.application.dto.highlight_commands import (
+from backend.application.dto.highlight import (
     AddHighlightCommentCommand,
     CreateHighlightCommand,
     DeleteHighlightCommand,

@@ -367,7 +367,7 @@ def _build_placeholder(rule: str, endpoint: str, methods=("GET",)):
 @pytest.fixture
 def anime_factory():
     """Создает сущности Anime с переопределяемыми полями для тестов."""
-    from backend.domain.anime.entity import Anime
+    from backend.domain.entities.anime.anime import Anime
 
     def _build(**overrides):
         payload = {

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from backend.domain.services.highlight_dashboard_cache import HighlightDashboardCacheInterface
+from backend.application.interface.services.highlight_dashboard_cache import (
+    HighlightDashboardCacheInterface,
+)
 
 
 class TestHighlightDashboardCacheInterface:

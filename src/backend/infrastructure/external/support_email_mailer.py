@@ -3,7 +3,7 @@ import smtplib
 from email.message import EmailMessage
 
 from backend.config import Settings
-from backend.domain.support.entity import SupportTicket
+from backend.domain.entities.support.support_ticket import SupportTicket
 from backend.infrastructure.external.errors import (
     ExternalServiceConfigurationError,
     ExternalServiceUnavailableError,

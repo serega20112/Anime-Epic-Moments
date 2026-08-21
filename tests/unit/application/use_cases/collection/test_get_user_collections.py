@@ -6,7 +6,8 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.use_cases.collection.get_user_collections import GetUserCollectionsUseCase
-from backend.domain.collection.entity import AnimeCollection, AnimeCollectionItem
+from backend.domain.aggregates.collection.collection import AnimeCollection
+from backend.domain.entities.collection.collection_item import AnimeCollectionItem
 
 
 @pytest.mark.unit

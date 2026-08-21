@@ -625,11 +625,10 @@ class HighlightRepository:
         result = await self.session.execute(statement)
         return int(result.scalar() or 0)
 
-    async def _order_by_popularity(self, rows: Iterable[HighlightModel], limit: int) -> list[Highlight]:
-        keyed = [
-            (await self._popularity_score(row), row)
-            for row in rows
-        ]
+    async def _order_by_popularity(
+        self, rows: Iterable[HighlightModel], limit: int
+    ) -> list[Highlight]:
+        keyed = [(await self._popularity_score(row), row) for row in rows]
         keyed.sort(key=lambda pair: pair[0], reverse=True)
         ranked = [row for _score, row in keyed]
         return [await self._to_entity(row) for row in ranked[:limit]]

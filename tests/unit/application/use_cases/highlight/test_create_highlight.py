@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.dto import CreateHighlightCommand
-from backend.application.use_cases.highlight.create_highlight import CreateHighlightUseCase
+from backend.application.use_cases.highlight.crud.create_highlight import CreateHighlightUseCase
 
 
 @pytest.mark.unit

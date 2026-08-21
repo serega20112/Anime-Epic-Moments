@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.application.use_cases.auth.logout_user import LogoutUserUseCase
+from backend.application.use_cases.auth.login_register.logout_user import LogoutUserUseCase
 
 
 @pytest.mark.unit

@@ -50,13 +50,13 @@ async def test_huggingface_llm_client_returns_model_titles_from_completion(monke
     client = HuggingFaceLLMClient(api_key="token", model="model", provider="provider")
 
     async def _fake_create_completion(model_route, messages):
-        return {
-            "choices": [{"message": {"content": "Gintama\nKonoSuba\nSaiki Kusuo no Psi-nan"}}]
-        }
+        return {"choices": [{"message": {"content": "Gintama\nKonoSuba\nSaiki Kusuo no Psi-nan"}}]}
 
     monkeypatch.setattr(client, "_create_completion", _fake_create_completion)
 
-    queries, mode, error = await client.build_search_queries_with_meta(description="best comedy anime")
+    queries, mode, error = await client.build_search_queries_with_meta(
+        description="best comedy anime"
+    )
 
     assert queries == ["Gintama", "KonoSuba", "Saiki Kusuo no Psi-nan"]
     assert mode == "hf_llm_text"
@@ -96,9 +96,7 @@ async def test_huggingface_llm_client_builds_taste_summary_from_completion(monke
     client = HuggingFaceLLMClient(api_key="token", model="model", provider="provider")
 
     async def _fake_completion_with_timeout(model_route, messages, timeout_seconds):
-        return {
-            "choices": [{"message": {"content": "Ты любишь экшен с сильным темпом."}}]
-        }
+        return {"choices": [{"message": {"content": "Ты любишь экшен с сильным темпом."}}]}
 
     monkeypatch.setattr(client, "_create_completion_with_timeout", _fake_completion_with_timeout)
 

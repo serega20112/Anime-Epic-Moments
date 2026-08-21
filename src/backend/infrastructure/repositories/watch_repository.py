@@ -10,11 +10,8 @@ from backend.domain import (
     ViewingSession,
     WatchSource,
 )
-from backend.domain.anime.value_object import AnimeDiscussionComment
-from backend.domain.watch.value_object import (
-    ViewingHeatmapPoint,
-    WatchedAnimeStat,
-)
+from backend.domain.value_objects.anime.discussion import AnimeDiscussionComment
+from backend.domain.value_objects.watch.page_data import ViewingHeatmapPoint, WatchedAnimeStat
 from backend.infrastructure.models import (
     AnimeDiscussionCommentModel,
     AnimeDiscussionLikeModel,

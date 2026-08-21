@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.highlight.value_object import HighlightProfileSummary
-from backend.domain.user.policy import (
+from backend.domain.policies.user_profile_policy import (
     build_achievement_badges,
     build_genre_affinities,
     detect_profile_mood,
 )
+from backend.domain.value_objects.highlight.profile_summary import HighlightProfileSummary
 
 
 class TestGenreAffinities:

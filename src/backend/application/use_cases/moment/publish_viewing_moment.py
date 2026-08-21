@@ -1,8 +1,10 @@
+from starlette import status
+
 from backend.application.dto import CreateHighlightCommand, PublishViewingMomentCommand
-from backend.application.use_cases.highlight.create_highlight import CreateHighlightUseCase
+from backend.application.interface.repositories.moment_repository import MomentRepository
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
+from backend.application.use_cases.highlight.crud.create_highlight import CreateHighlightUseCase
 from backend.application.use_cases.moment.result import MomentResult
-from backend.domain import MomentRepository
-from backend.domain.unit_of_work import UnitOfWorkInterface
 
 MOMENT_WINDOW_SECONDS = 15.0
 
@@ -35,7 +37,9 @@ class PublishViewingMomentUseCase:
     async def _execute(self, command: PublishViewingMomentCommand) -> MomentResult:
         moment = await self.moment_repo.get_moment(command.moment_id, command.user_id)
         if moment is None:
-            return await MomentResult.failure("moment_not_found", status_code=404)
+            return await MomentResult.failure(
+                "moment_not_found", status_code=status.HTTP_404_NOT_FOUND
+            )
 
         half_window = MOMENT_WINDOW_SECONDS / 2
         title = command.title or moment.caption or f"Момент {moment.episode} серии"
@@ -60,4 +64,6 @@ class PublishViewingMomentUseCase:
                 status_code=highlight_result.status_code,
             )
         await self.moment_repo.delete_moment(moment.id, command.user_id)
-        return await MomentResult.success(highlight_result.data, status_code=201)
+        return await MomentResult.success(
+            highlight_result.data, status_code=status.HTTP_201_CREATED
+        )

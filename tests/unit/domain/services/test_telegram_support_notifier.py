@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from backend.domain.services.telegram_support_notifier import TelegramSupportNotifierInterface
+from backend.application.interface.services.telegram_support_notifier import (
+    TelegramSupportNotifierInterface,
+)
 
 
 class TestTelegramSupportNotifierInterface:

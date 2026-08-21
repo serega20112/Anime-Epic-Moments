@@ -17,7 +17,7 @@ if str(SRC_PATH) not in sys.path:
 
 from backend.config import Settings
 from backend.infrastructure.files.database import Base
-from backend.infrastructure.models import sqlalchemy_models  # noqa: F401
+import backend.infrastructure.models  # noqa: F401
 
 config = context.config
 

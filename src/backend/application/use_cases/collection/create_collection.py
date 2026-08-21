@@ -1,7 +1,7 @@
 from backend.application.dto import CreateCollectionCommand
-from backend.domain.collection.entity import AnimeCollection
-from backend.domain.repositories.collection_repository import CollectionRepository
-from backend.domain.unit_of_work import UnitOfWorkInterface
+from backend.application.interface.repositories.collection_repository import CollectionRepository
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
+from backend.domain.aggregates.collection.collection import AnimeCollection
 
 
 class CreateCollectionUseCase:

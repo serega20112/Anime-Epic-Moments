@@ -1,8 +1,9 @@
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.domain.reaction.entity import EpisodeReaction, EpisodeReactionType
-from backend.domain.reaction.value_object import EpisodeReactionCount
+from backend.domain.entities.reaction.episode_reaction import EpisodeReaction
+from backend.domain.value_objects.reaction.reaction_summary import EpisodeReactionCount
+from backend.domain.value_objects.reaction.reaction_type import EpisodeReactionType
 from backend.infrastructure.models import EpisodeReactionModel
 
 

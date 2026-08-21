@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.application.dto.support_commands import CreateSupportTicketCommand
+from backend.application.dto.support import CreateSupportTicketCommand
 
 
 class TestCreateSupportTicketCommand:

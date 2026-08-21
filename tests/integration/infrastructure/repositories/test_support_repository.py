@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.support.entity import SupportTicket
+from backend.domain.entities.support.support_ticket import SupportTicket
 from backend.infrastructure.repositories.support_repository import SupportRepository
 
 

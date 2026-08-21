@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import Request
 
-from backend.application.dto.anime_queries import (
+from backend.application.dto.anime import (
     AutocompleteAnimeQuery,
     FilterAnimeCatalogQuery,
     GetSeasonPopularQuery,
@@ -192,12 +192,19 @@ async def build_filter_anime_catalog_query(request: Request) -> FilterAnimeCatal
     if min_score is not None:
         min_score = max(0.0, min(min_score, 10.0))
     return FilterAnimeCatalogQuery(
-        genre=str(request.query_params.get("genre", "")).strip(
-        )[: Settings.anime_genre_hint_max_length],
+        genre=str(request.query_params.get("genre", "")).strip()[
+            : Settings.anime_genre_hint_max_length
+        ],
         media_type=str(request.query_params.get("type", "")).strip().lower(),
         status=str(request.query_params.get("status", "")).strip().lower(),
-        year_from=await _clamp_int(request.query_params.get("year_from"), default=0, minimum=1950, maximum=2100) or None,
-        year_to=await _clamp_int(request.query_params.get("year_to"), default=0, minimum=1950, maximum=2100) or None,
+        year_from=await _clamp_int(
+            request.query_params.get("year_from"), default=0, minimum=1950, maximum=2100
+        )
+        or None,
+        year_to=await _clamp_int(
+            request.query_params.get("year_to"), default=0, minimum=1950, maximum=2100
+        )
+        or None,
         min_score=min_score,
         sort=str(request.query_params.get("sort", "rating")).strip(),
         order=str(request.query_params.get("order", "desc")).strip().lower(),

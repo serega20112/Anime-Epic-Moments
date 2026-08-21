@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.services.anime_api_client import AnimeApiClientInterface
+from backend.application.interface.services.anime_api_client import AnimeApiClientInterface
 
 
 class TestAnimeApiClientInterface:

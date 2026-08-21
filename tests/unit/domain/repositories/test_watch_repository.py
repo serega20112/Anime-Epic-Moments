@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.repositories.watch_repository import WatchRepository
+from backend.application.interface.repositories.watch_repository import WatchRepository
 
 
 class TestWatchRepository:

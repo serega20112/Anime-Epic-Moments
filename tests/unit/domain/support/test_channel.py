@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.support.channel import (
+from backend.domain.entities.support.channel import (
     DEFAULT_SUPPORT_CHANNEL,
     SUPPORT_CHANNELS,
     is_support_channel,

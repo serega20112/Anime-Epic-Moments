@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from backend.application.dto.anime_queries import GetSeasonPopularQuery
-from backend.domain.anime.entity import Anime
+from backend.application.dto.anime import GetSeasonPopularQuery
+from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.domain.entities.anime.anime import Anime
 from backend.domain.exceptions import ValidationError
-from backend.domain.services import AnimeApiClientInterface as AnimeApiClient
 
 _VALID_SEASONS = {"winter", "spring", "summer", "fall"}
 

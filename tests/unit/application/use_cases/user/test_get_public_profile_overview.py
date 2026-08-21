@@ -10,7 +10,7 @@ from backend.application.use_cases.user.get_public_profile_overview import (
     GetPublicProfileOverviewUseCase,
 )
 from backend.domain import HighlightProfileSummary, SmartProfile
-from backend.domain.user.value_object import ProfileMoodInsight
+from backend.domain.value_objects.user.smart_profile import ProfileMoodInsight
 
 
 @pytest.mark.unit

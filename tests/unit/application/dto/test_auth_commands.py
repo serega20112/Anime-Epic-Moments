@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.application.dto.auth_commands import (
+from backend.application.dto.auth import (
     ConfirmPasswordResetCommand,
     LoginCommand,
     RegisterCommand,

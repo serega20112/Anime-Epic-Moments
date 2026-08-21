@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.services.jwt_service import JWTServiceInterface
+from backend.application.interface.services.jwt_service import JWTServiceInterface
 
 
 class TestJWTServiceInterface:

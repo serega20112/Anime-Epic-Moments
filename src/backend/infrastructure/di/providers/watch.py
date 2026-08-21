@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.services import WatchSourceSyncService
 from backend.application.use_cases import (
     AddAnimeCommentUseCase,
@@ -14,12 +15,13 @@ from backend.application.use_cases import (
     SyncWatchSourcesUseCase,
     UpsertUserAnimeStatusUseCase,
 )
-from backend.application.use_cases.highlight.create_highlight import CreateHighlightUseCase
-from backend.application.use_cases.watch.create_watch_highlight import (
+from backend.application.use_cases.highlight.crud.create_highlight import CreateHighlightUseCase
+from backend.application.use_cases.watch.highlight.create_watch_highlight import (
     CreateWatchHighlightUseCase,
 )
-from backend.application.use_cases.watch.save_viewing_session import SaveViewingSessionUseCase
-from backend.domain.unit_of_work import UnitOfWorkInterface
+from backend.application.use_cases.watch.session.save_viewing_session import (
+    SaveViewingSessionUseCase,
+)
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from backend.infrastructure.external import AnimeApiClient
 from backend.infrastructure.repositories.highlight_repository import HighlightRepository

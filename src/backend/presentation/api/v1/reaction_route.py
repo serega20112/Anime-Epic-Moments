@@ -15,7 +15,7 @@ from backend.application.use_cases import (
     GetEpisodeReactionsUseCase,
     SetEpisodeReactionUseCase,
 )
-from backend.domain.reaction.entity import EPISODE_REACTION_EMOJI
+from backend.domain.value_objects.reaction.reaction_type import EpisodeReactionEmoji
 from backend.presentation.api.helpers import get_current_user, read_payload
 
 reaction_router = APIRouter(prefix="/watch", route_class=DishkaRoute)
@@ -34,7 +34,7 @@ async def _reaction_payload(summary) -> dict:
     counts = [
         {
             "reaction_type": item.reaction_type.value,
-            "emoji": EPISODE_REACTION_EMOJI[item.reaction_type],
+            "emoji": EpisodeReactionEmoji.for_type(item.reaction_type),
             "count": item.count,
         }
         for item in summary.counts

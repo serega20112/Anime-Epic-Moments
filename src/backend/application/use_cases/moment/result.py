@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from starlette import status
+
 
 @dataclass
 class MomentResult:
@@ -18,12 +20,12 @@ class MomentResult:
     """
 
     ok: bool
-    status_code: int = 200
+    status_code: int = status.HTTP_200_OK
     data: Any = None
     error: str | None = None
 
     @classmethod
-    async def success(cls, data: Any = None, status_code: int = 200) -> MomentResult:
+    async def success(cls, data: Any = None, status_code: int = status.HTTP_200_OK) -> MomentResult:
         """Build a successful result.
 
         Args:
@@ -36,7 +38,9 @@ class MomentResult:
         return cls(ok=True, status_code=status_code, data=data)
 
     @classmethod
-    async def failure(cls, error: str, status_code: int = 400) -> MomentResult:
+    async def failure(
+        cls, error: str, status_code: int = status.HTTP_400_BAD_REQUEST
+    ) -> MomentResult:
         """Build a failed result.
 
         Args:

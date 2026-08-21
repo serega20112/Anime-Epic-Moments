@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.application.dto.watch_commands import (
+from backend.application.dto.watch import (
     AddAnimeCommentCommand,
     CreateWatchHighlightCommand,
     SaveViewingSessionCommand,

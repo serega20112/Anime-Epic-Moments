@@ -1,9 +1,11 @@
-from backend.application.use_cases.user.result import UserResult
-from backend.domain import UserRepository
-from backend.domain.services.profile_overview_cache import (
+from starlette import status
+
+from backend.application.interface.repositories.user_repository import UserRepository
+from backend.application.interface.services.profile_overview_cache import (
     ProfileOverviewCacheInterface as ProfileOverviewCache,
 )
-from backend.domain.unit_of_work import UnitOfWorkInterface
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
+from backend.application.use_cases.user.result import UserResult
 
 
 class SetUserFollowUseCase:
@@ -37,7 +39,9 @@ class SetUserFollowUseCase:
     ) -> UserResult:
         target_user = await self.user_repo.get_by_id(followed_user_id)
         if target_user is None:
-            return await UserResult.failure("Пользователь для подписки не найден", status_code=404)
+            return await UserResult.failure(
+                "Пользователь для подписки не найден", status_code=status.HTTP_404_NOT_FOUND
+            )
         if follow:
             result = await self.user_repo.follow(follower_user_id, followed_user_id)
         else:

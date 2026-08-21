@@ -2,17 +2,18 @@ import asyncio
 import logging
 import re
 
-from backend.domain import Translation, WatchRepository, WatchSource
-from backend.domain.anime.entity import Anime
-from backend.domain.exceptions import ExternalServiceError
-from backend.domain.services import (
+from backend.application.interface.repositories.watch_repository import WatchRepository
+from backend.application.interface.services import (
     WatchSourceProviderInterface as WatchSourceProvider,
 )
-from backend.domain.watch.policy import (
+from backend.domain import Translation, WatchSource
+from backend.domain.entities.anime.anime import Anime
+from backend.domain.exceptions import ExternalServiceError
+from backend.domain.policies.watch_policy import (
     canonicalize_translation_name,
     get_translation_priority,
 )
-from backend.domain.watch.value_object import DiscoveredWatchSource
+from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
 from backend.utils.ttl_cache import TTLCache
 
 logger = logging.getLogger(__name__)
@@ -40,9 +41,7 @@ class WatchSourceSyncService:
 
     async def get_enabled_provider_names(self) -> list[str]:
         return [
-            provider.provider_name
-            for provider in self.providers
-            if await provider.is_enabled()
+            provider.provider_name for provider in self.providers if await provider.is_enabled()
         ]
 
     async def get_provider_label(self) -> str | None:
@@ -217,7 +216,11 @@ class WatchSourceSyncService:
                 seen.add(dedupe_key)
                 discovered.append(item)
         ranked_items = [
-            (item, await self._quality_rank(item.quality_label), await get_translation_priority(item.translation_name))
+            (
+                item,
+                await self._quality_rank(item.quality_label),
+                await get_translation_priority(item.translation_name),
+            )
             for item in discovered
         ]
         return [

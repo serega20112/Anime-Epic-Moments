@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.user.entity import User
-from backend.domain.user.exceptions import InvalidEmailError, InvalidUsernameError
+from backend.domain.aggregates.user.exceptions import InvalidEmailError, InvalidUsernameError
+from backend.domain.aggregates.user.user import User
 
 
 class TestUserValidation:

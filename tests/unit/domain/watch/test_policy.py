@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.watch.policy import (
+from backend.domain.policies.watch_policy import (
     PREFERRED_TRANSLATION_GROUPS,
     canonicalize_translation_name,
     get_translation_priority,

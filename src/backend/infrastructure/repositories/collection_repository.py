@@ -3,7 +3,8 @@ import json
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.domain.collection.entity import AnimeCollection, AnimeCollectionItem
+from backend.domain.aggregates.collection.collection import AnimeCollection
+from backend.domain.entities.collection.collection_item import AnimeCollectionItem
 from backend.infrastructure.models import (
     AnimeCollectionItemModel,
     AnimeCollectionModel,

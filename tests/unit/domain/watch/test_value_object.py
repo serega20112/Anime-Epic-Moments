@@ -4,8 +4,8 @@ from dataclasses import asdict
 
 import pytest
 
-from backend.domain.watch.value_object import (
-    DiscoveredWatchSource,
+from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
+from backend.domain.value_objects.watch.page_data import (
     ViewingHeatmapPoint,
     WatchedAnimeStat,
     WatchHighlightCard,

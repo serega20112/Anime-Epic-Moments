@@ -1,46 +1,50 @@
-"""Domain facade: re-exports entities, policies and repository interfaces."""
+"""Domain facade: re-exports aggregates, entities, value objects and policies.
 
-from backend.domain.favorite.entity import Favorite
-from backend.domain.highlight.entity import Highlight
-from backend.domain.highlight.policy import HighlightPolicy
-from backend.domain.highlight.value_object import (
-    HighlightActivityItem,
-    HighlightAnimeGroup,
+Порты (интерфейсы репозиториев, сервисов и UoW) живут в ``backend.application.interface`` —
+домен знает только свой язык и не зависит от слоёв выше.
+"""
+
+from backend.domain.aggregates.highlight.highlight import Highlight
+from backend.domain.aggregates.user.user import User
+from backend.domain.entities.favorite.favorite import Favorite
+from backend.domain.entities.moment.viewing_moment import ViewingMoment
+from backend.domain.entities.reaction.episode_reaction import EpisodeReaction
+from backend.domain.entities.support.channel import is_support_channel, normalize_support_channel
+from backend.domain.entities.watch.highlight_context import HighlightContext
+from backend.domain.entities.watch.translation import Translation
+from backend.domain.entities.watch.user_anime_status import UserAnimeStatus
+from backend.domain.entities.watch.viewing_session import ViewingSession
+from backend.domain.entities.watch.watch_source import WatchSource
+from backend.domain.policies.highlight_policy import HighlightPolicy
+from backend.domain.value_objects.highlight.cards import (
     HighlightCard,
     HighlightCommentItem,
-    HighlightDashboard,
     HighlightEngagement,
-    HighlightFeedPage,
     HighlightLikeUser,
-    HighlightProfileSummary,
     HighlightStats,
 )
-from backend.domain.moment.entity import ViewingMoment
-from backend.domain.reaction.entity import EpisodeReaction, EpisodeReactionType
-from backend.domain.reaction.value_object import EpisodeReactionCount, EpisodeReactionSummary
-from backend.domain.recommendation.value_object import RecommendationResult
-from backend.domain.repositories.favorite_repository import FavoriteRepository
-from backend.domain.repositories.moment_repository import MomentRepository
-from backend.domain.repositories.reaction_repository import ReactionRepository
-from backend.domain.repositories.user_repository import UserRepository
-from backend.domain.repositories.watch_repository import WatchRepository
-from backend.domain.support.channel import is_support_channel, normalize_support_channel
-from backend.domain.user.entity import User
-from backend.domain.user.value_object import (
+from backend.domain.value_objects.highlight.dashboard import HighlightDashboard
+from backend.domain.value_objects.highlight.feed import HighlightAnimeGroup, HighlightFeedPage
+from backend.domain.value_objects.highlight.profile_summary import (
+    HighlightActivityItem,
+    HighlightProfileSummary,
+)
+from backend.domain.value_objects.reaction.reaction_summary import (
+    EpisodeReactionCount,
+    EpisodeReactionSummary,
+)
+from backend.domain.value_objects.reaction.reaction_type import EpisodeReactionType
+from backend.domain.value_objects.recommendation.recommendation_result import RecommendationResult
+from backend.domain.value_objects.user.pending_email_verification import PendingEmailVerification
+from backend.domain.value_objects.user.profile_overview import (
     FollowUserCard,
-    PendingEmailVerification,
     ProfileOverview,
     PublicProfileOverview,
+)
+from backend.domain.value_objects.user.smart_profile import (
     SmartProfile,
     TopAnimeEntry,
     ViewingHeatmapCell,
-)
-from backend.domain.watch.entity import (
-    HighlightContext,
-    Translation,
-    UserAnimeStatus,
-    ViewingSession,
-    WatchSource,
 )
 
 __all__ = [
@@ -49,7 +53,6 @@ __all__ = [
     "EpisodeReactionSummary",
     "EpisodeReactionType",
     "Favorite",
-    "FavoriteRepository",
     "FollowUserCard",
     "Highlight",
     "HighlightActivityItem",
@@ -64,22 +67,18 @@ __all__ = [
     "HighlightPolicy",
     "HighlightProfileSummary",
     "HighlightStats",
-    "MomentRepository",
     "PendingEmailVerification",
     "ProfileOverview",
     "PublicProfileOverview",
-    "ReactionRepository",
     "RecommendationResult",
     "SmartProfile",
     "TopAnimeEntry",
     "Translation",
     "User",
     "UserAnimeStatus",
-    "UserRepository",
     "ViewingHeatmapCell",
     "ViewingMoment",
     "ViewingSession",
-    "WatchRepository",
     "WatchSource",
     "is_support_channel",
     "normalize_support_channel",

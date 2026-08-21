@@ -6,7 +6,7 @@ handlers stay thin and only orchestrate use case execution.
 
 from __future__ import annotations
 
-from backend.application.dto.auth_commands import (
+from backend.application.dto.auth import (
     ConfirmPasswordResetCommand,
     LoginCommand,
     RegisterCommand,
@@ -15,6 +15,7 @@ from backend.application.dto.auth_commands import (
     UpdateProfileCommand,
     VerifyEmailCommand,
 )
+from backend.domain.policies.user_credentials_policy import normalize_email
 
 EMAIL_MAX_LENGTH = 254
 PASSWORD_MIN_LENGTH = 8
@@ -44,7 +45,7 @@ async def _field_text(form: dict, name: str) -> str:
 
 
 async def _normalize_email(value: object) -> str:
-    return str(value or "").strip().lower()
+    return await normalize_email(value)
 
 
 async def _normalize_theme(value: object) -> str:
@@ -151,7 +152,9 @@ async def map_resend_verification_command(form: dict) -> ResendVerificationComma
     return ResendVerificationCommand(email=email)
 
 
-async def map_request_password_reset_command(form: dict, *, base_url: str) -> RequestPasswordResetCommand:
+async def map_request_password_reset_command(
+    form: dict, *, base_url: str
+) -> RequestPasswordResetCommand:
     """Validate and build a password reset request command from form data.
 
     Args:

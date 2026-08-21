@@ -27,7 +27,9 @@ async def map_ask_ai_command(
         AskAiRecommendationsCommand: Command with clamped limit.
     """
     query = str((payload or {}).get("query") or "").strip()
-    limit = await _clamp_limit(await _to_int((payload or {}).get("limit")), default=_ASK_LIMIT_DEFAULT)
+    limit = await _clamp_limit(
+        await _to_int((payload or {}).get("limit")), default=_ASK_LIMIT_DEFAULT
+    )
     return AskAiRecommendationsCommand(
         user_id=user_id,
         query=query,

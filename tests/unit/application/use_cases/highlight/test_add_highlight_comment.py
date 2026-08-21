@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.dto import AddHighlightCommentCommand
-from backend.application.use_cases.highlight.add_highlight_comment import AddHighlightCommentUseCase
+from backend.application.use_cases.highlight.social.add_highlight_comment import (
+    AddHighlightCommentUseCase,
+)
 
 
 @pytest.mark.unit

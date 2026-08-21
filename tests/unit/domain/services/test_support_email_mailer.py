@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.services.support_email_mailer import SupportEmailMailerInterface
+from backend.application.interface.services.support_email_mailer import SupportEmailMailerInterface
 
 
 class TestSupportEmailMailerInterface:

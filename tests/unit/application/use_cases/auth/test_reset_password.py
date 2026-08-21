@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, Mock
 import jwt
 import pytest
 
-from backend.application.use_cases.auth.reset_password import ResetPasswordUseCase
+from backend.application.use_cases.auth.password_reset.reset_password import ResetPasswordUseCase
 
 
 def _blocklist():

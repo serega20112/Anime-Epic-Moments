@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.repositories.collection_repository import CollectionRepository
+from backend.application.interface.repositories.collection_repository import CollectionRepository
 
 
 class TestCollectionRepository:

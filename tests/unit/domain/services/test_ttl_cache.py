@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.domain.services.ttl_cache import TTLCacheInterface
+from backend.application.interface.services.ttl_cache import TTLCacheInterface
 
 
 class TestTTLCacheInterface:
