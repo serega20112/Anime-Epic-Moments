@@ -53,15 +53,13 @@ class EditHighlightUseCase:
                 "highlight_not_found", status_code=status.HTTP_404_NOT_FOUND
             )
 
-        if not await HighlightPolicy.filter_spoiler_content(
-            f"{command.title} {command.description}"
-        ):
+        if not HighlightPolicy.filter_spoiler_content(f"{command.title} {command.description}"):
             return await HighlightResult.failure(
                 "Описание содержит запрещённый контент",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
-        await highlight.edit(
+        highlight.edit(
             start_timestamp=command.start_timestamp,
             end_timestamp=command.end_timestamp,
             title=command.title or highlight.title or f"Момент {highlight.episode} серии",

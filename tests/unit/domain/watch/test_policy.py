@@ -30,7 +30,7 @@ class TestNormalizeTranslationName:
         Что ожидаем: строка приводится к нижнему регистру и нормализованному виду,
         None -> пустая строка.
         """
-        assert await normalize_translation_name(value) == expected
+        assert normalize_translation_name(value) == expected
 
 
 class TestTranslationPriorityPolicy:
@@ -60,10 +60,10 @@ class TestTranslationPriorityPolicy:
         Что ожидаем: для предпочитаемых групп приоритет меньше длины списка предпочитаемых групп
         и каноническое имя из списка, для прочих - оригинальное имя.
         """
-        priority, normalized = await get_translation_priority(value)
+        priority, normalized = get_translation_priority(value)
 
-        assert await canonicalize_translation_name(value) == expected_label
-        assert await is_preferred_translation(value) is preferred
+        assert canonicalize_translation_name(value) == expected_label
+        assert is_preferred_translation(value) is preferred
         if preferred:
             assert priority < len(PREFERRED_TRANSLATION_GROUPS)
             assert normalized != ""

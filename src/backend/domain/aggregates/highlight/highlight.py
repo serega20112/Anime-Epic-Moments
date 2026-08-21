@@ -45,7 +45,7 @@ class Highlight:
                 f"start_timestamp ({self.start_timestamp}) должен быть меньше end_timestamp ({self.end_timestamp})"
             )
 
-    async def edit(
+    def edit(
         self,
         start_timestamp: float,
         end_timestamp: float,
@@ -64,10 +64,10 @@ class Highlight:
         self.emotion = self._normalize_optional_text(emotion)
         self._validate_times()
 
-    async def add_like(self):
+    def add_like(self):
         self.likes_count += 1
 
-    async def add_view(self):
+    def add_view(self):
         self.views_count += 1
 
     def _normalize_optional_text(self, value: str | None) -> str | None:

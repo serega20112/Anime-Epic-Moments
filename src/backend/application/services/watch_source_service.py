@@ -114,7 +114,7 @@ class WatchSourceSyncService:
 
             for item in discovered:
                 translation_key = (
-                    await canonicalize_translation_name(item.translation_name),
+                    canonicalize_translation_name(item.translation_name),
                     item.translation_type,
                     item.language,
                 )
@@ -205,7 +205,7 @@ class WatchSourceSyncService:
                 continue
             for item in variant_sources:
                 dedupe_key = (
-                    await canonicalize_translation_name(item.translation_name),
+                    canonicalize_translation_name(item.translation_name),
                     str(item.quality_label).strip().lower(),
                     str(item.stream_url).strip(),
                     str(item.provider_name).strip().lower(),
@@ -219,7 +219,7 @@ class WatchSourceSyncService:
             (
                 item,
                 await self._quality_rank(item.quality_label),
-                await get_translation_priority(item.translation_name),
+                get_translation_priority(item.translation_name),
             )
             for item in discovered
         ]

@@ -48,7 +48,7 @@ class TestHighlightEdit:
             is_spoiler=False,
         )
 
-        await highlight.edit(
+        highlight.edit(
             start_timestamp=8.0,
             end_timestamp=20.0,
             title="after",
@@ -100,9 +100,9 @@ class TestHighlightCounters:
 
         for operation in operations:
             if operation == "like":
-                await highlight.add_like()
+                highlight.add_like()
             else:
-                await highlight.add_view()
+                highlight.add_view()
 
         assert highlight.likes_count == expected_likes
         assert highlight.views_count == expected_views

@@ -31,13 +31,13 @@ class AnimeSafetyPolicy:
     )
 
     @staticmethod
-    async def has_explicit_adult_intent(description: str, genre_hint: str | None = None) -> bool:
+    def has_explicit_adult_intent(description: str, genre_hint: str | None = None) -> bool:
         """Возвращает True, если пользователь явно ищет 18+ контент."""
         haystack = f"{description or ''} {genre_hint or ''}".lower()
         return any(marker in haystack for marker in AnimeSafetyPolicy._ADULT_INTENT_MARKERS)
 
     @staticmethod
-    async def is_probably_nsfw(anime: Anime) -> bool:
+    def is_probably_nsfw(anime: Anime) -> bool:
         """Возвращает True, если карточка аниме выглядит как NSFW-контент."""
         genres = " ".join(anime.genres or []).lower()
         text = f"{anime.title or ''} {anime.description or ''}".lower()
@@ -45,7 +45,7 @@ class AnimeSafetyPolicy:
         return any(marker in haystack for marker in AnimeSafetyPolicy._NSFW_CONTENT_MARKERS)
 
     @staticmethod
-    async def suggest_title_hints(description: str, genre_hint: str | None = None) -> list[str]:
+    def suggest_title_hints(description: str, genre_hint: str | None = None) -> list[str]:
         """Извлекает явные подсказки названий из пользовательского текста."""
         text = f"{description or ''} {genre_hint or ''}"
         raw_hints = re.findall(r"[\"'«](.+?)[\"'»]", text)

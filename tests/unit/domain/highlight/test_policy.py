@@ -29,7 +29,7 @@ class TestHighlightPolicy:
         Что передаём: идентификатор пользователя (гость = None) и число хайлайтов за час.
         Что ожидаем: гости ограничены лимитом в час, залогиненные пользователи не ограничены.
         """
-        result = await HighlightPolicy.can_add_highlight(user_id, highlights_this_hour)
+        result = HighlightPolicy.can_add_highlight(user_id, highlights_this_hour)
 
         assert result is expected
 
@@ -48,7 +48,7 @@ class TestHighlightPolicy:
         Что передаём: описания с запрещёнными маркерами и без них.
         Что ожидаем: безопасное описание возвращает True, содержащее бан-слова — False.
         """
-        result = await HighlightPolicy.filter_spoiler_content(description)
+        result = HighlightPolicy.filter_spoiler_content(description)
 
         assert result is expected
 
@@ -69,4 +69,4 @@ class TestHighlightPolicy:
             is_spoiler=is_spoiler,
         )
 
-        assert await HighlightPolicy.should_hide_spoiler(highlight) is is_spoiler
+        assert HighlightPolicy.should_hide_spoiler(highlight) is is_spoiler

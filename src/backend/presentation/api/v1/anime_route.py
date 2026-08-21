@@ -124,7 +124,7 @@ async def search_anime_by_description(
     """
     query = await build_search_anime_by_description_query(request)
     result = await use_case.execute(query)
-    return await result.to_dict()
+    return result.to_dict()
 
 
 @anime_router.get("/api/autocomplete", name="anime.autocomplete_anime")

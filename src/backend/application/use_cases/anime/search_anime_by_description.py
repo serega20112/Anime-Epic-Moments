@@ -48,7 +48,7 @@ class SearchAnimeByDescriptionUseCase:
         sort_by = query.sort_by
         limit = query.limit
 
-        explicit_adult_intent = await self.safety_policy.has_explicit_adult_intent(
+        explicit_adult_intent = self.safety_policy.has_explicit_adult_intent(
             base_description, genre_hint
         )
         if explicit_adult_intent and age_rating != "18+":
@@ -117,9 +117,7 @@ class SearchAnimeByDescriptionUseCase:
                 results = await self._merge_unique(results, batch)
 
         if not include_adult:
-            results = [
-                item for item in results if not await self.safety_policy.is_probably_nsfw(item)
-            ]
+            results = [item for item in results if not self.safety_policy.is_probably_nsfw(item)]
 
         ordered = await self._sort_results(
             items=results,
@@ -149,7 +147,7 @@ class SearchAnimeByDescriptionUseCase:
         variants: list[str] = []
         seen: set[str] = set()
 
-        for hint in await self.safety_policy.suggest_title_hints(raw_description, genre_hint):
+        for hint in self.safety_policy.suggest_title_hints(raw_description, genre_hint):
             normalized = await self._normalize(hint)
             if normalized and normalized not in seen:
                 seen.add(normalized)

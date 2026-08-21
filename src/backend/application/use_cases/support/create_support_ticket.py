@@ -105,9 +105,9 @@ class CreateSupportTicketUseCase:
         try:
             provider = await self._delivery_provider(normalized_channel)
             await provider.send_ticket_created(ticket)
-            await ticket.mark_delivered()
+            ticket.mark_delivered()
         except RuntimeError as error:
-            await ticket.mark_delivery_failed(str(error))
+            ticket.mark_delivery_failed(str(error))
             service_unavailable = True
 
         ticket = await self.support_repo.update(ticket)
@@ -190,7 +190,7 @@ class CreateSupportTicketUseCase:
 
     async def _validate_channel(self, value: str) -> None:
         """Проверяет допустимость выбранного канала доставки."""
-        if not await is_support_channel(value):
+        if not is_support_channel(value):
             raise InvalidSupportTicketError("Выбери способ отправки тикета")
 
     async def _validate_page_url(self, value: str | None) -> None:

@@ -142,9 +142,7 @@ class YouTubeClient(WatchSourceProvider):
         if score <= 0:
             return None
 
-        raw_translation = await canonicalize_translation_name(
-            f"{video_title} {channel_title}".strip()
-        )
+        raw_translation = canonicalize_translation_name(f"{video_title} {channel_title}".strip())
         translation_name = (
             raw_translation
             if raw_translation
@@ -217,7 +215,7 @@ class YouTubeClient(WatchSourceProvider):
         score = matched_tokens * 3
         if matched_tokens == len(title_tokens):
             score += 4
-        if await canonicalize_translation_name(normalized_blob) != normalized_blob:
+        if canonicalize_translation_name(normalized_blob) != normalized_blob:
             score += 2
         return score
 

@@ -14,16 +14,16 @@ USERNAME_MIN_LENGTH = 3
 USERNAME_MAX_LENGTH = 20
 
 
-async def normalize_email(value: object) -> str:
+def normalize_email(value: object) -> str:
     """Приводит email к каноническому виду: обрезка пробелов и lower-case."""
     return str(value or "").strip().lower()
 
 
-async def is_valid_email_format(email: str) -> bool:
+def is_valid_email_format(email: str) -> bool:
     """Проверяет соответствие email доменному формату (без проверки длины формы)."""
     return bool(re.match(EMAIL_PATTERN, email or ""))
 
 
-async def normalize_username(value: object) -> str:
+def normalize_username(value: object) -> str:
     """Схлопывает внутренние пробелы и обрезает края (для отображения/тикетов)."""
     return " ".join(str(value or "").strip().split())

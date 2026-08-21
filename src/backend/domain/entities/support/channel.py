@@ -6,9 +6,7 @@ SUPPORT_CHANNELS: frozenset[str] = frozenset({"telegram", "email"})
 DEFAULT_SUPPORT_CHANNEL = "telegram"
 
 
-async def normalize_support_channel(
-    value: str | None, *, default: str = DEFAULT_SUPPORT_CHANNEL
-) -> str:
+def normalize_support_channel(value: str | None, *, default: str = DEFAULT_SUPPORT_CHANNEL) -> str:
     """Normalize and validate a support channel, falling back to a default.
 
     Args:
@@ -24,7 +22,7 @@ async def normalize_support_channel(
     return default
 
 
-async def is_support_channel(value: str | None) -> bool:
+def is_support_channel(value: str | None) -> bool:
     """Return whether a value is a known support channel.
 
     Args:

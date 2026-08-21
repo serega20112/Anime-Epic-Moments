@@ -41,22 +41,22 @@ class TestSupportTicket:
     async def test_mark_delivered(self):
         ticket = SupportTicket(email="a@b.com", username="t", subject="s", message="m")
         ticket.delivery_error = "old"
-        await ticket.mark_delivered()
+        ticket.mark_delivered()
         assert ticket.delivery_status == "sent"
         assert ticket.delivery_error is None
 
     async def test_mark_delivery_failed(self):
         ticket = SupportTicket(email="a@b.com", username="t", subject="s", message="m")
-        await ticket.mark_delivery_failed("  connection refused  ")
+        ticket.mark_delivery_failed("  connection refused  ")
         assert ticket.delivery_status == "failed"
         assert ticket.delivery_error == "connection refused"
 
     async def test_mark_delivery_failed_blank_becomes_unknown(self):
         ticket = SupportTicket(email="a@b.com", username="t", subject="s", message="m")
-        await ticket.mark_delivery_failed("   ")
+        ticket.mark_delivery_failed("   ")
         assert ticket.delivery_error == "unknown"
 
     async def test_mark_delivery_failed_truncates_long_error(self):
         ticket = SupportTicket(email="a@b.com", username="t", subject="s", message="m")
-        await ticket.mark_delivery_failed("x" * 1000)
+        ticket.mark_delivery_failed("x" * 1000)
         assert len(ticket.delivery_error) == 500

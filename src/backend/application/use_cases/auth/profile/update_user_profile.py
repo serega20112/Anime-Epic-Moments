@@ -65,12 +65,12 @@ class UpdateUserProfileUseCase:
             )
 
         try:
-            await user.change_username(cleaned_username)
+            user.change_username(cleaned_username)
         except InvalidUsernameError as exc:
             return await AuthResult.failure(str(exc), "auth.profile_page")
 
         normalized_avatar = avatar_url.strip() if avatar_url else None
-        await user.update_avatar(normalized_avatar)
+        user.update_avatar(normalized_avatar)
         updated_user = await self.user_repo.update(user)
         if self.profile_overview_cache is not None:
             await self.profile_overview_cache.invalidate_overview(user_id)

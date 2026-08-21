@@ -23,7 +23,7 @@ class EpisodeReactionSummary:
     user_reaction: EpisodeReactionType | None = None
 
     @classmethod
-    async def empty(cls) -> EpisodeReactionSummary:
+    def empty(cls) -> EpisodeReactionSummary:
         """Build a summary with no reactions.
 
         Returns:

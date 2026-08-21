@@ -83,8 +83,8 @@ class GetProfileOverviewUseCase:
             watched_stats=watched_stats,
         )
         genre_pool = await self._collect_genres(favorites=favorites, anime_map=anime_map)
-        favorite_genres = await build_genre_affinities(genre_pool)
-        mood = await detect_profile_mood(
+        favorite_genres = build_genre_affinities(genre_pool)
+        mood = detect_profile_mood(
             genres=genre_pool,
             emotions=[item.emotion or "" for item in own_highlights],
         )
@@ -138,7 +138,7 @@ class GetProfileOverviewUseCase:
                 ViewingHeatmapCell(date=item.date, interactions=item.interactions)
                 for item in heatmap
             ],
-            achievements=await build_achievement_badges(
+            achievements=build_achievement_badges(
                 profile_summary=summary,
                 hours_watched=hours_watched,
                 favorite_genres=favorite_genres,

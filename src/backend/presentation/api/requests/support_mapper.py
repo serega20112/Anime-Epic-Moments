@@ -33,7 +33,7 @@ async def map_create_support_ticket_command(
     )
     subject = str(form.get("subject") or "").strip()
     message = str(form.get("message") or "").strip()
-    channel = await normalize_support_channel(form.get("channel"))
+    channel = normalize_support_channel(form.get("channel"))
     page_url = await _normalize_page_url(form.get("page_url"))
     return CreateSupportTicketCommand(
         user_id=user_id,
@@ -55,7 +55,7 @@ async def _normalize_email(value: str | None) -> str:
     Returns:
         str: Normalized email.
     """
-    return await normalize_email(value)
+    return normalize_email(value)
 
 
 async def _normalize_username(value: str | None) -> str:
@@ -67,7 +67,7 @@ async def _normalize_username(value: str | None) -> str:
     Returns:
         str: Normalized username.
     """
-    return await normalize_username(value)
+    return normalize_username(value)
 
 
 async def _normalize_page_url(value: str | None) -> str | None:

@@ -9,7 +9,7 @@ ANIME_STATUS_VALUES: tuple[str, ...] = (
 )
 
 
-async def normalize_anime_status(value: str | None) -> str | None:
+def normalize_anime_status(value: str | None) -> str | None:
     """Нормализует статус дневника просмотра в канонический вид."""
     normalized = str(value or "").strip().lower().replace(" ", "_")
     if normalized not in ANIME_STATUS_VALUES:
@@ -17,9 +17,9 @@ async def normalize_anime_status(value: str | None) -> str | None:
     return normalized
 
 
-async def is_valid_anime_status(value: str | None) -> bool:
+def is_valid_anime_status(value: str | None) -> bool:
     """Проверяет, является ли значение допустимым статусом дневника."""
-    return await normalize_anime_status(value) is not None
+    return normalize_anime_status(value) is not None
 
 
 PREFERRED_TRANSLATION_GROUPS: list[tuple[str, tuple[str, ...]]] = [
@@ -92,30 +92,30 @@ PREFERRED_TRANSLATION_GROUPS: list[tuple[str, tuple[str, ...]]] = [
 ]
 
 
-async def normalize_translation_name(value: str | None) -> str:
+def normalize_translation_name(value: str | None) -> str:
     """Нормализует имя озвучки для сопоставления и ранжирования."""
     text = str(value or "").lower().strip()
     text = re.sub(r"[^a-zа-я0-9]+", " ", text, flags=re.IGNORECASE)
     return " ".join(text.split())
 
 
-async def get_translation_priority(value: str | None) -> tuple[int, str]:
+def get_translation_priority(value: str | None) -> tuple[int, str]:
     """Возвращает приоритет озвучки: чем меньше число, тем выше в выдаче."""
-    normalized = await normalize_translation_name(value)
+    normalized = normalize_translation_name(value)
     for index, (_label, aliases) in enumerate(PREFERRED_TRANSLATION_GROUPS):
         if any(alias in normalized for alias in aliases):
             return index, normalized
     return len(PREFERRED_TRANSLATION_GROUPS), normalized
 
 
-async def is_preferred_translation(value: str | None) -> bool:
+def is_preferred_translation(value: str | None) -> bool:
     """Проверяет, входит ли озвучка в список предпочитаемых групп."""
-    return (await get_translation_priority(value))[0] < len(PREFERRED_TRANSLATION_GROUPS)
+    return (get_translation_priority(value))[0] < len(PREFERRED_TRANSLATION_GROUPS)
 
 
-async def canonicalize_translation_name(value: str | None) -> str:
+def canonicalize_translation_name(value: str | None) -> str:
     """Возвращает каноническое название группы озвучки для UI/сортировки."""
-    normalized = await normalize_translation_name(value)
+    normalized = normalize_translation_name(value)
     for label, aliases in PREFERRED_TRANSLATION_GROUPS:
         if any(alias in normalized for alias in aliases):
             return label

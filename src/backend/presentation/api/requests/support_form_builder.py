@@ -61,7 +61,7 @@ async def build_default_support_form(
         "username": await _normalize_username(user_username),
         "subject": "",
         "message": "",
-        "channel": await normalize_support_channel(channel_param),
+        "channel": normalize_support_channel(channel_param),
         "page_url": await _normalize_page_url(page_param),
     }
 

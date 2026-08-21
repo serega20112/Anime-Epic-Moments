@@ -99,7 +99,7 @@ class ReactionRepository:
         )
         counts: list[EpisodeReactionCount] = []
         for raw_type, count in result.all():
-            reaction_type = await EpisodeReactionType.from_value(raw_type)
+            reaction_type = EpisodeReactionType.from_value(raw_type)
             if reaction_type is not None:
                 counts.append(EpisodeReactionCount(reaction_type=reaction_type, count=int(count)))
         return counts
@@ -130,7 +130,7 @@ class ReactionRepository:
         row = result.scalar_one_or_none()
         if not row:
             return None
-        reaction_type = await EpisodeReactionType.from_value(row.reaction_type)
+        reaction_type = EpisodeReactionType.from_value(row.reaction_type)
         if reaction_type is None:
             return None
         return EpisodeReaction(

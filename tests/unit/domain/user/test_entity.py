@@ -44,8 +44,8 @@ class TestUserBehaviour:
         """
         user = User(email="user@example.com", username="tester", password_hash="hash")
 
-        await user.update_avatar("https://example.com/avatar.png")
-        await user.change_username("renamed")
+        user.update_avatar("https://example.com/avatar.png")
+        user.change_username("renamed")
 
         assert user.avatar_url == "https://example.com/avatar.png"
         assert user.username == "renamed"
@@ -60,4 +60,4 @@ class TestUserBehaviour:
         user = User(email="user@example.com", username="tester", password_hash="hash")
 
         with pytest.raises(NotImplementedError):
-            await user.check_password("plain-password")
+            user.check_password("plain-password")

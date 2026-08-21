@@ -26,7 +26,7 @@ class TestAnimeEntity:
         """
         anime = anime_factory(external_id="1", title="Title", genres=list(initial_genres))
 
-        await anime.add_genre(genre)
+        anime.add_genre(genre)
 
         assert anime.genres == expected
 
@@ -46,7 +46,7 @@ class TestAnimeEntity:
         """
         anime = anime_factory(external_id="2", title="Title", genres=list(initial_genres))
 
-        await anime.remove_genre(genre)
+        anime.remove_genre(genre)
 
         assert anime.genres == expected
 

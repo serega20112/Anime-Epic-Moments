@@ -15,7 +15,7 @@ class EpisodeReactionType(StrEnum):
     SPARKLE = "sparkle"
 
     @classmethod
-    async def from_value(cls, value: str | None) -> "EpisodeReactionType | None":
+    def from_value(cls, value: str | None) -> "EpisodeReactionType | None":
         """Resolve a reaction type from a raw string.
 
         Args:

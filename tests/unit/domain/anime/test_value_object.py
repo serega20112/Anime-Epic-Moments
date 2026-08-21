@@ -37,7 +37,7 @@ class TestSearchAnimeByDescriptionResult:
             message=message,
         )
 
-        payload = await result.to_dict()
+        payload = result.to_dict()
 
         assert payload["items"][0]["title"] == "Result Title"
         assert payload["requires_age_confirmation"] is requires_age_confirmation

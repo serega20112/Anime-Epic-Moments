@@ -32,12 +32,12 @@ class SupportTicket:
         self.delivery_error = delivery_error
         self.created_at = created_at or datetime.utcnow()
 
-    async def mark_delivered(self) -> None:
+    def mark_delivered(self) -> None:
         """Помечает тикет как доставленный через выбранный канал."""
         self.delivery_status = "sent"
         self.delivery_error = None
 
-    async def mark_delivery_failed(self, error_message: str) -> None:
+    def mark_delivery_failed(self, error_message: str) -> None:
         """Помечает тикет как недоставленный и сохраняет причину."""
         self.delivery_status = "failed"
         normalized_error = str(error_message or "").strip()

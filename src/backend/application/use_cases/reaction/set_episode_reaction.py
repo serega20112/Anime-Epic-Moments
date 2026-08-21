@@ -27,7 +27,7 @@ class SetEpisodeReactionUseCase:
                 "invalid_episode", status_code=status.HTTP_400_BAD_REQUEST
             )
 
-        reaction_type = await EpisodeReactionType.from_value(command.reaction_type)
+        reaction_type = EpisodeReactionType.from_value(command.reaction_type)
         if not command.liked:
             await self.reaction_repo.remove_reaction(
                 command.user_id,

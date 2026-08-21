@@ -18,24 +18,24 @@ class TestSupportChannelConstants:
 
 class TestNormalizeSupportChannel:
     async def test_known_channels_are_normalized(self):
-        assert await normalize_support_channel("TELEGRAM") == "telegram"
-        assert await normalize_support_channel(" Email ") == "email"
+        assert normalize_support_channel("TELEGRAM") == "telegram"
+        assert normalize_support_channel(" Email ") == "email"
 
     async def test_unknown_falls_back_to_default(self):
-        assert await normalize_support_channel("sms") == "telegram"
+        assert normalize_support_channel("sms") == "telegram"
 
     async def test_none_falls_back_to_default(self):
-        assert await normalize_support_channel(None) == "telegram"
+        assert normalize_support_channel(None) == "telegram"
 
     async def test_custom_default(self):
-        assert await normalize_support_channel("sms", default="email") == "email"
+        assert normalize_support_channel("sms", default="email") == "email"
 
 
 class TestIsSupportChannel:
     async def test_known_channels(self):
-        assert await is_support_channel("telegram") is True
-        assert await is_support_channel("EMAIL") is True
+        assert is_support_channel("telegram") is True
+        assert is_support_channel("EMAIL") is True
 
     async def test_unknown_and_none(self):
-        assert await is_support_channel("sms") is False
-        assert await is_support_channel(None) is False
+        assert is_support_channel("sms") is False
+        assert is_support_channel(None) is False

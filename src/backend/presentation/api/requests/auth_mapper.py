@@ -45,7 +45,7 @@ async def _field_text(form: dict, name: str) -> str:
 
 
 async def _normalize_email(value: object) -> str:
-    return await normalize_email(value)
+    return normalize_email(value)
 
 
 async def _normalize_theme(value: object) -> str:

@@ -63,7 +63,7 @@ class GetWatchPageUseCase:
             keyed.append(
                 (
                     await self._source_type_priority(item.source_type),
-                    await get_translation_priority(
+                    get_translation_priority(
                         translations[item.translation_id].name
                         if item.translation_id in translations
                         else ""

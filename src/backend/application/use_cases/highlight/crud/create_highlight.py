@@ -47,17 +47,13 @@ class CreateHighlightUseCase:
         Returns:
             HighlightResult: Result with the created highlight.
         """
-        if not await HighlightPolicy.can_add_highlight(
-            command.user_id, command.highlights_this_hour
-        ):
+        if not HighlightPolicy.can_add_highlight(command.user_id, command.highlights_this_hour):
             return await HighlightResult.failure(
                 "Превышен лимит добавления хайлайтов для гостя",
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
-        if not await HighlightPolicy.filter_spoiler_content(
-            f"{command.title} {command.description}"
-        ):
+        if not HighlightPolicy.filter_spoiler_content(f"{command.title} {command.description}"):
             return await HighlightResult.failure(
                 "Описание содержит запрещённый контент",
                 status_code=status.HTTP_400_BAD_REQUEST,

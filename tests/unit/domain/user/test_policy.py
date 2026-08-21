@@ -20,7 +20,7 @@ class TestGenreAffinities:
         Что передаём: список жанров с повторами и параметр limit=2.
         Что ожидаем: возвращается топ жанров по частоте, обрезанный по limit.
         """
-        result = await build_genre_affinities(
+        result = build_genre_affinities(
             ["Comedy", "Action", "Comedy", "Drama", "Action", "Comedy"],
             limit=2,
         )
@@ -42,7 +42,7 @@ class TestGenreAffinities:
         Что передаём: список жанров без явного limit и пустой/пустой список жанров.
         Что ожидаем: при пустом входе результат пуст, иначе top-5 жанров по частоте.
         """
-        result = await build_genre_affinities(genres or [])
+        result = build_genre_affinities(genres or [])
 
         if not genres:
             assert result == []
@@ -60,7 +60,7 @@ class TestProfileMood:
         Что передаём: набор тёмных жанров и напряжённых эмоций.
         Что ожидаем: возвращается ProfileMoodInsight с тёмным настроением.
         """
-        mood = await detect_profile_mood(
+        mood = detect_profile_mood(
             genres=["Drama", "Psychological", "Mystery"],
             emotions=["tense"],
         )
@@ -79,16 +79,16 @@ class TestAchievementBadges:
         Что передаём: статистику профиля, часы просмотра, жанры и доминирующее настроение.
         Что ожидаем: набор ачивок содержит ожидаемые коды достижений.
         """
-        badges = await build_achievement_badges(
+        badges = build_achievement_badges(
             profile_summary=HighlightProfileSummary(
                 highlight_count=6,
                 like_count=8,
                 saved_count=7,
             ),
             hours_watched=12.0,
-            favorite_genres=await build_genre_affinities(["Comedy", "Comedy", "Action", "Comedy"]),
+            favorite_genres=build_genre_affinities(["Comedy", "Comedy", "Action", "Comedy"]),
             highlight_likes_received=15,
-            top_mood=await detect_profile_mood(genres=["Drama"], emotions=["dark"]),
+            top_mood=detect_profile_mood(genres=["Drama"], emotions=["dark"]),
         )
 
         codes = {item.code for item in badges}
