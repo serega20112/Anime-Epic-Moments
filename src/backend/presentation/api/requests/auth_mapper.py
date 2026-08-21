@@ -79,7 +79,7 @@ async def map_login_command(form: dict) -> LoginCommand:
     Raises:
         FormValidationError: If email or password is missing or email is too long.
     """
-    email = await _field_text(form, "email").lower()
+    email = (await _field_text(form, "email")).lower()
     password = str(form.get("password") or "")
     if not email or len(email) > EMAIL_MAX_LENGTH or not password:
         raise FormValidationError("Некорректные данные для входа")
