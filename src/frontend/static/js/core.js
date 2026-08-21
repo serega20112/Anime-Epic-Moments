@@ -141,7 +141,7 @@
           '<img src="' + cover + '" alt="' + escapeHtml(title) + '" loading="lazy" onerror="this.onerror=null;this.src=\'' + NO_COVER + '\';">' +
           (rating ? '<span class="rating-badge">★ ' + rating + '</span>' : "") +
           (genres.length ? '<span class="type-badge">' + escapeHtml(genres[0]) + "</span>" : "") +
-          '<span class="poster-actions"><span class="btn btn-primary btn-sm">Смотреть</span></span>' +
+          '<span class="poster-actions"><button type="button" class="btn btn-sm fav-btn" data-fav-id="' + escapeHtml(String(id)) + '" title="В избранное">🤍</button><span class="btn btn-primary btn-sm">Смотреть</span></span>' +
         "</div>" +
         '<div class="card-body">' +
           '<div class="card-title">' + escapeHtml(title) + "</div>" +

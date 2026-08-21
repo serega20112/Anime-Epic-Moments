@@ -262,7 +262,12 @@
     coverUrl: {{ watch.anime_cover|tojson }},
     genres: {{ watch.genres|tojson }},
     episode: {{ watch.episode|tojson }},
-    isAuthenticated: {{ 'true' if current_user else 'false' }},
+    {% if current_user %}
+    isAuthenticated: true,
+    currentUserId: {{ current_user.id|tojson }},
+    {% else %}
+    isAuthenticated: false,
+    {% endif %}
     sources: []
   };
 </script>

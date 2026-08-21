@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b0d12">
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="auth-user-id" content="{{ current_user.id if current_user else '' }}">
   <title>{% block title %}Anime Epic Moments{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='images/default-avatar.svg') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -138,6 +139,7 @@
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
   <script src="{{ url_for('static', filename='js/core.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/favorites.js') }}"></script>
   <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
   <script src="{{ url_for('static', filename='js/particles.js') }}"></script>
   {% block scripts %}{% endblock %}
