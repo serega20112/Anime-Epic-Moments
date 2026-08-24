@@ -1,10 +1,12 @@
 /* Anime Epic Moments — favorites.js
    Кнопка «в избранное» на карточках аниме:
-   делегирование кликов, POST/DELETE /favorites/, состояние в localStorage. */
+   делегирование кликов, POST/DELETE /favorites/, отрисовка состояния
+   с сервера (GET /favorites/ids/{user_id}), localStorage — только кэш. */
 (function () {
   "use strict";
 
   var STORAGE_PREFIX = "aem_fav_";
+  var refreshTimer = null;
 
   function authUserId() {
     var meta = document.querySelector('meta[name="auth-user-id"]');
@@ -28,7 +30,7 @@
     try {
       localStorage.setItem(storageKey(userId), JSON.stringify(ids));
     } catch (e) {
-      /* приватный режим — игнорируем */
+      return;
     }
   }
 
@@ -49,17 +51,41 @@
   }
 
   function paint(btn, active) {
+    var unchanged = btn.dataset.favPainted === "1" && btn.classList.contains("active") === active;
+    if (unchanged) return;
+    btn.dataset.favPainted = "1";
     btn.classList.toggle("active", active);
     btn.innerHTML = active ? "❤️" : "🤍";
     btn.title = active ? "Убрать из избранного" : "В избранное";
   }
 
+  function paintAll(buttons, userId) {
+    Array.prototype.forEach.call(buttons, function (btn) {
+      paint(btn, isFavorite(userId, btn.dataset.favId));
+    });
+  }
+
   function initButtons() {
     var userId = authUserId();
     if (!userId) return;
-    document.querySelectorAll(".fav-btn[data-fav-id]").forEach(function (btn) {
-      paint(btn, isFavorite(userId, btn.dataset.favId));
-    });
+    var buttons = document.querySelectorAll(".fav-btn[data-fav-id]");
+    if (!buttons.length) return;
+
+    paintAll(buttons, userId);
+    AEM.api("/favorites/ids/" + encodeURIComponent(userId))
+      .then(function (data) {
+        var ids = ((data && data.anime_ids) || []).map(String);
+        saveIds(userId, ids);
+        Array.prototype.forEach.call(buttons, function (btn) {
+          paint(btn, ids.indexOf(String(btn.dataset.favId)) !== -1);
+        });
+      })
+      .catch(function () {});
+  }
+
+  function scheduleInit() {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(initButtons, 150);
   }
 
   document.addEventListener("click", function (event) {
@@ -91,5 +117,26 @@
       });
   });
 
-  document.addEventListener("DOMContentLoaded", initButtons);
+  document.addEventListener("DOMContentLoaded", function () {
+    initButtons();
+    if (typeof MutationObserver === "function") {
+      var observer = new MutationObserver(function (mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+          var added = mutations[i].addedNodes;
+          for (var j = 0; j < added.length; j++) {
+            var node = added[j];
+            if (
+              node.nodeType === 1 &&
+              (node.matches(".fav-btn[data-fav-id]") ||
+                node.querySelector(".fav-btn[data-fav-id]"))
+            ) {
+              scheduleInit();
+              return;
+            }
+          }
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  });
 })();

@@ -39,16 +39,27 @@
   }
 
   function collectState() {
-    var genreChip = document.querySelector("#genre-chips .filter-chip.active");
+    var activeChips = document.querySelectorAll(
+      "#genre-chips .filter-chip.active, #demographic-chips .filter-chip.active"
+    );
+    var categories = [];
+    Array.prototype.forEach.call(activeChips, function (chip) {
+      var value = chip.getAttribute("data-value");
+      if (value) categories.push(value);
+    });
     var type = document.getElementById("filter-type");
     var status = document.getElementById("filter-status");
     var score = document.getElementById("filter-score");
     var sort = document.getElementById("filter-sort");
+    var yearFrom = document.getElementById("filter-year-from");
+    var yearTo = document.getElementById("filter-year-to");
     return {
-      genre: genreChip ? genreChip.getAttribute("data-value") : "",
+      genre: categories.join(","),
       type: type ? type.value : "",
       status: status ? status.value : "",
       min_score: score ? score.value : "",
+      year_from: yearFrom ? yearFrom.value : "",
+      year_to: yearTo ? yearTo.value : "",
       sort: sort ? sort.value : "rating",
     };
   }
@@ -58,7 +69,7 @@
     var params = new URLSearchParams();
     params.set("limit", "30");
     params.set("order", "desc");
-    ["genre", "type", "status", "min_score", "sort"].forEach(function (name) {
+    ["genre", "type", "status", "min_score", "year_from", "year_to", "sort"].forEach(function (name) {
       if (state[name]) params.set(name, state[name]);
     });
     setLoading(true);
@@ -76,12 +87,24 @@
   }
 
   function bindGenreChips() {
-    var chips = document.querySelectorAll("#genre-chips .filter-chip");
+    var chips = document.querySelectorAll("#genre-chips .filter-chip, #demographic-chips .filter-chip");
+    var anyChip = document.querySelector('#genre-chips .filter-chip[data-value=""]');
     Array.prototype.forEach.call(chips, function (chip) {
       chip.addEventListener("click", function () {
+        if (chip.getAttribute("data-value") === "") {
+          Array.prototype.forEach.call(chips, function (other) {
+            other.classList.toggle("active", other === chip);
+          });
+          return;
+        }
+        chip.classList.toggle("active");
+        var anyActive = false;
         Array.prototype.forEach.call(chips, function (other) {
-          other.classList.toggle("active", other === chip);
+          if (other.getAttribute("data-value") !== "" && other.classList.contains("active")) {
+            anyActive = true;
+          }
         });
+        if (anyChip) anyChip.classList.toggle("active", !anyActive);
       });
     });
   }
@@ -97,7 +120,7 @@
     });
     if (reset) {
       reset.addEventListener("click", function () {
-        var chips = document.querySelectorAll("#genre-chips .filter-chip");
+        var chips = document.querySelectorAll("#genre-chips .filter-chip, #demographic-chips .filter-chip");
         Array.prototype.forEach.call(chips, function (chip) {
           chip.classList.toggle("active", chip.getAttribute("data-value") === "");
         });
@@ -107,6 +130,10 @@
         });
         var sort = document.getElementById("filter-sort");
         if (sort) sort.value = "rating";
+        var yearFrom = document.getElementById("filter-year-from");
+        var yearTo = document.getElementById("filter-year-to");
+        if (yearFrom) yearFrom.value = "";
+        if (yearTo) yearTo.value = "";
         loadCatalog();
       });
     }
@@ -114,12 +141,22 @@
 
   function applyInitial() {
     var initial = (window.AEMCatalogPage || {}).initial || {};
-    var chips = document.querySelectorAll("#genre-chips .filter-chip");
+    var selected = String(initial.genre || "").split(",").map(function (value) {
+      return value.trim();
+    });
+    var chips = document.querySelectorAll("#genre-chips .filter-chip, #demographic-chips .filter-chip");
     Array.prototype.forEach.call(chips, function (chip) {
-      var on = chip.getAttribute("data-value") === (initial.genre || "");
+      var on = selected.indexOf(chip.getAttribute("data-value")) !== -1;
       chip.classList.toggle("active", on);
     });
-    var map = { type: "filter-type", status: "filter-status" };
+    var map = {
+      type: "filter-type",
+      status: "filter-status",
+      min_score: "filter-score",
+      sort: "filter-sort",
+      year_from: "filter-year-from",
+      year_to: "filter-year-to",
+    };
     Object.keys(map).forEach(function (key) {
       var el = document.getElementById(map[key]);
       if (el && initial[key]) el.value = initial[key];

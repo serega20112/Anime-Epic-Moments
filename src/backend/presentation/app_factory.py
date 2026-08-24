@@ -76,6 +76,19 @@ def create_app() -> FastAPI:
     )
 
     @app.middleware("http")
+    async def static_revalidation_middleware(request: Request, call_next):
+        """Require revalidation of static assets so deploys reach users instantly.
+
+        Without Cache-Control browsers heuristic-cache CSS/JS and keep showing a
+        stale UI after files change. ``no-cache`` keeps caching but forces an
+        If-Modified-Since round trip, which StaticFiles answers with 304.
+        """
+        response = await call_next(request)
+        if request.url.path.startswith("/static/"):
+            response.headers.setdefault("Cache-Control", "no-cache")
+        return response
+
+    @app.middleware("http")
     async def request_logging_middleware(request: Request, call_next):
         """Assign a request ID, correlate logs, and report latency.
 

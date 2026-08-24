@@ -8,6 +8,7 @@ from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.services.recommendation_service import RecommendationService
 from backend.application.use_cases import GetFavoritesUseCase
 from backend.application.use_cases.favorite.add_favorite import AddFavoriteUseCase
+from backend.application.use_cases.favorite.get_favorite_ids import GetFavoriteIdsUseCase
 from backend.application.use_cases.favorite.remove_favorite import RemoveFavoriteUseCase
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from backend.infrastructure.external import AnimeApiClient
@@ -85,3 +86,18 @@ class FavoriteUseCaseProvider(Provider):
             GetFavoritesUseCase: Configured use case.
         """
         return GetFavoritesUseCase(favorite_repository, anime_api_client)
+
+    @provide(scope=Scope.REQUEST)
+    async def get_favorite_ids(
+        self,
+        favorite_repository: FavoriteRepository,
+    ) -> GetFavoriteIdsUseCase:
+        """Provide the get favorite ids use case.
+
+        Args:
+            favorite_repository: Favorite repository.
+
+        Returns:
+            GetFavoriteIdsUseCase: Configured use case.
+        """
+        return GetFavoriteIdsUseCase(favorite_repository)

@@ -262,7 +262,7 @@ class AnimeApiClient:
         """Browse anime with Anixart-like filters, racing Jikan and AniList.
 
         Args:
-            genre: Selected genre name or empty string for all.
+            genre: Comma-separated genre/tag names or empty string for all.
             media_type: Format filter (tv, movie, ova, ona, special). Empty means all.
             status: Status filter (airing, complete, upcoming). Empty means all.
             year_from: Optional lower bound release year.
@@ -316,6 +316,7 @@ class AnimeApiClient:
                 year_to=year_to,
                 min_score=min_score,
                 sort=sort_key,
+                order=order_key,
                 limit=limit,
             ),
         )

@@ -19,7 +19,7 @@ class HighlightPolicy:
         """
         if user_id is None:
             return highlights_this_hour < HighlightPolicy.GUEST_MAX_PER_HOUR
-        return True  #
+        return True
 
     @staticmethod
     def filter_spoiler_content(description: str) -> bool:
@@ -27,7 +27,7 @@ class HighlightPolicy:
 
         Возвращает True, если описание безопасно.
         """
-        banned_words = ["мат", "спам", "вред"]  # пример
+        banned_words = ["мат", "спам", "вред"]
         description_lower = description.lower()
         return not any(word in description_lower for word in banned_words)
 

@@ -36,6 +36,7 @@ class JikanAnimeClient:
         "Harem": 35,
         "Historical": 13,
         "Horror": 14,
+        "Josei": 43,
         "Kids": 15,
         "Magic": 16,
         "Martial Arts": 17,
@@ -58,6 +59,8 @@ class JikanAnimeClient:
         "Thriller": 41,
         "Vampire": 32,
     }
+
+    genre_id_by_lower = {name.lower(): genre_id for name, genre_id in genre_id_map.items()}
 
     def __init__(self, session: httpx.AsyncClient, base_url: str = JIKAN_BASE_URL):
         """Initialize the client.
@@ -177,7 +180,7 @@ class JikanAnimeClient:
         """Filter and sort anime through the Jikan /anime endpoint.
 
         Args:
-            genre: Selected genre name.
+            genre: Comma-separated genre names.
             media_type: Format filter value.
             status: Status filter value.
             year_from: Optional lower bound release year.
@@ -191,9 +194,13 @@ class JikanAnimeClient:
             list[Anime]: Filtered and sorted anime, or an empty list on failure.
         """
         params: dict[str, object] = {"limit": limit, "sfw": "true"}
-        genre_id = self.genre_id_map.get(str(genre).strip().title())
-        if genre_id:
-            params["genres"] = genre_id
+        genre_ids = []
+        for genre_name in str(genre or "").split(","):
+            genre_id = self.genre_id_by_lower.get(genre_name.strip().lower())
+            if genre_id:
+                genre_ids.append(genre_id)
+        if genre_ids:
+            params["genres"] = ",".join(str(genre_id) for genre_id in genre_ids)
         normalized_type = str(media_type).strip().lower()
         if normalized_type in {"tv", "movie", "ova", "ona", "special", "music"}:
             params["type"] = normalized_type

@@ -36,6 +36,17 @@
         </div>
       </div>
 
+      <div class="filter-group">
+        <span class="filter-label">Аудитория</span>
+        <div class="filter-chips" id="demographic-chips">
+          <button type="button" class="filter-chip" data-value="Shounen">Сёнэн</button>
+          <button type="button" class="filter-chip" data-value="Shoujo">Сёдзё</button>
+          <button type="button" class="filter-chip" data-value="Seinen">Сэйнэн</button>
+          <button type="button" class="filter-chip" data-value="Josei">Дзёсэй</button>
+          <button type="button" class="filter-chip" data-value="Kids">Кодомо</button>
+        </div>
+      </div>
+
       <div class="filter-row">
         <div class="filter-field">
           <span class="filter-label">Формат</span>
@@ -68,6 +79,16 @@
             <option value="7">7+</option>
             <option value="6">6+</option>
           </select>
+        </div>
+
+        <div class="filter-field">
+          <span class="filter-label">Год от</span>
+          <input type="number" id="filter-year-from" class="filter-select" min="1950" max="2100" placeholder="1960">
+        </div>
+
+        <div class="filter-field">
+          <span class="filter-label">Год до</span>
+          <input type="number" id="filter-year-to" class="filter-select" min="1950" max="2100" placeholder="2026">
         </div>
 
         <div class="filter-field">

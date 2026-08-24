@@ -18,12 +18,11 @@ async def test_encrypt_decrypt_roundtrip_for_32_char_tokens():
 async def test_encrypt_reverses_and_splits_parts():
     token = "1234567890abcdefghijklmnopqrstuv"
     obfuscated = await encrypt_token(token)
-    # p2[::-1] + p1[::-1]; длина p1=16
-    assert len(obfuscated) == 2 * 24  # 2 * base64(16 байт)
+    assert len(obfuscated) == 2 * 24
 
 
 async def test_candidates_prefer_configured_token(tmp_path):
-    token = "abcd" * 8  # 32 символа
+    token = "abcd" * 8
     tokens_path = tmp_path / "tokens.json"
     tokens_path.write_text(
         json.dumps({"stable": [{"tokn": await encrypt_token(token)}]}),

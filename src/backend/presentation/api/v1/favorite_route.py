@@ -9,7 +9,11 @@ from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 from fastapi.responses import Response
 
-from backend.application.use_cases import GenerateRecommendationsUseCase, GetFavoritesUseCase
+from backend.application.use_cases import (
+    GenerateRecommendationsUseCase,
+    GetFavoriteIdsUseCase,
+    GetFavoritesUseCase,
+)
 from backend.application.use_cases.favorite.add_favorite import AddFavoriteUseCase
 from backend.application.use_cases.favorite.remove_favorite import RemoveFavoriteUseCase
 from backend.infrastructure.web import render_template
@@ -76,6 +80,26 @@ async def remove_favorite(request: Request, use_case: FromDishka[RemoveFavoriteU
         anime_id=payload["anime_id"],
     )
     return Response(status_code=HTTPStatus.NO_CONTENT)
+
+
+@favorite_router.get("/ids/{user_id}", name="favorite.get_favorite_ids")
+async def get_favorite_ids(
+    request: Request,
+    user_id: int,
+    use_case: FromDishka[GetFavoriteIdsUseCase],
+):
+    """Return the user's favorite anime ids as JSON.
+
+    Args:
+        request: Current HTTP request.
+        user_id: User ID from path.
+        use_case: Get favorite ids use case.
+
+    Returns:
+        dict: Payload with favorite anime ids.
+    """
+    anime_ids = await use_case.execute(user_id=user_id)
+    return {"user_id": user_id, "anime_ids": anime_ids}
 
 
 @favorite_router.get("/{user_id}", name="favorite.get_favorites")

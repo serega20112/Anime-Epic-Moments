@@ -63,30 +63,30 @@ def detect_profile_mood(
     if normalized_genres & dark_markers or normalized_emotions & {"sad", "tense", "dark"}:
         return ProfileMoodInsight(
             label="Тёмный вайб",
-            description="Ты явно тянешься к драме, напряжению и тяжёлым эмоциям.",
+            description="Вы явно тянитесь к драме, напряжению и тяжёлым эмоциям.",
             emoji="😈",
         )
     if normalized_genres & action_markers or normalized_emotions & {"hype", "epic", "adrenaline"}:
         return ProfileMoodInsight(
             label="Боевой драйв",
-            description="Тебя цепляет скорость, экшен и моменты, где всё летит вразнос.",
+            description="Вас цепляет скорость, экшен и моменты, где всё летит вразнос.",
             emoji="🔥",
         )
     if normalized_genres & cozy_markers or normalized_emotions & {"funny", "warm", "cute"}:
         return ProfileMoodInsight(
             label="Уютный режим",
-            description="Ты любишь лёгкие, тёплые и расслабляющие тайтлы.",
+            description="Вы любите лёгкие, тёплые и расслабляющие тайтлы.",
             emoji="✨",
         )
     if normalized_genres & fantasy_markers:
         return ProfileMoodInsight(
             label="Приключенческий радар",
-            description="Тебя стабильно уводит в новые миры, магию и путешествия.",
+            description="Вас стабильно уводит в новые миры, магию и путешествия.",
             emoji="🗺️",
         )
     return ProfileMoodInsight(
         label="Смешанный вкус",
-        description="У тебя широкий профиль без одного доминирующего настроения.",
+        description="У вас широкий профиль без одного доминирующего настроения.",
         emoji="🎭",
     )
 
@@ -106,7 +106,7 @@ def build_achievement_badges(
             AchievementBadge(
                 code="binge_watcher",
                 title="Биндж-марафонец",
-                description="Набрал двузначное число часов просмотра и явно не умеешь останавливаться на одной серии.",
+                description="Вы набрали двузначное число часов просмотра и явно не умеете останавливаться на одной серии.",
                 icon="⏱️",
                 rarity="rare",
             )
@@ -116,7 +116,7 @@ def build_achievement_badges(
             AchievementBadge(
                 code="moment_hunter",
                 title="Охотник за моментами",
-                description="Регулярно вырезаешь лучшие сцены и превращаешь просмотр в контент.",
+                description="Вы регулярно вырезаете лучшие сцены и превращаете просмотр в контент.",
                 icon="🎬",
                 rarity="epic",
             )
@@ -126,7 +126,7 @@ def build_achievement_badges(
             AchievementBadge(
                 code="collector",
                 title="Коллекционер вайба",
-                description="Собираешь моменты не импульсивно, а впрок, как нормальный куратор.",
+                description="Вы собираете моменты не импульсивно, а впрок, как настоящий куратор.",
                 icon="📚",
                 rarity="rare",
             )
@@ -136,7 +136,7 @@ def build_achievement_badges(
             AchievementBadge(
                 code="crowd_favorite",
                 title="Любимец фида",
-                description="Твои хайлайты уже стабильно собирают отклик у других зрителей.",
+                description="Ваши хайлайты уже стабильно собирают отклик у других зрителей.",
                 icon="💥",
                 rarity="legendary",
             )
@@ -148,7 +148,7 @@ def build_achievement_badges(
                 AchievementBadge(
                     code=f"genre_{top_genre.name.lower().replace(' ', '_')}",
                     title=f"Фанат жанра: {top_genre.name}",
-                    description=f"Жанр {top_genre.name} встречается у тебя чаще всего и уже стал частью вкусового профиля.",
+                    description=f"Жанр {top_genre.name} встречается у вас чаще всего и уже стал частью вкусового профиля.",
                     icon="🎯",
                     rarity="common",
                 )
@@ -158,7 +158,7 @@ def build_achievement_badges(
             AchievementBadge(
                 code="dark_soul",
                 title="Тёмная душа",
-                description="Судя по выбору, тебя не интересуют безопасные истории без напряжения.",
+                description="Судя по выбору, вас не интересуют безопасные истории без напряжения.",
                 icon="🌒",
                 rarity="rare",
             )

@@ -10,7 +10,7 @@ class FilterAnimeCatalogQuery:
     """Query parameters for browsing anime by Anixart-style filters.
 
     Attributes:
-        genre: Selected genre name or empty for all.
+        genre: Comma-separated genre/tag names or empty for all.
         media_type: Format filter (tv, movie, ova, ona, special) or empty.
         status: Status filter (airing, complete, upcoming) or empty.
         year_from: Optional lower bound release year.

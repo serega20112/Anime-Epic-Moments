@@ -34,6 +34,7 @@ from backend.application.use_cases.collection.get_user_collections import GetUse
 from backend.application.use_cases.collection.remove_collection_item import (
     RemoveCollectionItemUseCase,
 )
+from backend.application.use_cases.favorite.get_favorite_ids import GetFavoriteIdsUseCase
 from backend.application.use_cases.favorite.get_favorites import GetFavoritesUseCase
 from backend.application.use_cases.highlight.crud.delete_highlight import DeleteHighlightUseCase
 from backend.application.use_cases.highlight.crud.edit_highlight import EditHighlightUseCase
@@ -134,6 +135,7 @@ __all__ = [
     "FilterAnimeCatalogUseCase",
     "GenerateRecommendationsUseCase",
     "GetAnimeDiscussionUseCase",
+    "GetFavoriteIdsUseCase",
     "GetFavoritesUseCase",
     "GetFollowingHighlightsUseCase",
     "GetEpisodeReactionsUseCase",

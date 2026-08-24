@@ -15,7 +15,7 @@ class Anime:
         cover_url: str | None = None,
         episode_count: int | None = None,
     ):
-        self.external_id = external_id  # ID из Jikan/AniList
+        self.external_id = external_id
         self.title = title
         self.description = description
         self.genres = genres or []

@@ -15,7 +15,7 @@ class SearchAnimeByDescriptionQuery:
         year_from: Optional lower bound for release year.
         year_to: Optional upper bound for release year.
         min_rating: Optional minimum rating threshold.
-        age_rating: Age rating filter (all, 12+, 16+, 18+).
+        age_rating: Age rating filter (all, 6+, 12+, 16+, 18+).
         adult_confirmed: Whether the user confirmed adult content access.
         sort_by: Sorting strategy (match, rating, year).
         limit: Maximum number of results to return.

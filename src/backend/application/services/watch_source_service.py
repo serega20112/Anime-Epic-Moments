@@ -124,7 +124,6 @@ class WatchSourceSyncService:
                     translation_key[2],
                     str(item.quality_label or "").strip().lower(),
                 )
-                # Не плодим дубли качества для одной озвучки (например, "1080, 1080").
                 if quality_key in stored_quality_seen:
                     continue
                 stored_quality_seen.add(quality_key)
@@ -164,8 +163,6 @@ class WatchSourceSyncService:
         if normalized and normalized not in variants:
             variants.append(normalized)
 
-        # Убираем маркер сезона, чтобы "Grand Blue Season 2"/"Grand Blue S2"
-        # матчился с релизом, названным просто "Grand Blue".
         seasonless = re.sub(
             r"\b(?:season|сезон)\s*\d+\b|\bs\d+\b",
             "",

@@ -15,3 +15,7 @@ class FavoriteRepository(ABC):
     @abstractmethod
     async def get_by_user(self, user_id: int) -> list[Favorite]:
         """Возвращает все избранные аниме пользователя"""
+
+    @abstractmethod
+    async def get_favorite_ids(self, user_id: int) -> list[int]:
+        """Возвращает только id избранных аниме пользователя"""

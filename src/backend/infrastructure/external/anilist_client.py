@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 import httpx
 
 from backend.domain.entities.anime.anime import Anime
@@ -12,6 +15,27 @@ from backend.infrastructure.external.mapping.anime import (
 )
 
 ANILIST_BASE_URL = "https://graphql.anilist.co"
+
+ANILIST_GENRES = {
+    "Action",
+    "Adventure",
+    "Comedy",
+    "Drama",
+    "Ecchi",
+    "Fantasy",
+    "Horror",
+    "Mahou Shoujo",
+    "Mecha",
+    "Music",
+    "Mystery",
+    "Psychological",
+    "Romance",
+    "Sci-Fi",
+    "Slice of Life",
+    "Sports",
+    "Supernatural",
+    "Thriller",
+}
 
 
 class AniListSearchError(ExternalServiceError):
@@ -322,18 +346,20 @@ class AniListAnimeClient:
         year_to: int | None,
         min_score: float | None,
         sort: str,
+        order: str = "desc",
         limit: int,
     ) -> list[Anime]:
         """Filter and sort anime via an AniList GraphQL fallback.
 
         Args:
-            genre: Selected genre name.
+            genre: Comma-separated genre/tag names.
             media_type: Format filter value.
             status: Status filter value.
             year_from: Optional lower bound release year.
             year_to: Optional upper bound release year.
             min_score: Optional minimum normalized rating.
             sort: Normalized sort key.
+            order: Sorting direction (asc, desc).
             limit: Maximum number of results.
 
         Returns:
@@ -347,83 +373,148 @@ class AniListAnimeClient:
             "special": "SPECIAL",
         }
         status_map = {"airing": "RELEASING", "complete": "FINISHED", "upcoming": "NOT_YET_RELEASED"}
+        direction = "asc" if str(order).strip().lower() == "asc" else "desc"
         sort_map = {
-            "rating": "SCORE_DESC",
-            "popularity": "POPULARITY_DESC",
-            "newest": "START_DATE_DESC",
-            "title": "TITLE_ROMAJI",
+            "rating": {"desc": "SCORE_DESC", "asc": "SCORE"},
+            "popularity": {"desc": "POPULARITY_DESC", "asc": "POPULARITY"},
+            "newest": {"desc": "START_DATE_DESC", "asc": "START_DATE"},
+            "title": {"desc": "TITLE_ROMAJI_DESC", "asc": "TITLE_ROMAJI"},
         }
 
-        # Собираем media-аргументы и переменные только для заданных фильтров,
-        # чтобы не передавать AniList значения типа genre_in: [null] (это 400).
-        args = ["type: ANIME", "isAdult: false", "sort: PLACEHOLDER_SORT"]
-        declarations = ["$perPage: Int"]
-        variables: dict[str, object] = {"perPage": int(limit)}
+        selected = [part.strip() for part in str(genre or "").split(",") if part.strip()]
+        selected_genres = [name for name in selected if name in ANILIST_GENRES]
+        selected_tags = [name for name in selected if name not in ANILIST_GENRES]
 
-        if genre:
-            args.append("genre_in: [$genre]")
-            declarations.append("$genre: String")
-            variables["genre"] = str(genre).strip()
+        async def run_query(use_genres: bool, use_tags: bool) -> list[Anime]:
+            """Execute one catalog query with the requested category filters.
 
-        normalized_type = str(media_type).strip().lower()
-        if normalized_type in format_map:
-            args.append("format: $format")
-            declarations.append("$format: MediaFormat")
-            variables["format"] = format_map[normalized_type]
+            Args:
+                use_genres: Apply genre_in filter with selected genres.
+                use_tags: Apply tag_in filter with selected tags.
 
-        normalized_status = str(status).strip().lower()
-        if normalized_status in status_map:
-            args.append("status: $status")
-            declarations.append("$status: MediaStatus")
-            variables["status"] = status_map[normalized_status]
-
-        if isinstance(year_from, int):
-            args.append("seasonYear_greater: $yearGreater")
-            declarations.append("$yearGreater: FuzzyDateInt")
-            variables["yearGreater"] = year_from - 1
-        if isinstance(year_to, int):
-            args.append("seasonYear_lesser: $yearLess")
-            declarations.append("$yearLess: FuzzyDateInt")
-            variables["yearLess"] = year_to + 1
-        if isinstance(min_score, (int, float)) and 0 <= float(min_score) <= 10:
-            args.append("averageScore_greater: $minScore")
-            declarations.append("$minScore: Int")
-            variables["minScore"] = int(float(min_score) * 10)
-
-        query = (
+            Returns:
+                list[Anime]: Mapped anime, or an empty list on failure.
             """
-            query (__DECLARATIONS__) {
-              Page(perPage: $perPage) {
-                media(__ARGS__) {
-                  id
-                  idMal
-                  episodes
-                  title { romaji english native }
-                  description
-                  genres
-                  seasonYear
-                  averageScore
-                  coverImage { large }
-                }
-              }
-            }
-            """.replace("__DECLARATIONS__", ", ".join(declarations))
-            .replace("__ARGS__", " ".join(args))
-            .replace("PLACEHOLDER_SORT", sort_map.get(sort, "SCORE_DESC"))
-        )
-        try:
-            resp = await self.session.post(
-                self.base_url,
-                json={"query": query, "variables": variables},
-            )
-            resp.raise_for_status()
-            data = resp.json().get("data", {}).get("Page", {}).get("media", [])
-        except (httpx.HTTPError, ValueError, KeyError, TypeError):
-            return []
+            args = ["type: ANIME", "isAdult: false", "sort: PLACEHOLDER_SORT"]
+            declarations = ["$perPage: Int"]
+            variables: dict[str, object] = {"perPage": int(limit)}
 
-        result = []
-        for item in data:
-            if await is_nsfw_anilist(item):
-                continue
-            result.append(await build_anime_from_anilist_item(item, fallback_to_anilist_id=True))
-        return result
+            if use_genres and selected_genres:
+                args.append("genre_in: $genre")
+                declarations.append("$genre: [String]")
+                variables["genre"] = selected_genres
+            if use_tags and selected_tags:
+                args.append("tag_in: $tag")
+                declarations.append("$tag: [String]")
+                variables["tag"] = selected_tags
+
+            normalized_type = str(media_type).strip().lower()
+            if normalized_type in format_map:
+                args.append("format: $format")
+                declarations.append("$format: MediaFormat")
+                variables["format"] = format_map[normalized_type]
+
+            normalized_status = str(status).strip().lower()
+            if normalized_status in status_map:
+                args.append("status: $status")
+                declarations.append("$status: MediaStatus")
+                variables["status"] = status_map[normalized_status]
+
+            if isinstance(year_from, int):
+                args.append("startDate_greater: $yearGreater")
+                declarations.append("$yearGreater: FuzzyDateInt")
+                variables["yearGreater"] = int(f"{year_from - 1}1231")
+            if isinstance(year_to, int):
+                args.append("startDate_lesser: $yearLess")
+                declarations.append("$yearLess: FuzzyDateInt")
+                variables["yearLess"] = int(f"{year_to}1231")
+            if isinstance(min_score, (int, float)) and 0 <= float(min_score) <= 10:
+                args.append("averageScore_greater: $minScore")
+                declarations.append("$minScore: Int")
+                variables["minScore"] = int(float(min_score) * 10)
+
+            query = (
+                """
+                query (__DECLARATIONS__) {
+                  Page(perPage: $perPage) {
+                    media(__ARGS__) {
+                      id
+                      idMal
+                      episodes
+                      title { romaji english native }
+                      description
+                      genres
+                      seasonYear
+                      averageScore
+                      coverImage { large }
+                    }
+                  }
+                }
+                """.replace("__DECLARATIONS__", ", ".join(declarations))
+                .replace("__ARGS__", " ".join(args))
+                .replace("PLACEHOLDER_SORT", sort_map.get(sort, {}).get(direction, "SCORE_DESC"))
+            )
+            try:
+                resp = await self.session.post(
+                    self.base_url,
+                    json={"query": query, "variables": variables},
+                )
+                resp.raise_for_status()
+                data = resp.json().get("data", {}).get("Page", {}).get("media", [])
+            except (httpx.HTTPError, ValueError, KeyError, TypeError):
+                return []
+
+            result = []
+            for item in data:
+                if await is_nsfw_anilist(item):
+                    continue
+                result.append(
+                    await build_anime_from_anilist_item(item, fallback_to_anilist_id=True)
+                )
+            return result
+
+        if selected_genres and selected_tags:
+            merged = await run_query(True, False)
+            seen = {(item.external_id or "", item.title) for item in merged}
+            for item in await run_query(False, True):
+                if (item.external_id or "", item.title) not in seen:
+                    seen.add((item.external_id or "", item.title))
+                    merged.append(item)
+            return self._sort_catalog_items(merged, sort, direction)[: int(limit)]
+        if selected_genres:
+            return await run_query(True, False)
+        if selected_tags:
+            return await run_query(False, True)
+        return await run_query(False, False)
+
+    @staticmethod
+    def _sort_catalog_items(items: list[Anime], sort: str, direction: str) -> list[Anime]:
+        """Re-sort merged results when several queries were combined.
+
+        Args:
+            items: Mapped anime list.
+            sort: Normalized sort key.
+            direction: Sorting direction (asc, desc).
+
+        Returns:
+            list[Anime]: Sorted list.
+        """
+        reverse = direction != "asc"
+
+        def by_year(anime: Anime) -> float:
+            return anime.year or 0
+
+        def by_title(anime: Anime) -> str:
+            return (anime.title or "").lower()
+
+        def by_rating(anime: Anime) -> float:
+            return anime.rating or 0
+
+        key: Callable[[Anime], Any]
+        if sort == "newest":
+            key = by_year
+        elif sort == "title":
+            key = by_title
+        else:
+            key = by_rating
+        return sorted(items, key=key, reverse=reverse)

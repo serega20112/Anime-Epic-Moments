@@ -174,8 +174,6 @@ class KodikClient(WatchSourceProvider):
         requested_title: str,
         requested_year: int | None,
     ) -> bool:
-        # Год не используем как решающий фильтр: у разных озвучек/издателей
-        # Kodik может присылать разный год, а сам перезапрос уже шёл с тайтлом.
         material_year = material.get("year")
         year_matches = not (
             requested_year
@@ -205,8 +203,6 @@ class KodikClient(WatchSourceProvider):
             ):
                 return year_matches or bool(material.get("link"))
 
-        # If no title match but we have a direct link, keep it: Kodik returns
-        # a separate material per translation and titles may vary slightly.
         return bool(material.get("link"))
 
     async def _extract_episode_link(self, material: dict, episode: int) -> str | None:

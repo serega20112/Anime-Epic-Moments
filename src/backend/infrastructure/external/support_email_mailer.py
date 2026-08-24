@@ -39,7 +39,7 @@ class SupportEmailMailer:
             await asyncio.to_thread(self._deliver_via_smtp, message)
         except (OSError, smtplib.SMTPException) as error:
             raise ExternalServiceUnavailableError(
-                "Не удалось отправить тикет по email. Проверь SMTP и SUPPORT_EMAIL_TO.",
+                "Не удалось отправить тикет по email. Проверьте SMTP и SUPPORT_EMAIL_TO.",
                 service_name="smtp",
             ) from error
 

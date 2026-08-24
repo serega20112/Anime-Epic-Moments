@@ -75,6 +75,20 @@ class FavoriteRepository:
             for r in result.scalars().all()
         ]
 
+    async def get_favorite_ids(self, user_id: int) -> list[int]:
+        """Return only favorite anime ids for a user.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            list[int]: Favorite anime identifiers.
+        """
+        result = await self.session.execute(
+            select(FavoriteModel.anime_id).where(FavoriteModel.user_id == user_id)
+        )
+        return [int(anime_id) for anime_id in result.scalars().all()]
+
     async def _dump_genres(self, genres: list[str] | None) -> str | None:
         if not genres:
             return None

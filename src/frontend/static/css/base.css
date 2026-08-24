@@ -1347,6 +1347,28 @@ html[data-theme="rose"] .logo {
   margin-top: var(--space-5);
 }
 
+/* Фильтры в модалке поиска */
+.fm-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fm-filters .filter-chip {
+  padding: 7px 14px;
+  font-size: var(--text-sm);
+}
+
+.fm-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.fm-actions .btn {
+  flex: 1;
+}
+
 /* ============================================================
    Состояния
    ============================================================ */

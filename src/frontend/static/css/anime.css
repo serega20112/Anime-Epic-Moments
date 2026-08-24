@@ -30,6 +30,41 @@
   align-items: stretch;
 }
 
+/* Поле ввода с иконками (лупа + фильтры) внутри пилюли */
+.search-field {
+  position: relative;
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.search-bar .search-field input {
+  flex: 1;
+  padding-right: 52px;
+}
+
+.search-field .search-filter-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--color-text-faint);
+  background: transparent;
+  transition: color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.search-field .search-filter-btn:hover {
+  color: var(--color-accent);
+  background: var(--button-ghost-bg-hover);
+  box-shadow: var(--glow-accent);
+}
+
 .search-bar input,
 .search-bar textarea {
   flex: 1;
@@ -174,6 +209,19 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  text-align: left;
+}
+
+.filter-panel .filter-row {
+  align-items: end;
+}
+
+.filter-panel .filter-submit {
+  align-self: end;
+}
+
+.filter-panel .filter-submit .btn {
+  min-height: 41px;
 }
 
 .filter-label {
@@ -208,10 +256,27 @@
   color: var(--color-text);
 }
 
+.filter-chip::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  overflow: hidden;
+  vertical-align: bottom;
+  transition: width var(--transition-fast);
+}
+
 .filter-chip.active {
   background: var(--color-accent);
   border-color: var(--color-accent);
   color: var(--color-text-inverse, #fff);
+  box-shadow: 0 0 10px var(--color-accent);
+  font-weight: 600;
+}
+
+.filter-chip.active::before {
+  content: "✓";
+  width: auto;
+  margin-right: 5px;
 }
 
 .filter-row {
@@ -234,9 +299,20 @@
 .filter-submit {
   display: flex;
   gap: var(--space-2);
+  grid-column: span 2;
 }
 
 .filter-submit .btn {
   flex: 1;
   white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-submit {
+    grid-column: 1 / -1;
+  }
 }

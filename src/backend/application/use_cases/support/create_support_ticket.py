@@ -176,7 +176,7 @@ class CreateSupportTicketUseCase:
     async def _validate_username(self, value: str) -> None:
         """Проверяет корректность имени пользователя."""
         if not value or len(value) > 40:
-            raise InvalidSupportTicketError("Укажи имя или ник длиной до 40 символов")
+            raise InvalidSupportTicketError("Укажите имя или ник длиной до 40 символов")
 
     async def _validate_subject(self, value: str) -> None:
         """Проверяет тему тикета."""
@@ -191,7 +191,7 @@ class CreateSupportTicketUseCase:
     async def _validate_channel(self, value: str) -> None:
         """Проверяет допустимость выбранного канала доставки."""
         if not is_support_channel(value):
-            raise InvalidSupportTicketError("Выбери способ отправки тикета")
+            raise InvalidSupportTicketError("Выберите способ отправки тикета")
 
     async def _validate_page_url(self, value: str | None) -> None:
         """Проверяет, что page_url пустой, относительный или http(s)-адрес."""
@@ -203,7 +203,7 @@ class CreateSupportTicketUseCase:
             return
         parsed = urlparse(value)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise InvalidSupportTicketError("Укажи корректный адрес страницы")
+            raise InvalidSupportTicketError("Укажите корректный адрес страницы")
 
     async def _delivery_provider(self, channel: str):
         """Возвращает сервис доставки для выбранного support-канала."""

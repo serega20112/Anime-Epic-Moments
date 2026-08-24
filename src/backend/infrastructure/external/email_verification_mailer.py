@@ -31,7 +31,7 @@ class EmailVerificationMailer:
         message["From"] = Settings.smtp_from_email
         message["To"] = email
         message.set_content(
-            "Подтверди email для Anime Epic Moments.\n\n"
+            "Подтвердите email для Anime Epic Moments.\n\n"
             f"Код подтверждения: {code}\n\n"
             f"Код действует {Settings.email_verification_expire_minutes} минут.\n"
             f"Тема письма: {await self._theme_label(normalized_theme)}."
@@ -45,7 +45,7 @@ class EmailVerificationMailer:
             await asyncio.to_thread(self._deliver_via_smtp, message)
         except (OSError, smtplib.SMTPException) as error:
             raise ExternalServiceUnavailableError(
-                "Не удалось отправить письмо с кодом подтверждения. Проверь SMTP-настройки и сетевой доступ.",
+                "Не удалось отправить письмо с кодом подтверждения. Проверьте SMTP-настройки и сетевой доступ.",
                 service_name="smtp",
             ) from error
 
@@ -86,7 +86,7 @@ class EmailVerificationMailer:
             f"{label}</div>"
             f"<h1 style='margin:18px 0 8px;font-size:28px;line-height:1.2;color:{palette['title']};'>{title}</h1>"
             f"<p style='margin:0;font-size:15px;line-height:1.6;color:{palette['muted']};'>"
-            "Подтверди почту для Anime Epic Moments и заверши регистрацию."
+            "Подтвердите почту для Anime Epic Moments и завершите регистрацию."
             "</p>"
             "</div>"
             "<div style='padding:28px;'>"
@@ -98,7 +98,7 @@ class EmailVerificationMailer:
             f"color:{palette['code_text']};font-size:34px;font-weight:800;letter-spacing:0.28em;'>"
             f"{safe_code}</div>"
             f"<p style='margin:18px 0 0;font-size:14px;line-height:1.7;color:{palette['muted']};'>"
-            f"Код действует {safe_minutes} минут. Если это не ты, просто проигнорируй письмо."
+            f"Код действует {safe_minutes} минут. Если это не вы, просто проигнорируйте письмо."
             "</p>"
             "</div>"
             "</div>"

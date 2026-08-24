@@ -33,7 +33,7 @@ class PasswordResetMailer:
             await asyncio.to_thread(self._deliver_via_smtp, message)
         except (OSError, smtplib.SMTPException) as error:
             raise ExternalServiceUnavailableError(
-                "Не удалось отправить письмо для сброса пароля. Проверь SMTP-настройки и сетевой доступ.",
+                "Не удалось отправить письмо для сброса пароля. Проверьте SMTP-настройки и сетевой доступ.",
                 service_name="smtp",
             ) from error
 

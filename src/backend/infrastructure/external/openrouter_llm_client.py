@@ -33,10 +33,7 @@ class OpenRouterLLMClient(HuggingFaceLLMClient):
         api_url: str = DEFAULT_OPENROUTER_API_URL,
     ):
         super().__init__(api_key=api_key, model=model, provider=None, api_url=api_url)
-        # родитель выставляет _success_mode в __init__ — переопределяем после
         self._success_mode = "openrouter_llm_text"
-        # OpenRouter часто доступен только через системный прокси:
-        # учитываем окружение (HTTP_PROXY/HTTPS_PROXY), в отличие от родителя
         self.session = httpx.AsyncClient(
             timeout=httpx.Timeout(30),
             trust_env=True,

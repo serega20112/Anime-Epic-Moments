@@ -393,7 +393,7 @@
       })
       .join("");
     box.innerHTML =
-      '<span class="po-eyebrow">выбери озвучку</span>' +
+      '<span class="po-eyebrow">выберите озвучку</span>' +
       '<h3 class="pc-dub-title">С чего начнём?</h3>' +
       '<p class="pc-dub-sub">Кликни по озвучке, чтобы начать. Выбор запомнится — менять можно во вкладке «Источники».</p>' +
       '<div class="pc-dub-list">' + items + "</div>";

@@ -73,6 +73,10 @@ async def catalog_page(request: Request):
             "genre": request.query_params.get("genre", ""),
             "type": request.query_params.get("type", ""),
             "status": request.query_params.get("status", ""),
+            "min_score": request.query_params.get("min_score", ""),
+            "year_from": request.query_params.get("year_from", ""),
+            "year_to": request.query_params.get("year_to", ""),
+            "sort": request.query_params.get("sort", ""),
         },
     )
 
