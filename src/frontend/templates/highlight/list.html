@@ -92,7 +92,7 @@
     <input type="text" name="query" value="{{ dashboard.selected_query or '' }}" placeholder="Поиск в хайлайтах…" aria-label="Поиск в хайлайтах">
 
     <label class="filter-check">
-      <input type="checkbox" name="include_spoilers" value="1" {{ 'checked' if dashboard.include_spoilers }}>
+      <input type="checkbox" name="hide_spoilers" value="1" {{ 'checked' if not dashboard.include_spoilers }}>
       Скрывать спойлеры
     </label>
 

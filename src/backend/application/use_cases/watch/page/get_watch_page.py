@@ -246,13 +246,14 @@ class GetWatchPageUseCase:
         return deduped
 
     async def _resolve_episode_total(self, anime, sources, episode: int) -> int | None:
-        """Определяет диапазон эпизодов для episode dropdown."""
-        candidates = [max(int(episode), 1)]
         if anime and getattr(anime, "episode_count", None):
-            candidates.append(int(anime.episode_count))
-        candidates.extend(int(item.episode) for item in sources if getattr(item, "episode", None))
-        episode_total = max(candidates) if candidates else 1
-        return episode_total if episode_total > 0 else None
+            return max(int(anime.episode_count), max(int(episode), 1))
+        source_episodes = [
+            int(item.episode) for item in sources if getattr(item, "episode", None)
+        ]
+        if source_episodes:
+            return max(max(source_episodes), max(int(episode), 1))
+        return max(int(episode), 1) if episode else None
 
     async def _build_episode_options(
         self,

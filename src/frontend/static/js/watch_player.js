@@ -59,6 +59,7 @@
           '<div class="pc-vol-fill" id="pc-vol-fill"></div>' +
           '<div class="pc-vol-handle" id="pc-vol-handle"></div>' +
         '</div>' +
+        '<button class="pc-btn" id="pc-pip" aria-label="Картинка в картинке" title="Картинка в картинке">🖼</button>' +
         '<button class="pc-btn" id="pc-fullscreen" aria-label="На весь экран">⛶</button>' +
       "</div>";
     shell.appendChild(controls);
@@ -643,18 +644,54 @@
         }
       });
     }
+    var pipBtn = document.getElementById("pc-pip");
+    if (pipBtn) {
+      if (!document.pictureInPictureEnabled || video.disablePictureInPicture !== undefined) {
+        pipBtn.style.display = "none";
+      }
+      pipBtn.addEventListener("click", function () {
+        if (!video) return;
+        if (document.pictureInPictureElement) {
+          document.exitPictureInPicture().catch(function () {});
+        } else if (video.requestPictureInPicture) {
+          video.requestPictureInPicture().catch(function () {});
+        }
+      });
+      video.addEventListener("enterpictureinpicture", function () {
+        pipBtn.classList.add("active");
+      });
+      video.addEventListener("leavepictureinpicture", function () {
+        pipBtn.classList.remove("active");
+      });
+    }
 
-    shell.addEventListener("click", function () {
-      shell.classList.add("controls-visible");
-    });
     var hideTimer = null;
-    shell.addEventListener("mousemove", function () {
+    var touchHandled = false;
+    function showControls() {
       shell.classList.add("controls-visible");
       if (hideTimer) clearTimeout(hideTimer);
       hideTimer = setTimeout(function () {
         if (isPlaying) shell.classList.remove("controls-visible");
       }, 2600);
+    }
+    shell.addEventListener("click", function () {
+      if (!touchHandled) showControls();
+      touchHandled = false;
     });
+    shell.addEventListener("mousemove", showControls);
+    shell.addEventListener("touchstart", function (event) {
+      touchHandled = true;
+      var target = event.target;
+      if (target === shell || target === video || target === playCenter) {
+        if (controlsVisible && isPlaying) {
+          shell.classList.remove("controls-visible");
+          if (hideTimer) clearTimeout(hideTimer);
+          return;
+        }
+      }
+      showControls();
+    }, { passive: true });
+    shell.addEventListener("touchmove", showControls, { passive: true });
 
     document.addEventListener("keydown", function (event) {
       if (!video) return;
@@ -916,8 +953,7 @@
     });
   }
 
-  /* ================= DISCOVERY ================= */
-  function initDiscover() {
+  /* ================= DISCOVERY ================= */  function initDiscover() {
     var btn = document.getElementById("discover-btn");
     if (!btn) return;
     btn.addEventListener("click", function () {
@@ -965,6 +1001,24 @@
     return escapeHtml(value).replace(/'/g, "&#39;");
   }
 
+  /* ================= DISCLAIMER ================= */
+
+  function initDisclaimer(next) {
+    var box = document.getElementById("thirdparty-disclaimer");
+    if (!box || !cfg.sources || !cfg.sources.length) { next(); return; }
+    var acked = false;
+    try { acked = sessionStorage.getItem("aem_thirdparty_ack") === "1"; } catch (e) {}
+    if (acked) { next(); return; }
+    box.classList.remove("hidden");
+    var btn = document.getElementById("disclaimer-accept");
+    if (!btn) { next(); return; }
+    btn.addEventListener("click", function () {
+      try { sessionStorage.setItem("aem_thirdparty_ack", "1"); } catch (e) {}
+      box.classList.add("hidden");
+      next();
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     initTabs();
     initDiscover();
@@ -972,6 +1026,6 @@
     initFavoriteBadge();
     initHighlightForm();
     initDiscussion();
-    initPlayer();
+    initDisclaimer(initPlayer);
   });
 })();

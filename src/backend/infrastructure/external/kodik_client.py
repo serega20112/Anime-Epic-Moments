@@ -1,14 +1,22 @@
+import asyncio
 import base64
 import json
 import re
+import time
 from urllib.parse import urlencode, urljoin
 
 import httpx
 
 from backend.config import Settings
 from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
+from backend.infrastructure.external.errors import ExternalServiceError
+from backend.infrastructure.external.http_guard import read_json_limited
 from backend.infrastructure.external.kodik_token_store import KodikTokenStore
 from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
+
+_PROBE_BACKOFF_SECONDS = 300.0
+_MAX_SEARCH_PAGES = 20
+_LINKS_CONCURRENCY = 8
 
 
 class KodikClient(WatchSourceProvider):
@@ -31,6 +39,7 @@ class KodikClient(WatchSourceProvider):
             follow_redirects=True,
         )
         self._working_token: str | None = None
+        self._probe_retry_at: float = 0.0
         self._token_store = KodikTokenStore(
             tokens_path=Settings.kodik_tokens_path,
             configured_token=self.api_token,
@@ -70,24 +79,29 @@ class KodikClient(WatchSourceProvider):
         return True
 
     async def _resolve_token(self) -> str | None:
-        """Возвращает подтверждённый рабочий токен или первый заданный."""
+        """Возвращает подтверждённый рабочий токен или None в режиме backoff.
+
+        Если все кандидаты недавно провалили probe-запрос, повторные проверки
+        не выполняются до истечения backoff-окна: так недоступный Kodik не
+        замедляет каждый поиск.
+        """
         if self._working_token:
             return self._working_token
+        if time.monotonic() < self._probe_retry_at:
+            return None
         for token in await self._token_store.candidates():
             if await self._probe_token(token):
                 self._working_token = token
                 return token
-        suggested = self.api_token
-        if suggested and not self._working_token:
-            return suggested
-        return self._working_token
+        self._probe_retry_at = time.monotonic() + _PROBE_BACKOFF_SECONDS
+        return None
 
     async def search_sources(
         self,
         title: str,
         episode: int,
         year: int | None = None,
-        limit: int = 60,
+        limit: int = 100,
     ) -> list[DiscoveredWatchSource]:
         """Ищет источники эпизода через Kodik и возвращает доступные качества."""
         if not await self.is_enabled():
@@ -112,20 +126,12 @@ class KodikClient(WatchSourceProvider):
         if year:
             params["year"] = year
 
-        try:
-            response = await self.session.get(
-                f"{self.api_url}/search",
-                params=params,
-            )
-            response.raise_for_status()
-            payload = response.json()
-        except (httpx.HTTPError, ValueError, TypeError):
+        materials = await self._search_all_pages(params)
+        if not materials:
             return []
 
-        results = payload.get("results", []) or []
-        discovered: list[DiscoveredWatchSource] = []
-        seen: set[tuple[str, str, str]] = set()
-        for material in results:
+        relevant: list[tuple[dict, str, str, str]] = []
+        for material in materials:
             if not await self._looks_relevant(
                 material=material, requested_title=title, requested_year=year
             ):
@@ -142,11 +148,16 @@ class KodikClient(WatchSourceProvider):
                 str(translation.get("type") or "voice").strip()
             )
             source_name = str(material.get("id") or material_link).strip()
-            quality_map = await self._get_video_links(material_link)
-            if not quality_map:
-                continue
+            relevant.append((material, translation_name, translation_type, source_name))
 
-            for quality_label, sources in quality_map.items():
+        quality_maps = await self._collect_video_links([entry[0] for entry in relevant], episode)
+
+        discovered: list[DiscoveredWatchSource] = []
+        seen: set[tuple[str, str, str]] = set()
+        for (_material, translation_name, translation_type, source_name), quality_map in zip(
+            relevant, quality_maps
+        ):
+            for quality_label, sources in (quality_map or {}).items():
                 for source in sources:
                     stream_url = await self._normalize_link(source.get("src"))
                     if not stream_url:
@@ -168,6 +179,42 @@ class KodikClient(WatchSourceProvider):
                     )
         return discovered
 
+    async def _search_all_pages(self, base_params: dict[str, str | int | bool]) -> list[dict]:
+        """Обходит все страницы поисковой выдачи Kodik (до ``_MAX_SEARCH_PAGES``)."""
+        materials: list[dict] = []
+        params = dict(base_params)
+        for _page in range(_MAX_SEARCH_PAGES):
+            try:
+                response = await self.session.get(f"{self.api_url}/search", params=params)
+                response.raise_for_status()
+                payload = read_json_limited(response, service_name=self.provider_name)
+            except (httpx.HTTPError, ValueError, TypeError, ExternalServiceError):
+                break
+            page_results = payload.get("results", []) or []
+            materials.extend(item for item in page_results if isinstance(item, dict))
+            next_page = payload.get("next_page")
+            if not next_page:
+                break
+            params = {**base_params, "next": str(next_page).rsplit("=", 1)[-1]}
+        return materials
+
+    async def _collect_video_links(
+        self, materials: list[dict], episode: int
+    ) -> list[dict[str, list[dict[str, str]]]]:
+        """Извлекает ссылки качества для всех материалов с ограничением параллелизма."""
+        semaphore = asyncio.Semaphore(_LINKS_CONCURRENCY)
+
+        async def fetch(material: dict) -> dict[str, list[dict[str, str]]]:
+            material_link = await self._extract_episode_link(
+                material=material, episode=episode
+            ) or material.get("link")
+            if not material_link:
+                return {}
+            async with semaphore:
+                return await self._get_video_links(str(material_link))
+
+        return list(await asyncio.gather(*(fetch(material) for material in materials)))
+
     async def _looks_relevant(
         self,
         material: dict,
@@ -175,13 +222,16 @@ class KodikClient(WatchSourceProvider):
         requested_year: int | None,
     ) -> bool:
         material_year = material.get("year")
-        year_matches = not (
+        if (
             requested_year
             and isinstance(material_year, int)
             and abs(material_year - requested_year) > 1
-        )
+        ):
+            return False
 
         normalized_requested = await self._normalize_title(requested_title)
+        if not normalized_requested:
+            return False
         candidates = [
             material.get("title"),
             material.get("title_orig"),
@@ -197,13 +247,35 @@ class KodikClient(WatchSourceProvider):
         )
         for candidate in candidates:
             normalized_candidate = await self._normalize_title(candidate)
-            if normalized_candidate and (
-                normalized_requested in normalized_candidate
-                or normalized_candidate in normalized_requested
-            ):
-                return year_matches or bool(material.get("link"))
+            if not normalized_candidate:
+                continue
+            if normalized_candidate == normalized_requested:
+                return True
+            ratio = self._similarity_ratio(normalized_requested, normalized_candidate)
+            if ratio >= 0.85:
+                return True
 
-        return bool(material.get("link"))
+        return False
+
+    @staticmethod
+    def _similarity_ratio(a: str, b: str) -> float:
+        if not a or not b:
+            return 0.0
+        if a == b:
+            return 1.0
+        if len(a) < 3 or len(b) < 3:
+            return 1.0 if a == b else 0.0
+        if a in b or b in a:
+            shorter = min(len(a), len(b))
+            longer = max(len(a), len(b))
+            return shorter / longer
+        words_a = set(a.split())
+        words_b = set(b.split())
+        if not words_a or not words_b:
+            return 0.0
+        intersection = words_a & words_b
+        union = words_a | words_b
+        return len(intersection) / len(union)
 
     async def _extract_episode_link(self, material: dict, episode: int) -> str | None:
         seasons = material.get("seasons") or {}
@@ -300,10 +372,16 @@ class KodikClient(WatchSourceProvider):
                     video_info_url,
                 )
                 response.raise_for_status()
-                payload = response.json()
+                payload = read_json_limited(response, service_name=self.provider_name)
                 links = payload.get("links")
                 return links if isinstance(links, dict) else None
-            except (httpx.HTTPError, ValueError, TypeError, json.JSONDecodeError):
+            except (
+                httpx.HTTPError,
+                ValueError,
+                TypeError,
+                json.JSONDecodeError,
+                ExternalServiceError,
+            ):
                 continue
         return None
 
@@ -379,7 +457,9 @@ class KodikClient(WatchSourceProvider):
             shifted.append(char)
 
         try:
-            return base64.b64decode("".join(shifted)).decode("utf-8")
+            shifted_text = "".join(shifted)
+            padding = (-len(shifted_text)) % 4
+            return base64.b64decode(shifted_text + "=" * padding).decode("utf-8")
         except (ValueError, UnicodeDecodeError):
             return None
 

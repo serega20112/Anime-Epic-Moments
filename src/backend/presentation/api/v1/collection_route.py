@@ -19,7 +19,7 @@ from backend.application.use_cases import (
 from backend.application.use_cases.collection.get_shared_collection import (
     GetSharedCollectionUseCase,
 )
-from backend.infrastructure.web import render_template
+from backend.infrastructure.web import flash, render_template
 from backend.presentation.api.helpers import get_current_user
 from backend.presentation.api.requests.collection_mapper import (
     map_add_collection_item_command,
@@ -77,7 +77,11 @@ async def create_collection(request: Request, use_case: FromDishka[CreateCollect
     if not user:
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
     command = await map_create_collection_command(await request.form(), user_id=user.id)
-    await use_case.execute(command)
+    try:
+        await use_case.execute(command)
+    except ValueError as error:
+        await flash(request, str(error))
+        return await redirect_collections(request)
     return await redirect_collections(request)
 
 

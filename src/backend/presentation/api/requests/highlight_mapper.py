@@ -175,8 +175,8 @@ async def map_dashboard_query(
         sort_by=await _optional(request.query_params.get("sort")) or "recent",
         created_date=await _optional(request.query_params.get("date")),
         query=await _optional(request.query_params.get("query")),
-        include_spoilers=await _to_bool(
-            request.query_params.get("include_spoilers"), default=False
+        include_spoilers=not await _to_bool(
+            request.query_params.get("hide_spoilers"), default=True
         ),
         limit=await _clamp_int(
             request.query_params.get("limit"), default=20, minimum=1, maximum=24
@@ -202,8 +202,8 @@ async def map_list_query(request: Request, *, include_spoilers_default: bool) ->
         sort_by=await _optional(request.query_params.get("sort")) or "recent",
         created_date=await _optional(request.query_params.get("date")),
         query=await _optional(request.query_params.get("query")),
-        include_spoilers=await _to_bool(
-            request.query_params.get("include_spoilers"), default=include_spoilers_default
+        include_spoilers=not await _to_bool(
+            request.query_params.get("hide_spoilers"), default=not include_spoilers_default
         ),
     )
 
@@ -221,8 +221,8 @@ async def map_feed_query(request: Request, *, viewer_user_id: int | None) -> Hig
     return HighlightFeedQuery(
         anime_id=await _to_int(request.query_params.get("anime_id")),
         category=await _optional(request.query_params.get("category")),
-        include_spoilers=await _to_bool(
-            request.query_params.get("include_spoilers"), default=False
+        include_spoilers=not await _to_bool(
+            request.query_params.get("hide_spoilers"), default=False
         ),
         limit=await _clamp_int(
             request.query_params.get("limit"), default=12, minimum=1, maximum=24

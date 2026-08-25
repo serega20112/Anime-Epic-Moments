@@ -29,6 +29,7 @@
             {% endif %}
           </div>
         </div>
+        <span class="po-status-chip" id="player-status-chip"><span class="dot"></span><span id="player-status-text">Загрузка…</span></span>
       </div>
 
       <!-- Инфо об аниме -->
@@ -63,8 +64,8 @@
             {% endif %}
           </div>
         </div>
+        </div>
       </div>
-    </div>
 
     <!-- Сайдбар -->
     <div class="watch-sidebar">
@@ -209,10 +210,22 @@
           <div class="discussion-empty">Войдите, чтобы обсуждать серии.</div>
           {% endif %}
         </div>
-          </div>
         </div>
-        <span class="po-status-chip" id="player-status-chip"><span class="dot"></span><span id="player-status-text">Загрузка…</span></span>
       </div>
+      </div>
+</div>
+
+<div class="disclaimer-modal hidden" id="thirdparty-disclaimer" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
+  <div class="dm-card">
+    <h3 class="dm-title" id="disclaimer-title">⚠️ Сторонний контент</h3>
+    <p class="dm-text">
+      Мы не размещаем и не храним видео: воспроизведение выполняется сторонними плеерами
+      (Kodik, AniBoom, Sibnet, HDRezka и др.). <strong>Реклама внутри этих плееров — дело самих
+      плееров, наш сайт к ней отношения не имеет.</strong> Все права на аниме принадлежат их
+      правообладателям.
+    </p>
+    <button type="button" class="btn btn-primary" id="disclaimer-accept">Понятно, продолжить</button>
+  </div>
 </div>
 {% endblock %}
 
