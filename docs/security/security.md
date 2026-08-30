@@ -86,8 +86,8 @@ sequenceDiagram
 - `src/backend/infrastructure/security/token_blocklist.py`
 - `src/backend/infrastructure/security/csrf_service.py`
 - `src/backend/infrastructure/files/database.py`
-- `build/docker-compose.yml`
-- `build/Dockerfile`
+- `docker-compose.yml`
+- `Dockerfile`
 
 ## Связанные документы
 

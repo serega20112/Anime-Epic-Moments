@@ -559,7 +559,7 @@ zero-downtime деплоя сейчас можно не обеспечивать
 - `src/backend/config/settings.py` + `src/backend/config/sections/` — чтение конфигурации
 - `tests/conftest.py` — общие fixtures (`db_session`, `async_db_session`, `flask_app_factory`, ...)
 - `Makefile` — сокращения команд (`make lint`, `make test`, ...)
-- `build/scripts/entrypoint.sh` — запуск gunicorn + опциональные миграции в контейнере
+- `scripts/entrypoint.sh` — запуск gunicorn + опциональные миграции в контейнере
 
 ## Связанные документы
 

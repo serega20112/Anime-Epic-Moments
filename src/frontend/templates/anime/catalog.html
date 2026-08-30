@@ -1,51 +1,148 @@
-{% extends "base.html" %}
-
-{% block title %}Каталог аниме — фильтры — Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Каталог аниме — фильтры — Anime Epic
+Moments{% endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/anime.css') }}"
+/>
+{% endblock %} {% block content %}
 <section class="search-hero">
   <div class="container">
     <h1>Каталог аниме</h1>
-    <p>Не знаете, что посмотреть? Подберите по жанру, формату, статусу и рейтингу.</p>
+    <p>
+      Не знаете, что посмотреть? Подберите по жанру, формату, статусу и
+      рейтингу.
+    </p>
 
     <div class="filter-panel glass">
       <div class="filter-group">
         <span class="filter-label">Жанр</span>
         <div class="filter-chips" id="genre-chips">
-          <button type="button" class="filter-chip active" data-value="">Любой</button>
-          <button type="button" class="filter-chip" data-value="Action">Экшен</button>
-          <button type="button" class="filter-chip" data-value="Adventure">Приключения</button>
-          <button type="button" class="filter-chip" data-value="Comedy">Комедия</button>
-          <button type="button" class="filter-chip" data-value="Drama">Драма</button>
-          <button type="button" class="filter-chip" data-value="Fantasy">Фэнтези</button>
-          <button type="button" class="filter-chip" data-value="Horror">Ужасы</button>
-          <button type="button" class="filter-chip" data-value="Mystery">Детектив</button>
-          <button type="button" class="filter-chip" data-value="Psychological">Психологическое</button>
-          <button type="button" class="filter-chip" data-value="Romance">Романтика</button>
-          <button type="button" class="filter-chip" data-value="Sci-Fi">Фантастика</button>
-          <button type="button" class="filter-chip" data-value="Slice of Life">Повседневность</button>
-          <button type="button" class="filter-chip" data-value="Sports">Спорт</button>
-          <button type="button" class="filter-chip" data-value="Supernatural">Сверхъестественное</button>
-          <button type="button" class="filter-chip" data-value="Thriller">Триллер</button>
-          <button type="button" class="filter-chip" data-value="Mecha">Меха</button>
-          <button type="button" class="filter-chip" data-value="School">Школа</button>
-          <button type="button" class="filter-chip" data-value="Ecchi">Этти</button>
-          <button type="button" class="filter-chip" data-value="Hentai">Хентай</button>
+          <button type="button" class="filter-chip active" data-value="">
+            Любой
+          </button>
+          <button type="button" class="filter-chip" data-value="Action">
+            Экшен
+          </button>
+          <button type="button" class="filter-chip" data-value="Adventure">
+            Приключения
+          </button>
+          <button type="button" class="filter-chip" data-value="Comedy">
+            Комедия
+          </button>
+          <button type="button" class="filter-chip" data-value="Drama">
+            Драма
+          </button>
+          <button type="button" class="filter-chip" data-value="Fantasy">
+            Фэнтези
+          </button>
+          <button type="button" class="filter-chip" data-value="Horror">
+            Ужасы
+          </button>
+          <button type="button" class="filter-chip" data-value="Mystery">
+            Детектив
+          </button>
+          <button type="button" class="filter-chip" data-value="Psychological">
+            Психологическое
+          </button>
+          <button type="button" class="filter-chip" data-value="Romance">
+            Романтика
+          </button>
+          <button type="button" class="filter-chip" data-value="Sci-Fi">
+            Фантастика
+          </button>
+          <button type="button" class="filter-chip" data-value="Slice of Life">
+            Повседневность
+          </button>
+          <button type="button" class="filter-chip" data-value="Sports">
+            Спорт
+          </button>
+          <button type="button" class="filter-chip" data-value="Supernatural">
+            Сверхъестественное
+          </button>
+          <button type="button" class="filter-chip" data-value="Thriller">
+            Триллер
+          </button>
+          <button type="button" class="filter-chip" data-value="Mecha">
+            Меха
+          </button>
+          <button type="button" class="filter-chip" data-value="School">
+            Школа
+          </button>
+          <button type="button" class="filter-chip" data-value="Ecchi">
+            Этти
+          </button>
+          <button type="button" class="filter-chip" data-value="Hentai">
+            Хентай
+          </button>
+          <button type="button" class="filter-chip" data-value="Avant Garde">Авангард</button>
+          <button type="button" class="filter-chip" data-value="Anthropomorphic">Антропоморфизм</button>
+          <button type="button" class="filter-chip" data-value="Martial Arts">Боевые искусства</button>
+          <button type="button" class="filter-chip" data-value="Combat Sports">Боевые виды спорта</button>
+          <button type="button" class="filter-chip" data-value="Vampire">Вампиры</button>
+          <button type="button" class="filter-chip" data-value="Adult Cast">Взрослые персонажи</button>
+          <button type="button" class="filter-chip" data-value="Survival">Выживание</button>
+          <button type="button" class="filter-chip" data-value="Harem">Гарем</button>
+          <button type="button" class="filter-chip" data-value="Gore">Гор</button>
+          <button type="button" class="filter-chip" data-value="Idols Female">Женские айдолы</button>
+          <button type="button" class="filter-chip" data-value="Childcare">Забота о детях</button>
+          <button type="button" class="filter-chip" data-value="High Stakes Game">Игра с высокими ставками</button>
+          <button type="button" class="filter-chip" data-value="Visual Arts">Изобразительное искусство</button>
+          <button type="button" class="filter-chip" data-value="Isekai">Исекай</button>
+          <button type="button" class="filter-chip" data-value="Iyashikei">Иясикэй</button>
+          <button type="button" class="filter-chip" data-value="Historical">Историческое</button>
+          <button type="button" class="filter-chip" data-value="Team Sports">Командный спорт</button>
+          <button type="button" class="filter-chip" data-value="Space">Космос</button>
+          <button type="button" class="filter-chip" data-value="Otaku Culture">Культура отаку</button>
+          <button type="button" class="filter-chip" data-value="Gourmet">Кулинария</button>
+          <button type="button" class="filter-chip" data-value="Award Winning">Лауреат наград</button>
+          <button type="button" class="filter-chip" data-value="Love Polygon">Любовный многоугольник</button>
+          <button type="button" class="filter-chip" data-value="Girls Love">Любовь между девушками (GL)</button>
+          <button type="button" class="filter-chip" data-value="Boys Love">Любовь между мужчинами (BL)</button>
+          <button type="button" class="filter-chip" data-value="Magical Sex Shift">Магическая смена пола</button>
+          <button type="button" class="filter-chip" data-value="Mahou Shoujo">Махо-сёдзё</button>
+          <button type="button" class="filter-chip" data-value="Medical">Медицина</button>
+          <button type="button" class="filter-chip" data-value="Memoir">Мемуары</button>
+          <button type="button" class="filter-chip" data-value="Mythology">Мифология</button>
+          <button type="button" class="filter-chip" data-value="CGDCT">Милые девушки делают милые вещи (CGDCT)</button>
+          <button type="button" class="filter-chip" data-value="Idols Male">Мужские айдолы</button>
+          <button type="button" class="filter-chip" data-value="Music">Музыка</button>
+          <button type="button" class="filter-chip" data-value="Educational">Образовательное</button>
+          <button type="button" class="filter-chip" data-value="Reverse Harem">Обратный гарем</button>
+          <button type="button" class="filter-chip" data-value="Organized Crime">Организованная преступность</button>
+          <button type="button" class="filter-chip" data-value="Parody">Пародия</button>
+          <button type="button" class="filter-chip" data-value="Crossdressing">Переодевание</button>
+          <button type="button" class="filter-chip" data-value="Time Travel">Путешествия во времени</button>
+          <button type="button" class="filter-chip" data-value="Reincarnation">Реинкарнация</button>
+          <button type="button" class="filter-chip" data-value="Romantic Subtext">Романтический подтекст</button>
+          <button type="button" class="filter-chip" data-value="Romantic Status Quo">Романтический статус-кво</button>
+          <button type="button" class="filter-chip" data-value="Samurai">Самураи</button>
+          <button type="button" class="filter-chip" data-value="Suspense">Саспенс</button>
+          <button type="button" class="filter-chip" data-value="Super Power">Сверхспособности</button>
+          <button type="button" class="filter-chip" data-value="Strategy Game">Стратегические игры</button>
+          <button type="button" class="filter-chip" data-value="Showbiz">Шоу-бизнес</button>
+          <button type="button" class="filter-chip" data-value="Villainess">Эксцентричные злодейки (Villainess)</button>
+          <button type="button" class="filter-chip" data-value="Erotica">Эротика</button>
         </div>
       </div>
 
       <div class="filter-group">
         <span class="filter-label">Аудитория</span>
         <div class="filter-chips" id="demographic-chips">
-          <button type="button" class="filter-chip" data-value="Shounen">Сёнэн</button>
-          <button type="button" class="filter-chip" data-value="Shoujo">Сёдзё</button>
-          <button type="button" class="filter-chip" data-value="Seinen">Сэйнэн</button>
-          <button type="button" class="filter-chip" data-value="Josei">Дзёсэй</button>
-          <button type="button" class="filter-chip" data-value="Kids">Кодомо</button>
+          <button type="button" class="filter-chip" data-value="Shounen">
+            Сёнэн
+          </button>
+          <button type="button" class="filter-chip" data-value="Shoujo">
+            Сёдзё
+          </button>
+          <button type="button" class="filter-chip" data-value="Seinen">
+            Сэйнэн
+          </button>
+          <button type="button" class="filter-chip" data-value="Josei">
+            Дзёсэй
+          </button>
+          <button type="button" class="filter-chip" data-value="Kids">
+            Кодомо
+          </button>
         </div>
       </div>
 
@@ -85,12 +182,32 @@
 
         <div class="filter-field">
           <span class="filter-label">Год от</span>
-          <input type="number" id="filter-year-from" class="filter-select" min="1950" max="2100" placeholder="1960">
+          <input
+            type="number"
+            id="filter-year-from"
+            class="filter-select"
+            min="1950"
+            max="2100"
+            placeholder="1960"
+          />
         </div>
 
         <div class="filter-field">
           <span class="filter-label">Год до</span>
-          <input type="number" id="filter-year-to" class="filter-select" min="1950" max="2100" placeholder="2026">
+          <input
+            type="number"
+            id="filter-year-to"
+            class="filter-select"
+            min="1950"
+            max="2100"
+            placeholder="2026"
+          />
+        </div>
+
+        <div class="filter-field">
+          <label class="filter-label">
+            <input type="checkbox" id="filter-has-dub" /> Только с озвучкой
+          </label>
         </div>
 
         <div class="filter-field">
@@ -104,8 +221,12 @@
         </div>
 
         <div class="filter-field filter-submit">
-          <button type="button" class="btn btn-primary" id="filter-apply">Применить</button>
-          <button type="button" class="btn btn-ghost" id="filter-reset">Сбросить</button>
+          <button type="button" class="btn btn-primary" id="filter-apply">
+            Применить
+          </button>
+          <button type="button" class="btn btn-ghost" id="filter-reset">
+            Сбросить
+          </button>
         </div>
       </div>
     </div>
@@ -115,24 +236,46 @@
 <section class="results-section">
   <div class="container">
     <div class="results-header">
-      <h2 class="section-title" style="margin:0">Подборка</h2>
+      <h2 class="section-title" style="margin: 0">Подборка</h2>
       <span class="results-count" id="results-count"></span>
+      <div class="view-toggle" role="group" aria-label="Вид отображения">
+        <button
+          type="button"
+          class="view-toggle-btn active"
+          data-view="grid"
+          title="Сетка"
+        >
+          ▦
+        </button>
+        <button
+          type="button"
+          class="view-toggle-btn"
+          data-view="list"
+          title="Список"
+        >
+          ☰
+        </button>
+      </div>
     </div>
     <div class="loading-state hidden" id="results-loading">
       <div class="spinner"></div>
       <span>Подбираем аниме…</span>
     </div>
     <div class="results-grid" id="results-grid"></div>
+    <div class="load-more-wrap hidden" id="load-more-wrap">
+      <button type="button" class="btn btn-ghost" id="load-more">Показать ещё</button>
+    </div>
     <div class="empty-state hidden" id="results-empty">
       <span class="empty-emoji">🎬</span>
       <h3>Ничего не нашлось</h3>
-      <p>Попробуйте смягчить фильтры — например, убрать рейтинг или выбрать жанр «Любой».</p>
+      <p>
+        Попробуйте смягчить фильтры — например, убрать рейтинг или выбрать жанр
+        «Любой».
+      </p>
     </div>
   </div>
 </section>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
   window.AEMCatalogPage = {
     initial: {{ initial_filters|tojson }},

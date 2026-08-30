@@ -1,36 +1,62 @@
-{% extends "base.html" %}
-
-{% block title %}Регистрация — Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Регистрация — Anime Epic Moments{%
+endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/auth.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="auth-page">
   <div class="auth-card glass">
     <div class="auth-logo">AEM</div>
-    <p class="auth-sub">Создайте профиль и начните сохранять моменты, которые тронули душу.</p>
+    <p class="auth-sub">
+      Создайте профиль и начните сохранять моменты, которые тронули душу.
+    </p>
 
-    <form class="auth-form" method="post" action="{{ url_for('auth.register_user') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form
+      class="auth-form"
+      method="post"
+      action="{{ url_for('auth.register_user') }}"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
       <div class="form-group">
         <label for="email">Email</label>
-        <input type="email" id="email" name="email" placeholder="you@example.com"
-               required autocomplete="email">
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="you@example.com"
+          required
+          autocomplete="email"
+        />
       </div>
 
       <div class="form-group">
         <label for="username">Имя пользователя</label>
-        <input type="text" id="username" name="username" placeholder="от 3 до 20 символов"
-               required minlength="3" maxlength="20" autocomplete="username">
+        <input
+          type="text"
+          id="username"
+          name="username"
+          placeholder="от 3 до 20 символов"
+          required
+          minlength="3"
+          maxlength="20"
+          autocomplete="username"
+        />
       </div>
 
       <div class="form-group">
         <label for="password">Пароль</label>
-        <input type="password" id="password" name="password" placeholder="минимум 8 символов"
-               required minlength="8" maxlength="128" autocomplete="new-password">
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="минимум 8 символов"
+          required
+          minlength="8"
+          maxlength="128"
+          autocomplete="new-password"
+        />
         <div class="password-strength">
           <span class="pw-bar"></span><span class="pw-bar"></span>
           <span class="pw-bar"></span><span class="pw-bar"></span>
@@ -39,18 +65,18 @@
       </div>
 
       <div class="auth-actions">
-        <button type="submit" class="btn btn-primary btn-lg">Создать профиль</button>
+        <button type="submit" class="btn btn-primary btn-lg">
+          Создать профиль
+        </button>
       </div>
     </form>
 
-    <div class="auth-links auth-links-center" style="justify-content:center">
+    <div class="auth-links auth-links-center" style="justify-content: center">
       <span class="muted">Уже есть аккаунт?</span>
       <a href="{{ url_for('auth.login_page') }}">Войти</a>
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script src="{{ url_for('static', filename='js/password_strength.js') }}"></script>
 {% endblock %}

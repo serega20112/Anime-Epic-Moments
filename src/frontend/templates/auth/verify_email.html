@@ -1,12 +1,10 @@
-{% extends "base.html" %}
-
-{% block title %}Подтверждение email — Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Подтверждение email — Anime Epic
+Moments{% endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/auth.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="auth-page">
   <div class="auth-card glass">
     <div class="auth-logo">AEM</div>
@@ -14,64 +12,84 @@
 
     <div class="verify-note">
       Мы отправили <strong>6-значный код</strong> на адрес
-      <strong>{{ email }}</strong>. Введите его ниже, чтобы завершить регистрацию.
+      <strong>{{ email }}</strong>. Введите его ниже, чтобы завершить
+      регистрацию.
     </div>
 
-    <form class="auth-form" method="post" action="{{ url_for('auth.verify_email') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="email" value="{{ email }}">
+    <form
+      class="auth-form"
+      method="post"
+      action="{{ url_for('auth.verify_email') }}"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="email" value="{{ email }}" />
 
       <div class="form-group">
         <label for="code">Код подтверждения</label>
-        <input type="text" id="code" name="code" class="code-input" placeholder="000000"
-               required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autofocus>
+        <input
+          type="text"
+          id="code"
+          name="code"
+          class="code-input"
+          placeholder="000000"
+          required
+          inputmode="numeric"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          autofocus
+        />
       </div>
 
       <div class="auth-actions">
-        <button type="submit" class="btn btn-primary btn-lg">Подтвердить</button>
+        <button type="submit" class="btn btn-primary btn-lg">
+          Подтвердить
+        </button>
       </div>
     </form>
 
     <div class="resend-box">
       <span>Не пришло письмо? Проверьте спам или запросите код ещё раз.</span>
-      <form method="post" action="{{ url_for('auth.resend_verification_email') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="email" value="{{ email }}">
-        <button type="submit" class="btn btn-ghost btn-sm" id="resend-btn">Отправить код ещё раз</button>
+      <form
+        method="post"
+        action="{{ url_for('auth.resend_verification_email') }}"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="email" value="{{ email }}" />
+        <button type="submit" class="btn btn-ghost btn-sm" id="resend-btn">
+          Отправить код ещё раз
+        </button>
       </form>
       <span class="resend-timer" id="resend-timer"></span>
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
-(function () {
-  "use strict";
-  var btn = document.getElementById("resend-btn");
-  var timer = document.getElementById("resend-timer");
-  if (!btn || !timer) return;
-  var remaining = 0;
-  function tick() {
-    if (remaining <= 0) {
-      btn.disabled = false;
-      timer.textContent = "";
-      return;
+  (function () {
+    "use strict";
+    var btn = document.getElementById("resend-btn");
+    var timer = document.getElementById("resend-timer");
+    if (!btn || !timer) return;
+    var remaining = 0;
+    function tick() {
+      if (remaining <= 0) {
+        btn.disabled = false;
+        timer.textContent = "";
+        return;
+      }
+      btn.disabled = true;
+      timer.textContent = "Повторная отправка через " + remaining + " с";
+      remaining -= 1;
+      setTimeout(tick, 1000);
     }
-    btn.disabled = true;
-    timer.textContent = "Повторная отправка через " + remaining + " с";
-    remaining -= 1;
-    setTimeout(tick, 1000);
-  }
-  btn.addEventListener("click", function () {
-    remaining = 30;
-    tick();
-  });
-  var input = document.getElementById("code");
-  input.addEventListener("input", function () {
-    input.value = input.value.replace(/\D/g, "").slice(0, 6);
-  });
-})();
+    btn.addEventListener("click", function () {
+      remaining = 30;
+      tick();
+    });
+    var input = document.getElementById("code");
+    input.addEventListener("input", function () {
+      input.value = input.value.replace(/\D/g, "").slice(0, 6);
+    });
+  })();
 </script>
 {% endblock %}

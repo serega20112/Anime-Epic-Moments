@@ -6,7 +6,8 @@
 
   var cfg = window.AEMWatchPage || {};
   var shell, overlay, statusChip, statusText;
-  var video = null, hls = null;
+  var video = null,
+    hls = null;
   var controlsVisible = false;
   var saveTimer = null;
   var activeEmotion = "epic";
@@ -25,13 +26,15 @@
 
   function sourceById(id) {
     for (var i = 0; i < cfg.sources.length; i++) {
-      if (cfg.sources[i].id != null && cfg.sources[i].id == id) return cfg.sources[i];
+      if (cfg.sources[i].id != null && cfg.sources[i].id == id)
+        return cfg.sources[i];
     }
     return null;
   }
 
   function setStatus(text, cls) {
-    if (statusChip) statusChip.className = "po-status-chip" + (cls ? " " + cls : "");
+    if (statusChip)
+      statusChip.className = "po-status-chip" + (cls ? " " + cls : "");
     if (statusText) statusText.textContent = text;
   }
 
@@ -41,26 +44,25 @@
     controls.className = "player-controls";
     controls.innerHTML =
       '<div class="pc-row pc-row-timeline">' +
-        '<span class="pc-time pc-time-cur" id="pc-cur">00:00</span>' +
-        '<div class="pc-timeline" id="pc-timeline" role="slider" aria-label="Перемотка" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +
-          '<div class="pc-tl-buffer" id="pc-tl-buffer"></div>' +
-          '<div class="pc-tl-fill" id="pc-tl-fill"></div>' +
-          '<div class="pc-tl-handle" id="pc-tl-handle"></div>' +
-        '</div>' +
-        '<span class="pc-time pc-time-dur" id="pc-dur">00:00</span>' +
-      '</div>' +
+      '<span class="pc-time pc-time-cur" id="pc-cur">00:00</span>' +
+      '<div class="pc-timeline" id="pc-timeline" role="slider" aria-label="Перемотка" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +
+      '<div class="pc-tl-buffer" id="pc-tl-buffer"></div>' +
+      '<div class="pc-tl-fill" id="pc-tl-fill"></div>' +
+      '<div class="pc-tl-handle" id="pc-tl-handle"></div>' +
+      "</div>" +
+      '<span class="pc-time pc-time-dur" id="pc-dur">00:00</span>' +
+      "</div>" +
       '<div class="pc-row">' +
-        '<button class="pc-btn" id="pc-play" aria-label="Пауза">⏸</button>' +
-        '<div style="flex:1"></div>' +
-        '<select class="pc-quality-select" id="pc-quality-select" aria-label="Качество"></select>' +
-        '<button class="pc-btn" id="pc-mute" aria-label="Звук">🔊</button>'
-        +
-        '<div class="pc-volume" id="pc-volume" role="slider" aria-label="Громкость" aria-valuemin="0" aria-valuemax="1" aria-valuenow="1" title="Громкость">' +
-          '<div class="pc-vol-fill" id="pc-vol-fill"></div>' +
-          '<div class="pc-vol-handle" id="pc-vol-handle"></div>' +
-        '</div>' +
-        '<button class="pc-btn" id="pc-pip" aria-label="Картинка в картинке" title="Картинка в картинке">🖼</button>' +
-        '<button class="pc-btn" id="pc-fullscreen" aria-label="На весь экран">⛶</button>' +
+      '<button class="pc-btn" id="pc-play" aria-label="Пауза">⏸</button>' +
+      '<div style="flex:1"></div>' +
+      '<select class="pc-quality-select" id="pc-quality-select" aria-label="Качество"></select>' +
+      '<button class="pc-btn" id="pc-mute" aria-label="Звук">🔊</button>' +
+      '<div class="pc-volume" id="pc-volume" role="slider" aria-label="Громкость" aria-valuemin="0" aria-valuemax="1" aria-valuenow="1" title="Громкость">' +
+      '<div class="pc-vol-fill" id="pc-vol-fill"></div>' +
+      '<div class="pc-vol-handle" id="pc-vol-handle"></div>' +
+      "</div>" +
+      '<button class="pc-btn" id="pc-pip" aria-label="Картинка в картинке" title="Картинка в картинке">🖼</button>' +
+      '<button class="pc-btn" id="pc-fullscreen" aria-label="На весь экран">⛶</button>' +
       "</div>";
     shell.appendChild(controls);
     var playCenter = document.createElement("button");
@@ -104,7 +106,8 @@
       );
     });
     if (options.length === 0) {
-      select.innerHTML = "<option>" + escapeHtml(active.qualityLabel || "Auto") + "</option>";
+      select.innerHTML =
+        "<option>" + escapeHtml(active.qualityLabel || "Auto") + "</option>";
       select.disabled = true;
       return;
     }
@@ -119,8 +122,13 @@
     select.innerHTML = items
       .map(function (s) {
         return (
-          '<option value="' + s.id + '"' + (s.id === active.id ? " selected" : "") + ">" +
-          escapeHtml(s.qualityLabel || "Авто") + "</option>"
+          '<option value="' +
+          s.id +
+          '"' +
+          (s.id === active.id ? " selected" : "") +
+          ">" +
+          escapeHtml(s.qualityLabel || "Авто") +
+          "</option>"
         );
       })
       .join("");
@@ -139,7 +147,10 @@
     try {
       localStorage.setItem("aem_src_" + cfg.animeId, String(target.id));
       if (target.translationId != null) {
-        localStorage.setItem("aem_dub_" + cfg.animeId, String(target.translationId));
+        localStorage.setItem(
+          "aem_dub_" + cfg.animeId,
+          String(target.translationId),
+        );
       }
     } catch (e) {}
     var select = document.getElementById("pc-quality-select");
@@ -211,8 +222,10 @@
 
   function startSeconds() {
     var value = 0;
-    if (cfg.lastPositionSeconds && cfg.lastPositionSeconds > 5) value = cfg.lastPositionSeconds;
-    if (cfg.preferredStartSeconds && cfg.preferredStartSeconds > 0) value = cfg.preferredStartSeconds;
+    if (cfg.lastPositionSeconds && cfg.lastPositionSeconds > 5)
+      value = cfg.lastPositionSeconds;
+    if (cfg.preferredStartSeconds && cfg.preferredStartSeconds > 0)
+      value = cfg.preferredStartSeconds;
     return value;
   }
 
@@ -222,7 +235,10 @@
     var frame = document.createElement("iframe");
     frame.src = source ? source.url : "";
     frame.setAttribute("allowfullscreen", "");
-    frame.setAttribute("allow", "autoplay; fullscreen; encrypted-media; picture-in-picture");
+    frame.setAttribute(
+      "allow",
+      "autoplay; fullscreen; encrypted-media; picture-in-picture",
+    );
     frame.setAttribute("referrerpolicy", "no-referrer");
     frame.id = "embed-frame";
     shell.appendChild(frame);
@@ -243,10 +259,14 @@
     box.innerHTML =
       '<span class="po-eyebrow">внешний источник</span>' +
       '<h1 class="po-title">Просмотр в новой вкладке</h1>' +
-      '<p class="po-sub">Источник ' + escapeAttr(source ? source.label : "") + " открывается у провайдера.</p>" +
+      '<p class="po-sub">Источник ' +
+      escapeAttr(source ? source.label : "") +
+      " открывается у провайдера.</p>" +
       '<div class="po-actions">' +
-        '<a class="btn btn-primary" href="' + escapeAttr(source ? source.url : "#") + '" target="_blank" rel="noopener nofollow">Открыть источник ↗</a>' +
-        '<button class="btn btn-ghost" id="back-to-player">← Вернуться к другим источникам</button>' +
+      '<a class="btn btn-primary" href="' +
+      escapeAttr(source ? source.url : "#") +
+      '" target="_blank" rel="noopener nofollow">Открыть источник ↗</a>' +
+      '<button class="btn btn-ghost" id="back-to-player">← Вернуться к другим источникам</button>' +
       "</div>";
     shell.appendChild(box);
     overlay.classList.add("hidden");
@@ -263,7 +283,12 @@
         }
         if (fallback) {
           window.location.href =
-            "/watch/" + cfg.animeId + "?episode=" + cfg.episode + "&source_id=" + fallback.id;
+            "/watch/" +
+            cfg.animeId +
+            "?episode=" +
+            cfg.episode +
+            "&source_id=" +
+            fallback.id;
         }
       });
     }
@@ -301,7 +326,8 @@
     }
 
     var firstId = cfg.sources.length ? cfg.sources[0].id : null;
-    var explicit = cfg.selectedSourceId != null && cfg.selectedSourceId !== firstId;
+    var explicit =
+      cfg.selectedSourceId != null && cfg.selectedSourceId !== firstId;
     var hasDubChoice = groupByTranslation().length > 1;
 
     if (hasDubChoice && !explicit && remDub == null) {
@@ -340,7 +366,10 @@
     var order = [];
     var map = {};
     cfg.sources.forEach(function (s) {
-      var key = s.translationId != null && s.translationId !== "" ? String(s.translationId) : "src:" + s.id;
+      var key =
+        s.translationId != null && s.translationId !== ""
+          ? String(s.translationId)
+          : "src:" + s.id;
       if (!map[key]) {
         var group = {
           id: key,
@@ -357,11 +386,18 @@
     order.forEach(function (group) {
       group.count = group.sources.length;
       group.sample = group.sources[0];
-      group.badge = group.sample.qualityLabel ? String(group.sample.qualityLabel) : null;
-      group.provider = group.sample.providerName ? String(group.sample.providerName) : null;
+      group.badge = group.sample.qualityLabel
+        ? String(group.sample.qualityLabel)
+        : null;
+      group.provider = group.sample.providerName
+        ? String(group.sample.providerName)
+        : null;
       var activeOf = null;
       for (var i = 0; i < group.sources.length; i++) {
-        if (group.sources[i].active) { activeOf = group.sources[i]; break; }
+        if (group.sources[i].active) {
+          activeOf = group.sources[i];
+          break;
+        }
       }
       group.chosen = activeOf || group.sample;
     });
@@ -379,16 +415,32 @@
       .map(function (group) {
         var isActive = group.chosen && group.chosen.active;
         var meta = "";
-        if (group.badge) meta += '<span class="pc-dub-chip">' + escapeHtml(group.badge) + "</span>";
-        if (group.provider) meta += '<span class="pc-dub-chip pc-dub-chip-soft">' + escapeHtml(group.provider) + "</span>";
+        if (group.badge)
+          meta +=
+            '<span class="pc-dub-chip">' + escapeHtml(group.badge) + "</span>";
+        if (group.provider)
+          meta +=
+            '<span class="pc-dub-chip pc-dub-chip-soft">' +
+            escapeHtml(group.provider) +
+            "</span>";
         return (
-          '<button type="button" class="pc-dub-option' + (isActive ? " is-active" : "") + '" data-dub-id="' + escapeAttr(group.id) + '">' +
+          '<button type="button" class="pc-dub-option' +
+          (isActive ? " is-active" : "") +
+          '" data-dub-id="' +
+          escapeAttr(group.id) +
+          '">' +
           '<span class="pc-dub-icon">🎙️</span>' +
           '<span class="pc-dub-body">' +
-            '<span class="pc-dub-name">' + escapeHtml(group.name) + "</span>" +
-            '<span class="pc-dub-meta">' + meta + "</span>" +
+          '<span class="pc-dub-name">' +
+          escapeHtml(group.name) +
           "</span>" +
-          '<span class="pc-dub-count">' + group.count + "</span>" +
+          '<span class="pc-dub-meta">' +
+          meta +
+          "</span>" +
+          "</span>" +
+          '<span class="pc-dub-count">' +
+          group.count +
+          "</span>" +
           "</button>"
         );
       })
@@ -397,9 +449,14 @@
       '<span class="po-eyebrow">выберите озвучку</span>' +
       '<h3 class="pc-dub-title">С чего начнём?</h3>' +
       '<p class="pc-dub-sub">Кликни по озвучке, чтобы начать. Выбор запомнится — менять можно во вкладке «Источники».</p>' +
-      '<div class="pc-dub-list">' + items + "</div>";
+      '<div class="pc-dub-list">' +
+      items +
+      "</div>";
     box.addEventListener("click", function (event) {
-      var btn = event.target && event.target.closest ? event.target.closest("[data-dub-id]") : null;
+      var btn =
+        event.target && event.target.closest
+          ? event.target.closest("[data-dub-id]")
+          : null;
       if (!btn) return;
       selectDub(String(btn.getAttribute("data-dub-id")));
     });
@@ -411,7 +468,10 @@
     var groups = groupByTranslation();
     var group = null;
     for (var i = 0; i < groups.length; i++) {
-      if (groups[i].id === dubId) { group = groups[i]; break; }
+      if (groups[i].id === dubId) {
+        group = groups[i];
+        break;
+      }
     }
     if (!group) return;
     var chosen = group.chosen;
@@ -471,7 +531,8 @@
     function seekFraction(pct) {
       if (!video || !video.duration) return;
       var time = pct * video.duration;
-      if (isFinite(time) && time >= 0) video.currentTime = Math.min(time, video.duration);
+      if (isFinite(time) && time >= 0)
+        video.currentTime = Math.min(time, video.duration);
     }
 
     function togglePlay() {
@@ -547,7 +608,9 @@
         if (event.button !== undefined && event.button !== 0) return;
         scrubbing = true;
         if (timeline.setPointerCapture) {
-          try { timeline.setPointerCapture(event.pointerId); } catch (e) {}
+          try {
+            timeline.setPointerCapture(event.pointerId);
+          } catch (e) {}
         }
         event.preventDefault();
         var pct = pctFromX(event.clientX);
@@ -569,7 +632,9 @@
         saveProgress();
       }
       timeline.addEventListener("pointerup", endScrub);
-      timeline.addEventListener("pointercancel", function () { scrubbing = false; });
+      timeline.addEventListener("pointercancel", function () {
+        scrubbing = false;
+      });
     }
 
     var scrubbingVol = false;
@@ -585,7 +650,9 @@
         video.volume = currentVolume;
         video.muted = currentVolume === 0;
       }
-      if (muteBtn) muteBtn.textContent = video && (video.muted || video.volume === 0) ? "🔇" : "🔊";
+      if (muteBtn)
+        muteBtn.textContent =
+          video && (video.muted || video.volume === 0) ? "🔇" : "🔊";
       if (volFill) volFill.style.width = currentVolume * 100 + "%";
       if (volHandle) volHandle.style.left = currentVolume * 100 + "%";
       if (vol) vol.setAttribute("aria-valuenow", String(currentVolume));
@@ -603,7 +670,9 @@
         if (event.button !== undefined && event.button !== 0) return;
         scrubbingVol = true;
         if (vol.setPointerCapture) {
-          try { vol.setPointerCapture(event.pointerId); } catch (e) {}
+          try {
+            vol.setPointerCapture(event.pointerId);
+          } catch (e) {}
         }
         event.preventDefault();
         setVolumeFraction(volFromX(event.clientX));
@@ -615,10 +684,14 @@
       function endVolume(event) {
         scrubbingVol = false;
         setVolumeFraction(volFromX(event.clientX));
-        try { localStorage.setItem("aem_volume", String(currentVolume)); } catch (e) {}
+        try {
+          localStorage.setItem("aem_volume", String(currentVolume));
+        } catch (e) {}
       }
       vol.addEventListener("pointerup", endVolume);
-      vol.addEventListener("pointercancel", function () { scrubbingVol = false; });
+      vol.addEventListener("pointercancel", function () {
+        scrubbingVol = false;
+      });
       setVolumeFraction(currentVolume);
     }
     if (muteBtn) {
@@ -646,7 +719,10 @@
     }
     var pipBtn = document.getElementById("pc-pip");
     if (pipBtn) {
-      if (!document.pictureInPictureEnabled || video.disablePictureInPicture !== undefined) {
+      if (
+        !document.pictureInPictureEnabled ||
+        video.disablePictureInPicture !== undefined
+      ) {
         pipBtn.style.display = "none";
       }
       pipBtn.addEventListener("click", function () {
@@ -679,18 +755,22 @@
       touchHandled = false;
     });
     shell.addEventListener("mousemove", showControls);
-    shell.addEventListener("touchstart", function (event) {
-      touchHandled = true;
-      var target = event.target;
-      if (target === shell || target === video || target === playCenter) {
-        if (controlsVisible && isPlaying) {
-          shell.classList.remove("controls-visible");
-          if (hideTimer) clearTimeout(hideTimer);
-          return;
+    shell.addEventListener(
+      "touchstart",
+      function (event) {
+        touchHandled = true;
+        var target = event.target;
+        if (target === shell || target === video || target === playCenter) {
+          if (controlsVisible && isPlaying) {
+            shell.classList.remove("controls-visible");
+            if (hideTimer) clearTimeout(hideTimer);
+            return;
+          }
         }
-      }
-      showControls();
-    }, { passive: true });
+        showControls();
+      },
+      { passive: true },
+    );
     shell.addEventListener("touchmove", showControls, { passive: true });
 
     document.addEventListener("keydown", function (event) {
@@ -743,7 +823,10 @@
       quality_label: cfg.savedQualityLabel || "Auto",
       is_paused: video.paused,
     };
-    AEM.api("/watch/" + cfg.animeId + "/session", { method: "POST", body: body }).catch(function () {});
+    AEM.api("/watch/" + cfg.animeId + "/session", {
+      method: "POST",
+      body: body,
+    }).catch(function () {});
   }
 
   /* ================= СТАТУС ПРОСМОТРА ================= */
@@ -813,7 +896,8 @@
 
     var startInput = document.getElementById("hf-start");
     var endInput = document.getElementById("hf-end");
-    if (startInput) startInput.value = video ? fmtTime(video.currentTime) : "00:00";
+    if (startInput)
+      startInput.value = video ? fmtTime(video.currentTime) : "00:00";
 
     function snapshot() {
       if (!video) return;
@@ -827,10 +911,12 @@
     snapBtn.textContent = "⏱ Взять текущий момент";
     snapBtn.style.marginTop = "-4px";
     if (form.querySelector(".hf-time-row")) {
-      form.querySelector(".hf-time-row").parentNode.insertBefore(
-        snapBtn,
-        form.querySelector(".hf-time-row").nextSibling
-      );
+      form
+        .querySelector(".hf-time-row")
+        .parentNode.insertBefore(
+          snapBtn,
+          form.querySelector(".hf-time-row").nextSibling,
+        );
     }
     snapBtn.addEventListener("click", snapshot);
 
@@ -848,7 +934,10 @@
         watch_source_id: source ? source.id : null,
         translation_id: source ? source.translationId : null,
       };
-      AEM.api("/watch/" + cfg.animeId + "/highlights", { method: "POST", body: body })
+      AEM.api("/watch/" + cfg.animeId + "/highlights", {
+        method: "POST",
+        body: body,
+      })
         .then(function (result) {
           AEM.toast("Момент сохранён! 🎉", "success");
           form.reset();
@@ -859,8 +948,10 @@
         })
         .catch(function (err) {
           AEM.toast(
-            err && err.message ? "Не удалось сохранить: " + err.message : "Не удалось сохранить момент",
-            "error"
+            err && err.message
+              ? "Не удалось сохранить: " + err.message
+              : "Не удалось сохранить момент",
+            "error",
           );
         });
     });
@@ -900,10 +991,14 @@
           item.className = "discussion-item";
           item.setAttribute("data-comment-id", comment.id);
           item.innerHTML =
-            '<div class="di-head"><strong class="di-username">' + escapeHtml(comment.username) +
+            '<div class="di-head"><strong class="di-username">' +
+            escapeHtml(comment.username) +
             '</strong><span class="di-time">только что</span></div>' +
-            '<p class="di-content">' + escapeHtml(comment.content) + "</p>" +
-            '<button class="di-like" data-comment-id="' + comment.id +
+            '<p class="di-content">' +
+            escapeHtml(comment.content) +
+            "</p>" +
+            '<button class="di-like" data-comment-id="' +
+            comment.id +
             '">❤️ <span class="like-count">0</span></button>';
           list.appendChild(item);
           bindLike(item.querySelector(".di-like"));
@@ -931,7 +1026,10 @@
         .then(function (result) {
           btn.classList.toggle("liked", !liked);
           var count = btn.querySelector(".like-count");
-          if (count) count.textContent = liked ? Math.max(0, Number(count.textContent) - 1) : Number(count.textContent) + 1;
+          if (count)
+            count.textContent = liked
+              ? Math.max(0, Number(count.textContent) - 1)
+              : Number(count.textContent) + 1;
         })
         .catch(function () {
           AEM.toast("Не удалось обновить лайк", "error");
@@ -944,16 +1042,24 @@
     var tabs = document.querySelectorAll(".tab-btn");
     tabs.forEach(function (btn) {
       btn.addEventListener("click", function () {
-        tabs.forEach(function (other) { other.classList.remove("active"); });
-        btn.classList.add("active");
-        document.querySelectorAll("[data-tab-content]").forEach(function (panel) {
-          panel.classList.toggle("active", panel.getAttribute("data-tab-content") === btn.getAttribute("data-tab"));
+        tabs.forEach(function (other) {
+          other.classList.remove("active");
         });
+        btn.classList.add("active");
+        document
+          .querySelectorAll("[data-tab-content]")
+          .forEach(function (panel) {
+            panel.classList.toggle(
+              "active",
+              panel.getAttribute("data-tab-content") ===
+                btn.getAttribute("data-tab"),
+            );
+          });
       });
     });
   }
 
-  /* ================= DISCOVERY ================= */  function initDiscover() {
+  /* ================= DISCOVERY ================= */ function initDiscover() {
     var btn = document.getElementById("discover-btn");
     if (!btn) return;
     btn.addEventListener("click", function () {
@@ -965,14 +1071,21 @@
         body: { episode: cfg.episode },
       })
         .then(function (result) {
-          var count = result && result.sources_count ? Number(result.sources_count) : 0;
+          var count =
+            result && result.sources_count ? Number(result.sources_count) : 0;
           btn.disabled = false;
           btn.textContent = original;
           if (count > 0) {
-            AEM.toast("Источники найдены: " + count + ". Обновляем…", "success");
+            AEM.toast(
+              "Источники найдены: " + count + ". Обновляем…",
+              "success",
+            );
             window.location.reload();
           } else {
-            AEM.toast("Источники не найдены. Попробуйте позже или проверьте название", "error");
+            AEM.toast(
+              "Источники не найдены. Попробуйте позже или проверьте название",
+              "error",
+            );
           }
         })
         .catch(function (err) {
@@ -982,7 +1095,10 @@
           if (message === "no_sources_found") {
             AEM.toast("Провайдер не нашёл источники для этого тайтла", "error");
           } else if (message === "provider_timeout") {
-            AEM.toast("Провайдер не ответил вовремя, попробуйте ещё раз", "error");
+            AEM.toast(
+              "Провайдер не ответил вовремя, попробуйте ещё раз",
+              "error",
+            );
           } else {
             AEM.toast("Источники пока не найдены", "error");
           }
@@ -1005,15 +1121,28 @@
 
   function initDisclaimer(next) {
     var box = document.getElementById("thirdparty-disclaimer");
-    if (!box || !cfg.sources || !cfg.sources.length) { next(); return; }
+    if (!box || !cfg.sources || !cfg.sources.length) {
+      next();
+      return;
+    }
     var acked = false;
-    try { acked = sessionStorage.getItem("aem_thirdparty_ack") === "1"; } catch (e) {}
-    if (acked) { next(); return; }
+    try {
+      acked = sessionStorage.getItem("aem_thirdparty_ack") === "1";
+    } catch (e) {}
+    if (acked) {
+      next();
+      return;
+    }
     box.classList.remove("hidden");
     var btn = document.getElementById("disclaimer-accept");
-    if (!btn) { next(); return; }
+    if (!btn) {
+      next();
+      return;
+    }
     btn.addEventListener("click", function () {
-      try { sessionStorage.setItem("aem_thirdparty_ack", "1"); } catch (e) {}
+      try {
+        sessionStorage.setItem("aem_thirdparty_ack", "1");
+      } catch (e) {}
       box.classList.add("hidden");
       next();
     });

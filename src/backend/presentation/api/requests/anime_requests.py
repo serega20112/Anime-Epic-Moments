@@ -201,12 +201,18 @@ async def build_filter_anime_catalog_query(request: Request) -> FilterAnimeCatal
     min_score = await _to_float(request.query_params.get("min_score"))
     if min_score is not None:
         min_score = max(0.0, min(min_score, 10.0))
+
+    # Parse optional has_dub parameter: empty -> None (no filtering), otherwise parse bool
+    raw_has_dub = request.query_params.get("has_dub")
+    has_dub = None if raw_has_dub in (None, "") else await _to_bool(raw_has_dub)
+
     return FilterAnimeCatalogQuery(
         genre=str(request.query_params.get("genre", "")).strip()[
             : Settings.anime_genre_hint_max_length
         ],
         media_type=str(request.query_params.get("type", "")).strip().lower(),
         status=str(request.query_params.get("status", "")).strip().lower(),
+        has_dub=has_dub,
         year_from=await _clamp_int(
             request.query_params.get("year_from"), default=0, minimum=1950, maximum=2100
         )

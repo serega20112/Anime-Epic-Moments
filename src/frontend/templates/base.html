@@ -1,147 +1,283 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru" data-theme="neon">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0b0d12">
-  <meta name="csrf-token" content="{{ csrf_token() }}">
-  <meta name="auth-user-id" content="{{ current_user.id if current_user else '' }}">
-  <title>{% block title %}Anime Epic Moments{% endblock %}</title>
-  <link rel="icon" href="{{ url_for('static', filename='images/default-avatar.svg') }}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-  {% block head %}{% endblock %}
-</head>
-<body>
-  <canvas id="particles-canvas" aria-hidden="true"></canvas>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0d12" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <meta
+      name="auth-user-id"
+      content="{{ current_user.id if current_user else '' }}"
+    />
+    <title>{% block title %}Anime Epic Moments{% endblock %}</title>
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='images/default-avatar.svg') }}"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <canvas id="particles-canvas" aria-hidden="true"></canvas>
 
-  <header class="header">
-    <div class="header-inner">
-      <a class="logo" href="{{ url_for('index.index') }}" aria-label="Anime Epic Moments — на главную">
-        <span class="logo-badge"></span><span class="logo-word">AEM</span>
-      </a>
+    <header class="header">
+      <div class="header-inner">
+        <a
+          class="logo"
+          href="{{ url_for('index.index') }}"
+          aria-label="Anime Epic Moments — на главную"
+        >
+          <span class="logo-badge"></span><span class="logo-word">AEM</span>
+        </a>
 
-      <div class="header-search" id="header-search">
-        <form action="{{ url_for('anime.search_anime_page') }}" method="get" role="search" aria-label="Поиск аниме">
-          <div class="search-input-wrap">
-            <span class="search-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <circle cx="11" cy="11" r="7"></circle>
-                <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
-              </svg>
-            </span>
-            <input type="text" name="title" id="header-search-input" placeholder="Найдите аниме по названию, жанру или эмоции…"
-                   autocomplete="off" aria-label="Поиск аниме" aria-autocomplete="list">
-            <button type="button" class="search-clear" id="search-clear" aria-label="Очистить поиск">&times;</button>
-          </div>
-        </form>
-        <div class="autocomplete" id="autocomplete" role="listbox"></div>
-      </div>
-
-      <nav class="nav" aria-label="Основная навигация">
-        <a class="nav-link {{ 'active' if request.path == '/' }}" href="{{ url_for('index.index') }}">
-          <span class="nav-icon">🏠</span><span class="nav-text">Главная</span>
-        </a>
-        <a class="nav-link {{ 'active' if request.path.startswith('/anime/search') }}" href="{{ url_for('anime.search_anime_page') }}">
-          <span class="nav-icon">🔍</span><span class="nav-text">Поиск</span>
-        </a>
-        <a class="nav-link {{ 'active' if request.path.startswith('/anime/catalog') }}" href="{{ url_for('anime.catalog_page') }}">
-          <span class="nav-icon">🎛️</span><span class="nav-text">Каталог</span>
-        </a>
-        <a class="nav-link {{ 'active' if request.path.startswith('/highlights/top') }}" href="{{ url_for('highlight.get_public_top_highlights') }}">
-          <span class="nav-icon">💎</span><span class="nav-text">Топ хайлайтов</span>
-        </a>
-        <a class="nav-link {{ 'active' if request.path == '/highlights/feed' }}" href="{{ url_for('highlight.get_highlight_feed') }}">
-          <span class="nav-icon">🌊</span><span class="nav-text">Лента</span>
-        </a>
-        {% if current_user %}
-        <a class="nav-link {{ 'active' if request.path.startswith('/favorites/') }}" href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}">
-          <span class="nav-icon">❤️</span><span class="nav-text">Избранное</span>
-        </a>
-        <a class="nav-link {{ 'active' if request.path.startswith('/collections') }}" href="{{ url_for('collection.collections_page') }}">
-          <span class="nav-icon">📚</span><span class="nav-text">Коллекции</span>
-        </a>
-        {% endif %}
-      </nav>
-
-      <div class="user-menu" id="user-menu">
-        {% if current_user %}
-        <button class="user-avatar-btn" id="user-menu-btn" aria-haspopup="true" aria-expanded="false">
-          <img class="avatar avatar-sm" src="{{ current_user.avatar_url or url_for('static', filename='images/default-avatar.svg') }}"
-               alt="Аватар {{ current_user.username }}"
-               onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';">
-          <span class="user-name">{{ current_user.username }}</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color:var(--color-text-faint)"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </button>
-        <div class="dropdown" id="user-dropdown">
-          <div class="dropdown-header">
-            <div class="d-name">{{ current_user.username }}</div>
-            <div class="d-mail">{{ current_user.email }}</div>
-          </div>
-          <a class="dropdown-item" href="{{ url_for('auth.profile_page') }}">👤 Мой профиль</a>
-          <a class="dropdown-item" href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}">⭐ Мои хайлайты</a>
-          <a class="dropdown-item" href="{{ url_for('highlight.get_liked_highlights') }}">❤️ Мои лайки</a>
-          <a class="dropdown-item" href="{{ url_for('highlight.get_saved_highlights') }}">🔖 Сохранённые</a>
-          <a class="dropdown-item" href="{{ url_for('highlight.get_highlight_notifications') }}">🔔 Уведомления</a>
-          <a class="dropdown-item" href="{{ url_for('support.support_page') }}">🛟 Поддержка</a>
-          <form method="post" action="{{ url_for('auth.logout_user') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="dropdown-item danger">🚪 Выйти</button>
+        <div class="header-search" id="header-search">
+          <form
+            action="{{ url_for('anime.search_anime_page') }}"
+            method="get"
+            role="search"
+            aria-label="Поиск аниме"
+          >
+            <div class="search-input-wrap">
+              <span class="search-icon" aria-hidden="true">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                >
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+                </svg>
+              </span>
+              <input
+                type="text"
+                name="title"
+                id="header-search-input"
+                placeholder="Найдите аниме по названию, жанру или эмоции…"
+                autocomplete="off"
+                aria-label="Поиск аниме"
+                aria-autocomplete="list"
+              />
+              <button
+                type="button"
+                class="search-clear"
+                id="search-clear"
+                aria-label="Очистить поиск"
+              >
+                &times;
+              </button>
+            </div>
           </form>
+          <div class="autocomplete" id="autocomplete" role="listbox"></div>
         </div>
-        {% else %}
-        <a class="btn btn-ghost btn-sm" href="{{ url_for('auth.login_page') }}">Вход</a>
-        <a class="btn btn-primary btn-sm" href="{{ url_for('auth.register_page') }}">Регистрация</a>
-        {% endif %}
+
+        <nav class="nav" aria-label="Основная навигация">
+          <a
+            class="nav-link {{ 'active' if request.path == '/' }}"
+            href="{{ url_for('index.index') }}"
+          >
+            <span class="nav-icon">🏠</span
+            ><span class="nav-text">Главная</span>
+          </a>
+          <a
+            class="nav-link {{ 'active' if request.path.startswith('/anime/search') }}"
+            href="{{ url_for('anime.search_anime_page') }}"
+          >
+            <span class="nav-icon">🔍</span><span class="nav-text">Поиск</span>
+          </a>
+          <a
+            class="nav-link {{ 'active' if request.path.startswith('/anime/catalog') }}"
+            href="{{ url_for('anime.catalog_page') }}"
+          >
+            <span class="nav-icon">🎛️</span
+            ><span class="nav-text">Каталог</span>
+          </a>
+          <a
+            class="nav-link {{ 'active' if request.path.startswith('/highlights/top') }}"
+            href="{{ url_for('highlight.get_public_top_highlights') }}"
+          >
+            <span class="nav-icon">💎</span
+            ><span class="nav-text">Топ хайлайтов</span>
+          </a>
+          <a
+            class="nav-link {{ 'active' if request.path == '/highlights/feed' }}"
+            href="{{ url_for('highlight.get_highlight_feed') }}"
+          >
+            <span class="nav-icon">🌊</span><span class="nav-text">Лента</span>
+          </a>
+          {% if current_user %}
+          <a
+            class="nav-link {{ 'active' if request.path.startswith('/favorites/') }}"
+            href="{{ url_for('favorite.get_favorites', user_id=current_user.id) }}"
+          >
+            <span class="nav-icon">❤️</span
+            ><span class="nav-text">Избранное</span>
+          </a>
+          <a
+            class="nav-link {{ 'active' if request.path.startswith('/collections') }}"
+            href="{{ url_for('collection.collections_page') }}"
+          >
+            <span class="nav-icon">📚</span
+            ><span class="nav-text">Коллекции</span>
+          </a>
+          {% endif %}
+        </nav>
+
+        <div class="user-menu" id="user-menu">
+          {% if current_user %}
+          <button
+            class="user-avatar-btn"
+            id="user-menu-btn"
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            <img
+              class="avatar avatar-sm"
+              src="{{ current_user.avatar_url or url_for('static', filename='images/default-avatar.svg') }}"
+              alt="Аватар {{ current_user.username }}"
+              onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';"
+            />
+            <span class="user-name">{{ current_user.username }}</span>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              style="color: var(--color-text-faint)"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="dropdown" id="user-dropdown">
+            <div class="dropdown-header">
+              <div class="d-name">{{ current_user.username }}</div>
+              <div class="d-mail">{{ current_user.email }}</div>
+            </div>
+            <a class="dropdown-item" href="{{ url_for('auth.profile_page') }}"
+              >👤 Мой профиль</a
+            >
+            <a
+              class="dropdown-item"
+              href="{{ url_for('highlight.get_user_highlights', user_id=current_user.id) }}"
+              >⭐ Мои хайлайты</a
+            >
+            <a
+              class="dropdown-item"
+              href="{{ url_for('highlight.get_liked_highlights') }}"
+              >❤️ Мои лайки</a
+            >
+            <a
+              class="dropdown-item"
+              href="{{ url_for('highlight.get_saved_highlights') }}"
+              >🔖 Сохранённые</a
+            >
+            <a
+              class="dropdown-item"
+              href="{{ url_for('highlight.get_highlight_notifications') }}"
+              >🔔 Уведомления</a
+            >
+            <a
+              class="dropdown-item"
+              href="{{ url_for('support.support_page') }}"
+              >🛟 Поддержка</a
+            >
+            <form method="post" action="{{ url_for('auth.logout_user') }}">
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+              <button type="submit" class="dropdown-item danger">
+                🚪 Выйти
+              </button>
+            </form>
+          </div>
+          {% else %}
+          <a
+            class="btn btn-ghost btn-sm"
+            href="{{ url_for('auth.login_page') }}"
+            >Вход</a
+          >
+          <a
+            class="btn btn-primary btn-sm"
+            href="{{ url_for('auth.register_page') }}"
+            >Регистрация</a
+          >
+          {% endif %}
+        </div>
+      </div>
+    </header>
+
+    <div class="flash-messages" id="flash-messages" aria-live="polite">
+      {% for message in get_flashed_messages() %}
+      <div class="flash">{{ message }}</div>
+      {% endfor %}
+    </div>
+
+    <main id="main">{% block content %}{% endblock %}</main>
+
+    <button class="theme-fab" id="theme-fab" aria-label="Переключить тему">
+      <span class="theme-dot"></span>
+      <span id="theme-fab-label">Тема</span>
+    </button>
+
+    <nav class="bottom-nav" aria-label="Мобильная навигация">
+      <a href="{{ url_for('index.index') }}"
+        ><span class="bn-icon">🏠</span>Главная</a
+      >
+      <a href="{{ url_for('anime.search_anime_page') }}"
+        ><span class="bn-icon">🔍</span>Поиск</a
+      >
+      <a href="{{ url_for('highlight.get_public_top_highlights') }}"
+        ><span class="bn-icon">💎</span>Топ</a
+      >
+      <a href="{{ url_for('highlight.get_highlight_feed') }}"
+        ><span class="bn-icon">🌊</span>Лента</a
+      >
+      {% if current_user %}
+      <a href="{{ url_for('auth.profile_page') }}"
+        ><span class="bn-icon">👤</span>Профиль</a
+      >
+      {% else %}
+      <a href="{{ url_for('auth.login_page') }}"
+        ><span class="bn-icon">👤</span>Войти</a
+      >
+      {% endif %}
+    </nav>
+
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h3 id="modal-title">Внимание</h3>
+          <button class="modal-close" id="modal-close" aria-label="Закрыть">
+            &times;
+          </button>
+        </div>
+        <div id="modal-body"></div>
       </div>
     </div>
-  </header>
 
-  <div class="flash-messages" id="flash-messages" aria-live="polite">
-    {% for message in get_flashed_messages() %}
-    <div class="flash">{{ message }}</div>
-    {% endfor %}
-  </div>
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
-  <main id="main">
-    {% block content %}{% endblock %}
-  </main>
-
-  <button class="theme-fab" id="theme-fab" aria-label="Переключить тему">
-    <span class="theme-dot"></span>
-    <span id="theme-fab-label">Тема</span>
-  </button>
-
-  <nav class="bottom-nav" aria-label="Мобильная навигация">
-    <a href="{{ url_for('index.index') }}"><span class="bn-icon">🏠</span>Главная</a>
-    <a href="{{ url_for('anime.search_anime_page') }}"><span class="bn-icon">🔍</span>Поиск</a>
-    <a href="{{ url_for('highlight.get_public_top_highlights') }}"><span class="bn-icon">💎</span>Топ</a>
-    <a href="{{ url_for('highlight.get_highlight_feed') }}"><span class="bn-icon">🌊</span>Лента</a>
-    {% if current_user %}
-    <a href="{{ url_for('auth.profile_page') }}"><span class="bn-icon">👤</span>Профиль</a>
-    {% else %}
-    <a href="{{ url_for('auth.login_page') }}"><span class="bn-icon">👤</span>Войти</a>
-    {% endif %}
-  </nav>
-
-  <div class="modal-overlay" id="modal-overlay">
-    <div class="modal" role="dialog" aria-modal="true">
-      <div class="modal-header">
-        <h3 id="modal-title">Внимание</h3>
-        <button class="modal-close" id="modal-close" aria-label="Закрыть">&times;</button>
-      </div>
-      <div id="modal-body"></div>
-    </div>
-  </div>
-
-  <div class="toast-container" id="toast-container" aria-live="polite"></div>
-
-  <script src="{{ url_for('static', filename='js/core.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/favorites.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/particles.js') }}"></script>
-  {% block scripts %}{% endblock %}
-</body>
+    <script src="{{ url_for('static', filename='js/core.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/favorites.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme_switcher.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/particles.js') }}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
 </html>

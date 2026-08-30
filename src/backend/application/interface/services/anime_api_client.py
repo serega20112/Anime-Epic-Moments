@@ -54,3 +54,34 @@ class AnimeApiClientInterface(ABC):
         Returns:
             list[Any]: List of anime data objects.
         """
+
+    @abstractmethod
+    async def filter_catalog(
+        self,
+        *,
+        genre: str = "",
+        media_type: str = "",
+        status: str = "",
+        year_from: int | None = None,
+        year_to: int | None = None,
+        min_score: float | None = None,
+        sort: str = "rating",
+        order: str = "desc",
+        limit: int = 30,
+    ) -> list[Any]:
+        """Browse anime with Anixart-like filters.
+
+        Args:
+            genre: Comma-separated genre/tag names or empty string for all.
+            media_type: Format filter (tv, movie, ova, ona, special). Empty means all.
+            status: Status filter (airing, complete, upcoming). Empty means all.
+            year_from: Optional lower bound release year.
+            year_to: Optional upper bound release year.
+            min_score: Optional minimum normalized rating (0-10).
+            sort: Sorting strategy (rating, popularity, newest, title).
+            order: Sorting direction (asc, desc).
+            limit: Maximum number of results to return.
+
+        Returns:
+            list[Any]: Filtered and sorted anime.
+        """

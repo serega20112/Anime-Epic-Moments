@@ -24,6 +24,9 @@ class FilterAnimeCatalogQuery:
     genre: str = ""
     media_type: str = ""
     status: str = ""
+    # When has_dub is True, only titles with at least one voice-over/translation
+    # are expected to be returned. When None, no filtering by dubbing is applied.
+    has_dub: bool | None = None
     year_from: int | None = None
     year_to: int | None = None
     min_score: float | None = None

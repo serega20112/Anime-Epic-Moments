@@ -1,28 +1,44 @@
-{% extends "base.html" %}
-
-{% block title %}Поиск по описанию — Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Поиск по описанию — Anime Epic
+Moments{% endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/anime.css') }}"
+/>
+{% endblock %} {% block content %}
 <section class="search-hero">
   <div class="container">
     <h1>Поиск по описанию</h1>
-    <p>Опишите своими словами: жанр, атмосферу, эмоцию — подберём аниме, которое вам подойдёт.</p>
+    <p>
+      Опишите своими словами: жанр, атмосферу, эмоцию — подберём аниме, которое
+      вам подойдёт.
+    </p>
 
-    <form class="search-panel glass" method="get" action="{{ url_for('anime.search_by_description_page') }}" id="description-search-form">
+    <form
+      class="search-panel glass"
+      method="get"
+      action="{{ url_for('anime.search_by_description_page') }}"
+      id="description-search-form"
+    >
       <div class="search-bar">
-        <textarea name="description" id="description-input" required
-                  placeholder="Например: школьник открывает тайную параллельную школу магии и объединяет учеников вокруг общего дела"> </textarea>
+        <textarea
+          name="description"
+          id="description-input"
+          required
+          placeholder="Например: школьник открывает тайную параллельную школу магии и объединяет учеников вокруг общего дела"
+        >
+        </textarea>
         <button type="submit" class="btn btn-primary">Подобрать</button>
       </div>
 
       <div class="filters-panel">
         <div class="filter-field">
           <label for="genre_hint">Намёк на жанр</label>
-          <input type="text" id="genre_hint" name="genre_hint" placeholder="drama, fantasy…">
+          <input
+            type="text"
+            id="genre_hint"
+            name="genre_hint"
+            placeholder="drama, fantasy…"
+          />
         </div>
         <div class="filter-field">
           <label for="sort">Сортировка</label>
@@ -34,15 +50,37 @@
         </div>
         <div class="filter-field">
           <label for="year_from">Год от</label>
-          <input type="number" id="year_from" name="year_from" min="1960" max="2027" placeholder="2015">
+          <input
+            type="number"
+            id="year_from"
+            name="year_from"
+            min="1960"
+            max="2027"
+            placeholder="2015"
+          />
         </div>
         <div class="filter-field">
           <label for="year_to">Год до</label>
-          <input type="number" id="year_to" name="year_to" min="1960" max="2027" placeholder="2026">
+          <input
+            type="number"
+            id="year_to"
+            name="year_to"
+            min="1960"
+            max="2027"
+            placeholder="2026"
+          />
         </div>
         <div class="filter-field">
           <label for="rating">Мин. рейтинг</label>
-          <input type="number" id="rating" name="rating" min="0" max="10" step="0.1" placeholder="7">
+          <input
+            type="number"
+            id="rating"
+            name="rating"
+            min="0"
+            max="10"
+            step="0.1"
+            placeholder="7"
+          />
         </div>
         <div class="filter-field">
           <label for="age_rating">Возрастной рейтинг</label>
@@ -59,9 +97,27 @@
 
     <div class="search-hints">
       <span>Идеи:</span>
-      <button type="button" class="search-hint-chip" data-desc-hint="История о юноше, который попадает в мир, где люди охотятся на титанов и живут за стенами">Титаны, стены</button>
-      <button type="button" class="search-hint-chip" data-desc-hint="Учёный влюбляется в юношу и случайно активирует древнюю магию воскрешения">Магия, романтика</button>
-      <button type="button" class="search-hint-chip" data-desc-hint="Подросток получает устройство, которое позволяет возвращать время на несколько секунд назад и предотвращать смерть людей">Петля времени</button>
+      <button
+        type="button"
+        class="search-hint-chip"
+        data-desc-hint="История о юноше, который попадает в мир, где люди охотятся на титанов и живут за стенами"
+      >
+        Титаны, стены
+      </button>
+      <button
+        type="button"
+        class="search-hint-chip"
+        data-desc-hint="Учёный влюбляется в юношу и случайно активирует древнюю магию воскрешения"
+      >
+        Магия, романтика
+      </button>
+      <button
+        type="button"
+        class="search-hint-chip"
+        data-desc-hint="Подросток получает устройство, которое позволяет возвращать время на несколько секунд назад и предотвращать смерть людей"
+      >
+        Петля времени
+      </button>
     </div>
   </div>
 </section>
@@ -69,7 +125,7 @@
 <section class="results-section">
   <div class="container">
     <div class="results-header">
-      <h2 class="section-title" style="margin:0">Подборка</h2>
+      <h2 class="section-title" style="margin: 0">Подборка</h2>
       <span class="results-count" id="results-count"></span>
     </div>
     <div class="loading-state hidden" id="results-loading">
@@ -89,17 +145,20 @@
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-header">
       <h3>Возрастное ограничение</h3>
-      <button class="modal-close" id="age-modal-close" aria-label="Закрыть">&times;</button>
+      <button class="modal-close" id="age-modal-close" aria-label="Закрыть">
+        &times;
+      </button>
     </div>
-    <div id="age-modal-body" style="font-size:var(--text-sm);color:var(--color-text-muted)"></div>
+    <div
+      id="age-modal-body"
+      style="font-size: var(--text-sm); color: var(--color-text-muted)"
+    ></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="age-cancel">Отмена</button>
       <button class="btn btn-primary" id="age-confirm">Мне есть 18 лет</button>
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script src="{{ url_for('static', filename='js/anime_search_ui.js') }}"></script>
 {% endblock %}

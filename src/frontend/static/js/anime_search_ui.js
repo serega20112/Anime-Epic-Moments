@@ -8,7 +8,8 @@
 
   function findPage() {
     if (document.getElementById("title-search-form")) return "title";
-    if (document.getElementById("description-search-form")) return "description";
+    if (document.getElementById("description-search-form"))
+      return "description";
     return null;
   }
 
@@ -16,10 +17,14 @@
   function resultCard(anime) {
     var wrap = document.createElement("div");
     wrap.className = "age-wrapper";
-    wrap.appendChild(elementFromHtml(AEM.animeCard(
-      anime,
-      { watchUrl: "/watch/" + (anime.anime_id || anime.external_id || anime.id) }
-    )));
+    wrap.appendChild(
+      elementFromHtml(
+        AEM.animeCard(anime, {
+          watchUrl:
+            "/watch/" + (anime.anime_id || anime.external_id || anime.id),
+        }),
+      ),
+    );
     if (anime.requires_age_confirmation) {
       var overlay = document.createElement("div");
       overlay.className = "age-overlay";
@@ -47,7 +52,9 @@
     });
     if (count) {
       count.textContent = list.length
-        ? "Найдено: " + list.length + (list.length === 1 ? " тайтл" : " тайтлов")
+        ? "Найдено: " +
+          list.length +
+          (list.length === 1 ? " тайтл" : " тайтлов")
         : "";
     }
     if (empty) empty.classList.toggle("hidden", list.length > 0);
@@ -92,7 +99,9 @@
       return;
     }
     setLoading(true);
-    AEM.api("/anime/api/search?title=" + encodeURIComponent(title) + "&limit=10")
+    AEM.api(
+      "/anime/api/search?title=" + encodeURIComponent(title) + "&limit=10",
+    )
       .then(function (list) {
         setLoading(false);
         renderResults(Array.isArray(list) ? list : []);
@@ -131,7 +140,14 @@
     var params = new URLSearchParams();
     params.set("description", description);
     params.set("limit", "10");
-    ["genre_hint", "sort", "year_from", "year_to", "rating", "age_rating"].forEach(function (name) {
+    [
+      "genre_hint",
+      "sort",
+      "year_from",
+      "year_to",
+      "rating",
+      "age_rating",
+    ].forEach(function (name) {
       var el = form.querySelector('[name="' + name + '"]');
       var value = el ? el.value.trim() : "";
       if (name === "sort" && !value) value = "match";
@@ -182,7 +198,9 @@
     var overlay = document.getElementById("age-modal");
     var body = document.getElementById("age-modal-body");
     if (!overlay) return;
-    body.textContent = message || "Часть результатов может содержать контент для взрослых. Подтвердите, что вам есть 18 лет.";
+    body.textContent =
+      message ||
+      "Часть результатов может содержать контент для взрослых. Подтвердите, что вам есть 18 лет.";
     overlay.classList.add("open");
   }
 

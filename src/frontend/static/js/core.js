@@ -4,7 +4,12 @@
   "use strict";
 
   var THEME_KEYS = ["neon", "dark", "light", "rose"];
-  var THEME_LABELS = { neon: "Неон", dark: "Тёмная", light: "Светлая", rose: "Сакура" };
+  var THEME_LABELS = {
+    neon: "Неон",
+    dark: "Тёмная",
+    light: "Светлая",
+    rose: "Сакура",
+  };
 
   function csrfToken() {
     var meta = document.querySelector('meta[name="csrf-token"]');
@@ -19,9 +24,13 @@
         "X-CSRF-Token": csrfToken(),
         Accept: "application/json",
       },
-      options.headers || {}
+      options.headers || {},
     );
-    if (options.body && typeof options.body !== "string" && !(options.body instanceof FormData)) {
+    if (
+      options.body &&
+      typeof options.body !== "string" &&
+      !(options.body instanceof FormData)
+    ) {
       options.headers["Content-Type"] = "application/json";
       options.body = JSON.stringify(options.body);
     }
@@ -40,7 +49,8 @@
       }
       if (response.status === 204) return null;
       var contentType = response.headers.get("content-type") || "";
-      if (contentType.indexOf("application/json") !== -1) return response.json();
+      if (contentType.indexOf("application/json") !== -1)
+        return response.json();
       return response.text();
     });
   }
@@ -136,17 +146,39 @@
     if (episodeCount) meta.push(episodeCount + " серий");
     if (!meta.length && genres.length) meta.push(genres[0]);
     return (
-      '<a class="anime-card" href="' + watchUrl + '">' +
-        '<div class="poster">' +
-          '<img src="' + cover + '" alt="' + escapeHtml(title) + '" loading="lazy" onerror="this.onerror=null;this.src=\'' + NO_COVER + '\';">' +
-          (rating ? '<span class="rating-badge">★ ' + rating + '</span>' : "") +
-          (genres.length ? '<span class="type-badge">' + escapeHtml(genres[0]) + "</span>" : "") +
-          '<span class="poster-actions"><button type="button" class="btn btn-sm fav-btn" data-fav-id="' + escapeHtml(String(id)) + '" title="В избранное">🤍</button><span class="btn btn-primary btn-sm">Смотреть</span></span>' +
-        "</div>" +
-        '<div class="card-body">' +
-          '<div class="card-title">' + escapeHtml(title) + "</div>" +
-          (meta.length ? '<div class="card-meta">' + meta.map(function (m) { return "<span>" + escapeHtml(String(m)) + "</span>"; }).join('<span class="dot"></span>') + "</div>" : "") +
-        "</div>" +
+      '<a class="anime-card" href="' +
+      watchUrl +
+      '">' +
+      '<div class="poster">' +
+      '<img src="' +
+      cover +
+      '" alt="' +
+      escapeHtml(title) +
+      '" loading="lazy" onerror="this.onerror=null;this.src=\'' +
+      NO_COVER +
+      "';\">" +
+      (rating ? '<span class="rating-badge">★ ' + rating + "</span>" : "") +
+      (genres.length
+        ? '<span class="type-badge">' + escapeHtml(genres[0]) + "</span>"
+        : "") +
+      '<span class="poster-actions"><button type="button" class="btn btn-sm fav-btn" data-fav-id="' +
+      escapeHtml(String(id)) +
+      '" title="В избранное">🤍</button><span class="btn btn-primary btn-sm">Смотреть</span></span>' +
+      "</div>" +
+      '<div class="card-body">' +
+      '<div class="card-title">' +
+      escapeHtml(title) +
+      "</div>" +
+      (meta.length
+        ? '<div class="card-meta">' +
+          meta
+            .map(function (m) {
+              return "<span>" + escapeHtml(String(m)) + "</span>";
+            })
+            .join('<span class="dot"></span>') +
+          "</div>"
+        : "") +
+      "</div>" +
       "</a>"
     );
   }
@@ -170,9 +202,10 @@
     var closeBtn = document.getElementById("modal-close");
     var overlay = document.getElementById("modal-overlay");
     if (closeBtn) closeBtn.addEventListener("click", closeModal);
-    if (overlay) overlay.addEventListener("click", function (event) {
-      if (event.target === overlay) closeModal();
-    });
+    if (overlay)
+      overlay.addEventListener("click", function (event) {
+        if (event.target === overlay) closeModal();
+      });
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape") closeModal();
     });

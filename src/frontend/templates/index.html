@@ -1,27 +1,40 @@
-{% extends "base.html" %}
-
-{% block title %}Anime Epic Moments — ваши эпичные сцены{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Anime Epic Moments — ваши эпичные
+сцены{% endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/index.css') }}"
+/>
+{% endblock %} {% block content %}
 <section class="hero">
   <div class="hero-inner container">
     <p class="hero-kicker">✦ anime epic moments</p>
-    <h1 class="hero-title">Сохрани момент,<br>который тронул душу</h1>
+    <h1 class="hero-title">Сохрани момент,<br />который тронул душу</h1>
     <p class="hero-subtitle">Твои эпичные сцены. Твои эмоции. Твоё аниме.</p>
     <div class="hero-actions">
-      <a class="btn btn-primary btn-lg" href="{{ url_for('anime.search_by_description_page') }}">Найти аниме по описанию</a>
-      <a class="btn btn-ghost btn-lg" href="{{ url_for('highlight.get_public_top_highlights') }}">Хайлайты</a>
+      <a
+        class="btn btn-primary btn-lg"
+        href="{{ url_for('anime.search_by_description_page') }}"
+        >Найти аниме по описанию</a
+      >
+      <a
+        class="btn btn-ghost btn-lg"
+        href="{{ url_for('highlight.get_public_top_highlights') }}"
+        >Хайлайты</a
+      >
     </div>
     {% if not current_user %}
     <div class="hero-guest glass">
       <span class="guest-emoji">👋</span>
-      <p><strong>Залогиньтесь, чтобы сохранять хайлайты</strong> и получать персональные рекомендации.</p>
-      <a class="btn btn-primary btn-sm" href="{{ url_for('auth.login_page') }}">Войти</a>
-      <a class="btn btn-ghost btn-sm" href="{{ url_for('auth.register_page') }}">Создать профиль</a>
+      <p>
+        <strong>Залогиньтесь, чтобы сохранять хайлайты</strong> и получать
+        персональные рекомендации.
+      </p>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('auth.login_page') }}"
+        >Войти</a
+      >
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('auth.register_page') }}"
+        >Создать профиль</a
+      >
     </div>
     {% endif %}
   </div>
@@ -30,15 +43,21 @@
 <div class="container">
   {% if current_user %}
   <section class="section" id="recommendations-section">
-    <div class="section-title"><span class="emoji">🎯</span> Рекомендации для вас</div>
+    <div class="section-title">
+      <span class="emoji">🎯</span> Рекомендации для вас
+    </div>
     <div class="carousel" data-carousel>
       <div class="loading-state" id="recommendations-loading">
         <div class="spinner"></div>
         <span>Подбираем аниме под ваш вкус…</span>
       </div>
       <div class="carousel-track" id="recommendations-track" hidden></div>
-      <button class="carousel-nav prev" data-carousel-prev aria-label="Назад">‹</button>
-      <button class="carousel-nav next" data-carousel-next aria-label="Вперёд">›</button>
+      <button class="carousel-nav prev" data-carousel-prev aria-label="Назад">
+        ‹
+      </button>
+      <button class="carousel-nav next" data-carousel-next aria-label="Вперёд">
+        ›
+      </button>
     </div>
   </section>
   {% endif %}
@@ -46,7 +65,9 @@
   <section class="section" id="season-section">
     <div class="section-title">
       <span class="emoji">🍥</span> Популярные аниме сезона
-      <span class="season-chip" id="season-chip">{{ home_season|capitalize }} {{ home_year }}</span>
+      <span class="season-chip" id="season-chip"
+        >{{ home_season|capitalize }} {{ home_year }}</span
+      >
     </div>
     <div class="carousel" data-carousel>
       <div class="loading-state" id="season-loading">
@@ -54,15 +75,24 @@
         <span>Загружаем сезонные тайтлы…</span>
       </div>
       <div class="carousel-track" id="season-track" hidden></div>
-      <button class="carousel-nav prev" data-carousel-prev aria-label="Назад">‹</button>
-      <button class="carousel-nav next" data-carousel-next aria-label="Вперёд">›</button>
+      <button class="carousel-nav prev" data-carousel-prev aria-label="Назад">
+        ‹
+      </button>
+      <button class="carousel-nav next" data-carousel-next aria-label="Вперёд">
+        ›
+      </button>
     </div>
   </section>
 
   <section class="section">
-    <div class="section-title"><span class="emoji">💎</span> Хайлайты сообщества</div>
+    <div class="section-title">
+      <span class="emoji">💎</span> Хайлайты сообщества
+    </div>
     <div class="community-links">
-      <a class="community-card glass" href="{{ url_for('highlight.get_public_top_highlights') }}">
+      <a
+        class="community-card glass"
+        href="{{ url_for('highlight.get_public_top_highlights') }}"
+      >
         <span class="cc-emoji">🏆</span>
         <div>
           <div class="cc-title">Топ хайлайтов</div>
@@ -70,7 +100,10 @@
         </div>
         <span class="cc-arrow">→</span>
       </a>
-      <a class="community-card glass" href="{{ url_for('highlight.get_highlight_feed') }}">
+      <a
+        class="community-card glass"
+        href="{{ url_for('highlight.get_highlight_feed') }}"
+      >
         <span class="cc-emoji">🌊</span>
         <div>
           <div class="cc-title">Лента</div>
@@ -78,7 +111,10 @@
         </div>
         <span class="cc-arrow">→</span>
       </a>
-      <a class="community-card glass" href="{{ url_for('anime.search_anime_page') }}">
+      <a
+        class="community-card glass"
+        href="{{ url_for('anime.search_anime_page') }}"
+      >
         <span class="cc-emoji">🔍</span>
         <div>
           <div class="cc-title">Поиск аниме</div>
@@ -90,9 +126,7 @@
   </section>
 </div>
 
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
   window.AEMIndexPage = {
     year: {{ home_year|tojson }},

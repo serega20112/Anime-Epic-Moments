@@ -4,7 +4,12 @@
   "use strict";
 
   var STORAGE_KEY = "aem_theme";
-  var LABELS = { neon: "Неон", dark: "Тёмная", light: "Светлая", rose: "Сакура" };
+  var LABELS = {
+    neon: "Неон",
+    dark: "Тёмная",
+    light: "Светлая",
+    rose: "Сакура",
+  };
 
   function getSaved() {
     try {
@@ -29,9 +34,14 @@
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
       var css = getComputedStyle(document.documentElement);
-      meta.setAttribute("content", css.getPropertyValue("--color-background").trim());
+      meta.setAttribute(
+        "content",
+        css.getPropertyValue("--color-background").trim(),
+      );
     }
-    document.dispatchEvent(new CustomEvent("aem:themechange", { detail: { theme: theme } }));
+    document.dispatchEvent(
+      new CustomEvent("aem:themechange", { detail: { theme: theme } }),
+    );
   }
 
   function nextTheme(current) {
@@ -42,7 +52,8 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     var saved = getSaved();
-    var current = saved || document.documentElement.getAttribute("data-theme") || "neon";
+    var current =
+      saved || document.documentElement.getAttribute("data-theme") || "neon";
     if (keysIndexOf(current) === -1) current = "neon";
     applyTheme(current);
 

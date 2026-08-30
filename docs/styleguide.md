@@ -89,7 +89,7 @@ Swagger UI доступен на `/docs`.
    ```
 
 2. Подними инфраструктуру (Postgres + Redis) локально, если нет своей:
-   `docker compose -f build/docker-compose.yml up -d postgres redis` (подробности —
+   `docker compose -f docker-compose.yml up -d postgres redis` (подробности —
    [deployment/overview.md](deployment/overview.md)).
 3. `uv sync` — установить зависимости.
 4. Примени миграции: `uv run alembic -c build/alembic/alembic.ini upgrade head`
@@ -154,7 +154,7 @@ uv run pytest -q --no-cov
 - `ruff.toml` — линт и форматирование (детальный разбор правил — [contribution-guide.md](contribution-guide.md))
 - `.github/workflows/ci.yml` — job `quality`: те же гейты, что и локально
 - `Makefile` — сокращения команд
-- `build/Dockerfile`, `build/docker-compose.yml`, `build/scripts/entrypoint.sh` — упаковка и запуск
+- `Dockerfile`, `docker-compose.yml`, `scripts/entrypoint.sh` — упаковка и запуск
 - `.env.example` — заглушки всех переменных окружения с комментариями
 - `docs/contribution-guide.md` — требования к коду, коммитам, PR и процессу разработки
 

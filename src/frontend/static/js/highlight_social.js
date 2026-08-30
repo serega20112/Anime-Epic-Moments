@@ -49,7 +49,12 @@
       })
       .catch(function (err) {
         btn.disabled = false;
-        AEM.toast(err.status === 401 ? "Войдите, чтобы поставить лайк" : "Не удалось обновить лайк", "error");
+        AEM.toast(
+          err.status === 401
+            ? "Войдите, чтобы поставить лайк"
+            : "Не удалось обновить лайк",
+          "error",
+        );
       });
   }
 
@@ -66,17 +71,26 @@
         btn.classList.toggle("active", willSave);
         btn.setAttribute("aria-pressed", willSave ? "true" : "false");
         if (c) c.setAttribute("data-saved", willSave ? "1" : "0");
-        AEM.toast(willSave ? "Хайлайт сохранён" : "Удалён из сохранённых", "success");
+        AEM.toast(
+          willSave ? "Хайлайт сохранён" : "Удалён из сохранённых",
+          "success",
+        );
         btn.disabled = false;
       })
       .catch(function (err) {
         btn.disabled = false;
-        AEM.toast(err.status === 401 ? "Войдите, чтобы сохранить" : "Не удалось сохранить", "error");
+        AEM.toast(
+          err.status === 401
+            ? "Войдите, чтобы сохранить"
+            : "Не удалось сохранить",
+          "error",
+        );
       });
   }
 
   function openShare(btn) {
-    var shareUrl = location.origin + "/highlights/share/" + btn.getAttribute("data-id");
+    var shareUrl =
+      location.origin + "/highlights/share/" + btn.getAttribute("data-id");
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(shareUrl).then(function () {
         AEM.toast("Ссылка скопирована", "success");
@@ -89,7 +103,10 @@
   function openComments(btn) {
     var id = btn.getAttribute("data-id");
     if (!requireAuth(true)) return;
-    AEM.openModal("Комментарии", '<div class="comments-loading"><div class="spinner"></div></div>');
+    AEM.openModal(
+      "Комментарии",
+      '<div class="comments-loading"><div class="spinner"></div></div>',
+    );
     AEM.api("/highlights/" + id + "/comments")
       .then(function (data) {
         var items = (data && data.items) || [];
@@ -99,9 +116,15 @@
         }
         items.forEach(function (item) {
           html +=
-            '<div class="comment"><div class="comment-head"><b>' + AEM.escapeHtml(item.username) + "</b>" +
-            '<span class="muted">' + AEM.escapeHtml(String(item.created_at || "")) + "</span></div>" +
-            '<p>' + AEM.escapeHtml(item.content) + "</p></div>";
+            '<div class="comment"><div class="comment-head"><b>' +
+            AEM.escapeHtml(item.username) +
+            "</b>" +
+            '<span class="muted">' +
+            AEM.escapeHtml(String(item.created_at || "")) +
+            "</span></div>" +
+            "<p>" +
+            AEM.escapeHtml(item.content) +
+            "</p></div>";
         });
         html += "</div>";
         html +=
@@ -121,7 +144,9 @@
             .then(function () {
               AEM.closeModal();
               AEM.toast("Комментарий добавлен", "success");
-              window.dispatchEvent(new CustomEvent("aem:comment-added", { detail: { id: id } }));
+              window.dispatchEvent(
+                new CustomEvent("aem:comment-added", { detail: { id: id } }),
+              );
             })
             .catch(function () {
               send.disabled = false;
@@ -134,7 +159,10 @@
         });
       })
       .catch(function () {
-        AEM.openModal("Комментарии", '<p class="muted">Не удалось загрузить комментарии.</p>');
+        AEM.openModal(
+          "Комментарии",
+          '<p class="muted">Не удалось загрузить комментарии.</p>',
+        );
       });
   }
 

@@ -1,24 +1,51 @@
-{% extends "base.html" %}
-
-{% block title %}Поиск аниме — Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/anime.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Поиск аниме — Anime Epic Moments{%
+endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/anime.css') }}"
+/>
+{% endblock %} {% block content %}
 <section class="search-hero">
   <div class="container">
     <h1>Поиск аниме</h1>
-    <p>Находите тайтлы по названию — или опишите своими словами, что хотите посмотреть.</p>
+    <p>
+      Находите тайтлы по названию — или опишите своими словами, что хотите
+      посмотреть.
+    </p>
 
-    <form class="search-panel glass" method="get" action="{{ url_for('anime.search_anime_page') }}" id="title-search-form">
+    <form
+      class="search-panel glass"
+      method="get"
+      action="{{ url_for('anime.search_anime_page') }}"
+      id="title-search-form"
+    >
       <div class="search-bar">
         <div class="search-field">
-          <input type="search" name="title" id="search-input" placeholder="Название аниме…"
-                 value="{{ initial_title }}" autofocus>
-          <button type="button" class="search-filter-btn" id="search-filter-btn" aria-label="Фильтры поиска" aria-haspopup="dialog" title="Фильтры">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <input
+            type="search"
+            name="title"
+            id="search-input"
+            placeholder="Название аниме…"
+            value="{{ initial_title }}"
+            autofocus
+          />
+          <button
+            type="button"
+            class="search-filter-btn"
+            id="search-filter-btn"
+            aria-label="Фильтры поиска"
+            aria-haspopup="dialog"
+            title="Фильтры"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
               <line x1="4" y1="7" x2="20" y2="7"></line>
               <line x1="4" y1="12" x2="20" y2="12"></line>
               <line x1="4" y1="17" x2="20" y2="17"></line>
@@ -31,14 +58,19 @@
 
     <div class="search-hints">
       <span>Попробуйте:</span>
-      {% for hint in ["Steins;Gate", "Frieren", "Naruto", "Death Note", "One Piece"] %}
-      <button type="button" class="search-hint-chip" data-hint="{{ hint }}">{{ hint }}</button>
+      {% for hint in ["Steins;Gate", "Frieren", "Naruto", "Death Note", "One
+      Piece"] %}
+      <button type="button" class="search-hint-chip" data-hint="{{ hint }}">
+        {{ hint }}
+      </button>
       {% endfor %}
     </div>
 
-    <p class="search-hints" style="margin-top:6px">
+    <p class="search-hints" style="margin-top: 6px">
       <span>Или ищите по настроению и описанию:</span>&nbsp;
-      <a href="{{ url_for('anime.search_by_description_page') }}">поиск по описанию →</a>
+      <a href="{{ url_for('anime.search_by_description_page') }}"
+        >поиск по описанию →</a
+      >
     </p>
   </div>
 </section>
@@ -46,7 +78,7 @@
 <section class="results-section">
   <div class="container">
     <div class="results-header">
-      <h2 class="section-title" style="margin:0">Результаты</h2>
+      <h2 class="section-title" style="margin: 0">Результаты</h2>
       <span class="results-count" id="results-count"></span>
     </div>
     <div class="loading-state hidden" id="results-loading">
@@ -58,13 +90,15 @@
       <span class="empty-emoji">👻</span>
       <h3>Ничего не найдено</h3>
       <p>Попробуйте другой запрос или воспользуйтесь поиском по описанию.</p>
-      <a class="btn btn-primary btn-sm" href="{{ url_for('anime.search_by_description_page') }}">Поиск по описанию</a>
+      <a
+        class="btn btn-primary btn-sm"
+        href="{{ url_for('anime.search_by_description_page') }}"
+        >Поиск по описанию</a
+      >
     </div>
   </div>
 </section>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
   window.AEMAnimeSearchPage = {
     initialTitle: {{ initial_title|tojson }},

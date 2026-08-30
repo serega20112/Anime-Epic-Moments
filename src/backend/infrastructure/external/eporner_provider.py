@@ -58,7 +58,9 @@ def _calc_hash(page_hash: str) -> str:
     Returns:
         str: Строка из четырёх base36-чанков.
     """
-    return "".join(_to_base36(int(page_hash[offset : offset + 8], 16)) for offset in range(0, 32, 8))
+    return "".join(
+        _to_base36(int(page_hash[offset : offset + 8], 16)) for offset in range(0, 32, 8)
+    )
 
 
 class EpornerProvider(WatchSourceProvider):
@@ -272,9 +274,7 @@ class EpornerProvider(WatchSourceProvider):
                 return True
         return False
 
-    async def _get(
-        self, url: str, *, params: dict[str, str] | None = None
-    ) -> httpx.Response:
+    async def _get(self, url: str, *, params: dict[str, str] | None = None) -> httpx.Response:
         """GET-запрос с трансляцией транспортных ошибок.
 
         Args:

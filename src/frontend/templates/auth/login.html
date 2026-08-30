@@ -1,30 +1,45 @@
-{% extends "base.html" %}
-
-{% block title %}Вход — Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Вход — Anime Epic Moments{% endblock
+%} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/auth.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="auth-page">
   <div class="auth-card glass">
     <div class="auth-logo">AEM</div>
     <p class="auth-sub">С возвращением! Ваши хайлайты скучали по вам.</p>
 
-    <form class="auth-form" method="post" action="{{ url_for('auth.login_user') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form
+      class="auth-form"
+      method="post"
+      action="{{ url_for('auth.login_user') }}"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
       <div class="form-group">
         <label for="email">Email</label>
-        <input type="email" id="email" name="email" placeholder="you@example.com"
-               required autofocus autocomplete="email">
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="you@example.com"
+          required
+          autofocus
+          autocomplete="email"
+        />
       </div>
 
       <div class="form-group">
         <label for="password">Пароль</label>
-        <input type="password" id="password" name="password" placeholder="••••••••"
-               required autocomplete="current-password">
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="••••••••"
+          required
+          autocomplete="current-password"
+        />
       </div>
 
       <div class="auth-actions">
@@ -35,7 +50,9 @@
     <div class="auth-divider">или</div>
 
     <div class="auth-links">
-      <a href="{{ url_for('auth.password_reset_request_page') }}">Забыли пароль?</a>
+      <a href="{{ url_for('auth.password_reset_request_page') }}"
+        >Забыли пароль?</a
+      >
       <a href="{{ url_for('auth.register_page') }}">Создать аккаунт</a>
     </div>
   </div>

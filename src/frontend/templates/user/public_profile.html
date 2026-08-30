@@ -1,65 +1,89 @@
-{% extends "base.html" %}
-
-{% block title %}{{ public_profile.profile.username }} — профиль{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}">
-{% endblock %}
-
-{% set prof = public_profile.profile %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}{{ public_profile.profile.username }}
+— профиль{% endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/profile.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/highlight.css') }}"
+/>
+{% endblock %} {% set prof = public_profile.profile %} {% block content %}
 <div class="profile-page">
   <header class="profile-hero">
-    <img class="profile-avatar" src="{{ prof.avatar_url or url_for('static', filename='images/default-avatar.svg') }}"
-         alt="Аватар {{ prof.username }}"
-         onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';">
+    <img
+      class="profile-avatar"
+      src="{{ prof.avatar_url or url_for('static', filename='images/default-avatar.svg') }}"
+      alt="Аватар {{ prof.username }}"
+      onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';"
+    />
     <div class="profile-info">
       <div class="profile-name">{{ prof.username }}</div>
       {% if prof.smart_profile and prof.smart_profile.dominant_mood %}
-      <p class="profile-bio">{{ prof.smart_profile.dominant_mood.emoji }} {{ prof.smart_profile.dominant_mood.label }}</p>
+      <p class="profile-bio">
+        {{ prof.smart_profile.dominant_mood.emoji }} {{
+        prof.smart_profile.dominant_mood.label }}
+      </p>
       {% endif %}
       <p class="profile-joined">На платформе с {{ prof.created_at }}</p>
       <div class="profile-actions">
         {% if public_profile.can_follow %}
-        <form method="post" action="{{ url_for('user.follow_user', user_id=prof.user_id) if not public_profile.is_following else url_for('user.unfollow_user', user_id=prof.user_id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="btn {{ 'btn-primary' if not public_profile.is_following else 'btn-ghost' }} btn-sm">
-            {{ 'Подписаться' if not public_profile.is_following else 'Отписаться' }}
+        <form
+          method="post"
+          action="{{ url_for('user.follow_user', user_id=prof.user_id) if not public_profile.is_following else url_for('user.unfollow_user', user_id=prof.user_id) }}"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button
+            type="submit"
+            class="btn {{ 'btn-primary' if not public_profile.is_following else 'btn-ghost' }} btn-sm"
+          >
+            {{ 'Подписаться' if not public_profile.is_following else
+            'Отписаться' }}
           </button>
         </form>
         {% endif %}
-        <a class="btn btn-ghost btn-sm" href="{{ url_for('highlight.get_user_highlights', user_id=prof.user_id) }}">Хайлайты</a>
+        <a
+          class="btn btn-ghost btn-sm"
+          href="{{ url_for('highlight.get_user_highlights', user_id=prof.user_id) }}"
+          >Хайлайты</a
+        >
       </div>
     </div>
     {% if prof.summary %}
     <div class="profile-stats">
-      <div class="stat-pill"><b>{{ prof.summary.highlight_count }}</b><span>хайлайтов</span></div>
-      <div class="stat-pill"><b>{{ public_profile.followers_count }}</b><span>подписчиков</span></div>
-      <div class="stat-pill"><b>{{ public_profile.following_count }}</b><span>подписок</span></div>
+      <div class="stat-pill">
+        <b>{{ prof.summary.highlight_count }}</b><span>хайлайтов</span>
+      </div>
+      <div class="stat-pill">
+        <b>{{ public_profile.followers_count }}</b><span>подписчиков</span>
+      </div>
+      <div class="stat-pill">
+        <b>{{ public_profile.following_count }}</b><span>подписок</span>
+      </div>
     </div>
     {% endif %}
   </header>
 
-  <div class="profile-layout" style="margin-top:var(--space-6)">
-    <aside class="side-card" style="grid-column:1">
-      {% if prof.smart_profile %}
-      {% set sp = prof.smart_profile %}
-      {% if sp.favorite_genres %}
+  <div class="profile-layout" style="margin-top: var(--space-6)">
+    <aside class="side-card" style="grid-column: 1">
+      {% if prof.smart_profile %} {% set sp = prof.smart_profile %} {% if
+      sp.favorite_genres %}
       <div>
         <h4>Любимые жанры</h4>
         <div class="genre-bars">
           {% for g in sp.favorite_genres %}
           <div class="genre-bar">
             <span>{{ g.name }} · {{ g.count }}</span>
-            <div class="bar"><i style="width:{{ (g.count * 12)|round|int if g.count else 0 }}%"></i></div>
+            <div class="bar">
+              <i
+                style="width:{{ (g.count * 12)|round|int if g.count else 0 }}%"
+              ></i>
+            </div>
           </div>
           {% endfor %}
         </div>
       </div>
-      {% endif %}
-      {% if sp.achievements %}
+      {% endif %} {% if sp.achievements %}
       <div>
         <h4>Достижения</h4>
         <div class="achievements">
@@ -71,22 +95,27 @@
           {% endfor %}
         </div>
       </div>
-      {% endif %}
-      {% if sp.ai_taste_summary %}
-      <div class="ai-card" style="padding:12px;border-radius:var(--radius-md)">
-        <h4 style="margin-bottom:6px">ИИ-вкус</h4>
-        <p class="muted" style="font-size:var(--text-sm)">{{ sp.ai_taste_summary }}</p>
+      {% endif %} {% if sp.ai_taste_summary %}
+      <div
+        class="ai-card"
+        style="padding: 12px; border-radius: var(--radius-md)"
+      >
+        <h4 style="margin-bottom: 6px">ИИ-вкус</h4>
+        <p class="muted" style="font-size: var(--text-sm)">
+          {{ sp.ai_taste_summary }}
+        </p>
       </div>
-      {% endif %}
-      {% endif %}
-
-      {% if public_profile.following_preview %}
+      {% endif %} {% endif %} {% if public_profile.following_preview %}
       <div>
         <h4>Подписки</h4>
         {% for u in public_profile.following_preview %}
         <div class="follow-preview">
-          <img class="avatar" src="{{ u.avatar_url or url_for('static', filename='images/default-avatar.svg') }}" alt=""
-               onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';">
+          <img
+            class="avatar"
+            src="{{ u.avatar_url or url_for('static', filename='images/default-avatar.svg') }}"
+            alt=""
+            onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';"
+          />
           <a href="{{ u.profile_url }}">{{ u.username }}</a>
         </div>
         {% endfor %}
@@ -94,14 +123,17 @@
       {% endif %}
     </aside>
 
-    <div style="grid-column:2">
+    <div style="grid-column: 2">
       {% if public_profile.public_collections %}
       <div class="section-title"><span class="emoji">📚</span> Коллекции</div>
       <div class="collection-grid">
         {% for c in public_profile.public_collections %}
         <article class="collection-card">
           <a class="cc-cover" href="{{ c.share_url }}">
-            <img src="{{ url_for('static', filename='images/no-cover.svg') }}" alt="">
+            <img
+              src="{{ url_for('static', filename='images/no-cover.svg') }}"
+              alt=""
+            />
             <span class="cc-count">{{ c.items_count }}</span>
           </a>
           <div class="cc-body">
@@ -110,22 +142,21 @@
         </article>
         {% endfor %}
       </div>
-      {% endif %}
-
-      {% if prof.popular_highlights %}
-      <div class="section-title"><span class="emoji">⭐</span> Популярные хайлайты</div>
+      {% endif %} {% if prof.popular_highlights %}
+      <div class="section-title">
+        <span class="emoji">⭐</span> Популярные хайлайты
+      </div>
       <div class="highlight-grid tight">
-        {% for highlight in prof.popular_highlights %}
-        {% include "highlight/_card.html" %}
-        {% endfor %}
+        {% for highlight in prof.popular_highlights %} {% include
+        "highlight/_card.html" %} {% endfor %}
       </div>
       {% endif %}
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>window.AEM_LOGGED_IN = {{ 'true' if current_user else 'false' }};</script>
+{% endblock %} {% block scripts %}
+<script>
+  window.AEM_LOGGED_IN = {{ 'true' if current_user else 'false' }};
+</script>
 <script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
 {% endblock %}

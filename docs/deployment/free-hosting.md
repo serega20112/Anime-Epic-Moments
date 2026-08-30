@@ -8,8 +8,8 @@
 
 ## Подготовка
 
-1. Убедитесь, что `build/Dockerfile` и `build/docker-compose.yml` в репозитории есть.
-2. Убедитесь, что `pyproject.toml` и `uv.lock` в корне репозитория есть (образ собирается через uv, см. `build/Dockerfile`).
+1. Убедитесь, что `Dockerfile` и `docker-compose.yml` в корне репозитория есть.
+2. Убедитесь, что `pyproject.toml` и `uv.lock` в корне репозитория есть (образ собирается через uv, см. `Dockerfile`).
 3. Запушьте проект на GitHub.
 
 ## Настройка PostgreSQL
@@ -61,8 +61,8 @@ ACCOUNT_LOCK_DURATION_SECONDS=1800
 ## После деплоя
 
 Render автоматически:
-- Соберёт Docker-образ на основе `build/Dockerfile`
-- Установит зависимости через `uv sync --frozen --no-dev` (см. `build/Dockerfile`)
+- Соберёт Docker-образ на основе `Dockerfile`
+- Установит зависимости через `uv sync --frozen --no-dev` (см. `Dockerfile`)
 - Запустит контейнер
 - Применит `init_db()` (благодаря `DATABASE_AUTO_INIT=1`)
 

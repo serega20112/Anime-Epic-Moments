@@ -1,19 +1,18 @@
-{% extends "base.html" %}
-
-{% block title %}Ошибка сервера — Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/404.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Ошибка сервера — Anime Epic Moments{%
+endblock %} {% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/404.css') }}" />
+{% endblock %} {% block content %}
 <section class="error-page">
   <div class="error-glitch error-500" aria-hidden="true">500</div>
   <h1 class="page-title">Что-то пошло не так</h1>
   <p class="muted">На сервере произошла ошибка. Мы уже занимаемся этим.</p>
   <div class="error-actions">
-    <a class="btn btn-primary btn-lg" href="{{ url_for('index.index') }}">На главную</a>
-    <a class="btn btn-ghost btn-lg" href="{{ url_for('support.support_page') }}">Сообщить о проблеме</a>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('index.index') }}"
+      >На главную</a
+    >
+    <a class="btn btn-ghost btn-lg" href="{{ url_for('support.support_page') }}"
+      >Сообщить о проблеме</a
+    >
   </div>
 </section>
 {% endblock %}

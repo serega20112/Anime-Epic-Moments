@@ -1,22 +1,14 @@
-{% extends "base.html" %}
-
-{% block title %}Уведомления — Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}">
-{% endblock %}
-
-{% set action_labels = {
-  "like": "лайкнул(а) ваш хайлайт",
-  "comment": "прокомментировал(а) ваш хайлайт",
-  "follow": "подписался(ась) на вас",
-  "save": "сохранил(а) ваш хайлайт",
-  "collection": "добавил(а) ваш хайлайт в коллекцию",
-  "system": "системное уведомление"
-} %}
-
-{% block content %}
-<div class="container" style="max-width:760px">
+{% extends "base.html" %} {% block title %}Уведомления — Anime Epic Moments{%
+endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/highlight.css') }}"
+/>
+{% endblock %} {% set action_labels = { "like": "лайкнул(а) ваш хайлайт",
+"comment": "прокомментировал(а) ваш хайлайт", "follow": "подписался(ась) на
+вас", "save": "сохранил(а) ваш хайлайт", "collection": "добавил(а) ваш хайлайт в
+коллекцию", "system": "системное уведомление" } %} {% block content %}
+<div class="container" style="max-width: 760px">
   <header class="dash-head">
     <div>
       <h1 class="page-title">Уведомления</h1>
@@ -31,8 +23,9 @@
       <span class="notif-emoji">🔔</span>
       <div class="notif-body">
         <b>{{ item.actor_username or "Кто-то" }}</b>
-        {{ action_labels.get(item.action, "взаимодействовал(а) с вашим хайлайтом") }}
-        {% if item.highlight_title %}— <em>{{ item.highlight_title }}</em>{% endif %}
+        {{ action_labels.get(item.action, "взаимодействовал(а) с вашим
+        хайлайтом") }} {% if item.highlight_title %}—
+        <em>{{ item.highlight_title }}</em>{% endif %}
       </div>
       <span class="notif-time">{{ item.created_at }}</span>
     </div>
@@ -46,8 +39,8 @@
   </div>
   {% endif %}
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>window.AEM_LOGGED_IN = {{ 'true' if current_user else 'false' }};</script>
+{% endblock %} {% block scripts %}
+<script>
+  window.AEM_LOGGED_IN = {{ 'true' if current_user else 'false' }};
+</script>
 {% endblock %}

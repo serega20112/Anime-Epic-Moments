@@ -19,7 +19,7 @@
 
   function init() {
     var inputs = document.querySelectorAll(
-      '#password, form input[type="password"]:first-of-type'
+      '#password, form input[type="password"]:first-of-type',
     );
     Array.prototype.forEach.call(inputs, function (input) {
       var group = input.closest(".form-group");

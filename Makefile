@@ -1,4 +1,4 @@
-.PHONY: install lint check-imports test docker-build docker-run docker-down clean
+.PHONY: install lint check-imports test test-fast precommit-install precommit-run-all precommit-init docker-build docker-run docker-down clean
 
 install:
 	uv sync
@@ -19,14 +19,24 @@ test:
 test-fast:
 	uv run pytest -q --no-cov
 
+precommit-install:
+	uv run pre-commit install
+
+precommit-run-all:
+	uv run pre-commit run --all-files
+
+precommit-init:
+	uv run pre-commit install
+	uv run pre-commit autoupdate
+
 docker-build:
-	docker build -f build/Dockerfile -t anime-epic-moments .
+	docker build -f Dockerfile -t anime-epic-moments .
 
 docker-run:
-	docker compose -f build/docker-compose.yml up --build -d
+	docker compose -f docker-compose.yml up --build -d
 
 docker-down:
-	docker compose -f build/docker-compose.yml down
+	docker compose -f docker-compose.yml down
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

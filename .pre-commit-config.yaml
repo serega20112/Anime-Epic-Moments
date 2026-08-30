@@ -1,0 +1,32 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check src tests --fix
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format src tests
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+        require_serial: true
+
+      - id: lint-imports
+        name: lint-imports (import-linter)
+        entry: uv run python -c "import sys; sys.path.insert(0, 'src'); from importlinter.cli import lint_imports_command; raise SystemExit(lint_imports_command())"
+        language: system
+        pass_filenames: false
+        require_serial: true
+
+      - id: pytest-unit
+        name: pytest unit tests
+        entry: uv run pytest tests/unit -q --no-cov
+        language: system
+        pass_filenames: false
+        require_serial: true

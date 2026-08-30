@@ -2,8 +2,8 @@
 
 ## Описание
 
-Deployment-артефакты живут в `build/`. В этой директории находятся контейнеризация, compose-оркестрация, Alembic runtime
-и entrypoint, который используется контейнером приложения.
+Deployment-артефакты: Docker-файлы живут в корне репозитория (`Dockerfile`, `docker-compose.yml`, `scripts/entrypoint.sh`),
+Alembic runtime — в `build/alembic/`.
 
 Система может запускаться локально через Python-интерпретатор или в Docker вместе с контейнерами PostgreSQL, Redis и
 Redis GUI.
@@ -54,9 +54,9 @@ sequenceDiagram
 
 Ключевые build-файлы:
 
-- `build/docker-compose.yml`: локальная оркестрация PostgreSQL, Redis, Redis GUI и app-контейнера
-- `build/Dockerfile`: Python-образ, установка зависимостей, копирование исходников и регистрация entrypoint
-- `build/scripts/entrypoint.sh`: bootstrap со стартом миграций перед web-процессом
+- `docker-compose.yml`: локальная оркестрация PostgreSQL, Redis, Redis GUI и app-контейнера
+- `Dockerfile`: Python-образ, установка зависимостей, копирование исходников и регистрация entrypoint
+- `scripts/entrypoint.sh`: bootstrap со стартом миграций перед web-процессом
 - `build/alembic/alembic.ini`: активная конфигурация Alembic
 - `build/alembic/env.py`: загрузка metadata и wiring database URL
 
@@ -70,14 +70,14 @@ python -m src.main
 Запуск в Docker:
 
 ```powershell
-docker compose -f build/docker-compose.yml up --build
+docker compose -f docker-compose.yml up --build
 ```
 
 Запуск в Docker с доступом по внешнему IP:
 
 ```powershell
 $env:APP_PUBLIC_HOST="203.0.113.10"
-docker compose -f build/docker-compose.yml up --build
+docker compose -f docker-compose.yml up --build
 ```
 
 Compose публикует web-порт на `0.0.0.0`. Если задать `APP_PUBLIC_HOST`, entrypoint автоматически:
@@ -116,7 +116,7 @@ http://localhost:8081
 
 ## Почему это сделано так
 
-- `build/` удерживает deployment-логику отдельно от кода приложения.
+- Docker-артефакты вынесены в корень репозитория, Alembic-миграции — в `build/`, отдельно от кода приложения.
 - В контейнерах используется Gunicorn (uvicorn-воркер), а не debug-сервер FastAPI.
 - Миграции выполняются до старта web-процесса, чтобы не жить с schema drift.
 - PostgreSQL используется как единственная runtime-база, что убирает класс проблем, связанных с SQLite-only поведением.
@@ -125,9 +125,9 @@ http://localhost:8081
 
 ## Где в коде
 
-- `build/docker-compose.yml`
-- `build/Dockerfile`
-- `build/scripts/entrypoint.sh`
+- `docker-compose.yml`
+- `Dockerfile`
+- `scripts/entrypoint.sh`
 - `build/alembic/alembic.ini`
 - `build/alembic/env.py`
 - `../../src/backend/main.py`

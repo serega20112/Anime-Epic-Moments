@@ -38,11 +38,23 @@
   --glow-accent: 0 0 18px rgba(244, 114, 182, 0.35);
   --glow-accent-strong: 0 0 26px rgba(244, 114, 182, 0.55);
   --glow-card: 0 8px 32px rgba(0, 0, 0, 0.35);
-  --glow-hover: 0 12px 44px rgba(0, 0, 0, 0.55), 0 0 22px var(--accent-glow-color, rgba(244, 114, 182, 0.18));
+  --glow-hover:
+    0 12px 44px rgba(0, 0, 0, 0.55),
+    0 0 22px var(--accent-glow-color, rgba(244, 114, 182, 0.18));
 
   /* кнопки */
-  --button-primary-bg: linear-gradient(135deg, #f472b6 0%, #a855f7 55%, #22d3ee 130%);
-  --button-primary-bg-hover: linear-gradient(135deg, #fb7fc0 0%, #b569ff 55%, #3ce0fb 130%);
+  --button-primary-bg: linear-gradient(
+    135deg,
+    #f472b6 0%,
+    #a855f7 55%,
+    #22d3ee 130%
+  );
+  --button-primary-bg-hover: linear-gradient(
+    135deg,
+    #fb7fc0 0%,
+    #b569ff 55%,
+    #3ce0fb 130%
+  );
   --button-ghost-bg: rgba(255, 255, 255, 0.06);
   --button-ghost-bg-hover: rgba(255, 255, 255, 0.12);
 
@@ -82,8 +94,17 @@
   --header-height: 68px;
   --particle-color: #f472b6;
   --particle-color-2: #22d3ee;
-  --hero-gradient: radial-gradient(ellipse at 30% 20%, rgba(244, 114, 182, 0.16), transparent 55%),
-    radial-gradient(ellipse at 75% 30%, rgba(34, 211, 238, 0.13), transparent 55%);
+  --hero-gradient:
+    radial-gradient(
+      ellipse at 30% 20%,
+      rgba(244, 114, 182, 0.16),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 75% 30%,
+      rgba(34, 211, 238, 0.13),
+      transparent 55%
+    );
 }
 
 /* ============================================================
@@ -95,14 +116,33 @@ html[data-theme="neon"] {
   --color-accent: #f472b6;
   --color-accent-2: #22d3ee;
   --accent-glow-color: rgba(244, 114, 182, 0.3);
-  --button-primary-bg: linear-gradient(135deg, #f472b6 0%, #a855f7 55%, #22d3ee 130%);
-  --button-primary-bg-hover: linear-gradient(135deg, #fb7fc0 0%, #b569ff 55%, #3ce0fb 130%);
+  --button-primary-bg: linear-gradient(
+    135deg,
+    #f472b6 0%,
+    #a855f7 55%,
+    #22d3ee 130%
+  );
+  --button-primary-bg-hover: linear-gradient(
+    135deg,
+    #fb7fc0 0%,
+    #b569ff 55%,
+    #3ce0fb 130%
+  );
   --theme-art-image: url("/static/images/themes/neon-jotaro.gif");
   --theme-art-opacity: 0.32;
   --particle-color: #f472b6;
   --particle-color-2: #22d3ee;
-  --hero-gradient: radial-gradient(ellipse at 30% 18%, rgba(244, 114, 182, 0.2), transparent 55%),
-    radial-gradient(ellipse at 78% 28%, rgba(34, 211, 238, 0.17), transparent 55%);
+  --hero-gradient:
+    radial-gradient(
+      ellipse at 30% 18%,
+      rgba(244, 114, 182, 0.2),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 78% 28%,
+      rgba(34, 211, 238, 0.17),
+      transparent 55%
+    );
 }
 
 /* ---------- Dark: чёрный минимализм ---------- */
@@ -116,14 +156,33 @@ html[data-theme="dark"] {
   --color-accent: #a3b3ff;
   --color-accent-2: #6ee7b7;
   --accent-glow-color: rgba(163, 179, 255, 0.25);
-  --button-primary-bg: linear-gradient(135deg, #818cf8 0%, #6366f1 55%, #6ee7b7 130%);
-  --button-primary-bg-hover: linear-gradient(135deg, #93a0fb 0%, #7c7ff7 55%, #8cf0c4 130%);
+  --button-primary-bg: linear-gradient(
+    135deg,
+    #818cf8 0%,
+    #6366f1 55%,
+    #6ee7b7 130%
+  );
+  --button-primary-bg-hover: linear-gradient(
+    135deg,
+    #93a0fb 0%,
+    #7c7ff7 55%,
+    #8cf0c4 130%
+  );
   --theme-art-image: url("/static/images/themes/dark-initiald.gif");
   --theme-art-opacity: 0.22;
   --particle-color: #a3b3ff;
   --particle-color-2: #6ee7b7;
-  --hero-gradient: radial-gradient(ellipse at 35% 20%, rgba(129, 140, 248, 0.14), transparent 55%),
-    radial-gradient(ellipse at 70% 35%, rgba(110, 231, 183, 0.1), transparent 50%);
+  --hero-gradient:
+    radial-gradient(
+      ellipse at 35% 20%,
+      rgba(129, 140, 248, 0.14),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 70% 35%,
+      rgba(110, 231, 183, 0.1),
+      transparent 50%
+    );
 }
 
 /* ---------- Light: чистый свет ---------- */
@@ -156,8 +215,17 @@ html[data-theme="light"] {
   --particle-color-2: #0ea5e9;
   --glow-card: 0 8px 30px rgba(30, 40, 70, 0.12);
   --glow-hover: 0 14px 42px rgba(30, 40, 70, 0.18);
-  --hero-gradient: radial-gradient(ellipse at 30% 20%, rgba(37, 99, 235, 0.12), transparent 55%),
-    radial-gradient(ellipse at 75% 30%, rgba(124, 58, 237, 0.1), transparent 55%);
+  --hero-gradient:
+    radial-gradient(
+      ellipse at 30% 20%,
+      rgba(37, 99, 235, 0.12),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 75% 30%,
+      rgba(124, 58, 237, 0.1),
+      transparent 55%
+    );
 }
 
 /* ---------- Rose: сакура ---------- */
@@ -171,8 +239,18 @@ html[data-theme="rose"] {
   --color-accent: #f9a8d4;
   --color-accent-2: #5eead4;
   --accent-glow-color: rgba(249, 168, 212, 0.3);
-  --button-primary-bg: linear-gradient(135deg, #f472b6 0%, #e879f9 55%, #5eead4 130%);
-  --button-primary-bg-hover: linear-gradient(135deg, #f87fc1 0%, #ee8bfe 55%, #7ef2de 130%);
+  --button-primary-bg: linear-gradient(
+    135deg,
+    #f472b6 0%,
+    #e879f9 55%,
+    #5eead4 130%
+  );
+  --button-primary-bg-hover: linear-gradient(
+    135deg,
+    #f87fc1 0%,
+    #ee8bfe 55%,
+    #7ef2de 130%
+  );
   --theme-art-image: url("/static/images/themes/sakura-twilight.png");
   --theme-art-opacity: 0.3;
   --theme-overlay-gradient: linear-gradient(
@@ -183,8 +261,17 @@ html[data-theme="rose"] {
   );
   --particle-color: #f9a8d4;
   --particle-color-2: #5eead4;
-  --hero-gradient: radial-gradient(ellipse at 30% 20%, rgba(249, 168, 212, 0.18), transparent 55%),
-    radial-gradient(ellipse at 75% 30%, rgba(94, 234, 212, 0.12), transparent 55%);
+  --hero-gradient:
+    radial-gradient(
+      ellipse at 30% 20%,
+      rgba(249, 168, 212, 0.18),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 75% 30%,
+      rgba(94, 234, 212, 0.12),
+      transparent 55%
+    );
 }
 
 /* ============================================================
@@ -211,7 +298,9 @@ body {
   background-image: var(--theme-overlay-gradient);
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background-color var(--transition-normal), color var(--transition-normal);
+  transition:
+    background-color var(--transition-normal),
+    color var(--transition-normal);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -226,7 +315,9 @@ body::before {
   background-position: center;
   opacity: var(--theme-art-opacity);
   filter: brightness(1.15) saturate(1.05);
-  transition: opacity var(--transition-normal), background-image var(--transition-normal);
+  transition:
+    opacity var(--transition-normal),
+    background-image var(--transition-normal);
   will-change: transform;
 }
 
@@ -283,7 +374,9 @@ textarea {
   border-radius: var(--radius-md);
   padding: 12px 16px;
   outline: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
     background var(--transition-fast);
   width: 100%;
 }
@@ -304,9 +397,12 @@ select {
   appearance: none;
   -webkit-appearance: none;
   background-color: var(--color-surface-solid);
-  background-image: linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
     linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
-  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50%;
   background-size: 5px 5px;
   background-repeat: no-repeat;
   padding-right: 38px;
@@ -456,8 +552,12 @@ h3 {
   padding: 11px 22px;
   border-radius: var(--radius-full);
   border: 1px solid transparent;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast),
-    background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
   white-space: nowrap;
   user-select: none;
 }
@@ -722,7 +822,9 @@ html[data-theme="rose"] .logo {
   font-size: var(--text-sm);
   font-weight: 500;
   color: var(--color-text-muted);
-  transition: color var(--transition-fast), background var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast);
   white-space: nowrap;
 }
 
@@ -753,7 +855,9 @@ html[data-theme="rose"] .logo {
   padding: 5px 6px 5px 5px;
   border-radius: var(--radius-full);
   border: 1px solid transparent;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
 }
 
 .user-avatar-btn:hover {
@@ -813,7 +917,9 @@ html[data-theme="rose"] .logo {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-6px);
-  transition: opacity var(--transition-fast), transform var(--transition-fast),
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
     visibility var(--transition-fast);
   z-index: 120;
 }
@@ -881,7 +987,9 @@ html[data-theme="rose"] .logo {
   font-size: var(--text-sm);
   font-weight: 600;
   box-shadow: var(--glow-hover);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .theme-fab:hover {
@@ -944,7 +1052,9 @@ html[data-theme="rose"] .logo {
   background: var(--color-surface-solid);
   border: 1px solid var(--color-border);
   box-shadow: var(--glow-card);
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal),
+  transition:
+    transform var(--transition-normal),
+    box-shadow var(--transition-normal),
     border-color var(--transition-normal);
   display: block;
   color: var(--color-text);
@@ -979,7 +1089,11 @@ html[data-theme="rose"] .logo {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.75) 100%);
+  background: linear-gradient(
+    180deg,
+    transparent 45%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
   opacity: 0.4;
   transition: opacity var(--transition-normal);
 }
@@ -1035,7 +1149,9 @@ html[data-theme="rose"] .logo {
   padding: 12px;
   opacity: 0;
   transform: translateY(8px);
-  transition: opacity var(--transition-normal), transform var(--transition-normal);
+  transition:
+    opacity var(--transition-normal),
+    transform var(--transition-normal);
 }
 
 .anime-card:hover .poster-actions {
@@ -1116,7 +1232,9 @@ html[data-theme="rose"] .logo {
   color: var(--color-text);
   box-shadow: var(--glow-card);
   opacity: 0;
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .carousel:hover .carousel-nav {
@@ -1287,7 +1405,9 @@ html[data-theme="rose"] .logo {
   padding: 20px;
   opacity: 0;
   visibility: hidden;
-  transition: opacity var(--transition-normal), visibility var(--transition-normal);
+  transition:
+    opacity var(--transition-normal),
+    visibility var(--transition-normal);
 }
 
 .modal-overlay.open {
@@ -1332,7 +1452,9 @@ html[data-theme="rose"] .logo {
   line-height: 1;
   padding: 6px;
   border-radius: 50%;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .modal-close:hover {
@@ -1590,7 +1712,9 @@ html[data-theme="rose"] .logo {
   line-height: 1;
   padding: 6px 9px;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    border-color 0.2s ease;
 }
 .poster-actions .fav-btn:hover {
   transform: scale(1.08);

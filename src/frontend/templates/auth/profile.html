@@ -1,44 +1,68 @@
-{% extends "base.html" %}
-
-{% block title %}Мой профиль — Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Мой профиль — Anime Epic Moments{%
+endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/profile.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/highlight.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="profile-page">
   <header class="profile-hero">
-    <img class="profile-avatar" src="{{ profile_user.avatar_url or url_for('static', filename='images/default-avatar.svg') }}"
-         alt="Аватар" onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';">
+    <img
+      class="profile-avatar"
+      src="{{ profile_user.avatar_url or url_for('static', filename='images/default-avatar.svg') }}"
+      alt="Аватар"
+      onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';"
+    />
     <div class="profile-info">
       <div class="profile-name">
         {{ profile_user.username }}
         <span class="profile-badge">вы</span>
       </div>
       <p class="profile-bio">{{ profile_user.email }}</p>
-      <p class="profile-joined">На платформе с {{ profile_user.created_at.strftime('%d.%m.%Y') if profile_user.created_at else '…' }}</p>
+      <p class="profile-joined">
+        На платформе с {{ profile_user.created_at.strftime('%d.%m.%Y') if
+        profile_user.created_at else '…' }}
+      </p>
       <div class="profile-actions">
-        <button class="btn btn-primary btn-sm" data-action="open-edit">Редактировать</button>
-        <a class="btn btn-ghost btn-sm" href="{{ url_for('highlight.get_user_highlights', user_id=profile_user.id) }}">Мои хайлайты</a>
-        <a class="btn btn-ghost btn-sm" href="{{ url_for('collection.collections_page') }}">Коллекции</a>
+        <button class="btn btn-primary btn-sm" data-action="open-edit">
+          Редактировать
+        </button>
+        <a
+          class="btn btn-ghost btn-sm"
+          href="{{ url_for('highlight.get_user_highlights', user_id=profile_user.id) }}"
+          >Мои хайлайты</a
+        >
+        <a
+          class="btn btn-ghost btn-sm"
+          href="{{ url_for('collection.collections_page') }}"
+          >Коллекции</a
+        >
       </div>
     </div>
     {% if profile_overview and profile_overview.summary %}
     <div class="profile-stats">
-      <div class="stat-pill"><b>{{ profile_overview.summary.highlight_count }}</b><span>хайлайтов</span></div>
-      <div class="stat-pill"><b>{{ profile_overview.summary.like_count }}</b><span>лайков</span></div>
-      <div class="stat-pill"><b>{{ profile_overview.summary.saved_count }}</b><span>сохранено</span></div>
+      <div class="stat-pill">
+        <b>{{ profile_overview.summary.highlight_count }}</b
+        ><span>хайлайтов</span>
+      </div>
+      <div class="stat-pill">
+        <b>{{ profile_overview.summary.like_count }}</b><span>лайков</span>
+      </div>
+      <div class="stat-pill">
+        <b>{{ profile_overview.summary.saved_count }}</b><span>сохранено</span>
+      </div>
     </div>
     {% endif %}
   </header>
 
-  <div class="profile-layout" style="margin-top:var(--space-6)">
+  <div class="profile-layout" style="margin-top: var(--space-6)">
     <aside class="side-card">
-      {% if profile_overview and profile_overview.smart_profile %}
-      {% set sp = profile_overview.smart_profile %}
-      {% if sp.dominant_mood %}
+      {% if profile_overview and profile_overview.smart_profile %} {% set sp =
+      profile_overview.smart_profile %} {% if sp.dominant_mood %}
       <div class="ai-mood">
         <span class="emoji">{{ sp.dominant_mood.emoji }}</span>
         <div>
@@ -46,27 +70,32 @@
           <span>{{ sp.dominant_mood.description }}</span>
         </div>
       </div>
-      {% endif %}
-      {% if sp.favorite_genres %}
+      {% endif %} {% if sp.favorite_genres %}
       <div>
         <h4>Любимые жанры</h4>
         <div class="genre-bars">
           {% for g in sp.favorite_genres %}
           <div class="genre-bar">
             <span>{{ g.name }} · {{ g.count }}</span>
-            <div class="bar"><i style="width:{{ (g.count * 12)|round|int if g.count else 0 }}%"></i></div>
+            <div class="bar">
+              <i
+                style="width:{{ (g.count * 12)|round|int if g.count else 0 }}%"
+              ></i>
+            </div>
           </div>
           {% endfor %}
         </div>
       </div>
-      {% endif %}
-      {% if sp.hours_watched is not none or sp.average_rating is not none %}
+      {% endif %} {% if sp.hours_watched is not none or sp.average_rating is not
+      none %}
       <div class="follow-counts">
-        {% if sp.hours_watched is not none %}<span>⏱ <b>{{ sp.hours_watched|round|int }}</b> часов</span>{% endif %}
-        {% if sp.average_rating is not none %}<span>★ <b>{{ sp.average_rating|round(1) }}</b> рейтинг</span>{% endif %}
+        {% if sp.hours_watched is not none %}<span
+          >⏱ <b>{{ sp.hours_watched|round|int }}</b> часов</span
+        >{% endif %} {% if sp.average_rating is not none %}<span
+          >★ <b>{{ sp.average_rating|round(1) }}</b> рейтинг</span
+        >{% endif %}
       </div>
-      {% endif %}
-      {% if sp.achievements %}
+      {% endif %} {% if sp.achievements %}
       <div>
         <h4>Достижения</h4>
         <div class="achievements">
@@ -78,30 +107,38 @@
           {% endfor %}
         </div>
       </div>
-      {% endif %}
-      {% if sp.ai_taste_summary %}
-      <div class="ai-card" style="padding:12px;border-radius:var(--radius-md)">
-        <h4 style="margin-bottom:6px">ИИ-вкус</h4>
-        <p class="muted" style="font-size:var(--text-sm)">{{ sp.ai_taste_summary }}</p>
+      {% endif %} {% if sp.ai_taste_summary %}
+      <div
+        class="ai-card"
+        style="padding: 12px; border-radius: var(--radius-md)"
+      >
+        <h4 style="margin-bottom: 6px">ИИ-вкус</h4>
+        <p class="muted" style="font-size: var(--text-sm)">
+          {{ sp.ai_taste_summary }}
+        </p>
       </div>
-      {% endif %}
-      {% endif %}
+      {% endif %} {% endif %}
     </aside>
 
     <div>
       {% if profile_overview and profile_overview.recent_highlights %}
-      <div class="section-title"><span class="emoji">⭐</span> Последние хайлайты</div>
+      <div class="section-title">
+        <span class="emoji">⭐</span> Последние хайлайты
+      </div>
       <div class="highlight-grid tight">
-        {% for highlight in profile_overview.recent_highlights %}
-        {% include "highlight/_card.html" %}
-        {% endfor %}
+        {% for highlight in profile_overview.recent_highlights %} {% include
+        "highlight/_card.html" %} {% endfor %}
       </div>
       {% else %}
       <div class="empty-state">
         <span class="empty-emoji">✨</span>
         <h3>Создайте первый хайлайт</h3>
         <p>Делитесь любимыми моментами из аниме.</p>
-        <a class="btn btn-primary btn-sm" href="{{ url_for('anime.search_anime_page') }}">Выбрать аниме</a>
+        <a
+          class="btn btn-primary btn-sm"
+          href="{{ url_for('anime.search_anime_page') }}"
+          >Выбрать аниме</a
+        >
       </div>
       {% endif %}
     </div>
@@ -113,38 +150,68 @@
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-header">
       <h3>Редактировать профиль</h3>
-      <button class="modal-close" data-action="close-edit" aria-label="Закрыть">&times;</button>
+      <button class="modal-close" data-action="close-edit" aria-label="Закрыть">
+        &times;
+      </button>
     </div>
     <form method="post" action="{{ url_for('auth.update_profile') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="form-group">
         <label for="pf-username">Имя пользователя</label>
-        <input type="text" id="pf-username" name="username" value="{{ profile_user.username }}" maxlength="40">
+        <input
+          type="text"
+          id="pf-username"
+          name="username"
+          value="{{ profile_user.username }}"
+          maxlength="40"
+        />
       </div>
       <div class="form-group">
         <label for="pf-avatar">Ссылка на аватар</label>
-        <input type="url" id="pf-avatar" name="avatar_url" value="{{ profile_user.avatar_url or '' }}" placeholder="https://…">
+        <input
+          type="url"
+          id="pf-avatar"
+          name="avatar_url"
+          value="{{ profile_user.avatar_url or '' }}"
+          placeholder="https://…"
+        />
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-ghost" data-action="close-edit">Отмена</button>
+        <button type="button" class="btn btn-ghost" data-action="close-edit">
+          Отмена
+        </button>
         <button type="submit" class="btn btn-primary">Сохранить</button>
       </div>
     </form>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>window.AEM_LOGGED_IN = true;</script>
+{% endblock %} {% block scripts %}
+<script>
+  window.AEM_LOGGED_IN = true;
+</script>
 <script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     var overlay = document.getElementById("edit-profile-modal");
-    function open() { overlay.classList.add("open"); }
-    function close() { overlay.classList.remove("open"); }
-    document.querySelectorAll('[data-action="open-edit"]').forEach(function (b) { b.addEventListener("click", open); });
-    document.querySelectorAll('[data-action="close-edit"]').forEach(function (b) { b.addEventListener("click", close); });
-    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+    function open() {
+      overlay.classList.add("open");
+    }
+    function close() {
+      overlay.classList.remove("open");
+    }
+    document
+      .querySelectorAll('[data-action="open-edit"]')
+      .forEach(function (b) {
+        b.addEventListener("click", open);
+      });
+    document
+      .querySelectorAll('[data-action="close-edit"]')
+      .forEach(function (b) {
+        b.addEventListener("click", close);
+      });
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) close();
+    });
   });
 </script>
 {% endblock %}

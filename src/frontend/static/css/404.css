@@ -19,7 +19,11 @@
   font-size: clamp(80px, 18vw, 180px);
   font-weight: 800;
   line-height: 1;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
+  background: linear-gradient(
+    135deg,
+    var(--color-accent),
+    var(--color-accent-2)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -41,8 +45,13 @@
 }
 
 @keyframes glitchFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

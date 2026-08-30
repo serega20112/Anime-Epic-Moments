@@ -16,10 +16,11 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 COPY src /app/src
 COPY build /app/build
+COPY scripts /app/scripts
 
-RUN sed -i 's/\r$//' /app/build/scripts/entrypoint.sh && chmod +x /app/build/scripts/entrypoint.sh
+RUN sed -i 's/\r$//' /app/scripts/entrypoint.sh && chmod +x /app/scripts/entrypoint.sh
 
 EXPOSE 5000
 
-ENTRYPOINT ["/app/build/scripts/entrypoint.sh"]
+ENTRYPOINT ["/app/scripts/entrypoint.sh"]
 CMD ["web"]

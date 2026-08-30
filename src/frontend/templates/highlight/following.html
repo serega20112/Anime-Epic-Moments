@@ -1,44 +1,50 @@
-{% extends "base.html" %}
-
-{% block title %}Подписки — Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Подписки — Anime Epic Moments{%
+endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/highlight.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="container">
   <header class="dash-head">
     <div>
       <h1 class="page-title">Хайлайты подписок</h1>
-      <p class="muted">Моменты авторов, на которых вы подписаны. Всего: {{ page.total_following }}.</p>
+      <p class="muted">
+        Моменты авторов, на которых вы подписаны. Всего: {{ page.total_following
+        }}.
+      </p>
     </div>
   </header>
 
   {% if page.dashboard.items %}
   <div class="highlight-grid">
-    {% for highlight in page.dashboard.items %}
-    {% include "highlight/_card.html" %}
-    {% endfor %}
+    {% for highlight in page.dashboard.items %} {% include
+    "highlight/_card.html" %} {% endfor %}
   </div>
   {% else %}
   <div class="empty-state">
     <span class="empty-emoji">👥</span>
     <h3>В подписках пока нет хайлайтов</h3>
     <p>Подпишитесь на авторов в их профилях, и их моменты появятся здесь.</p>
-    <a class="btn btn-primary btn-sm" href="{{ url_for('highlight.get_public_top_highlights') }}">Популярное</a>
+    <a
+      class="btn btn-primary btn-sm"
+      href="{{ url_for('highlight.get_public_top_highlights') }}"
+      >Популярное</a
+    >
   </div>
-  {% endif %}
-
-  {% if page.followed_users %}
-  <section class="section" style="margin-top:var(--space-7)">
+  {% endif %} {% if page.followed_users %}
+  <section class="section" style="margin-top: var(--space-7)">
     <div class="section-title"><span class="emoji">👥</span> Вы подписаны</div>
     <div class="chip-row">
       {% for u in page.followed_users %}
       <a class="chip" href="{{ u.profile_url }}">
-        <img class="avatar avatar-sm" src="{{ u.avatar_url or url_for('static', filename='images/default-avatar.svg') }}"
-             alt="" style="width:22px;height:22px"
-             onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';">
+        <img
+          class="avatar avatar-sm"
+          src="{{ u.avatar_url or url_for('static', filename='images/default-avatar.svg') }}"
+          alt=""
+          style="width: 22px; height: 22px"
+          onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.svg') }}';"
+        />
         {{ u.username }}
       </a>
       {% endfor %}
@@ -46,9 +52,9 @@
   </section>
   {% endif %}
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>window.AEM_LOGGED_IN = {{ 'true' if current_user else 'false' }};</script>
+{% endblock %} {% block scripts %}
+<script>
+  window.AEM_LOGGED_IN = {{ 'true' if current_user else 'false' }};
+</script>
 <script src="{{ url_for('static', filename='js/highlight_social.js') }}"></script>
 {% endblock %}

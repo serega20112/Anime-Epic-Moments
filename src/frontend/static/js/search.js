@@ -3,7 +3,13 @@
 (function () {
   "use strict";
 
-  var input, box, clearBtn, timer = null, items = [], activeIndex = -1, abort = null;
+  var input,
+    box,
+    clearBtn,
+    timer = null,
+    items = [],
+    activeIndex = -1,
+    abort = null;
 
   function init() {
     input = document.getElementById("header-search-input");
@@ -38,10 +44,13 @@
   function fetchSuggestions(query) {
     if (abort) abort.abort();
     abort = new AbortController();
-    fetch("/anime/api/autocomplete?query=" + encodeURIComponent(query) + "&limit=6", {
-      signal: abort.signal,
-      credentials: "same-origin",
-    })
+    fetch(
+      "/anime/api/autocomplete?query=" + encodeURIComponent(query) + "&limit=6",
+      {
+        signal: abort.signal,
+        credentials: "same-origin",
+      },
+    )
       .then(function (response) {
         return response.json();
       })
@@ -57,7 +66,8 @@
 
   function render() {
     if (!items.length) {
-      box.innerHTML = '<div class="autocomplete-empty">Ничего не найдено…</div>';
+      box.innerHTML =
+        '<div class="autocomplete-empty">Ничего не найдено…</div>';
       box.classList.add("open");
       return;
     }
@@ -70,26 +80,39 @@
       if (anime.episode_count) meta.push(anime.episode_count + " сер.");
       if (anime.rating) meta.push("★ " + anime.rating);
       html +=
-        '<div class="autocomplete-item' + (i === activeIndex ? " active" : "") + '" data-index="' + i + '" role="option">' +
-          '<img src="' + cover + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'/static/images/no-cover.svg\';">' +
-          '<div>' +
-            '<div class="ac-title">' + escapeHtml(title) + "</div>" +
-            (meta.length ? '<div class="ac-meta">' + escapeHtml(meta.join(" · ")) + "</div>" : "") +
-          "</div>" +
+        '<div class="autocomplete-item' +
+        (i === activeIndex ? " active" : "") +
+        '" data-index="' +
+        i +
+        '" role="option">' +
+        '<img src="' +
+        cover +
+        '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'/static/images/no-cover.svg\';">' +
+        "<div>" +
+        '<div class="ac-title">' +
+        escapeHtml(title) +
+        "</div>" +
+        (meta.length
+          ? '<div class="ac-meta">' + escapeHtml(meta.join(" · ")) + "</div>"
+          : "") +
+        "</div>" +
         "</div>";
     });
     box.innerHTML = html;
     box.classList.add("open");
-    Array.prototype.forEach.call(box.querySelectorAll(".autocomplete-item"), function (el) {
-      el.addEventListener("click", function () {
-        var anime = items[Number(el.getAttribute("data-index"))];
-        goTo(anime);
-      });
-      el.addEventListener("mousemove", function () {
-        activeIndex = Number(el.getAttribute("data-index"));
-        updateActive();
-      });
-    });
+    Array.prototype.forEach.call(
+      box.querySelectorAll(".autocomplete-item"),
+      function (el) {
+        el.addEventListener("click", function () {
+          var anime = items[Number(el.getAttribute("data-index"))];
+          goTo(anime);
+        });
+        el.addEventListener("mousemove", function () {
+          activeIndex = Number(el.getAttribute("data-index"));
+          updateActive();
+        });
+      },
+    );
   }
 
   function onKeydown(event) {

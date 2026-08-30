@@ -4,7 +4,9 @@
 (function () {
   "use strict";
 
-  var canvas, ctx, particles = [];
+  var canvas,
+    ctx,
+    particles = [];
   var running = false;
   var reduced = false;
 
@@ -34,7 +36,10 @@
     if (!canvas) return;
     ctx = canvas.getContext("2d");
     resize();
-    var count = Math.min(Math.floor((window.innerWidth * window.innerHeight) / 26000), 46);
+    var count = Math.min(
+      Math.floor((window.innerWidth * window.innerHeight) / 26000),
+      46,
+    );
     var colors = themeColors();
     for (var i = 0; i < count; i++) {
       particles.push({

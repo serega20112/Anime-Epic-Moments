@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.services import WatchSourceSyncService
 from backend.application.services.recommendation_service import RecommendationService
 from backend.application.use_cases import (
     AskAiRecommendationsUseCase,
@@ -123,16 +124,25 @@ class AnimeUseCaseProvider(Provider):
     async def filter_anime_catalog(
         self,
         anime_api_client: AnimeApiClient,
+        watch_repository: WatchRepository,
+        watch_source_sync_service: WatchSourceSyncService,
     ) -> FilterAnimeCatalogUseCase:
         """Provide the anime catalog filter use case.
 
         Args:
             anime_api_client: Anime API client.
+            watch_repository: Watch repository for local translation lookup.
+            watch_source_sync_service: Watch source sync service for
+                availability checks.
 
         Returns:
             FilterAnimeCatalogUseCase: Configured use case.
         """
-        return FilterAnimeCatalogUseCase(anime_api_client)
+        return FilterAnimeCatalogUseCase(
+            anime_api_client,
+            watch_repository,
+            watch_source_sync_service,
+        )
 
     @provide(scope=Scope.REQUEST)
     async def get_season_popular(

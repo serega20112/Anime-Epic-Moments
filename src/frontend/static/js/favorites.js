@@ -51,7 +51,9 @@
   }
 
   function paint(btn, active) {
-    var unchanged = btn.dataset.favPainted === "1" && btn.classList.contains("active") === active;
+    var unchanged =
+      btn.dataset.favPainted === "1" &&
+      btn.classList.contains("active") === active;
     if (unchanged) return;
     btn.dataset.favPainted = "1";
     btn.classList.toggle("active", active);
@@ -110,7 +112,10 @@
       .then(function () {
         setFavorite(userId, animeId, makeFavorite);
         paint(btn, makeFavorite);
-        AEM.toast(makeFavorite ? "Добавлено в избранное" : "Убрано из избранного", "success");
+        AEM.toast(
+          makeFavorite ? "Добавлено в избранное" : "Убрано из избранного",
+          "success",
+        );
       })
       .catch(function (error) {
         AEM.toast("Не удалось: " + (error.message || "ошибка"), "error");

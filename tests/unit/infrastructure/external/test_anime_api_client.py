@@ -89,7 +89,9 @@ async def test_get_by_id_resolves_id_as_anilist_mal_id(anime_factory):
         side_effect=httpx.HTTPStatusError(
             "404",
             request=httpx.Request("GET", f"{client.jikan_base}/anime/48755"),
-            response=httpx.Response(404, request=httpx.Request("GET", f"{client.jikan_base}/anime/48755")),
+            response=httpx.Response(
+                404, request=httpx.Request("GET", f"{client.jikan_base}/anime/48755")
+            ),
         )
     )
     client._get_by_anilist_id = AsyncMock(return_value=None)

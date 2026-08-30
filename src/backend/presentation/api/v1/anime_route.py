@@ -77,6 +77,7 @@ async def catalog_page(request: Request):
             "year_from": request.query_params.get("year_from", ""),
             "year_to": request.query_params.get("year_to", ""),
             "sort": request.query_params.get("sort", ""),
+            "has_dub": request.query_params.get("has_dub", ""),
         },
     )
 

@@ -47,7 +47,7 @@ uv run python -m backend.main
 ### Запуск в Docker
 
 ```powershell
-docker compose -f build/docker-compose.yml up --build
+docker compose -f docker-compose.yml up --build
 ```
 
 `docker compose` поднимает `app`, `postgres`, `redis` и Redis GUI. По умолчанию Docker-запуск использует
@@ -84,7 +84,9 @@ uv run pytest
 ## Структура проекта
 
 ```text
-build/                      Docker, Alembic, PostgreSQL/Redis runtime-скрипты и entrypoint
+Dockerfile, docker-compose.yml   Контейнеризация и локальная оркестрация (app, postgres, redis)
+scripts/entrypoint.sh            Bootstrap: миграции + запуск gunicorn в контейнере
+build/                          Alembic-миграции и PostgreSQL/Redis runtime-скрипты
 docs/                       Документация и стайлгайд
 src/backend/                Backend-слои: presentation, application, domain, infrastructure, config
 src/frontend/               Шаблоны, статические файлы и frontend-скрипты
@@ -102,6 +104,8 @@ ruff.toml                   Конфиг линта
 - Обзор архитектуры: [docs/architecture/overview.md](docs/architecture/overview.md)
 - Доменная модель: [docs/domain/core.md](docs/domain/core.md)
 - API и маршруты: [docs/api/endpoints.md](docs/api/endpoints.md)
+
+Примечание: API каталога (`GET /anime/api/catalog`) теперь поддерживает дополнительный параметр `has_dub` (например `has_dub=1`) — когда установлен, возвращаются только тайтлы с доступной озвучкой/переводом. Параметр `genre` понимает список через запятую (например `genre=Adventure,Comedy`), также поддерживаются `year_from` и `year_to` для фильтра по диапазону годов.
 - База данных и миграции: [docs/database/schema.md](docs/database/schema.md)
 - Безопасность: [docs/security/security.md](docs/security/security.md)
 - Деплой и Docker: [docs/deployment/overview.md](docs/deployment/overview.md)
@@ -129,4 +133,4 @@ ruff.toml                   Конфиг линта
 - Infrastructure владеет побочными эффектами: БД, внешние API, кэш, безопасность, DI.
 - Границы слоёв проверяются import-linter (`Layer Boundaries`), гейты — ruff + pytest в CI.
 - Зависимости управляются через uv: `pyproject.toml` + зафиксированный `uv.lock`.
-- Build- и deployment-артефакты вынесены в `build/`.
+- Docker-артефакты — в корне (`Dockerfile`, `docker-compose.yml`, `scripts/entrypoint.sh`); Alembic-миграции — в `build/`.

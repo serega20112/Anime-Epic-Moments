@@ -1,12 +1,10 @@
-{% extends "base.html" %}
-
-{% block title %}{{ watch.anime_title }} — {{ watch.episode }} серия | Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/watch.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}{{ watch.anime_title }} — {{
+watch.episode }} серия | Anime Epic Moments{% endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/watch.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="container">
   <div class="watch-layout">
     <div class="watch-main">
@@ -15,87 +13,176 @@
         <div class="player-overlay" id="player-overlay">
           <span class="po-eyebrow">anime epic moments</span>
           <h1 class="po-title">{{ watch.anime_title }}</h1>
-          <p class="po-sub">Серия {{ watch.episode }}{% if watch.episode_total %} из {{ watch.episode_total }}{% endif %}</p>
+          <p class="po-sub">
+            Серия {{ watch.episode }}{% if watch.episode_total %} из {{
+            watch.episode_total }}{% endif %}
+          </p>
           <div class="po-actions">
             {% if watch.can_discover_sources and not watch.sources %}
-            <button class="btn btn-primary" id="discover-btn" data-anime-id="{{ watch.anime_id }}">
-              🔎 Найти источники через {{ watch.discovery_provider_name or 'провайдера' }}
+            <button
+              class="btn btn-primary"
+              id="discover-btn"
+              data-anime-id="{{ watch.anime_id }}"
+            >
+              🔎 Найти источники через {{ watch.discovery_provider_name or
+              'провайдера' }}
             </button>
-            {% endif %}
-            {% if current_user %}
-            <button class="btn btn-ghost" id="open-highlight-form-btn">✂️ Сохранить момент</button>
+            {% endif %} {% if current_user %}
+            <button class="btn btn-ghost" id="open-highlight-form-btn">
+              ✂️ Сохранить момент
+            </button>
             {% else %}
-            <a class="btn btn-ghost" href="{{ url_for('auth.login_page') }}">Войдите, чтобы сохранять моменты</a>
+            <a class="btn btn-ghost" href="{{ url_for('auth.login_page') }}"
+              >Войдите, чтобы сохранять моменты</a
+            >
             {% endif %}
           </div>
         </div>
-        <span class="po-status-chip" id="player-status-chip"><span class="dot"></span><span id="player-status-text">Загрузка…</span></span>
+        <span class="po-status-chip" id="player-status-chip"
+          ><span class="dot"></span
+          ><span id="player-status-text">Загрузка…</span></span
+        >
       </div>
 
       <!-- Инфо об аниме -->
       <div class="watch-anime-head">
-        <img class="wa-poster" src="{{ watch.anime_cover or url_for('static', filename='images/no-cover.svg') }}"
-             alt="{{ watch.anime_title }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';">
+        <img
+          class="wa-poster"
+          src="{{ watch.anime_cover or url_for('static', filename='images/no-cover.svg') }}"
+          alt="{{ watch.anime_title }}"
+          onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';"
+        />
         <div class="wa-info">
           <h2 class="wa-title">{{ watch.anime_title }}</h2>
           <div class="wa-meta">
-            {% if watch.anime_year %}<span>🗓 {{ watch.anime_year }}</span>{% endif %}
-            {% if watch.anime_rating %}<span>⭐ {{ watch.anime_rating }}</span>{% endif %}
-            {% if watch.episode_total %}<span>🎞 {{ watch.episode_total }} серий</span>{% endif %}
+            {% if watch.anime_year %}<span>🗓 {{ watch.anime_year }}</span>{%
+            endif %} {% if watch.anime_rating %}<span
+              >⭐ {{ watch.anime_rating }}</span
+            >{% endif %} {% if watch.episode_total %}<span
+              >🎞 {{ watch.episode_total }} серий</span
+            >{% endif %}
           </div>
           <div class="wa-meta">
             {% for genre in watch.genres %}
             <span class="genre-chip">{{ genre }}</span>
             {% endfor %}
           </div>
-          <p class="wa-desc muted" style="margin-top:8px;font-size:var(--text-sm);max-width:640px">{{ watch.anime_description }}</p>
+          <p
+            class="wa-desc muted"
+            style="margin-top: 8px; font-size: var(--text-sm); max-width: 640px"
+          >
+            {{ watch.anime_description }}
+          </p>
           <div class="wa-actions">
             {% if current_user %}
-            <select class="wa-status-select" id="status-select" aria-label="Статус просмотра">
-              <option value="" {% if not watch.current_status %}selected{% endif %}>Статус: не указан</option>
-              <option value="watching" {% if watch.current_status == 'watching' %}selected{% endif %}>Смотрю</option>
-              <option value="completed" {% if watch.current_status == 'completed' %}selected{% endif %}>Просмотрено</option>
-              <option value="planned" {% if watch.current_status == 'planned' %}selected{% endif %}>В планах</option>
-              <option value="paused" {% if watch.current_status == 'paused' %}selected{% endif %}>На паузе</option>
-              <option value="rewatching" {% if watch.current_status == 'rewatching' %}selected{% endif %}>Пересматриваю</option>
-              <option value="dropped" {% if watch.current_status == 'dropped' %}selected{% endif %}>Не понравилось</option>
-            </select>
-            <button class="btn btn-ghost btn-sm" id="favorite-badge-btn">❤️ Нравится</button>
+           <select
+  class="wa-status-select"
+  id="status-select"
+  aria-label="Статус просмотра"
+>
+  <option
+    value=""
+    {% if not watch.current_status %}selected{% endif %}
+  >
+    Статус: не указан
+  </option>
+
+  <option
+    value="watching"
+    {% if watch.current_status == "watching" %}selected{% endif %}
+  >
+    Смотрю
+  </option>
+
+  <option
+    value="completed"
+    {% if watch.current_status == "completed" %}selected{% endif %}
+  >
+    Просмотрено
+  </option>
+
+  <option
+    value="planned"
+    {% if watch.current_status == "planned" %}selected{% endif %}
+  >
+    В планах
+  </option>
+
+  <option
+    value="paused"
+    {% if watch.current_status == "paused" %}selected{% endif %}
+  >
+    На паузе
+  </option>
+
+  <option
+    value="rewatching"
+    {% if watch.current_status == "rewatching" %}selected{% endif %}
+  >
+    Пересматриваю
+  </option>
+
+  <option
+    value="dropped"
+    {% if watch.current_status == "dropped" %}selected{% endif %}
+  >
+    Не понравилось
+  </option>
+</select>
+            <button class="btn btn-ghost btn-sm" id="favorite-badge-btn">
+              ❤️ Нравится
+            </button>
             {% endif %}
           </div>
         </div>
-        </div>
       </div>
+    </div>
 
     <!-- Сайдбар -->
     <div class="watch-sidebar">
       <div class="side-panel glass">
         <div class="tabs" role="tablist">
-          <button class="tab-btn active" data-tab="sources" role="tab">Источники</button>
+          <button class="tab-btn active" data-tab="sources" role="tab">
+            Источники
+          </button>
           <button class="tab-btn" data-tab="episodes" role="tab">Серии</button>
-          <button class="tab-btn" data-tab="highlights" role="tab">Моменты</button>
-          <button class="tab-btn" data-tab="discussion" role="tab">Обсуждение</button>
+          <button class="tab-btn" data-tab="highlights" role="tab">
+            Моменты
+          </button>
+          <button class="tab-btn" data-tab="discussion" role="tab">
+            Обсуждение
+          </button>
         </div>
 
         <div class="tab-content active" data-tab-content="sources">
           {% if watch.sources %}
           <div class="source-list">
-            {% for group in watch.sources|groupby('translation_name') %}
-            {% set source = group.list[0] %}
-            {% if source %}
-            <a class="source-item {{ 'active' if source.translation_id == watch.selected_translation_id }}"
-               href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode, source_id=source.source_id) }}"
-               data-source-id="{{ source.source_id }}">
+            {% for group in watch.sources|groupby('translation_name') %} {% set
+            source = group.list[0] %} {% if source %}
+            <a
+              class="source-item {{ 'active' if source.translation_id == watch.selected_translation_id }}"
+              href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode, source_id=source.source_id) }}"
+              data-source-id="{{ source.source_id }}"
+            >
               <span class="si-icon">🎙️</span>
               <span class="si-title">
                 <span class="si-name">{{ group.grouper }}</span>
-                <span class="si-meta">{{ source.provider_name }}{% if group.list|length > 1 %} · {{ group.list|length }} качества{% endif %}</span>
-                <span class="si-count">{% for c in watch.translation_episode_counts %}{% if c.translation_name == group.grouper %}{{ c.available_count }} серий{% endif %}{% endfor %}</span>
+                <span class="si-meta"
+                  >{{ source.provider_name }}{% if group.list|length > 1 %} · {{
+                  group.list|length }} качества{% endif %}</span
+                >
+                <span class="si-count"
+                  >{% for c in watch.translation_episode_counts %}{% if
+                  c.translation_name == group.grouper %}{{ c.available_count }}
+                  серий{% endif %}{% endfor %}</span
+                >
               </span>
-              <span class="si-badge quality">{% if group.list|length > 1 %}кв {{ group.list|length }}{% else %}кв{% endif %}</span>
+              <span class="si-badge quality"
+                >{% if group.list|length > 1 %}кв {{ group.list|length }}{% else
+                %}кв{% endif %}</span
+              >
             </a>
-            {% endif %}
-            {% endfor %}
+            {% endif %} {% endfor %}
           </div>
           {% else %}
           <div class="discussion-empty">Источники пока не найдены.</div>
@@ -106,20 +193,33 @@
           {% if watch.episode_options %}
           <div class="episode-grid" id="episode-grid">
             {% for option in watch.episode_options %}
-            <a class="episode-btn {{ 'active' if option == watch.episode }}"
-               href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=option) }}"
-               {% if option == watch.episode %}aria-current="true"{% endif %}>{{ option }}</a>
+            <a
+              class="episode-btn {{ 'active' if option == watch.episode }}"
+              href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=option) }}"
+              {% if option == watch.episode %} aria-current="true"{% endif %}
+              >{{ option }}</a>
             {% endfor %}
           </div>
           {% else %}
-          <div class="discussion-empty">Серии: {{ watch.episode }}{% if watch.episode_total %} из {{ watch.episode_total }}{% endif %}</div>
+          <div class="discussion-empty">
+            Серии: {{ watch.episode }}{% if watch.episode_total %} из {{
+            watch.episode_total }}{% endif %}
+          </div>
           {% endif %}
           <div class="episode-nav">
             {% if watch.episode > 1 %}
-            <a class="btn btn-ghost btn-sm" href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode - 1) }}">← Предыдущая</a>
-            {% endif %}
-            {% if watch.episode_total and watch.episode < watch.episode_total %}
-            <a class="btn btn-primary btn-sm" href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode + 1) }}">Следующая →</a>
+            <a
+              class="btn btn-ghost btn-sm"
+              href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode - 1) }}"
+              >← Предыдущая</a
+            >
+            {% endif %} {% if watch.episode_total and watch.episode <
+            watch.episode_total %}
+            <a
+              class="btn btn-primary btn-sm"
+              href="{{ url_for('watch.watch_page', anime_id=watch.anime_id, episode=watch.episode + 1) }}"
+              >Следующая →</a
+            >
             {% endif %}
           </div>
         </div>
@@ -130,22 +230,54 @@
             <div class="hf-time-row">
               <div>
                 <label for="hf-start">Начало (мм:сс)</label>
-                <input type="text" id="hf-start" name="start_timestamp" placeholder="00:00" value="{{ watch.highlights[0].start_timestamp if watch.highlights else '00:00' }}">
+                <input
+                  type="text"
+                  id="hf-start"
+                  name="start_timestamp"
+                  placeholder="00:00"
+                  value="{{ watch.highlights[0].start_timestamp if watch.highlights else '00:00' }}"
+                />
               </div>
               <div>
                 <label for="hf-end">Конец (мм:сс)</label>
-                <input type="text" id="hf-end" name="end_timestamp" placeholder="00:10" value="{{ watch.highlights[0].end_timestamp if watch.highlights else '00:10' }}">
+                <input
+                  type="text"
+                  id="hf-end"
+                  name="end_timestamp"
+                  placeholder="00:10"
+                  value="{{ watch.highlights[0].end_timestamp if watch.highlights else '00:10' }}"
+                />
               </div>
             </div>
             <div>
               <label for="hf-title">Название момента</label>
-              <input type="text" id="hf-title" name="title" placeholder="Например: «Эпичный бросок»" maxlength="120">
+              <input
+                type="text"
+                id="hf-title"
+                name="title"
+                placeholder="Например: «Эпичный бросок»"
+                maxlength="120"
+              />
             </div>
             <div>
               <label>Эмоция</label>
               <div class="hf-emotions">
-                {% for emotion in [("🔥", "epic", "EPIC"), ("😭", "cry", "CRY"), ("❤️", "love", "LOVE"), ("😂", "funny", "FUNNY"), ("😨", "wtf", "WTF"), ("🥶", "cold", "COLD"), ("✨", "beautiful", "BEAUTIFUL")] %}
-                <button type="button" class="sticker hf-emotion" data-emotion="{{ emotion[1] }}" {% if loop.first %}style="border-color:var(--color-accent)"{% endif %}>
+                {% for emotion in [("🔥", "epic", "EPIC"), ("😭", "cry", "CRY"),
+                ("❤️", "love", "LOVE"), ("😂", "funny", "FUNNY"), ("😨", "wtf",
+                "WTF"), ("🥶", "cold", "COLD"), ("✨", "beautiful",
+                "BEAUTIFUL")] %}
+                <button
+                  type="button"
+                  class="sticker hf-emotion"
+                  data-emotion="{{ emotion[1] }}"
+                  {%
+                  if
+                  loop.first
+                  %}style="border-color:var(--color-accent)"
+                  {%
+                  endif
+                  %}
+                >
                   <span class="st-emoji">{{ emotion[0] }}</span>{{ emotion[2] }}
                 </button>
                 {% endfor %}
@@ -153,31 +285,59 @@
             </div>
             <div>
               <label for="hf-description">Комментарий (необязательно)</label>
-              <input type="text" id="hf-description" name="description" placeholder="Почему этот момент цепляет?" maxlength="600">
+              <input
+                type="text"
+                id="hf-description"
+                name="description"
+                placeholder="Почему этот момент цепляет?"
+                maxlength="600"
+              />
             </div>
             <label class="hf-check">
-              <input type="checkbox" id="hf-spoiler" name="is_spoiler" value="1"> Это спойлер — скрыть из лент по умолчанию
+              <input
+                type="checkbox"
+                id="hf-spoiler"
+                name="is_spoiler"
+                value="1"
+              />
+              Это спойлер — скрыть из лент по умолчанию
             </label>
-            <button type="submit" class="btn btn-primary">✂️ Сохранить момент</button>
+            <button type="submit" class="btn btn-primary">
+              ✂️ Сохранить момент
+            </button>
           </form>
           {% else %}
-          <div class="discussion-empty">Войдите, чтобы вырезать моменты из этой серии.</div>
-          {% endif %}
-
-          {% if watch.highlights %}
-          <h3 style="margin-top:var(--space-4)">Моменты из этой серии</h3>
+          <div class="discussion-empty">
+            Войдите, чтобы вырезать моменты из этой серии.
+          </div>
+          {% endif %} {% if watch.highlights %}
+          <h3 style="margin-top: var(--space-4)">Моменты из этой серии</h3>
           <div class="ep-hightlight-list">
             {% for hl in watch.highlights %}
             <div class="ep-highlight-item">
               <div class="eh-title">{{ hl.title }}</div>
-              {% if hl.emotion %}<span class="sticker" style="margin:6px 0;font-size:11px">✨ {{ hl.emotion|upper }}</span>{% endif %}
+              {% if hl.emotion %}<span
+                class="sticker"
+                style="margin: 6px 0; font-size: 11px"
+                >✨ {{ hl.emotion|upper }}</span
+              >{% endif %}
               <div class="eh-meta">
-                <span class="eh-time">▶ {{ hl.start_timestamp }}–{{ hl.end_timestamp }}</span>
+                <span class="eh-time"
+                  >▶ {{ hl.start_timestamp }}–{{ hl.end_timestamp }}</span
+                >
                 {% if hl.is_spoiler %}<span>🔒 спойлер</span>{% endif %}
                 <span>❤️ {{ hl.likes_count }}</span>
               </div>
               {% if hl.description %}
-              <p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:6px">{{ hl.description }}</p>
+              <p
+                style="
+                  font-size: var(--text-xs);
+                  color: var(--color-text-muted);
+                  margin-top: 6px;
+                "
+              >
+                {{ hl.description }}
+              </p>
               {% endif %}
             </div>
             {% endfor %}
@@ -186,7 +346,11 @@
         </div>
 
         <div class="tab-content" data-tab-content="discussion">
-          <div class="discussion-list" id="discussion-list" data-anime-id="{{ watch.anime_id }}">
+          <div
+            class="discussion-list"
+            id="discussion-list"
+            data-anime-id="{{ watch.anime_id }}"
+          >
             {% for comment in discussion.items %}
             <div class="discussion-item" data-comment-id="{{ comment.id }}">
               <div class="di-head">
@@ -194,44 +358,65 @@
                 <span class="di-time">{{ comment.created_at }}</span>
               </div>
               <p class="di-content">{{ comment.content }}</p>
-              <button class="di-like {{ 'liked' if comment.is_liked }}" data-comment-id="{{ comment.id }}">
+              <button
+                class="di-like {{ 'liked' if comment.is_liked }}"
+                data-comment-id="{{ comment.id }}"
+              >
                 ❤️ <span class="like-count">{{ comment.likes_count }}</span>
               </button>
             </div>
             {% else %}
-            <div class="discussion-empty" id="discussion-empty">Обсуждение пока пустое. Напишите первым, что думаете о серии!</div>
+            <div class="discussion-empty" id="discussion-empty">
+              Обсуждение пока пустое. Напишите первым, что думаете о серии!
+            </div>
             {% endfor %}
           </div>
           {% if current_user %}
           <form class="discussion-form" id="discussion-form">
-            <input type="text" id="discussion-input" placeholder="Ваш комментарий к серии…" maxlength="600" required>
-            <button type="submit" class="btn btn-primary btn-sm">Отправить</button>
+            <input
+              type="text"
+              id="discussion-input"
+              placeholder="Ваш комментарий к серии…"
+              maxlength="600"
+              required
+            />
+            <button type="submit" class="btn btn-primary btn-sm">
+              Отправить
+            </button>
           </form>
           {% else %}
           <div class="discussion-empty">Войдите, чтобы обсуждать серии.</div>
           {% endif %}
         </div>
-        </div>
       </div>
-      </div>
+    </div>
+  </div>
 </div>
 
-<div class="disclaimer-modal hidden" id="thirdparty-disclaimer" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
+<div
+  class="disclaimer-modal hidden"
+  id="thirdparty-disclaimer"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="disclaimer-title"
+>
   <div class="dm-card">
     <h3 class="dm-title" id="disclaimer-title">⚠️ Сторонний контент</h3>
     <p class="dm-text">
-      Мы не размещаем и не храним видео: воспроизведение выполняется сторонними плеерами
-      (Kodik, AniBoom, Sibnet, HDRezka и др.). <strong>Реклама внутри этих плееров — дело самих
-      плееров, наш сайт к ней отношения не имеет.</strong> Все права на аниме принадлежат их
-      правообладателям.
+      Мы не размещаем и не храним видео: воспроизведение выполняется сторонними
+      плеерами (Kodik, AniBoom, Sibnet, HDRezka и др.).
+      <strong
+        >Реклама внутри этих плееров — дело самих плееров, наш сайт к ней
+        отношения не имеет.</strong
+      >
+      Все права на аниме принадлежат их правообладателям.
     </p>
-    <button type="button" class="btn btn-primary" id="disclaimer-accept">Понятно, продолжить</button>
+    <button type="button" class="btn btn-primary" id="disclaimer-accept">
+      Понятно, продолжить
+    </button>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-{% if watch.sources %}
+{% endblock %} {% block scripts %} {% if watch.sources %}
 <script>
   window.AEMWatchPage = {
     animeId: {{ watch.anime_id|tojson }},

@@ -1,19 +1,20 @@
-{% extends "base.html" %}
-
-{% block title %}404 — Страница не найдена{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/404.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}404 — Страница не найдена{% endblock
+%} {% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/404.css') }}" />
+{% endblock %} {% block content %}
 <section class="error-page">
   <div class="error-glitch" aria-hidden="true">404</div>
   <h1 class="page-title">Потерялись во вселенной…</h1>
   <p class="muted">Такой страницы нет или она перенесена.</p>
   <div class="error-actions">
-    <a class="btn btn-primary btn-lg" href="{{ url_for('index.index') }}">На главную</a>
-    <a class="btn btn-ghost btn-lg" href="{{ url_for('anime.search_anime_page') }}">Поиск аниме</a>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('index.index') }}"
+      >На главную</a
+    >
+    <a
+      class="btn btn-ghost btn-lg"
+      href="{{ url_for('anime.search_anime_page') }}"
+      >Поиск аниме</a
+    >
   </div>
 </section>
 {% endblock %}

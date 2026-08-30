@@ -1,13 +1,14 @@
-{% extends "base.html" %}
-
-{% block title %}Коллекции — Anime Epic Moments{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/highlight.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Коллекции — Anime Epic Moments{%
+endblock %} {% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/highlight.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/profile.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="container">
   <header class="dash-head">
     <div>
@@ -15,29 +16,39 @@
       <p class="muted">Ваши подборки аниме. Делитесь ими со зрителями.</p>
     </div>
     {% if collections %}
-    <button class="btn btn-primary" data-action="open-creator">Новая коллекция</button>
+    <button class="btn btn-primary" data-action="open-creator">
+      Новая коллекция
+    </button>
     {% endif %}
   </header>
 
   {% if collections %}
   <div class="collection-grid">
-    {% for cd in collections %}
-    {% set c = cd.collection %}
+    {% for cd in collections %} {% set c = cd.collection %}
     <article class="collection-card">
       <a class="cc-cover" href="{{ c.share_url }}">
         {% if cd.items %}
-        <img src="{{ cd.items[0].cover_url or url_for('static', filename='images/no-cover.svg') }}"
-             alt="" loading="lazy"
-             onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';">
+        <img
+          src="{{ cd.items[0].cover_url or url_for('static', filename='images/no-cover.svg') }}"
+          alt=""
+          loading="lazy"
+          onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';"
+        />
         {% else %}
-        <img src="{{ url_for('static', filename='images/no-cover.svg') }}" alt="">
+        <img
+          src="{{ url_for('static', filename='images/no-cover.svg') }}"
+          alt=""
+        />
         {% endif %}
         <span class="cc-count">{{ c.items_count }} тайтла</span>
-        {% if not c.is_public %}<span class="hc-spoiler">приватная</span>{% endif %}
+        {% if not c.is_public %}<span class="hc-spoiler">приватная</span>{%
+        endif %}
       </a>
       <div class="cc-body">
         <a class="cc-title" href="{{ c.share_url }}">{{ c.title }}</a>
-        {% if c.description %}<p class="hc-desc">{{ c.description }}</p>{% endif %}
+        {% if c.description %}
+        <p class="hc-desc">{{ c.description }}</p>
+        {% endif %}
         <div class="hc-footer">
           <span class="hc-date">{{ c.created_at }}</span>
           <a class="btn btn-ghost btn-sm" href="{{ c.share_url }}">Открыть</a>
@@ -51,7 +62,9 @@
     <span class="empty-emoji">📚</span>
     <h3>Коллекций пока нет</h3>
     <p>Соберите аниме в подборку и поделитесь ею с сообществом.</p>
-    <button class="btn btn-primary" data-action="open-creator">Создать коллекцию</button>
+    <button class="btn btn-primary" data-action="open-creator">
+      Создать коллекцию
+    </button>
   </div>
   {% endif %}
 </div>
@@ -61,39 +74,72 @@
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-header">
       <h3>Новая коллекция</h3>
-      <button class="modal-close" data-action="close-creator" aria-label="Закрыть">&times;</button>
+      <button
+        class="modal-close"
+        data-action="close-creator"
+        aria-label="Закрыть"
+      >
+        &times;
+      </button>
     </div>
     <form method="post" action="{{ url_for('collection.create_collection') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="form-group">
         <label for="col-title">Название</label>
-        <input type="text" id="col-title" name="title" required maxlength="120" placeholder="Например: Лучшие миры">
+        <input
+          type="text"
+          id="col-title"
+          name="title"
+          required
+          maxlength="120"
+          placeholder="Например: Лучшие миры"
+        />
       </div>
       <div class="form-group">
         <label for="col-desc">Описание</label>
-        <textarea id="col-desc" name="description" rows="3" maxlength="400" placeholder="О чём ваша подборка?"></textarea>
+        <textarea
+          id="col-desc"
+          name="description"
+          rows="3"
+          maxlength="400"
+          placeholder="О чём ваша подборка?"
+        ></textarea>
       </div>
-      <label class="filter-check" style="margin-bottom:14px">
-        <input type="checkbox" name="is_public" value="1"> Публичная коллекция
+      <label class="filter-check" style="margin-bottom: 14px">
+        <input type="checkbox" name="is_public" value="1" /> Публичная коллекция
       </label>
       <div class="modal-footer">
-        <button type="button" class="btn btn-ghost" data-action="close-creator">Отмена</button>
+        <button type="button" class="btn btn-ghost" data-action="close-creator">
+          Отмена
+        </button>
         <button type="submit" class="btn btn-primary">Создать</button>
       </div>
     </form>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     var overlay = document.getElementById("create-collection-modal");
-    function open() { overlay.classList.add("open"); }
-    function close() { overlay.classList.remove("open"); }
-    document.querySelectorAll('[data-action="open-creator"]').forEach(function (b) { b.addEventListener("click", open); });
-    document.querySelectorAll('[data-action="close-creator"]').forEach(function (b) { b.addEventListener("click", close); });
-    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+    function open() {
+      overlay.classList.add("open");
+    }
+    function close() {
+      overlay.classList.remove("open");
+    }
+    document
+      .querySelectorAll('[data-action="open-creator"]')
+      .forEach(function (b) {
+        b.addEventListener("click", open);
+      });
+    document
+      .querySelectorAll('[data-action="close-creator"]')
+      .forEach(function (b) {
+        b.addEventListener("click", close);
+      });
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) close();
+    });
   });
 </script>
 {% endblock %}

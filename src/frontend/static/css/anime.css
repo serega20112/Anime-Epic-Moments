@@ -56,7 +56,10 @@
   border-radius: 50%;
   color: var(--color-text-faint);
   background: transparent;
-  transition: color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .search-field .search-filter-btn:hover {
@@ -314,5 +317,138 @@
 
   .filter-submit {
     grid-column: 1 / -1;
+  }
+}
+
+/* Кнопка «Показать ещё» */
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-5);
+}
+
+.load-more-wrap.hidden {
+  display: none;
+}
+
+.load-more-wrap .btn {
+  min-width: 200px;
+}
+
+/* Переключатель вида: сетка / список */
+.view-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-full);
+  background: var(--button-ghost-bg);
+  border: 1px solid var(--color-border);
+}
+
+.view-toggle-btn {
+  width: 34px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.view-toggle-btn:hover {
+  color: var(--color-text);
+}
+
+.view-toggle-btn.active {
+  background: var(--color-accent);
+  color: var(--color-text-inverse, #fff);
+  box-shadow: 0 0 8px var(--color-accent);
+}
+
+/* Список: карточки в одну колонку */
+.results-grid.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.results-grid.results-list .anime-card-list {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  background: var(--color-surface-solid);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.results-grid.results-list .anime-card-list:hover {
+  border-color: var(--color-accent);
+  box-shadow: var(--glow-accent);
+}
+
+.results-grid.results-list .anime-card-list .poster {
+  width: 90px;
+  height: 126px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.results-grid.results-list .anime-card-list .poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.results-grid.results-list .anime-card-list .card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.results-grid.results-list .anime-card-list .card-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.results-grid.results-list .anime-card-list .card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.results-grid.results-list .anime-card-list .card-genres {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+
+.results-grid.results-list .anime-card-list .btn {
+  margin-top: auto;
+}
+
+@media (max-width: 640px) {
+  .results-grid.results-list .anime-card-list {
+    gap: var(--space-3);
+  }
+
+  .results-grid.results-list .anime-card-list .poster {
+    width: 70px;
+    height: 100px;
   }
 }

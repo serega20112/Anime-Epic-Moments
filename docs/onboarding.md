@@ -56,7 +56,7 @@ $env:PYTHONPATH = "src"; uv run lint-imports
 - `../src/backend/main.py`
 - `src/backend/presentation/app_factory.py`
 - `src/backend/infrastructure/di/`
-- `build/docker-compose.yml`
+- `docker-compose.yml`
 - `build/alembic/alembic.ini`
 - `pyproject.toml`, `ruff.toml`
 

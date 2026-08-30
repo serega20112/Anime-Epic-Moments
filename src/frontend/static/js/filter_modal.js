@@ -38,7 +38,9 @@
   function chip(value, label) {
     return (
       '<button type="button" class="filter-chip fm-chip' +
-      '" data-value="' + window.AEM.escapeHtml(value) + '">' +
+      '" data-value="' +
+      window.AEM.escapeHtml(value) +
+      '">' +
       window.AEM.escapeHtml(label) +
       "</button>"
     );
@@ -56,14 +58,27 @@
     var opts = options
       .map(function (pair) {
         var on = (pair[0] || "") === (selected || "") ? " selected" : "";
-        return '<option value="' + window.AEM.escapeHtml(pair[0]) + '"' + on + ">" +
-          window.AEM.escapeHtml(pair[1]) + "</option>";
+        return (
+          '<option value="' +
+          window.AEM.escapeHtml(pair[0]) +
+          '"' +
+          on +
+          ">" +
+          window.AEM.escapeHtml(pair[1]) +
+          "</option>"
+        );
       })
       .join("");
     return (
       '<div class="filter-field">' +
-      '<span class="filter-label">' + window.AEM.escapeHtml(label) + "</span>" +
-      '<select id="' + id + '" class="filter-select">' + opts + "</select>" +
+      '<span class="filter-label">' +
+      window.AEM.escapeHtml(label) +
+      "</span>" +
+      '<select id="' +
+      id +
+      '" class="filter-select">' +
+      opts +
+      "</select>" +
       "</div>"
     );
   }
@@ -75,76 +90,108 @@
   function buildBody(initial) {
     return (
       '<div class="fm-filters">' +
-        '<div class="filter-group">' +
-          '<span class="filter-label">Жанр</span>' +
-          '<div class="filter-chips" id="fm-genre-chips">' + chipGroup(GENRES) + "</div>" +
-        "</div>" +
-        '<div class="filter-group">' +
-          '<span class="filter-label">Аудитория</span>' +
-          '<div class="filter-chips" id="fm-demographic-chips">' + chipGroup(DEMOGRAPHICS) + "</div>" +
-        "</div>" +
-        '<div class="filter-row">' +
-          selectField("fm-type", "Формат", [
-            ["", "Любой"],
-            ["tv", "ТВ-сериал"],
-            ["movie", "Фильм"],
-            ["ova", "OVA"],
-            ["ona", "ONA"],
-            ["special", "Спецвыпуск"],
-          ], initial.get("type")) +
-          selectField("fm-status", "Статус", [
-            ["", "Любой"],
-            ["airing", "Онгоинг"],
-            ["complete", "Завершено"],
-            ["upcoming", "Анонс"],
-          ], initial.get("status")) +
-          selectField("fm-score", "Рейтинг", [
-            ["", "Любой"],
-            ["9", "9+"],
-            ["8", "8+"],
-            ["7", "7+"],
-            ["6", "6+"],
-          ], initial.get("min_score")) +
-          selectField("fm-sort", "Сортировка", [
-            ["rating", "По рейтингу"],
-            ["popularity", "По популярности"],
-            ["newest", "По новизне"],
-            ["title", "По алфавиту"],
-          ], initial.get("sort") || "rating") +
-        "</div>" +
-        '<div class="filter-row">' +
-          '<div class="filter-field">' +
-            '<span class="filter-label">Год от</span>' +
-            '<input type="number" id="fm-year-from" class="filter-select" min="1950" max="2100" placeholder="1960" value="' +
-              window.AEM.escapeHtml(initial.get("year_from") || "") + '">' +
-          "</div>" +
-          '<div class="filter-field">' +
-            '<span class="filter-label">Год до</span>' +
-            '<input type="number" id="fm-year-to" class="filter-select" min="1950" max="2100" placeholder="2026" value="' +
-              window.AEM.escapeHtml(initial.get("year_to") || "") + '">' +
-          "</div>" +
-        "</div>" +
-        '<div class="fm-actions">' +
-          '<button type="button" class="btn btn-ghost" id="fm-reset">Сбросить</button>' +
-          '<button type="button" class="btn btn-primary" id="fm-apply">Показать</button>' +
-        "</div>" +
+      '<div class="filter-group">' +
+      '<span class="filter-label">Жанр</span>' +
+      '<div class="filter-chips" id="fm-genre-chips">' +
+      chipGroup(GENRES) +
+      "</div>" +
+      "</div>" +
+      '<div class="filter-group">' +
+      '<span class="filter-label">Аудитория</span>' +
+      '<div class="filter-chips" id="fm-demographic-chips">' +
+      chipGroup(DEMOGRAPHICS) +
+      "</div>" +
+      "</div>" +
+      '<div class="filter-row">' +
+      selectField(
+        "fm-type",
+        "Формат",
+        [
+          ["", "Любой"],
+          ["tv", "ТВ-сериал"],
+          ["movie", "Фильм"],
+          ["ova", "OVA"],
+          ["ona", "ONA"],
+          ["special", "Спецвыпуск"],
+        ],
+        initial.get("type"),
+      ) +
+      selectField(
+        "fm-status",
+        "Статус",
+        [
+          ["", "Любой"],
+          ["airing", "Онгоинг"],
+          ["complete", "Завершено"],
+          ["upcoming", "Анонс"],
+        ],
+        initial.get("status"),
+      ) +
+      selectField(
+        "fm-score",
+        "Рейтинг",
+        [
+          ["", "Любой"],
+          ["9", "9+"],
+          ["8", "8+"],
+          ["7", "7+"],
+          ["6", "6+"],
+        ],
+        initial.get("min_score"),
+      ) +
+      selectField(
+        "fm-sort",
+        "Сортировка",
+        [
+          ["rating", "По рейтингу"],
+          ["popularity", "По популярности"],
+          ["newest", "По новизне"],
+          ["title", "По алфавиту"],
+        ],
+        initial.get("sort") || "rating",
+      ) +
+      "</div>" +
+      '<div class="filter-row">' +
+      '<div class="filter-field">' +
+      '<span class="filter-label">Год от</span>' +
+      '<input type="number" id="fm-year-from" class="filter-select" min="1950" max="2100" placeholder="1960" value="' +
+      window.AEM.escapeHtml(initial.get("year_from") || "") +
+      '">' +
+      "</div>" +
+      '<div class="filter-field">' +
+      '<span class="filter-label">Год до</span>' +
+      '<input type="number" id="fm-year-to" class="filter-select" min="1950" max="2100" placeholder="2026" value="' +
+      window.AEM.escapeHtml(initial.get("year_to") || "") +
+      '">' +
+      "</div>" +
+      "</div>" +
+      '<div class="fm-actions">' +
+      '<button type="button" class="btn btn-ghost" id="fm-reset">Сбросить</button>' +
+      '<button type="button" class="btn btn-primary" id="fm-apply">Показать</button>' +
+      "</div>" +
       "</div>"
-  );
+    );
   }
 
   function markActiveChips(root, values) {
     var chips = root.querySelectorAll(".fm-chip");
     Array.prototype.forEach.call(chips, function (chipEl) {
-      chipEl.classList.toggle("active", values.indexOf(chipEl.getAttribute("data-value")) !== -1);
+      chipEl.classList.toggle(
+        "active",
+        values.indexOf(chipEl.getAttribute("data-value")) !== -1,
+      );
     });
   }
 
   function selectedCategories(root) {
     var values = [];
-    Array.prototype.forEach.call(root.querySelectorAll(".fm-chip.active"), function (chipEl) {
-      var value = chipEl.getAttribute("data-value");
-      if (value) values.push(value);
-    });
+    Array.prototype.forEach.call(
+      root.querySelectorAll(".fm-chip.active"),
+      function (chipEl) {
+        var value = chipEl.getAttribute("data-value");
+        if (value) values.push(value);
+      },
+    );
     return values;
   }
 

@@ -29,7 +29,7 @@ def _page_html(page_hash: str = "2a8179fe3f46d2bc83a17a6a59c954c0") -> str:
     return (
         '<html><script>var player = "x"; '
         f'hash = "{page_hash}";'
-        "</script><video data-vid=\"x/x.mp4\"></video></html>"
+        '</script><video data-vid="x/x.mp4"></video></html>'
     )
 
 
@@ -155,9 +155,7 @@ async def test_eporner_network_error_returns_empty():
 async def test_eporner_missing_hash_skips_video():
     """Видео без hash на странице пропускается без ошибок."""
     provider = _provider()
-    search_payload = {
-        "videos": [{"id": "i2VSqDiCBlR", "title": "Bible Black 01", "keywords": ""}]
-    }
+    search_payload = {"videos": [{"id": "i2VSqDiCBlR", "title": "Bible Black 01", "keywords": ""}]}
     provider.session.get = AsyncMock(
         side_effect=[
             _FakeJsonResponse(search_payload),
@@ -189,9 +187,7 @@ async def test_eporner_transport_errors_type_map():
 async def test_eporner_hls_fallback():
     """Когда MP4 нет, но есть HLS — используются HLS-потоки."""
     provider = _provider()
-    search_payload = {
-        "videos": [{"id": "abc123XYZ", "title": "Bible Black 01", "keywords": ""}]
-    }
+    search_payload = {"videos": [{"id": "abc123XYZ", "title": "Bible Black 01", "keywords": ""}]}
     hls_payload = {
         "available": True,
         "sources": {
