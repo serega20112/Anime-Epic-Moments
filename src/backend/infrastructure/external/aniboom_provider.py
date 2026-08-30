@@ -63,6 +63,7 @@ class AniBoomProvider(WatchSourceProvider):
         episode: int,
         year: int | None = None,
         limit: int = 8,
+        shikimori_id: int | None = None,
     ) -> list[DiscoveredWatchSource]:
         """Поиск по тайтлу.
 

@@ -32,4 +32,5 @@ class SearchAnimeUseCase:
         return await self.api_client.search_by_title(
             title=query.title,
             limit=query.limit,
+            include_adult=query.include_adult,
         )

@@ -5,6 +5,8 @@ import httpx
 
 from backend.config import Settings
 from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
+from backend.infrastructure.external.errors import ExternalServiceError
+from backend.infrastructure.external.http_guard import read_json_limited
 from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 
 
@@ -44,6 +46,7 @@ class AniLibriaClient(WatchSourceProvider):
         episode: int,
         year: int | None = None,
         limit: int = 6,
+        shikimori_id: int | None = None,
     ) -> list[DiscoveredWatchSource]:
         if not await self.is_enabled():
             return []
@@ -117,8 +120,8 @@ class AniLibriaClient(WatchSourceProvider):
                 params={"query": title, "limit": max(int(limit), 1)},
             )
             response.raise_for_status()
-            payload = response.json()
-        except (httpx.HTTPError, ValueError, TypeError):
+            payload = read_json_limited(response, service_name=self.provider_name)
+        except (httpx.HTTPError, ValueError, TypeError, ExternalServiceError):
             return []
         return payload if isinstance(payload, list) else []
 
@@ -129,8 +132,8 @@ class AniLibriaClient(WatchSourceProvider):
                 params={"include": "episodes"},
             )
             response.raise_for_status()
-            payload = response.json()
-        except (httpx.HTTPError, ValueError, TypeError):
+            payload = read_json_limited(response, service_name=self.provider_name)
+        except (httpx.HTTPError, ValueError, TypeError, ExternalServiceError):
             return None
         return payload if isinstance(payload, dict) else None
 

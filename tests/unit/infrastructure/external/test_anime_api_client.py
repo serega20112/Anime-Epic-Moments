@@ -65,13 +65,42 @@ async def test_get_by_id_caches_fallback_result(anime_factory):
     client._get_by_anilist_id = AsyncMock(
         return_value=anime_factory(external_id="918", title="Gintama")
     )
+    client._get_by_anilist_mal_id = AsyncMock(return_value=None)
 
     first = await client.get_by_id(918)
     second = await client.get_by_id(918)
 
     assert client.session.get.await_count == 1
     assert client._get_by_anilist_id.await_count == 1
+    assert client._get_by_anilist_mal_id.await_count == 1
     assert first.title == second.title == "Gintama"
+
+
+@pytest.mark.unit
+async def test_get_by_id_resolves_id_as_anilist_mal_id(anime_factory):
+    """Проверяем, что id, пришедший из каталога как MAL-id, резолвится через AniList idMal.
+
+    Хентай-карточки в каталоге AniList отдают ``external_id = idMal``, а не AniList id.
+    Тогда ``get_by_id`` обязан дополнительно попытаться зарезолвить id как MAL-id через
+    AniList ``idMal`` (Jikan — основной источник MAL-резолва — мог быть недоступен).
+    """
+    client = AnimeApiClient()
+    client.session.get = AsyncMock(
+        side_effect=httpx.HTTPStatusError(
+            "404",
+            request=httpx.Request("GET", f"{client.jikan_base}/anime/48755"),
+            response=httpx.Response(404, request=httpx.Request("GET", f"{client.jikan_base}/anime/48755")),
+        )
+    )
+    client._get_by_anilist_id = AsyncMock(return_value=None)
+    mal_found = anime_factory(external_id="48755", title="Imaizumin", genres=["Hentai"])
+    client._get_by_anilist_mal_id = AsyncMock(return_value=mal_found)
+
+    result = await client.get_by_id(48755)
+
+    assert result is mal_found
+    assert client._get_by_anilist_id.await_count == 1
+    assert client._get_by_anilist_mal_id.await_count == 1
 
 
 @pytest.mark.unit

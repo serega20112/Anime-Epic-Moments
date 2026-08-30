@@ -8,8 +8,12 @@ from backend.application.interface.services import (
     WatchSourceSyncServiceInterface as WatchSourceSyncService,
 )
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
-from backend.domain.policies.watch_policy import get_translation_priority
+from backend.domain.policies.watch_policy import (
+    canonicalize_translation_name,
+    get_translation_priority,
+)
 from backend.domain.value_objects.watch.page_data import (
+    TranslationEpisodeCount,
     WatchHighlightCard,
     WatchPageData,
     WatchSourceCard,
@@ -163,10 +167,35 @@ class GetWatchPageUseCase:
                 )
             )
 
-        episode_total = await self._resolve_episode_total(
-            anime=anime,
+        availability = await self.watch_source_sync_service.get_translations_availability(
+            title=(anime.title if anime else ""),
+            year=(anime.year if anime else None),
+            shikimori_id=self._shikimori_id(anime),
+            genres=(anime.genres if anime else None),
+        )
+        if not isinstance(availability, list):
+            availability = []
+        active_translation_name = (
+            translations[active_source.translation_id].name
+            if active_source and active_source.translation_id in translations
+            else None
+        )
+        per_translation_counts = await self._build_translation_counts(
+            availability=availability,
+            source_cards=source_cards,
+            translations=translations,
+            active_translation_name=active_translation_name,
+        )
+        available_episodes = await self._available_episodes(
+            availability=availability,
+            active_translation_name=active_translation_name,
             sources=source_cards,
+        )
+        fallback_total = anime.episode_count if anime and anime.episode_count else None
+        episode_total = await self._resolve_episode_total(
+            available_episodes=available_episodes,
             episode=query.episode,
+            fallback_total=fallback_total,
         )
         can_discover_sources, discovery_provider_name = await asyncio.gather(
             self.watch_source_sync_service.is_enabled(),
@@ -188,7 +217,9 @@ class GetWatchPageUseCase:
             episode_options=await self._build_episode_options(
                 total=episode_total,
                 current_episode=query.episode,
+                available_episodes=available_episodes,
             ),
+            translation_episode_counts=per_translation_counts,
             selected_source_id=active_source.id if active_source else None,
             selected_translation_id=(active_source.translation_id if active_source else None),
             sources=source_cards,
@@ -245,25 +276,140 @@ class GetWatchPageUseCase:
             deduped.append(item)
         return deduped
 
-    async def _resolve_episode_total(self, anime, sources, episode: int) -> int | None:
-        if anime and getattr(anime, "episode_count", None):
-            return max(int(anime.episode_count), max(int(episode), 1))
-        source_episodes = [
-            int(item.episode) for item in sources if getattr(item, "episode", None)
-        ]
-        if source_episodes:
-            return max(max(source_episodes), max(int(episode), 1))
+    async def _available_episodes(
+        self,
+        availability,
+        active_translation_name,
+        sources,
+    ) -> list[int] | None:
+        """Возвращает реально доступные серии тайтла или None, если данных нет.
+
+        Приоритет — набор серий озвучки, выбранной в плеере: тогда «фантомные»
+        серии чужих студий не показываются. Если выбранная озвучка в карте
+        доступности отсутствует — берётся объединение всех озвучек, иначе
+        None (fallback на клиентский диапазон).
+        """
+        if availability and active_translation_name:
+            canonical_active = canonicalize_translation_name(active_translation_name)
+            for record in availability:
+                if (
+                    canonicalize_translation_name(record.title) == canonical_active
+                    and record.available_episodes
+                ):
+                    return sorted(set(record.available_episodes))
+        if availability:
+            merged = sorted({ep for record in availability for ep in record.available_episodes})
+            if merged:
+                return merged
+        return None
+
+    async def _build_translation_counts(
+        self,
+        availability,
+        source_cards,
+        translations,
+        active_translation_name,
+    ) -> list[TranslationEpisodeCount]:
+        """Собирает счётчики вышедших серий по озвучкам для UI.
+
+        Счётчик берётся из ответа провайдера по каждой озвучке отдельно,
+        а не из метаданных каталога — это исключает «12 серий» там, где
+        студия выпустила только 8.
+        """
+        if not availability:
+            return []
+        counts: list[TranslationEpisodeCount] = []
+        seen_names: set[str] = set()
+        for record in availability:
+            canonical = canonicalize_translation_name(record.title)
+            if canonical in seen_names:
+                continue
+            seen_names.add(canonical)
+            is_active = bool(
+                active_translation_name
+                and canonicalize_translation_name(active_translation_name) == canonical
+            )
+            counts.append(
+                TranslationEpisodeCount(
+                    translation_name=record.title,
+                    available_count=int(record.episodes_count),
+                    is_active=is_active,
+                )
+            )
+        return counts
+
+    async def _resolve_episode_total(
+        self,
+        available_episodes: list[int] | None,
+        episode: int,
+        fallback_total: int | None = None,
+    ) -> int | None:
+        """Считает общее число серий по фактически доступным.
+
+        Приоритет — реальный набор серий от провайдера (``available_episodes``):
+        так «фантомные» серии чужих озвучек не попадают в общий счёт. Если
+        карта доступности пуста — используется широтное fallback
+        (``fallback_total`` из каталога/источников).
+
+        Args:
+            available_episodes: Список реально доступных серий либо None.
+            episode: Текущая серия.
+            fallback_total: Количество серий из каталога (fallback).
+
+        Returns:
+            int | None: Максимум доступных серий либо fallback.
+        """
+        if available_episodes:
+            return max(max(available_episodes), max(int(episode), 1))
+        if fallback_total:
+            return max(int(fallback_total), max(int(episode), 1))
         return max(int(episode), 1) if episode else None
 
     async def _build_episode_options(
         self,
         total: int | None,
         current_episode: int,
+        available_episodes: list[int] | None = None,
     ) -> list[int]:
-        """Строит список эпизодов для select, если размер диапазона разумный."""
+        """Строит список эпизодов для select.
+
+        Когда известен реальный набор серий (``available_episodes``) — отдаёт
+        только их, чтобы не показывать невышедшие серии. Иначе fallback на
+        диапазон 1..total.
+
+        Args:
+            total: Общее число серий (fallback).
+            current_episode: Текущая серия.
+            available_episodes: Реально доступные серии или None.
+
+        Returns:
+            list[int]: Возможные для выбора номера серий.
+        """
+        if available_episodes:
+            capped = [ep for ep in sorted(set(available_episodes)) if 1 <= int(ep) <= 500]
+            if current_episode not in capped:
+                capped.append(int(current_episode))
+                capped.sort()
+            return capped
         if total is None:
             return []
         capped_total = max(int(total), int(current_episode), 1)
         if capped_total > 500:
             return []
         return list(range(1, capped_total + 1))
+
+    @staticmethod
+    def _shikimori_id(anime) -> int | None:
+        """Извлекает shikimori_id (MAL-id) из external_id, если это число.
+
+        Args:
+            anime: Сущность Anime.
+
+        Returns:
+            int | None: MAL-id или None, если external_id не числовой
+            (например, AniList-id) — тогда строгая адресация невозможна.
+        """
+        external_id = str(getattr(anime, "external_id", "") or "").strip()
+        if not external_id.isdigit():
+            return None
+        return int(external_id)

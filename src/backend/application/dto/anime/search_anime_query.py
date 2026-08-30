@@ -12,7 +12,9 @@ class SearchAnimeQuery:
     Attributes:
         title: Search title text.
         limit: Maximum number of results to return.
+        include_adult: Whether to include adult/hentai content.
     """
 
     title: str
     limit: int = 10
+    include_adult: bool = False

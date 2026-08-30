@@ -24,7 +24,9 @@ class TestSearchAnimeUseCase:
         result = await use_case.execute(SearchAnimeQuery(title="initial", limit=6))
 
         assert [item.title for item in result] == ["Initial D"]
-        api_client.search_by_title.assert_awaited_once_with(title="initial", limit=6)
+        api_client.search_by_title.assert_awaited_once_with(
+            title="initial", limit=6, include_adult=False
+        )
 
     async def test_returns_empty_for_blank_title(self):
         """Что тестируем: отсутствие запроса при пустом названии.

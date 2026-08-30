@@ -15,10 +15,16 @@ from backend.infrastructure.external import (
     AniBoomProvider,
     AniLibriaClient,
     AnimeApiClient,
+    AnimeGoProvider,
+    EpornerProvider,
+    HanimeProvider,
+    HDRezkaProvider,
     JustWatchClient,
+    KinoboxProvider,
     KodikClient,
     PasswordResetMailer,
     SamebandProvider,
+    SibnetProvider,
     SupportEmailMailer,
     TelegramSupportNotifier,
 )
@@ -145,13 +151,116 @@ class AppProvider(Provider):
         await provider.aclose()
 
     @provide(scope=Scope.APP)
+    async def hanime_provider(self) -> AsyncIterator[HanimeProvider]:
+        """Provide the Hanime.tv provider.
+
+        Yields:
+            HanimeProvider: Configured provider.
+        """
+        provider = HanimeProvider(
+            base_url=Settings.hanime_base_url,
+            enabled=Settings.hanime_enabled,
+            timeout=Settings.hanime_timeout,
+            proxy=Settings.hanime_proxy,
+            cf_clearance=Settings.hanime_cf_clearance,
+            user_agent=Settings.hanime_user_agent,
+        )
+        yield provider
+        await provider.aclose()
+
+    @provide(scope=Scope.APP)
+    async def kinobox_provider(self) -> AsyncIterator[KinoboxProvider]:
+        """Provide the Kinobox aggregator provider.
+
+        Yields:
+            KinoboxProvider: Configured provider.
+        """
+        provider = KinoboxProvider(
+            base_url=Settings.kinobox_base_url,
+            enabled=Settings.kinobox_enabled,
+            timeout=Settings.kinobox_timeout,
+        )
+        yield provider
+        await provider.aclose()
+
+    @provide(scope=Scope.APP)
+    async def animego_provider(
+        self,
+        sibnet_provider: SibnetProvider,
+        aniboom_provider: AniBoomProvider,
+    ) -> AsyncIterator[AnimeGoProvider]:
+        """Provide the AnimeGo scraper with stream extractors wired in.
+
+        Args:
+            sibnet_provider: Sibnet extractor for direct MP4.
+            aniboom_provider: AniBoom extractor for HLS.
+
+        Yields:
+            AnimeGoProvider: Configured provider.
+        """
+        provider = AnimeGoProvider(
+            base_url=Settings.animego_base_url,
+            enabled=Settings.animego_enabled,
+            timeout=Settings.animego_timeout,
+            sibnet_extractor=sibnet_provider,
+            aniboom_extractor=aniboom_provider,
+        )
+        yield provider
+        await provider.aclose()
+
+    @provide(scope=Scope.APP)
+    async def sibnet_provider(self) -> AsyncIterator[SibnetProvider]:
+        """Provide the Sibnet extractor.
+
+        Yields:
+            SibnetProvider: Configured provider.
+        """
+        provider = SibnetProvider(
+            base_url=Settings.sibnet_base_url,
+            enabled=Settings.sibnet_enabled,
+            timeout=Settings.sibnet_timeout,
+        )
+        yield provider
+        await provider.aclose()
+
+    @provide(scope=Scope.APP)
+    async def eporner_provider(self) -> AsyncIterator[EpornerProvider]:
+        """Provide the Eporner hentai/adult API provider.
+
+        Yields:
+            EpornerProvider: Configured provider.
+        """
+        provider = EpornerProvider(
+            base_url=Settings.eporner_base_url,
+            enabled=Settings.eporner_enabled,
+            timeout=Settings.eporner_timeout,
+        )
+        yield provider
+        await provider.aclose()
+
+    @provide(scope=Scope.APP)
+    async def hdrezka_provider(self) -> AsyncIterator[HDRezkaProvider]:
+        """Provide the HDRezka parser.
+
+        Yields:
+            HDRezkaProvider: Configured provider.
+        """
+        provider = HDRezkaProvider(
+            base_url=Settings.rezka_base_url,
+            enabled=Settings.rezka_enabled,
+            timeout=Settings.rezka_timeout,
+        )
+        yield provider
+        await provider.aclose()
+
+    @provide(scope=Scope.APP)
     async def media_proxy_client(self) -> AsyncIterator[MediaProxyClient]:
         """Provide the media proxy client.
 
         Yields:
             MediaProxyClient: Configured proxy client.
         """
-        client = MediaProxyClient()
+        client = MediaProxyClient(upstream_proxy=Settings.media_proxy_upstream_proxy)
         yield client
         await client.aclose()
 

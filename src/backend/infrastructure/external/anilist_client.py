@@ -23,6 +23,7 @@ ANILIST_GENRES = {
     "Drama",
     "Ecchi",
     "Fantasy",
+    "Hentai",
     "Horror",
     "Mahou Shoujo",
     "Mecha",
@@ -85,29 +86,52 @@ class AniListAnimeClient:
         Returns:
             list[Anime]: Matching anime, or an empty list on failure.
         """
-        query = """
-        query ($search: String, $perPage: Int, $isAdult: Boolean) {
-          Page(perPage: $perPage) {
-            media(search: $search, type: ANIME, isAdult: $isAdult) {
-              id
-              idMal
-              episodes
-              title { romaji english native }
-              description
-              genres
-              isAdult
-              seasonYear
-              averageScore
-              coverImage { large }
+        if include_adult:
+            query = """
+            query ($search: String, $perPage: Int) {
+              Page(perPage: $perPage) {
+                media(search: $search, type: ANIME) {
+                  id
+                  idMal
+                  episodes
+                  title { romaji english native }
+                  description
+                  genres
+                  isAdult
+                  seasonYear
+                  averageScore
+                  coverImage { large }
+                }
+              }
             }
-          }
-        }
-        """
-        variables: dict[str, object] = {
-            "search": title,
-            "perPage": limit,
-            "isAdult": None if include_adult else False,
-        }
+            """
+            variables: dict[str, object] = {
+                "search": title,
+                "perPage": limit,
+            }
+        else:
+            query = """
+            query ($search: String, $perPage: Int) {
+              Page(perPage: $perPage) {
+                media(search: $search, type: ANIME, isAdult: false) {
+                  id
+                  idMal
+                  episodes
+                  title { romaji english native }
+                  description
+                  genres
+                  isAdult
+                  seasonYear
+                  averageScore
+                  coverImage { large }
+                }
+              }
+            }
+            """
+            variables = {
+                "search": title,
+                "perPage": limit,
+            }
         try:
             resp = await self.session.post(
                 self.base_url,
@@ -148,29 +172,52 @@ class AniListAnimeClient:
             AniListSearchError: When the AniList request fails so the caller can
                 fall back to a title search.
         """
-        query = """
-        query ($search: String, $perPage: Int, $isAdult: Boolean) {
-          Page(perPage: $perPage) {
-            media(search: $search, type: ANIME, isAdult: $isAdult) {
-              id
-              idMal
-              episodes
-              title { romaji english native }
-              description
-              genres
-              isAdult
-              seasonYear
-              averageScore
-              coverImage { large }
+        if include_adult:
+            query = """
+            query ($search: String, $perPage: Int) {
+              Page(perPage: $perPage) {
+                media(search: $search, type: ANIME) {
+                  id
+                  idMal
+                  episodes
+                  title { romaji english native }
+                  description
+                  genres
+                  isAdult
+                  seasonYear
+                  averageScore
+                  coverImage { large }
+                }
+              }
             }
-          }
-        }
-        """
-        variables: dict[str, object] = {
-            "search": description,
-            "perPage": limit,
-            "isAdult": None if include_adult else False,
-        }
+            """
+            variables: dict[str, object] = {
+                "search": description,
+                "perPage": limit,
+            }
+        else:
+            query = """
+            query ($search: String, $perPage: Int) {
+              Page(perPage: $perPage) {
+                media(search: $search, type: ANIME, isAdult: false) {
+                  id
+                  idMal
+                  episodes
+                  title { romaji english native }
+                  description
+                  genres
+                  isAdult
+                  seasonYear
+                  averageScore
+                  coverImage { large }
+                }
+              }
+            }
+            """
+            variables = {
+                "search": description,
+                "perPage": limit,
+            }
         try:
             resp = await self.session.post(
                 self.base_url,
@@ -304,7 +351,6 @@ class AniListAnimeClient:
               season: $season
               seasonYear: $year
               type: ANIME
-              isAdult: false
               sort: SCORE_DESC
             ) {
               id
@@ -395,7 +441,7 @@ class AniListAnimeClient:
             Returns:
                 list[Anime]: Mapped anime, or an empty list on failure.
             """
-            args = ["type: ANIME", "isAdult: false", "sort: PLACEHOLDER_SORT"]
+            args = ["type: ANIME", "sort: PLACEHOLDER_SORT"]
             declarations = ["$perPage: Int"]
             variables: dict[str, object] = {"perPage": int(limit)}
 
@@ -466,8 +512,6 @@ class AniListAnimeClient:
 
             result = []
             for item in data:
-                if await is_nsfw_anilist(item):
-                    continue
                 result.append(
                     await build_anime_from_anilist_item(item, fallback_to_anilist_id=True)
                 )

@@ -8,6 +8,7 @@ from backend.infrastructure.external import JustWatchClient
 class _FakeResponse:
     def __init__(self, payload):
         self._payload = payload
+        self.headers = {}
 
     def raise_for_status(self):
         return None

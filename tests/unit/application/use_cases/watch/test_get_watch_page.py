@@ -9,6 +9,9 @@ import pytest
 from backend.application.dto import WatchPageQuery
 from backend.application.use_cases import GetWatchPageUseCase
 from backend.domain import Highlight, Translation, ViewingSession, WatchSource
+from backend.domain.value_objects.watch.translation_availability import (
+    TranslationEpisodeAvailability,
+)
 
 
 @pytest.mark.unit
@@ -128,6 +131,97 @@ class TestGetWatchPageUseCase:
         assert page.highlights[0].translation_name == "StudioBand"
         assert page.highlights[0].provider_name == "Kodik"
         assert page.discovery_provider_name == "Kodik + YouTube"
+
+    async def test_hides_unreleased_episodes_for_active_translation(self, anime_factory):
+        """Что тестируем: скрытие невышедших серий выбранной озвучки.
+
+        Что передаём: каталог с episode_count=12, но карта доступности
+        активной озвучки говорит, что вышли только серии 1 и 2.
+        Что ожидаем: episode_total и episode_options отражают реальные
+        доступные серии, а не «фантомные» 12 из каталога.
+        """
+        anime = anime_factory(
+            external_id="185",
+            title="Initial D",
+            description="Street racing",
+            genres=["Action", "Cars"],
+            rating=8.7,
+        )
+        watch_repo = AsyncMock()
+        watch_repo.get_translations.return_value = [
+            Translation(id=1, anime_id=185, name="StudioBand", translation_type="voice"),
+        ]
+        watch_repo.get_highlight_contexts.return_value = []
+        watch_repo.get_session.return_value = None
+        watch_repo.get_status.return_value = None
+        highlight_repo = AsyncMock()
+        highlight_repo.get_by_anime_episode.return_value = []
+        anime_api_client = AsyncMock()
+        anime_api_client.get_by_id.return_value = anime
+        sync_service = AsyncMock()
+        sync_service.sync_for_anime.return_value = [
+            WatchSource(
+                id=1,
+                anime_id=185,
+                episode=2,
+                translation_id=1,
+                provider_name="Kodik",
+                source_name="main-1080",
+                stream_url="https://example.com/1080.m3u8",
+                quality_label="1080",
+                source_type="stream",
+            ),
+            WatchSource(
+                id=2,
+                anime_id=185,
+                episode=1,
+                translation_id=1,
+                provider_name="Kodik",
+                source_name="main-1080",
+                stream_url="https://example.com/1080.m3u8",
+                quality_label="1080",
+                source_type="stream",
+            ),
+        ]
+        sync_service.get_translations_availability.return_value = [
+            TranslationEpisodeAvailability(
+                translation_id=100,
+                title="StudioBand",
+                translation_type="voice",
+                episodes_count=2,
+                available_episodes=[1, 2],
+            ),
+            TranslationEpisodeAvailability(
+                translation_id=200,
+                title="Other Team",
+                translation_type="voice",
+                episodes_count=8,
+                available_episodes=list(range(1, 9)),
+            ),
+        ]
+        sync_service.is_enabled.return_value = True
+        sync_service.get_provider_label.return_value = "Kodik"
+        use_case = GetWatchPageUseCase(
+            watch_repo,
+            highlight_repo,
+            anime_api_client,
+            sync_service,
+            AsyncMock(),
+        )
+
+        page = await use_case.execute(
+            anime_id=185,
+            query=WatchPageQuery(episode=2),
+            user_id=1,
+        )
+
+        assert page.selected_translation_id == 1
+        assert page.episode_total == 2
+        assert page.episode_options == [1, 2]
+        counts = {item.translation_name: item for item in page.translation_episode_counts}
+        assert counts["StudioBand"].available_count == 2
+        assert counts["StudioBand"].is_active is True
+        assert counts["Other Team"].available_count == 8
 
     async def test_uses_fallbacks_when_anime_and_sources_are_missing(self):
         """Что тестируем: fallback-данные при отсутствии аниме и источников.

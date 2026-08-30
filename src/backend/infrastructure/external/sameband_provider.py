@@ -66,6 +66,7 @@ class SamebandProvider(WatchSourceProvider):
         episode: int,
         year: int | None = None,
         limit: int = 8,
+        shikimori_id: int | None = None,
     ) -> list[DiscoveredWatchSource]:
         """Ищет источники для конкретного аниме и эпизода.
 
@@ -74,6 +75,7 @@ class SamebandProvider(WatchSourceProvider):
             episode: Номер эпизода.
             year: Год релиза (не используется SameBand).
             limit: Максимальное число обрабатываемых релизов.
+            shikimori_id: Внешний id тайтла (игнорируется: у SameBand свой id).
 
         Returns:
             list[DiscoveredWatchSource]: Найденные источники.

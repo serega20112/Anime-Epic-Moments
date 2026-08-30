@@ -52,6 +52,10 @@ class SyncWatchSourcesUseCase:
             return await WatchResult.failure(
                 "no_sources_found", status_code=status.HTTP_404_NOT_FOUND
             )
+        if not await self._episode_available_for_any_translation(anime, episode):
+            return await WatchResult.failure(
+                "episode_not_available_for_translation", status_code=status.HTTP_404_NOT_FOUND
+            )
         return await WatchResult.success(
             {
                 "enabled": True,
@@ -59,3 +63,46 @@ class SyncWatchSourcesUseCase:
                 "provider_names": await self.watch_source_sync_service.get_enabled_provider_names(),
             }
         )
+
+    async def _episode_available_for_any_translation(self, anime, episode: int) -> bool:
+        """Проверяет, доступна ли серия хотя бы у одной озвучки.
+
+        Fail-fast: если серия отсутствует у всех озвучек (по карте
+        доступности провайдера), возвращается False — вызывающий код
+        отдаёт 404 вместо подмены контента похожим тайтлом.
+
+        Args:
+            anime: Сущность Anime или None.
+            episode: Номер серии.
+
+        Returns:
+            bool: True, если карта доступности пуста (провайдер не поддерживает)
+            или серия есть хотя бы у одной озвучки.
+        """
+        if anime is None or not getattr(anime, "title", None):
+            return True
+        availability = await self.watch_source_sync_service.get_translations_availability(
+            title=anime.title,
+            year=anime.year,
+            shikimori_id=self._shikimori_id(anime),
+            genres=anime.genres,
+        )
+        if not availability:
+            return True
+        return any(record.has_episode(episode) for record in availability)
+
+    @staticmethod
+    def _shikimori_id(anime) -> int | None:
+        """Извлекает shikimori_id (MAL-id) из external_id, если это число.
+
+        Args:
+            anime: Сущность Anime.
+
+        Returns:
+            int | None: MAL-id или None, если external_id не числовой
+            (например, AniList-id) — тогда строгая адресация невозможна.
+        """
+        external_id = str(getattr(anime, "external_id", "") or "").strip()
+        if not external_id.isdigit():
+            return None
+        return int(external_id)

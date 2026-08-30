@@ -39,6 +39,7 @@ class TestSyncWatchSourcesUseCase:
         sync_service.is_enabled.return_value = True
         sync_service.sync_for_anime.return_value = ["s1", "s2"]
         sync_service.get_enabled_provider_names.return_value = ["Kodik", "AniLibria"]
+        sync_service.get_translations_availability.return_value = []
         use_case = SyncWatchSourcesUseCase(anime_api_client, sync_service, AsyncMock())
 
         result = await use_case.execute(anime_id=7, episode=2, force=True)

@@ -32,4 +32,5 @@ class AutocompleteAnimeUseCase:
         return await self.api_client.search_by_title(
             title=query.query,
             limit=query.limit,
+            include_adult=query.include_adult,
         )

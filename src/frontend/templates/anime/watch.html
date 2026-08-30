@@ -90,6 +90,7 @@
               <span class="si-title">
                 <span class="si-name">{{ group.grouper }}</span>
                 <span class="si-meta">{{ source.provider_name }}{% if group.list|length > 1 %} · {{ group.list|length }} качества{% endif %}</span>
+                <span class="si-count">{% for c in watch.translation_episode_counts %}{% if c.translation_name == group.grouper %}{{ c.available_count }} серий{% endif %}{% endfor %}</span>
               </span>
               <span class="si-badge quality">{% if group.list|length > 1 %}кв {{ group.list|length }}{% else %}кв{% endif %}</span>
             </a>

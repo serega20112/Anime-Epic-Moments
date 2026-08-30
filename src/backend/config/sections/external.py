@@ -4,6 +4,24 @@ from __future__ import annotations
 
 import os
 
+_PLACEHOLDER_PREFIXES = ("your-", "change-me", "xxx")
+
+
+def _clean_secret(value: str | None) -> str | None:
+    """Return the secret or None when it holds a placeholder stub.
+
+    Args:
+        value: Raw environment value.
+
+    Returns:
+        str | None: Cleaned value or None.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return None
+    lowered = text.lower()
+    return None if lowered.startswith(_PLACEHOLDER_PREFIXES) else text
+
 
 def hf_token() -> str | None:
     """Return the Hugging Face API token.
@@ -102,7 +120,7 @@ def kodik_api_token() -> str | None:
     Returns:
         str | None: Kodik token or None.
     """
-    return os.getenv("KODIK_API_TOKEN")
+    return _clean_secret(os.getenv("KODIK_API_TOKEN"))
 
 
 def kodik_api_url() -> str:
@@ -186,13 +204,215 @@ def aniboom_timeout() -> float:
     return float(os.getenv("ANIBOOM_TIMEOUT", "8"))
 
 
+def hanime_enabled() -> bool:
+    """Return whether the Hanime.tv source is enabled.
+
+    Returns:
+        bool: True when HANIME_ENABLED is enabled.
+    """
+    return os.getenv("HANIME_ENABLED", "1") == "1"
+
+
+def hanime_base_url() -> str:
+    """Return the Hanime API base URL.
+
+    Returns:
+        str: Hanime base URL.
+    """
+    return os.getenv("HANIME_BASE_URL", "https://hanime.tv")
+
+
+def hanime_timeout() -> float:
+    """Return the Hanime request timeout in seconds.
+
+    Returns:
+        float: Hanime timeout in seconds.
+    """
+    return float(os.getenv("HANIME_TIMEOUT", "10"))
+
+
+def hanime_proxy() -> str:
+    """Return an optional proxy URL for the Hanime source.
+
+    Returns:
+        str: Proxy URL (http/socks5) or empty string for direct access.
+    """
+    return os.getenv("HANIME_PROXY", "")
+
+
+def hanime_cf_clearance() -> str:
+    """Return the Cloudflare cf_clearance cookie for Hanime.
+
+    Returns:
+        str: Cookie value or empty string when not configured.
+    """
+    return os.getenv("HANIME_CF_CLEARANCE", "")
+
+
+def hanime_user_agent() -> str:
+    """Return the User-Agent bound to the cf_clearance cookie.
+
+    Returns:
+        str: Browser User-Agent string.
+    """
+    return os.getenv(
+        "HANIME_USER_AGENT",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    )
+
+
+def media_proxy_upstream_proxy() -> str:
+    """Return an optional proxy for upstream media streaming.
+
+    Returns:
+        str: Proxy URL (http) or empty string for direct access.
+    """
+    return os.getenv("MEDIA_PROXY_PROXY", "")
+
+
+def kinobox_enabled() -> bool:
+    """Return whether the Kinobox aggregator is enabled.
+
+    Returns:
+        bool: True when KINOBOX_ENABLED is enabled.
+    """
+    return os.getenv("KINOBOX_ENABLED", "1") == "1"
+
+
+def kinobox_base_url() -> str:
+    """Return the Kinobox API base URL.
+
+    Returns:
+        str: Kinobox base URL.
+    """
+    return os.getenv("KINOBOX_BASE_URL", "https://kinobox.tv")
+
+
+def kinobox_timeout() -> float:
+    """Return the Kinobox request timeout in seconds.
+
+    Returns:
+        float: Kinobox timeout in seconds.
+    """
+    return float(os.getenv("KINOBOX_TIMEOUT", "8"))
+
+
+def animego_enabled() -> bool:
+    """Return whether the AnimeGo scraper is enabled.
+
+    Returns:
+        bool: True when ANIMEGO_ENABLED is enabled.
+    """
+    return os.getenv("ANIMEGO_ENABLED", "1") == "1"
+
+
+def animego_base_url() -> str:
+    """Return the AnimeGo site base URL.
+
+    Returns:
+        str: AnimeGo base URL.
+    """
+    return os.getenv("ANIMEGO_BASE_URL", "https://animego.org")
+
+
+def animego_timeout() -> float:
+    """Return the AnimeGo request timeout in seconds.
+
+    Returns:
+        float: AnimeGo timeout in seconds.
+    """
+    return float(os.getenv("ANIMEGO_TIMEOUT", "10"))
+
+
+def sibnet_enabled() -> bool:
+    """Return whether the Sibnet extractor is enabled.
+
+    Returns:
+        bool: True when SIBNET_ENABLED is enabled.
+    """
+    return os.getenv("SIBNET_ENABLED", "1") == "1"
+
+
+def eporner_enabled() -> bool:
+    """Return whether the Eporner hentai/adult API source is enabled.
+
+    Returns:
+        bool: True when EPORNER_ENABLED is enabled.
+    """
+    return os.getenv("EPORNER_ENABLED", "1") == "1"
+
+
+def eporner_base_url() -> str:
+    """Return the Eporner API base URL.
+
+    Returns:
+        str: Eporner base URL.
+    """
+    return os.getenv("EPORNER_BASE_URL", "https://www.eporner.com")
+
+
+def eporner_timeout() -> float:
+    """Return the Eporner request timeout in seconds.
+
+    Returns:
+        float: Eporner timeout in seconds.
+    """
+    return float(os.getenv("EPORNER_TIMEOUT", "10"))
+
+
+def sibnet_base_url() -> str:
+    """Return the Sibnet video base URL.
+
+    Returns:
+        str: Sibnet base URL.
+    """
+    return os.getenv("SIBNET_BASE_URL", "https://video.sibnet.ru")
+
+
+def sibnet_timeout() -> float:
+    """Return the Sibnet request timeout in seconds.
+
+    Returns:
+        float: Sibnet timeout in seconds.
+    """
+    return float(os.getenv("SIBNET_TIMEOUT", "8"))
+
+
+def rezka_enabled() -> bool:
+    """Return whether the HDRezka parser is enabled.
+
+    Returns:
+        bool: True when REZKA_ENABLED is enabled.
+    """
+    return os.getenv("REZKA_ENABLED", "0") == "1"
+
+
+def rezka_base_url() -> str:
+    """Return the HDRezka site base URL (mirror).
+
+    Returns:
+        str: HDRezka base URL.
+    """
+    return os.getenv("REZKA_BASE_URL", "https://rezka.ag")
+
+
+def rezka_timeout() -> float:
+    """Return the HDRezka request timeout in seconds.
+
+    Returns:
+        float: HDRezka timeout in seconds.
+    """
+    return float(os.getenv("REZKA_TIMEOUT", "10"))
+
+
 def youtube_api_key() -> str | None:
     """Return the YouTube Data API key.
 
     Returns:
         str | None: YouTube API key or None.
     """
-    return os.getenv("YOUTUBE_API_KEY")
+    return _clean_secret(os.getenv("YOUTUBE_API_KEY"))
 
 
 def youtube_api_url() -> str:
@@ -223,7 +443,7 @@ def justwatch_partner_token() -> str | None:
     Returns:
         str | None: JustWatch partner token or None.
     """
-    return os.getenv("JUSTWATCH_PARTNER_TOKEN")
+    return _clean_secret(os.getenv("JUSTWATCH_PARTNER_TOKEN"))
 
 
 def justwatch_api_url() -> str:

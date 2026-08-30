@@ -43,6 +43,7 @@ class MediaProxyClient:
         follow_redirects: bool = False,
         trust_env: bool = False,
         timeout: float = 30.0,
+        upstream_proxy: str = "",
     ) -> None:
         """Initialize the proxy client.
 
@@ -53,12 +54,17 @@ class MediaProxyClient:
             follow_redirects: Whether to follow upstream redirects.
             trust_env: Whether to use environment proxies.
             timeout: Request timeout in seconds.
+            upstream_proxy: Optional proxy URL for all upstream media requests.
         """
-        self._client = httpx.AsyncClient(
-            follow_redirects=follow_redirects,
-            trust_env=trust_env,
-            timeout=timeout,
-        )
+        client_kwargs: dict = {
+            "follow_redirects": follow_redirects,
+            "trust_env": trust_env,
+            "timeout": timeout,
+        }
+        normalized_proxy = str(upstream_proxy or "").strip()
+        if normalized_proxy:
+            client_kwargs["proxy"] = normalized_proxy
+        self._client = httpx.AsyncClient(**client_kwargs)
 
     async def proxy(self, request, upstream_url: str, proxy_url_builder) -> Response:
         """Proxy an upstream media URL.

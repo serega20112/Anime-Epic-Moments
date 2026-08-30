@@ -23,6 +23,8 @@
     ["Thriller", "Триллер"],
     ["Mecha", "Меха"],
     ["School", "Школа"],
+    ["Ecchi", "Этти"],
+    ["Hentai", "Хентай"],
   ];
 
   var DEMOGRAPHICS = [

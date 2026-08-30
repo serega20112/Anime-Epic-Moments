@@ -67,13 +67,6 @@ def create_app() -> FastAPI:
         StaticFiles(directory=str(FRONTEND_ROOT / "static")),
         name="static",
     )
-    app.add_middleware(
-        SessionMiddleware,
-        secret_key=Settings.secret_key,
-        same_site=Settings.cookie_samesite.lower(),
-        https_only=Settings.cookie_secure,
-        session_cookie="aem_session",
-    )
 
     @app.middleware("http")
     async def static_revalidation_middleware(request: Request, call_next):
@@ -172,6 +165,18 @@ def create_app() -> FastAPI:
             await clear_cookie(response, "access_token")
         await apply_security_headers(response)
         return response
+
+    # SessionMiddleware регистрируется последним: в Starlette последний
+    # зарегистрированный middleware становится самым внешним и выполняется
+    # первым, поэтому request.scope["session"] доступен app_context_middleware
+    # (prepare_csrf_token / validate_csrf) на момент его работы.
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=Settings.secret_key,
+        same_site=Settings.cookie_samesite.lower(),
+        https_only=Settings.cookie_secure,
+        session_cookie="aem_session",
+    )
 
     app.include_router(auth_router)
     app.include_router(highlight_router)

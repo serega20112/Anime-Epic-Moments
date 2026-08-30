@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -69,6 +69,21 @@ class WatchedAnimeStat:
 
 
 @dataclass
+class TranslationEpisodeCount:
+    """Число вышедших серий у конкретной озвучки одного тайтла.
+
+    Attributes:
+        translation_name: Название озвучки (студии).
+        available_count: Сколько серий реально доступно у этой озвучки.
+        is_active: True, если эта озвучка сейчас выбрана в плеере.
+    """
+
+    translation_name: str
+    available_count: int
+    is_active: bool = False
+
+
+@dataclass
 class ViewingHeatmapPoint:
     date: str
     interactions: int
@@ -97,3 +112,4 @@ class WatchPageData:
     saved_quality_label: str | None
     can_discover_sources: bool = False
     discovery_provider_name: str | None = None
+    translation_episode_counts: list[TranslationEpisodeCount] = field(default_factory=list)

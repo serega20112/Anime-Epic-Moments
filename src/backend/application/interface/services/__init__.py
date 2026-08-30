@@ -30,7 +30,7 @@ from backend.application.interface.services.ttl_cache import TTLCacheInterface
 from backend.application.interface.services.watch_source_provider import (
     WatchSourceProviderInterface,
 )
-from backend.application.interface.services.watch_source_sync_service import (
+from backend.application.interface.services.watch_source_service import (
     WatchSourceSyncServiceInterface,
 )
 

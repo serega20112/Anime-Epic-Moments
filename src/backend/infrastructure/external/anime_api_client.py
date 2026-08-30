@@ -216,6 +216,7 @@ class AnimeApiClient:
         result = await self._first_truthy(
             self.jikan.get_by_id(anime_id),
             self._get_by_anilist_id(anime_id),
+            self._get_by_anilist_mal_id(anime_id),
         )
         return await self._set_cached(cache_key, result, ttl_seconds=1800)
 
@@ -229,6 +230,24 @@ class AnimeApiClient:
             Anime | None: The anime or None when unavailable.
         """
         return await self.anilist.get_by_anilist_id(anime_id)
+
+    async def _get_by_anilist_mal_id(self, anime_id: int) -> Anime | None:
+        """Fetch anime by AniList MAL (idMal) as an additional fallback.
+
+        The same ``anime_id`` can be either an AniList id or a MyAnimeList
+        (MAL) id, depending on which of the racing catalog providers produced
+        the tile (Jikan yields MAL ids, AniList yields ``idMal`` values when
+        present). Resolving the id as a MAL id via AniList ``idMal`` covers the
+        case where Jikan (the primary MAL source) is unavailable or the id was
+        never an AniList id.
+
+        Args:
+            anime_id: MyAnimeList anime identifier.
+
+        Returns:
+            Anime | None: The anime or None when unavailable.
+        """
+        return await self.anilist.get_by_mal_id(anime_id)
 
     async def get_top_anime(self, limit: int = 25) -> list[Anime]:
         """Fetch popular anime through the Jikan top endpoint.

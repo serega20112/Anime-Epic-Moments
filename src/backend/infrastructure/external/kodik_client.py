@@ -9,14 +9,27 @@ import httpx
 
 from backend.config import Settings
 from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
+from backend.domain.value_objects.watch.translation_availability import (
+    TranslationEpisodeAvailability,
+)
 from backend.infrastructure.external.errors import ExternalServiceError
 from backend.infrastructure.external.http_guard import read_json_limited
 from backend.infrastructure.external.kodik_token_store import KodikTokenStore
+from backend.infrastructure.external.mapping.kodik import map_kodik_translations_to_episodes
 from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
 
 _PROBE_BACKOFF_SECONDS = 300.0
 _MAX_SEARCH_PAGES = 20
 _LINKS_CONCURRENCY = 8
+
+# Нормализованные альтернативные написания названий (кириллица -> латиница),
+# которые нельзя сопоставить строковой похожестью.
+_TITLE_ALIASES: dict[str, str] = {
+    "блич": "bleach",
+}
+# Максимальное число «лишних» слов кандидата, при котором запрошенный тайтл
+# всё ещё считается совпадением (например, «bleach» vs «bleach sennen kessen hen»).
+_MAX_EXTRA_CANDIDATE_WORDS = 3
 
 
 class KodikClient(WatchSourceProvider):
@@ -102,8 +115,24 @@ class KodikClient(WatchSourceProvider):
         episode: int,
         year: int | None = None,
         limit: int = 100,
+        shikimori_id: int | None = None,
     ) -> list[DiscoveredWatchSource]:
-        """Ищет источники эпизода через Kodik и возвращает доступные качества."""
+        """Ищет источники эпизода через Kodik и возвращает доступные качества.
+
+        Адресация ведётся всегда по названию + строгой сверке релевантности
+        (:meth:`_looks_relevant`). ``shikimori_id`` намеренно не передаётся
+        в запрос: внешний id каталога может оказаться AniList-id, а Kodik
+        ожидает MAL/Shikimori-id, и неверный id привёл бы к подмене контента
+        либо пустому результату без какой-либо сверки по названию.
+
+        Args:
+            title: Название тайтла для поиска.
+            episode: Номер эпизода.
+            year: Год выпуска для смягчённой сверки.
+            limit: Максимум материалов в выдаче.
+            shikimori_id: Внешний id тайтла; не используется — см. выше,
+                адресация остаётся только по названию.
+        """
         if not await self.is_enabled():
             return []
 
@@ -136,9 +165,7 @@ class KodikClient(WatchSourceProvider):
                 material=material, requested_title=title, requested_year=year
             ):
                 continue
-            material_link = await self._extract_episode_link(
-                material=material, episode=episode
-            ) or material.get("link")
+            material_link = await self._extract_episode_link(material=material, episode=episode)
             if not material_link:
                 continue
 
@@ -179,6 +206,72 @@ class KodikClient(WatchSourceProvider):
                     )
         return discovered
 
+    async def get_translations_availability(
+        self,
+        title: str,
+        year: int | None = None,
+        shikimori_id: int | None = None,
+    ) -> list[TranslationEpisodeAvailability]:
+        """Строит карту доступности серий по озвучкам тайтла.
+
+        ``shikimori_id`` используется как доп. уточнение запроса, когда он
+        есть (MAL/Shikimori-id в Kodik). Выдача при этом дополнительно
+        проверяется на пересечение токенов названия (:meth:`_has_token_overlap`):
+        если id оказался не того пространства (например, AniList-id,
+        указывающий на другое аниме), материалы чужого тайтла будут
+        отброшены и здоровый пустой результат предотвратит подмену контента.
+        Без id выполняется строгий title-match (:meth:`_looks_relevant`).
+
+        Args:
+            title: Название тайтла.
+            year: Год выпуска для смягчённой сверки.
+            shikimori_id: Внешний id тайтла (MAL/Shikimori), если известен.
+
+        Returns:
+            list[TranslationEpisodeAvailability]: Карта доступности серий
+            по озвучкам; пустой список, если Kodik недоступен.
+        """
+        if not await self.is_enabled():
+            return []
+        token = await self._resolve_token()
+        if not token:
+            return []
+
+        params: dict[str, str | int | bool] = {
+            "token": token,
+            "with_material_data": "true",
+            "with_seasons": "true",
+            "with_episodes": "true",
+            "with_episodes_data": "true",
+            "limit": 100,
+        }
+        if shikimori_id:
+            params["shikimori_id"] = int(shikimori_id)
+        else:
+            params["title"] = title
+            if year:
+                params["year"] = year
+
+        materials = await self._search_all_pages(params)
+        if not materials:
+            return []
+
+        if shikimori_id:
+            filtered = [
+                material
+                for material in materials
+                if await self._has_token_overlap(material=material, requested_title=title)
+            ]
+        else:
+            filtered = [
+                material
+                for material in materials
+                if await self._looks_relevant(
+                    material=material, requested_title=title, requested_year=year
+                )
+            ]
+        return map_kodik_translations_to_episodes({"results": filtered})
+
     async def _search_all_pages(self, base_params: dict[str, str | int | bool]) -> list[dict]:
         """Обходит все страницы поисковой выдачи Kodik (до ``_MAX_SEARCH_PAGES``)."""
         materials: list[dict] = []
@@ -205,9 +298,7 @@ class KodikClient(WatchSourceProvider):
         semaphore = asyncio.Semaphore(_LINKS_CONCURRENCY)
 
         async def fetch(material: dict) -> dict[str, list[dict[str, str]]]:
-            material_link = await self._extract_episode_link(
-                material=material, episode=episode
-            ) or material.get("link")
+            material_link = await self._extract_episode_link(material=material, episode=episode)
             if not material_link:
                 return {}
             async with semaphore:
@@ -249,33 +340,63 @@ class KodikClient(WatchSourceProvider):
             normalized_candidate = await self._normalize_title(candidate)
             if not normalized_candidate:
                 continue
-            if normalized_candidate == normalized_requested:
-                return True
-            ratio = self._similarity_ratio(normalized_requested, normalized_candidate)
-            if ratio >= 0.85:
+            if self._titles_match(normalized_requested, normalized_candidate):
                 return True
 
         return False
 
     @staticmethod
-    def _similarity_ratio(a: str, b: str) -> float:
-        if not a or not b:
-            return 0.0
-        if a == b:
-            return 1.0
-        if len(a) < 3 or len(b) < 3:
-            return 1.0 if a == b else 0.0
-        if a in b or b in a:
-            shorter = min(len(a), len(b))
-            longer = max(len(a), len(b))
-            return shorter / longer
-        words_a = set(a.split())
-        words_b = set(b.split())
-        if not words_a or not words_b:
-            return 0.0
-        intersection = words_a & words_b
-        union = words_a | words_b
-        return len(intersection) / len(union)
+    def _titles_match(requested: str, candidate: str) -> bool:
+        """Строго сопоставляет нормализованные названия запрошенного тайтла и кандидата.
+
+        Совпадением считается точное равенство либо случай, когда запрошенный
+        тайтл целиком (по словам) содержится в названии кандидата без
+        значительного «хвоста» из посторонних слов. Нечёткое сходство строк
+        сознательно не используется: оно пропускает материалы других тайтлов.
+        """
+        if requested == candidate:
+            return True
+        requested_words = set(requested.split())
+        candidate_words = set(candidate.split())
+        if not requested_words:
+            return False
+        if requested_words <= candidate_words:
+            return len(candidate_words) - len(requested_words) <= _MAX_EXTRA_CANDIDATE_WORDS
+        return False
+
+    async def _has_token_overlap(self, material: dict, requested_title: str) -> bool:
+        """Проверяет непустое пересечение слов названий.
+
+        Мягкий guard для id-пинной выдачи (:meth:`get_translations_availability`):
+        отбрасывает материалы с чужим названием (пересечения токенов нет),
+        не отбраковывая легитимные вариации названия одного тайтла.
+        """
+        normalized_requested = await self._normalize_title(requested_title)
+        if not normalized_requested:
+            return False
+        requested_words = set(normalized_requested.split())
+        if not requested_words:
+            return False
+        candidates = [
+            material.get("title"),
+            material.get("title_orig"),
+            material.get("other_title"),
+        ]
+        material_data = material.get("material_data") or {}
+        candidates.extend(
+            [
+                material_data.get("title"),
+                material_data.get("anime_title"),
+                material_data.get("title_en"),
+            ]
+        )
+        for candidate in candidates:
+            normalized_candidate = await self._normalize_title(candidate)
+            if not normalized_candidate:
+                continue
+            if requested_words & set(normalized_candidate.split()):
+                return True
+        return False
 
     async def _extract_episode_link(self, material: dict, episode: int) -> str | None:
         seasons = material.get("seasons") or {}
@@ -476,7 +597,8 @@ class KodikClient(WatchSourceProvider):
     async def _normalize_title(self, title: str | None) -> str:
         text = str(title or "").lower().strip()
         text = re.sub(r"[^a-zа-я0-9]+", " ", text, flags=re.IGNORECASE)
-        return " ".join(text.split())
+        text = " ".join(text.split())
+        return _TITLE_ALIASES.get(text, text)
 
     async def _map_translation_type(self, value: str) -> str:
         lowered = value.lower()

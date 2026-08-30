@@ -15,7 +15,12 @@ from backend.infrastructure.external import (
     AniBoomProvider,
     AniLibriaClient,
     AnimeApiClient,
+    AnimeGoProvider,
+    EpornerProvider,
+    HanimeProvider,
+    HDRezkaProvider,
     JustWatchClient,
+    KinoboxProvider,
     KodikClient,
     SamebandProvider,
 )
@@ -188,6 +193,11 @@ class RequestProvider(Provider):
         anilibria_client: AniLibriaClient,
         sameband_provider: SamebandProvider,
         aniboom_provider: AniBoomProvider,
+        hanime_provider: HanimeProvider,
+        animego_provider: AnimeGoProvider,
+        kinobox_provider: KinoboxProvider,
+        hdrezka_provider: HDRezkaProvider,
+        eporner_provider: EpornerProvider,
         youtube_client: YouTubeClient,
         justwatch_client: JustWatchClient,
     ) -> WatchSourceSyncService:
@@ -199,6 +209,12 @@ class RequestProvider(Provider):
             anilibria_client: AniLibria client.
             sameband_provider: SameBand provider.
             aniboom_provider: AniBoom provider.
+            hanime_provider: Hanime.tv provider.
+            animego_provider: AnimeGo scraper (feeds Sibnet/AniBoom extractors).
+            kinobox_provider: Kinobox aggregator provider.
+            hdrezka_provider: HDRezka parser.
+            eporner_provider: Eporner hentai/adult API provider (для тайтлов,
+                где hanime недоступен).
             youtube_client: YouTube client.
             justwatch_client: JustWatch client.
 
@@ -208,9 +224,14 @@ class RequestProvider(Provider):
         return WatchSourceSyncService(
             watch_repository,
             [
+                animego_provider,
+                kodik_client,
+                kinobox_provider,
+                hdrezka_provider,
                 sameband_provider,
                 aniboom_provider,
-                kodik_client,
+                hanime_provider,
+                eporner_provider,
                 anilibria_client,
                 youtube_client,
                 justwatch_client,

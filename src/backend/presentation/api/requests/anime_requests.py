@@ -94,7 +94,12 @@ async def build_search_anime_query(request: Request) -> SearchAnimeQuery:
         minimum=1,
         maximum=Settings.anime_query_limit_max,
     )
-    return SearchAnimeQuery(title=title, limit=limit)
+    include_adult = str(request.query_params.get("include_adult", "")).lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    return SearchAnimeQuery(title=title, limit=limit, include_adult=include_adult)
 
 
 async def build_search_anime_by_description_query(
@@ -148,7 +153,12 @@ async def build_autocomplete_anime_query(request: Request) -> AutocompleteAnimeQ
         minimum=1,
         maximum=Settings.anime_autocomplete_limit_max,
     )
-    return AutocompleteAnimeQuery(query=query, limit=limit)
+    include_adult = str(request.query_params.get("include_adult", "")).lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    return AutocompleteAnimeQuery(query=query, limit=limit, include_adult=include_adult)
 
 
 async def build_get_season_popular_query(request: Request) -> GetSeasonPopularQuery:

@@ -36,6 +36,7 @@ class YouTubeClient(WatchSourceProvider):
         episode: int,
         year: int | None = None,
         limit: int = 6,
+        shikimori_id: int | None = None,
     ) -> list[DiscoveredWatchSource]:
         """Ищет embeddable-источники YouTube для конкретного эпизода."""
         if not await self.is_enabled():

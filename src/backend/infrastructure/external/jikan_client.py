@@ -34,6 +34,7 @@ class JikanAnimeClient:
         "Fantasy": 10,
         "Gender Bender": 11,
         "Harem": 35,
+        "Hentai": 12,
         "Historical": 13,
         "Horror": 14,
         "Josei": 43,
@@ -193,7 +194,7 @@ class JikanAnimeClient:
         Returns:
             list[Anime]: Filtered and sorted anime, or an empty list on failure.
         """
-        params: dict[str, object] = {"limit": limit, "sfw": "true"}
+        params: dict[str, object] = {"limit": limit}
         genre_ids = []
         for genre_name in str(genre or "").split(","):
             genre_id = self.genre_id_by_lower.get(genre_name.strip().lower())
@@ -230,7 +231,5 @@ class JikanAnimeClient:
 
         result = []
         for item in data:
-            if await is_nsfw_jikan(item):
-                continue
             result.append(await build_anime_from_jikan_item(item))
         return result

@@ -14,9 +14,15 @@ from backend.domain.policies.watch_policy import (
     get_translation_priority,
 )
 from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
+from backend.domain.value_objects.watch.translation_availability import (
+    TranslationEpisodeAvailability,
+)
 from backend.utils.ttl_cache import TTLCache
 
 logger = logging.getLogger(__name__)
+
+_ADULT_GENRE_MARKERS = ("hentai", "ecchi", "adult", "эрот", "sex", "nsfw")
+_ADULT_PROVIDER_NAMES = frozenset({"eporner"})
 
 
 class WatchSourceSyncService:
@@ -26,11 +32,18 @@ class WatchSourceSyncService:
         self.watch_repo = watch_repo
         self.providers = providers
         self.empty_result_cache = TTLCache[
-            tuple[str, int, int, int | None, tuple[str, ...]],
+            tuple[str, int, int, int | None, int | None, tuple[str, ...]],
             bool,
         ](
             ttl_seconds=600,
             max_entries=512,
+        )
+        self._availability_cache = TTLCache[
+            tuple[str, int, int],
+            list[TranslationEpisodeAvailability],
+        ](
+            ttl_seconds=1800,
+            max_entries=256,
         )
 
     async def is_enabled(self) -> bool:
@@ -38,6 +51,94 @@ class WatchSourceSyncService:
             if await provider.is_enabled():
                 return True
         return False
+
+    @staticmethod
+    def _is_adult(genres: list[str] | None) -> bool:
+        """Определяет, относится ли тайтл ко взрослому (hentai) контенту по жанрам.
+
+        Args:
+            genres: Список жанров тайтла.
+
+        Returns:
+            bool: True для hentai/ecchi/эроt-жанров.
+        """
+        joined = " ".join(genres or []).lower()
+        return any(marker in joined for marker in _ADULT_GENRE_MARKERS)
+
+    def _filtered_providers(self, adult: bool) -> list[WatchSourceProvider]:
+        """Возвращает список провайдеров для опроса с учётом контента.
+
+        Для взрослого контента остаются только профильные провайдеры
+        (Eporner), чтобы не тратить запросы на обычные кинотеки,
+        где хентай отсутствует. Для остального — полный список.
+
+        Args:
+            adult: True, если тайтл взрослый (hentai).
+
+        Returns:
+            list[WatchSourceProvider]: Провайдеры для опроса.
+        """
+        if not adult:
+            return list(self.providers)
+        return [
+            provider
+            for provider in self.providers
+            if provider.provider_name.strip().lower() in _ADULT_PROVIDER_NAMES
+        ]
+
+    async def get_translations_availability(
+        self,
+        title: str,
+        year: int | None = None,
+        shikimori_id: int | None = None,
+        genres: list[str] | None = None,
+    ) -> list[TranslationEpisodeAvailability]:
+        """Возвращает карту доступности серий по озвучкам с TTL-кэшем.
+
+        Результат кэшируется на 30 минут (онгоинги обновляются достаточно
+        часто, но не чаще раза в полчаса), ключ включает shikimori_id, чтобы
+        строгая адресация не смешивалась с текстовым поиском.
+
+        Args:
+            title: Название тайтла.
+            year: Год выпуска для смягчённой сверки.
+            shikimori_id: Внешний id тайтла (MAL/Shikimori) для строгой адресации.
+            genres: Жанры тайтла. Для взрослого (hentai) контента опрашиваются
+                только профильные провайдеры (Eporner, Hanime), а не весь список.
+
+        Returns:
+            list[TranslationEpisodeAvailability]: Карта доступности серий
+            по озвучкам; пустой список, если ни один провайдер не умеет.
+        """
+        cache_key = (
+            str(title).strip().lower(),
+            int(year) if year else 0,
+            int(shikimori_id) if shikimori_id else 0,
+        )
+        cached = await self._availability_cache.get(cache_key)
+        if cached is not None:
+            return list(cached)
+
+        availability: list[TranslationEpisodeAvailability] = []
+        for provider in self._filtered_providers(self._is_adult(genres)):
+            if not await provider.is_enabled():
+                continue
+            try:
+                availability = await provider.get_translations_availability(
+                    title=title,
+                    year=year,
+                    shikimori_id=shikimori_id,
+                )
+            except ExternalServiceError:
+                logger.warning(
+                    "Translation availability provider failed",
+                    extra={"provider": provider.provider_name},
+                )
+                continue
+            if availability:
+                break
+        await self._availability_cache.set(cache_key, availability)
+        return availability
 
     async def get_enabled_provider_names(self) -> list[str]:
         return [
@@ -60,10 +161,11 @@ class WatchSourceSyncService:
         if not anime or not anime.title or not await self.is_enabled():
             return existing
 
+        adult = self._is_adult(getattr(anime, "genres", None))
         existing_provider_names = {str(source.provider_name).strip().lower() for source in existing}
         providers_to_query = [
             provider
-            for provider in self.providers
+            for provider in self._filtered_providers(adult)
             if await provider.is_enabled()
             and (force or provider.provider_name.strip().lower() not in existing_provider_names)
         ]
@@ -71,8 +173,9 @@ class WatchSourceSyncService:
             return existing
 
         title_variants = await self._build_title_variants(anime.title)
+        shikimori_id = self._shikimori_id(anime)
         pending_discoveries: list[
-            tuple[tuple[str, int, int, int | None, tuple[str, ...]], object]
+            tuple[tuple[str, int, int, int | None, int | None, tuple[str, ...]], object]
         ] = []
         for provider in providers_to_query:
             empty_cache_key = (
@@ -80,6 +183,7 @@ class WatchSourceSyncService:
                 int(anime_id),
                 int(episode),
                 anime.year,
+                shikimori_id,
                 tuple(title_variants),
             )
             if not force and await self.empty_result_cache.contains(empty_cache_key):
@@ -96,6 +200,7 @@ class WatchSourceSyncService:
                     title_variants=title_variants,
                     episode=episode,
                     year=anime.year,
+                    shikimori_id=shikimori_id,
                 )
                 for _empty_cache_key, provider in pending_discoveries
             ]
@@ -180,6 +285,7 @@ class WatchSourceSyncService:
         title_variants: list[str],
         episode: int,
         year: int | None,
+        shikimori_id: int | None = None,
     ) -> list[DiscoveredWatchSource]:
         """Ищет источники по нескольким вариантам названия и объединяет результат."""
         discovered: list[DiscoveredWatchSource] = []
@@ -190,6 +296,7 @@ class WatchSourceSyncService:
                     title=title_variant,
                     episode=episode,
                     year=year,
+                    shikimori_id=shikimori_id,
                 )
             except ExternalServiceError:
                 logger.warning(
@@ -237,3 +344,19 @@ class WatchSourceSyncService:
         """Преобразует метку качества в число для сортировки по убыванию."""
         digits = "".join(character for character in str(value or "") if character.isdigit())
         return int(digits) if digits else 0
+
+    @staticmethod
+    def _shikimori_id(anime) -> int | None:
+        """Извлекает shikimori_id (MAL-id) из external_id, если это число.
+
+        Args:
+            anime: Сущность Anime.
+
+        Returns:
+            int | None: MAL-id или None, если external_id не числовой
+            (например, AniList-id) — тогда строгая адресация невозможна.
+        """
+        external_id = str(getattr(anime, "external_id", "") or "").strip()
+        if not external_id.isdigit():
+            return None
+        return int(external_id)

@@ -24,7 +24,9 @@ class TestAutocompleteAnimeUseCase:
         result = await use_case.execute(AutocompleteAnimeQuery(query="gin", limit=3))
 
         assert [item.title for item in result] == ["Gintama"]
-        api_client.search_by_title.assert_awaited_once_with(title="gin", limit=3)
+        api_client.search_by_title.assert_awaited_once_with(
+            title="gin", limit=3, include_adult=False
+        )
 
     async def test_returns_empty_for_blank_query(self):
         """Что тестируем: отсутствие вызова при пустом запросе.

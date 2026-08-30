@@ -9,6 +9,7 @@ dependencies = [
     "alembic==1.18.4",
     "asyncpg==0.30.0",
     "bcrypt==4.1.2",
+    "curl-cffi==0.16.2",
     "dishka==1.10.1",
     "fastapi==0.116.1",
     "greenlet==3.5.4",
