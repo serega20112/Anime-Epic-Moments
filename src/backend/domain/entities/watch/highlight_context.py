@@ -10,6 +10,7 @@ class HighlightContext:
         title: str = "",
         id: int | None = None,
         created_at: datetime | None = None,
+        original_title: str | None = None,
     ):
         self.id = id
         self.highlight_id = highlight_id
@@ -17,3 +18,4 @@ class HighlightContext:
         self.translation_id = translation_id
         self.title = title
         self.created_at = created_at or datetime.utcnow()
+        self.original_title = original_title

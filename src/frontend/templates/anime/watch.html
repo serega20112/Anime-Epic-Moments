@@ -13,6 +13,9 @@ watch.episode }} серия | Anime Epic Moments{% endblock %} {% block head %}
         <div class="player-overlay" id="player-overlay">
           <span class="po-eyebrow">anime epic moments</span>
           <h1 class="po-title">{{ watch.anime_title }}</h1>
+          {% if watch.anime_title_original and watch.anime_title_original != watch.anime_title %}
+          <p class="po-sub po-original">{{ watch.anime_title_original }}</p>
+          {% endif %}
           <p class="po-sub">
             Серия {{ watch.episode }}{% if watch.episode_total %} из {{
             watch.episode_total }}{% endif %}
@@ -54,6 +57,9 @@ watch.episode }} серия | Anime Epic Moments{% endblock %} {% block head %}
         />
         <div class="wa-info">
           <h2 class="wa-title">{{ watch.anime_title }}</h2>
+          {% if watch.anime_title_original and watch.anime_title_original != watch.anime_title %}
+          <div class="wa-original">{{ watch.anime_title_original }}</div>
+          {% endif %}
           <div class="wa-meta">
             {% if watch.anime_year %}<span>🗓 {{ watch.anime_year }}</span>{%
             endif %} {% if watch.anime_rating %}<span
@@ -472,5 +478,5 @@ watch.episode }} серия | Anime Epic Moments{% endblock %} {% block head %}
 </script>
 {% endif %}
 <script src="{{ url_for('static', filename='js/vendor/hls.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/watch_player.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/watch_player.js') }}"></script>
 {% endblock %}

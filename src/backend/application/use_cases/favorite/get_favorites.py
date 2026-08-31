@@ -23,6 +23,9 @@ class GetFavoritesUseCase:
             title = favorite.title or (
                 anime.title if anime and anime.title else f"Anime #{favorite.anime_id}"
             )
+            original_title = favorite.original_title or (
+                anime.original_title if anime and anime.original_title else None
+            )
             result.append(
                 FavoriteAnimeCard(
                     anime_id=favorite.anime_id,
@@ -39,6 +42,7 @@ class GetFavoritesUseCase:
                     genres=favorite.genres or (anime.genres if anime and anime.genres else []),
                     watch_url=f"/watch/{watch_id}?episode=1",
                     added_at=favorite.added_at.strftime("%Y-%m-%d"),
+                    original_title=original_title,
                 )
             )
         return result

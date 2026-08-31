@@ -52,6 +52,7 @@ async def map_add_collection_item_command(form, *, collection_id: int) -> AddCol
         description=await _trim(form.get("description"), DESCRIPTION_MAX_LENGTH),
         cover_url=await _optional(form.get("cover_url")),
         genres=await _genres(form),
+        original_title=await _optional(form.get("original_title")),
     )
 
 

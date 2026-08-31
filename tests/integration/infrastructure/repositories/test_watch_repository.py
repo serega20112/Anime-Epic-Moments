@@ -40,6 +40,26 @@ class TestWatchRepository:
         assert loaded is not None
         assert loaded.status == "completed"
 
+    async def test_records_episode_completion(self, async_db_session):
+        """Проверяем, что completion обновляет прогресс и создает статус по умолчанию."""
+        user = await UserRepository(async_db_session).add(
+            User(
+                email="watch-complete@example.com",
+                username="complete-user",
+                password_hash="hash",
+            )
+        )
+        repo = WatchRepository(async_db_session)
+
+        created = await repo.record_episode_completion(user.id, anime_id=7, episode=2)
+        advanced = await repo.record_episode_completion(user.id, anime_id=7, episode=5)
+        stuck = await repo.record_episode_completion(user.id, anime_id=7, episode=3)
+
+        assert created.status == "watching"
+        assert created.current_episode == 2
+        assert advanced.current_episode == 5
+        assert stuck.current_episode == 5
+
     async def test_deduplicates_and_sorts_translations(self, async_db_session):
         """Проверяем, что WatchRepository не дублирует одинаковые переводы и сортирует их по имени."""
         repo = WatchRepository(async_db_session)

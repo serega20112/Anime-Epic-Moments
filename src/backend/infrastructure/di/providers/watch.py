@@ -9,6 +9,7 @@ from backend.application.services import WatchSourceSyncService
 from backend.application.use_cases import (
     AddAnimeCommentUseCase,
     AddWatchSourceUseCase,
+    CompleteEpisodeUseCase,
     GetAnimeDiscussionUseCase,
     GetWatchPageUseCase,
     SetAnimeCommentLikeUseCase,
@@ -156,6 +157,29 @@ class WatchUseCaseProvider(Provider):
             SaveViewingSessionUseCase: Configured use case.
         """
         return SaveViewingSessionUseCase(
+            watch_repository,
+            unit_of_work,
+            profile_overview_cache,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    async def complete_episode(
+        self,
+        watch_repository: WatchRepository,
+        unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache,
+    ) -> CompleteEpisodeUseCase:
+        """Provide the complete episode use case.
+
+        Args:
+            watch_repository: Watch repository.
+            unit_of_work: Transaction boundary.
+            profile_overview_cache: Profile overview cache.
+
+        Returns:
+            CompleteEpisodeUseCase: Configured use case.
+        """
+        return CompleteEpisodeUseCase(
             watch_repository,
             unit_of_work,
             profile_overview_cache,

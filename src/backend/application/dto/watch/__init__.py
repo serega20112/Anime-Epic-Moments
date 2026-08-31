@@ -1,4 +1,5 @@
 from backend.application.dto.watch.add_anime_comment_command import AddAnimeCommentCommand
+from backend.application.dto.watch.complete_episode_command import CompleteEpisodeCommand
 from backend.application.dto.watch.create_watch_highlight_command import CreateWatchHighlightCommand
 from backend.application.dto.watch.save_viewing_session_command import SaveViewingSessionCommand
 from backend.application.dto.watch.set_anime_comment_like_command import SetAnimeCommentLikeCommand
@@ -9,6 +10,7 @@ from backend.application.dto.watch.watch_page_query import WatchPageQuery
 
 __all__ = [
     "AddAnimeCommentCommand",
+    "CompleteEpisodeCommand",
     "CreateWatchHighlightCommand",
     "SaveViewingSessionCommand",
     "SetAnimeCommentLikeCommand",

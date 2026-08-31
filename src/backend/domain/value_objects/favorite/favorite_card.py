@@ -10,3 +10,4 @@ class FavoriteAnimeCard:
     genres: list[str]
     watch_url: str
     added_at: str
+    original_title: str | None = None

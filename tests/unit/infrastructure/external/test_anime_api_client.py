@@ -21,6 +21,7 @@ def _response(payload, status_code: int = 200, method: str = "GET"):
 async def test_search_by_title_uses_cache_for_repeated_queries(include_adult):
     """Проверяем, что повторный title-поиск не делает второй сетевой запрос."""
     client = AnimeApiClient()
+    client.shikimori.enabled = False
     client.session.get = AsyncMock(
         return_value=_response(
             {
@@ -53,6 +54,7 @@ async def test_search_by_title_uses_cache_for_repeated_queries(include_adult):
 async def test_get_by_id_caches_fallback_result(anime_factory):
     """Проверяем, что fallback по AniList для get_by_id тоже кэшируется."""
     client = AnimeApiClient()
+    client.shikimori.enabled = False
     error_response = httpx.Response(
         404,
         request=httpx.Request("GET", f"{client.jikan_base}/anime/918"),

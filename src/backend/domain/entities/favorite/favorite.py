@@ -11,6 +11,7 @@ class Favorite:
         description: str | None = None,
         cover_url: str | None = None,
         genres: list[str] | None = None,
+        original_title: str | None = None,
     ):
         self.user_id = user_id
         self.anime_id = anime_id
@@ -19,3 +20,4 @@ class Favorite:
         self.description = description
         self.cover_url = cover_url
         self.genres = genres or []
+        self.original_title = original_title

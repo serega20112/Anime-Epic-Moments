@@ -114,6 +114,58 @@ class WatchRepository:
         status.updated_at = row.updated_at
         return status
 
+    async def record_episode_completion(
+        self,
+        user_id: int,
+        anime_id: int,
+        episode: int,
+    ) -> UserAnimeStatus:
+        """Advance the user's anime progress after finishing an episode.
+
+        Keeps the existing status (defaults to "watching") and bumps
+        ``current_episode`` to the highest seen episode, so completed
+        episodes feed progress and recommendation signals.
+
+        Args:
+            user_id: User identifier.
+            anime_id: Anime identifier.
+            episode: Episode number that was finished.
+
+        Returns:
+            UserAnimeStatus: The refreshed status row.
+        """
+        result = await self.session.execute(
+            select(UserAnimeStatusModel).where(
+                UserAnimeStatusModel.user_id == user_id,
+                UserAnimeStatusModel.anime_id == anime_id,
+            )
+        )
+        row = result.scalar_one_or_none()
+        now = datetime.utcnow()
+
+        if row:
+            if row.status in (None, ""):
+                row.status = "watching"
+            if row.current_episode is None or episode > row.current_episode:
+                row.current_episode = episode
+            row.last_watched_at = now
+            row.updated_at = now
+            await self.session.flush()
+        else:
+            row = UserAnimeStatusModel(
+                user_id=user_id,
+                anime_id=anime_id,
+                status="watching",
+                current_episode=episode,
+                last_watched_at=now,
+                updated_at=now,
+            )
+            self.session.add(row)
+            await self.session.flush()
+
+        status = await self._map_status(row)
+        return status
+
     @staticmethod
     async def _map_status(row: UserAnimeStatusModel) -> UserAnimeStatus:
         """Map a status row to a domain object.
@@ -375,6 +427,7 @@ class WatchRepository:
             watch_source_id=context.watch_source_id,
             translation_id=context.translation_id,
             title=context.title,
+            original_title=context.original_title,
         )
         self.session.add(row)
         await self.session.flush()
@@ -406,6 +459,7 @@ class WatchRepository:
                 translation_id=row.translation_id,
                 title=row.title,
                 created_at=row.created_at,
+                original_title=row.original_title,
             )
             for row in result.scalars().all()
         ]

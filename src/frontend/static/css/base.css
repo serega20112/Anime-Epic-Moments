@@ -1174,6 +1174,25 @@ html[data-theme="rose"] .logo {
   min-height: 2.7em;
 }
 
+.card-title-ru {
+  display: block;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  line-height: 1.35;
+}
+
+.card-title-original {
+  display: block;
+  font-weight: 400;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.2;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .anime-card .card-meta {
   display: flex;
   align-items: center;

@@ -162,6 +162,7 @@ class TestDatabaseBootstrap:
 
         assert statements == [
             "ALTER TABLE favorites ADD COLUMN title VARCHAR",
+            "ALTER TABLE favorites ADD COLUMN original_title VARCHAR",
             "ALTER TABLE favorites ADD COLUMN description VARCHAR",
             "ALTER TABLE favorites ADD COLUMN cover_url VARCHAR",
             "ALTER TABLE favorites ADD COLUMN genres_json VARCHAR",
@@ -187,6 +188,39 @@ class TestDatabaseBootstrap:
             "ALTER TABLE highlights ADD COLUMN title VARCHAR NOT NULL DEFAULT ''",
             "ALTER TABLE highlights ADD COLUMN category VARCHAR",
             "ALTER TABLE highlights ADD COLUMN views_count INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE highlights ADD COLUMN original_title VARCHAR",
+        ]
+
+    def test_ensure_highlight_context_columns_adds_missing_original_title(self, monkeypatch):
+        """Что тестируем: helper добавляет колонку original_title в highlight_contexts."""
+        statements = []
+        fake_connection = _FakeConnection(statements)
+        fake_inspector = _FakeInspector(
+            ["highlight_contexts"],
+            {"highlight_contexts": ["id", "highlight_id", "title"]},
+        )
+        monkeypatch.setattr(database_module, "inspect", lambda connection: fake_inspector)
+        monkeypatch.setattr(database_module, "text", lambda sql: sql)
+
+        database_module._ensure_highlight_context_columns(fake_connection)
+
+        assert statements == ["ALTER TABLE highlight_contexts ADD COLUMN original_title VARCHAR"]
+
+    def test_ensure_collection_item_columns_adds_missing_original_title(self, monkeypatch):
+        """Что тестируем: helper добавляет колонку original_title в anime_collection_items."""
+        statements = []
+        fake_connection = _FakeConnection(statements)
+        fake_inspector = _FakeInspector(
+            ["anime_collection_items"],
+            {"anime_collection_items": ["id", "collection_id", "title"]},
+        )
+        monkeypatch.setattr(database_module, "inspect", lambda connection: fake_inspector)
+        monkeypatch.setattr(database_module, "text", lambda sql: sql)
+
+        database_module._ensure_collection_item_columns(fake_connection)
+
+        assert statements == [
+            "ALTER TABLE anime_collection_items ADD COLUMN original_title VARCHAR"
         ]
 
     async def test_get_session_yields_session_from_factory(self, monkeypatch):

@@ -14,6 +14,7 @@ from backend.infrastructure.external.kinobox_provider import KinoboxProvider
 from backend.infrastructure.external.kodik_client import KodikClient
 from backend.infrastructure.external.password_reset_mailer import PasswordResetMailer
 from backend.infrastructure.external.sameband_provider import SamebandProvider
+from backend.infrastructure.external.shikimori_client import ShikimoriClient
 from backend.infrastructure.external.sibnet_provider import SibnetProvider
 from backend.infrastructure.external.support_email_mailer import SupportEmailMailer
 from backend.infrastructure.external.telegram_support_notifier import TelegramSupportNotifier
@@ -33,6 +34,7 @@ __all__ = [
     "PasswordResetMailer",
     "SamebandProvider",
     "SibnetProvider",
+    "ShikimoriClient",
     "SupportEmailMailer",
     "TelegramSupportNotifier",
     "WatchSourceProvider",

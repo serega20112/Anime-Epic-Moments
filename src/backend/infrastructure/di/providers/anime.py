@@ -68,7 +68,10 @@ class AnimeUseCaseProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
-    async def search_anime(self, anime_api_client: AnimeApiClient) -> SearchAnimeUseCase:
+    async def search_anime(
+        self,
+        anime_api_client: AnimeApiClient,
+    ) -> SearchAnimeUseCase:
         """Provide the search anime use case.
 
         Args:

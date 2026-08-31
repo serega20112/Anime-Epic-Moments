@@ -16,6 +16,7 @@ class AddCollectionItemCommand:
         description: Optional item description.
         cover_url: Optional anime cover URL.
         genres: Anime genres list.
+        original_title: Original (non-Russian) anime title.
     """
 
     collection_id: int
@@ -24,3 +25,4 @@ class AddCollectionItemCommand:
     description: str = ""
     cover_url: str | None = None
     genres: list[str] = field(default_factory=list)
+    original_title: str | None = None

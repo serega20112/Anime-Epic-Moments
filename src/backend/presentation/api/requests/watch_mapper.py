@@ -6,6 +6,7 @@ from typing import Any
 
 from backend.application.dto import (
     AddAnimeCommentCommand,
+    CompleteEpisodeCommand,
     CreateWatchHighlightCommand,
     SaveViewingSessionCommand,
     SetAnimeCommentLikeCommand,
@@ -85,6 +86,29 @@ async def map_save_session_command(
     )
 
 
+async def map_complete_episode_command(
+    payload: dict[str, Any] | None,
+    *,
+    user_id: int,
+    anime_id: int,
+) -> CompleteEpisodeCommand:
+    """Build a complete episode command from a JSON payload.
+
+    Args:
+        payload: Decoded JSON payload.
+        user_id: Acting user identifier.
+        anime_id: Anime identifier.
+
+    Returns:
+        CompleteEpisodeCommand: Command with the parsed episode.
+    """
+    return CompleteEpisodeCommand(
+        user_id=user_id,
+        anime_id=anime_id,
+        episode=await _to_int((payload or {}).get("episode")),
+    )
+
+
 async def map_create_watch_highlight_command(
     payload: dict[str, Any] | None,
     *,
@@ -113,6 +137,7 @@ async def map_create_watch_highlight_command(
         description=str(data.get("description") or "").strip(),
         is_spoiler=await _to_bool(data.get("is_spoiler")),
         emotion=await _optional_str(data.get("emotion")),
+        original_title=await _optional_str(data.get("original_title")),
         watch_source_id=await _to_int(data.get("watch_source_id")),
         translation_id=await _to_int(data.get("translation_id")),
     )

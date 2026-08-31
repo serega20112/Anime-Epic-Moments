@@ -166,6 +166,20 @@
 .hc-anime {
   font-weight: 600;
   color: var(--color-accent);
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.hc-anime-ru {
+  display: block;
+}
+
+.hc-anime-original {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-top: 2px;
 }
 
 .hc-meta .hc-ep,

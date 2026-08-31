@@ -27,4 +27,5 @@ class HighlightContextModel(Base):
         Integer, ForeignKey("translations.id", ondelete="CASCADE"), nullable=False, index=True
     )
     title = Column(String, nullable=False, default="")
+    original_title = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

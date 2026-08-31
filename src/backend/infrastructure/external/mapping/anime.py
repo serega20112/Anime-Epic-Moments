@@ -73,9 +73,12 @@ async def build_anime_from_jikan_item(item: dict[str, Any]) -> Anime:
     Returns:
         Anime: Domain anime.
     """
+    title = str(item.get("title") or "").strip()
+    original = str(item.get("title_english") or str(item.get("title") or "")).strip()
     return Anime(
         external_id=await normalize_numeric_id(item.get("mal_id")),
-        title=str(item.get("title") or "").strip(),
+        title=title,
+        original_title=original,
         description=item.get("synopsis"),
         genres=[
             str(genre.get("name") or "").strip()
@@ -108,10 +111,13 @@ async def build_anime_from_anilist_item(
     mal_id = await normalize_numeric_id(item.get("idMal"))
     anilist_id = await normalize_numeric_id(item.get("id"))
     external_id = mal_id or (anilist_id if fallback_to_anilist_id else "")
+    romaji = str(title_data.get("romaji") or "").strip()
+    english = str(title_data.get("english") or "").strip()
 
     return Anime(
         external_id=external_id,
         title=await pick_anilist_title(title_data),
+        original_title=romaji or english,
         description=item.get("description"),
         genres=[str(genre).strip() for genre in (item.get("genres", []) or []) if genre],
         year=item.get("seasonYear"),

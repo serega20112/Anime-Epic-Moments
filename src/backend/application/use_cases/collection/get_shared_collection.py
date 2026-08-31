@@ -35,6 +35,7 @@ class GetSharedCollectionUseCase:
                     cover_url=item.cover_url,
                     genres=item.genres,
                     watch_url=f"/watch/{item.anime_id}?episode=1",
+                    original_title=item.original_title,
                 )
                 for item in items
             ],

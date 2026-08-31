@@ -28,6 +28,7 @@ class HighlightCard:
     owner_username: str | None = None
     owner_avatar_url: str | None = None
     owner_profile_url: str | None = None
+    anime_original_title: str | None = None
 
 
 @dataclass

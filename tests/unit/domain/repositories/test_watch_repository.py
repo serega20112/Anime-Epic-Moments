@@ -8,6 +8,7 @@ class TestWatchRepository:
         assert {
             "get_status",
             "upsert_status",
+            "record_episode_completion",
             "get_translations",
             "add_translation",
             "get_sources",

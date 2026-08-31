@@ -39,6 +39,7 @@ def test_get_following_highlights_use_case_builds_feed_with_followed_users(sort_
     anime_api_client = Mock()
     anime_api_client.get_by_id.return_value = SimpleNamespace(
         title="Gintama",
+        original_title=None,
         cover_url="https://example.com/gintama.jpg",
         external_id="18",
     )

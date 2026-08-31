@@ -68,7 +68,12 @@
         >
       </div>
       <div class="card-body">
-        <div class="card-title">{{ item.title }}</div>
+        <div class="card-title">
+          <span class="card-title-ru">{{ item.title }}</span>
+          {% if item.original_title and item.original_title != item.title %}
+          <span class="card-title-original">{{ item.original_title }}</span>
+          {% endif %}
+        </div>
         {% if item.description %}
         <div class="card-meta">
           <span>{{ item.description|truncate(60) }}</span>

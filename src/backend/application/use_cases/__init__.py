@@ -115,6 +115,7 @@ from backend.application.use_cases.watch.discussion.set_anime_comment_like impor
 )
 from backend.application.use_cases.watch.page.get_watch_page import GetWatchPageUseCase
 from backend.application.use_cases.watch.result import WatchResult
+from backend.application.use_cases.watch.session.complete_episode import CompleteEpisodeUseCase
 from backend.application.use_cases.watch.session.upsert_user_anime_status import (
     UpsertUserAnimeStatusUseCase,
 )
@@ -127,6 +128,7 @@ __all__ = [
     "AddHighlightCommentUseCase",
     "AddWatchSourceUseCase",
     "AskAiRecommendationsUseCase",
+    "CompleteEpisodeUseCase",
     "CreateCollectionUseCase",
     "CreateSupportTicketUseCase",
     "DeleteHighlightUseCase",

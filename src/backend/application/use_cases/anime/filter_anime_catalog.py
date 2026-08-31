@@ -95,7 +95,8 @@ class FilterAnimeCatalogUseCase:
             for anime, has_translation in zip(candidates, availability_flags)
             if has_translation
         ]
-        return filtered[: int(query.limit)]
+        filtered = filtered[: int(query.limit)]
+        return filtered
 
     async def _has_translation(self, anime: Anime) -> bool:
         """Check whether an anime has at least one available translation.

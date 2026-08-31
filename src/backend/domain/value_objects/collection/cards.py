@@ -20,6 +20,7 @@ class CollectionItemCard:
     cover_url: str | None
     genres: list[str]
     watch_url: str
+    original_title: str | None = None
 
 
 @dataclass

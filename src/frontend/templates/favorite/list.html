@@ -42,7 +42,12 @@ endblock %} {% block head %}
         >
       </div>
       <div class="card-body">
-        <div class="card-title">{{ f.title }}</div>
+        <div class="card-title">
+          <span class="card-title-ru">{{ f.title }}</span>
+          {% if f.original_title and f.original_title != f.title %}
+          <span class="card-title-original">{{ f.original_title }}</span>
+          {% endif %}
+        </div>
         {% if f.description %}
         <div class="card-meta">
           <span>{{ f.description|truncate(60) }}</span>

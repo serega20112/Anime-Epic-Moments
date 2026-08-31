@@ -62,6 +62,7 @@ class CreateWatchHighlightUseCase:
                 watch_source_id=command.watch_source_id,
                 translation_id=command.translation_id,
                 title=command.title,
+                original_title=command.original_title,
             )
         )
         return await WatchResult.success(highlight_result.data, status_code=status.HTTP_201_CREATED)

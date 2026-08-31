@@ -8,6 +8,7 @@ class Anime:
         self,
         external_id: str,
         title: str,
+        original_title: str | None = None,
         description: str | None = None,
         genres: list[str] | None = None,
         year: int | None = None,
@@ -17,6 +18,7 @@ class Anime:
     ):
         self.external_id = external_id
         self.title = title
+        self.original_title = original_title
         self.description = description
         self.genres = genres or []
         self.year = year

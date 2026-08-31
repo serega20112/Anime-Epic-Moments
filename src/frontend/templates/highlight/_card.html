@@ -35,7 +35,12 @@
     {% endif %}
 
     <div class="hc-meta">
-      <span class="hc-anime">{{ highlight.anime_title }}</span>
+      <span class="hc-anime">
+        <span class="hc-anime-ru">{{ highlight.anime_title }}</span>
+        {% if highlight.anime_original_title and highlight.anime_original_title != highlight.anime_title %}
+        <span class="hc-anime-original">{{ highlight.anime_original_title }}</span>
+        {% endif %}
+      </span>
       {% if highlight.episode %}<span class="hc-ep"
         >серия {{ highlight.episode }}</span
       >{% endif %} {% if highlight.category %}<span class="hc-cat"

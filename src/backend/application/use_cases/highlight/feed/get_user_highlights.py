@@ -57,9 +57,9 @@ class GetUserHighlightsUseCase:
         include_spoilers: bool,
         viewer_user_id: int | None,
     ) -> HighlightDashboard:
-        anime_cache: dict[int, tuple[str, str | None, int]] = {}
+        anime_cache: dict[int, tuple[str, str | None, int, str | None]] = {}
 
-        async def anime_meta(value: int) -> tuple[str, str | None, int]:
+        async def anime_meta(value: int) -> tuple[str, str | None, int, str | None]:
             if value not in anime_cache:
                 anime = await self.anime_api_client.get_by_id(value)
                 watch_id = value
@@ -74,12 +74,13 @@ class GetUserHighlightsUseCase:
                     anime.title if anime and anime.title else f"Anime #{value}",
                     anime.cover_url if anime else None,
                     watch_id,
+                    anime.original_title if anime and anime.original_title else None,
                 )
             return anime_cache[value]
 
         filtered = []
         for highlight in highlights:
-            anime_title, _cover, _watch_id = await anime_meta(highlight.anime_id)
+            anime_title, _cover, _watch_id, _original_title = await anime_meta(highlight.anime_id)
             if anime_id is not None and highlight.anime_id != anime_id:
                 continue
             if emotion and (highlight.emotion or "") != emotion:
@@ -111,7 +112,9 @@ class GetUserHighlightsUseCase:
         total_duration = 0.0
 
         for highlight in filtered:
-            anime_title, cover, watch_id = await anime_meta(highlight.anime_id)
+            anime_title, cover, watch_id, anime_original_title = await anime_meta(
+                highlight.anime_id
+            )
             duration = max(highlight.end_timestamp - highlight.start_timestamp, 0.0)
             counter[(highlight.anime_id, anime_title)] += 1
             if highlight.emotion:
@@ -155,6 +158,7 @@ class GetUserHighlightsUseCase:
                     if owner_map.get(highlight.user_id)
                     else None,
                     owner_profile_url=f"/users/{highlight.user_id}",
+                    anime_original_title=anime_original_title,
                 )
             )
 

@@ -15,6 +15,7 @@ from backend.infrastructure.external.anilist_client import (
 )
 from backend.infrastructure.external.jikan_client import JikanAnimeClient
 from backend.infrastructure.external.mapping.anime import passes_filters, sanitize_query
+from backend.infrastructure.external.shikimori_client import ShikimoriClient
 
 _CACHE_MISS = object()
 
@@ -42,6 +43,7 @@ class AnimeApiClient:
         )
         self.jikan = JikanAnimeClient(self.session)
         self.anilist = AniListAnimeClient(self.session)
+        self.shikimori = ShikimoriClient(self.session, self.store)
 
     @property
     def jikan_base(self) -> str:
@@ -99,8 +101,16 @@ class AnimeApiClient:
                 include_adult=include_adult,
             )
             ttl_seconds = 300 if result else 60
-            return list(await self._set_cached(cache_key, result, ttl_seconds=ttl_seconds))
-        return list(await self._set_cached(cache_key, result, ttl_seconds=300))
+            return list(
+                await self._set_cached(
+                    cache_key, await self._enrich_with_russian(result), ttl_seconds=ttl_seconds
+                )
+            )
+        return list(
+            await self._set_cached(
+                cache_key, await self._enrich_with_russian(result), ttl_seconds=300
+            )
+        )
 
     async def get_season_popular(self, year: int, season: str, limit: int = 10) -> list[Anime]:
         """Fetch popular anime of a season, falling back to AniList.
@@ -126,8 +136,16 @@ class AnimeApiClient:
         if not result:
             result = await self.anilist.get_season_popular(year=year, season=season, limit=limit)
             ttl_seconds = 900 if result else 60
-            return list(await self._set_cached(cache_key, result, ttl_seconds=ttl_seconds))
-        return list(await self._set_cached(cache_key, result, ttl_seconds=900))
+            return list(
+                await self._set_cached(
+                    cache_key, await self._enrich_with_russian(result), ttl_seconds=ttl_seconds
+                )
+            )
+        return list(
+            await self._set_cached(
+                cache_key, await self._enrich_with_russian(result), ttl_seconds=900
+            )
+        )
 
     async def search_by_description(
         self,
@@ -179,7 +197,6 @@ class AnimeApiClient:
                 title=sanitized_description, limit=limit, include_adult=include_adult
             )
             return list(await self._set_cached(cache_key, fallback, ttl_seconds=300))
-
         result = []
         for anime in items:
             if not await passes_filters(
@@ -193,7 +210,11 @@ class AnimeApiClient:
             result.append(anime)
             if len(result) >= limit:
                 break
-        return list(await self._set_cached(cache_key, result, ttl_seconds=300))
+        return list(
+            await self._set_cached(
+                cache_key, await self._enrich_with_russian(result), ttl_seconds=300
+            )
+        )
 
     async def get_by_id(self, anime_id: int) -> Anime | None:
         """Fetch anime by id, trying Jikan and AniList concurrently.
@@ -218,6 +239,8 @@ class AnimeApiClient:
             self._get_by_anilist_id(anime_id),
             self._get_by_anilist_mal_id(anime_id),
         )
+        if result is not None:
+            result = (await self._enrich_with_russian([result]))[0]
         return await self._set_cached(cache_key, result, ttl_seconds=1800)
 
     async def _get_by_anilist_id(self, anime_id: int) -> Anime | None:
@@ -263,7 +286,11 @@ class AnimeApiClient:
         if cached is not _CACHE_MISS:
             return list(cached)
         result = await self.jikan.get_top_anime(limit)
-        return list(await self._set_cached(cache_key, result, ttl_seconds=900))
+        return list(
+            await self._set_cached(
+                cache_key, await self._enrich_with_russian(result), ttl_seconds=900
+            )
+        )
 
     async def filter_catalog(
         self,
@@ -340,7 +367,50 @@ class AnimeApiClient:
             ),
         )
         ttl_seconds = 600 if result else 60
-        return list(await self._set_cached(cache_key, result or [], ttl_seconds=ttl_seconds))
+        return list(
+            await self._set_cached(
+                cache_key,
+                await self._enrich_with_russian(result or []),
+                ttl_seconds=ttl_seconds,
+            )
+        )
+
+    async def _enrich_with_russian(self, animes: list[Anime]) -> list[Anime]:
+        """Fill Russian titles/descriptions for a list of anime, in place.
+
+        Collects the numeric MAL ids, fetches Russian metadata from Shikimori in
+        a single batched request (cached per id), and promotes the Russian value
+        into ``title``/``description`` while keeping the original in
+        ``original_title``. Best-effort: any failure leaves the anime unchanged.
+
+        Args:
+            animes: Anime to enrich (mutated in place).
+
+        Returns:
+            list[Anime]: The same list, enriched where Shikimori had data.
+        """
+        if not animes:
+            return animes
+        batched: dict[int, Anime] = {}
+        for anime in animes:
+            if not anime.external_id or not str(anime.external_id).strip().isdigit():
+                continue
+            batched.setdefault(int(anime.external_id), anime)
+        if not batched:
+            return animes
+        try:
+            russian_map = await self.shikimori.fetch_russian(list(batched))
+        except Exception:
+            return animes
+        for mal_id, anime in batched.items():
+            russian_title, russian_desc = russian_map.get(mal_id, (None, None))
+            if russian_title and russian_title != anime.title:
+                if not anime.original_title:
+                    anime.original_title = anime.title if anime.title else None
+                anime.title = russian_title
+            if russian_desc:
+                anime.description = russian_desc
+        return animes
 
     async def _first_truthy(self, *awaitables) -> Any:
         """Await several coroutines and return the first truthy result.

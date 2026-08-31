@@ -23,6 +23,15 @@ class WatchRepository(ABC):
         """Создает или обновляет статус просмотра пользователя."""
 
     @abstractmethod
+    async def record_episode_completion(
+        self,
+        user_id: int,
+        anime_id: int,
+        episode: int,
+    ) -> UserAnimeStatus:
+        """Advance the user's anime progress after finishing an episode."""
+
+    @abstractmethod
     async def get_translations(self, anime_id: int) -> list[Translation]:
         """Возвращает список озвучек/сабов аниме."""
 

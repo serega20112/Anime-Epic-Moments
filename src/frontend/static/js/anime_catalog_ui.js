@@ -26,6 +26,7 @@
   function listCard(anime) {
     var id = anime.anime_id || anime.external_id || anime.id;
     var title = anime.title || "Без названия";
+    var originalTitle = anime.original_title || "";
     var cover = anime.cover_url || anime.image_url || NO_COVER;
     var rating = anime.rating;
     var year = anime.year;
@@ -51,7 +52,10 @@
       "</div>" +
       '<div class="card-body">' +
       '<div class="card-title">' +
-      AEM.escapeHtml(title) +
+      '<span class="card-title-ru">' + AEM.escapeHtml(title) + "</span>" +
+      (originalTitle && originalTitle !== title
+        ? '<span class="card-title-original">' + AEM.escapeHtml(originalTitle) + "</span>"
+        : "") +
       "</div>" +
       (meta.length
         ? '<div class="card-meta">' +

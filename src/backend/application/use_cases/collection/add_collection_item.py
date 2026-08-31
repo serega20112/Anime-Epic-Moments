@@ -36,5 +36,6 @@ class AddCollectionItemUseCase:
             description=command.description,
             cover_url=command.cover_url,
             genres=command.genres,
+            original_title=command.original_title,
         )
         return await self.collection_repo.add_item(item)

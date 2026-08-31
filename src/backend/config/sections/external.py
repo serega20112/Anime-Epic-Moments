@@ -141,6 +141,50 @@ def kodik_tokens_path() -> str:
     return os.getenv("KODIK_TOKENS_PATH", "kdk_tokns/tokens.json")
 
 
+def shikimori_enabled() -> bool:
+    """Return whether the Shikimori Russian-title enrichment is enabled.
+
+    Returns:
+        bool: True when SHIKIMORI_ENABLED is enabled.
+    """
+    return os.getenv("SHIKIMORI_ENABLED", "1") == "1"
+
+
+def shikimori_api_url() -> str:
+    """Return the Shikimori API base URL.
+
+    Returns:
+        str: Shikimori API URL.
+    """
+    return os.getenv("SHIKIMORI_API_URL", "https://shikimori.one/api")
+
+
+def shikimori_token() -> str | None:
+    """Return the optional Shikimori API token.
+
+    The public read endpoints work without a token; providing one raises the
+    per-IP rate limit.
+
+    Returns:
+        str | None: Shikimori token or None.
+    """
+    return _clean_secret(os.getenv("SHIKIMORI_TOKEN"))
+
+
+def shikimori_user_agent() -> str:
+    """Return the User-Agent used for Shikimori API requests.
+
+    Shikimori requires an identifying User-Agent for every request.
+
+    Returns:
+        str: User-Agent string.
+    """
+    return os.getenv(
+        "SHIKIMORI_USER_AGENT",
+        "AnimeEpicMoments/1.0 (anime-epic-moments)",
+    )
+
+
 def anilibria_api_url() -> str:
     """Return the AniLibria API base URL.
 

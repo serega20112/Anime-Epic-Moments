@@ -70,6 +70,8 @@ async def init_db():
         await connection.run_sync(_ensure_watch_source_columns)
         await connection.run_sync(_ensure_favorite_columns)
         await connection.run_sync(_ensure_highlight_columns)
+        await connection.run_sync(_ensure_highlight_context_columns)
+        await connection.run_sync(_ensure_collection_item_columns)
         await connection.run_sync(_ensure_support_ticket_columns)
     logger.info("tables_initialized")
 
@@ -136,6 +138,7 @@ def _ensure_favorite_columns(connection):
     existing_columns = {column["name"] for column in inspector.get_columns("favorites")}
     missing_columns = {
         "title": "ALTER TABLE favorites ADD COLUMN title VARCHAR",
+        "original_title": "ALTER TABLE favorites ADD COLUMN original_title VARCHAR",
         "description": "ALTER TABLE favorites ADD COLUMN description VARCHAR",
         "cover_url": "ALTER TABLE favorites ADD COLUMN cover_url VARCHAR",
         "genres_json": "ALTER TABLE favorites ADD COLUMN genres_json VARCHAR",
@@ -155,6 +158,37 @@ def _ensure_highlight_columns(connection):
         "title": "ALTER TABLE highlights ADD COLUMN title VARCHAR NOT NULL DEFAULT ''",
         "category": "ALTER TABLE highlights ADD COLUMN category VARCHAR",
         "views_count": "ALTER TABLE highlights ADD COLUMN views_count INTEGER NOT NULL DEFAULT 0",
+        "original_title": "ALTER TABLE highlights ADD COLUMN original_title VARCHAR",
+    }
+    for column_name, ddl in missing_columns.items():
+        if column_name not in existing_columns:
+            connection.execute(text(ddl))
+
+
+def _ensure_highlight_context_columns(connection):
+    """Add legacy-compatible columns in highlight_contexts."""
+    inspector = inspect(connection)
+    if "highlight_contexts" not in inspector.get_table_names():
+        return
+    existing_columns = {column["name"] for column in inspector.get_columns("highlight_contexts")}
+    missing_columns = {
+        "original_title": ("ALTER TABLE highlight_contexts ADD COLUMN original_title VARCHAR"),
+    }
+    for column_name, ddl in missing_columns.items():
+        if column_name not in existing_columns:
+            connection.execute(text(ddl))
+
+
+def _ensure_collection_item_columns(connection):
+    """Add legacy-compatible columns in anime_collection_items."""
+    inspector = inspect(connection)
+    if "anime_collection_items" not in inspector.get_table_names():
+        return
+    existing_columns = {
+        column["name"] for column in inspector.get_columns("anime_collection_items")
+    }
+    missing_columns = {
+        "original_title": ("ALTER TABLE anime_collection_items ADD COLUMN original_title VARCHAR"),
     }
     for column_name, ddl in missing_columns.items():
         if column_name not in existing_columns:

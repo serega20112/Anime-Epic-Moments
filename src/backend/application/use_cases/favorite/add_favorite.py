@@ -32,10 +32,13 @@ class AddFavoriteUseCase:
         description: str | None = None,
         cover_url: str | None = None,
         genres: list[str] | str | None = None,
+        original_title: str | None = None,
     ) -> Favorite:
         """Add an anime to favorites within a transaction."""
         async with self.unit_of_work:
-            return await self._execute(user_id, anime_id, title, description, cover_url, genres)
+            return await self._execute(
+                user_id, anime_id, title, description, cover_url, genres, original_title
+            )
 
     async def _execute(
         self,
@@ -45,6 +48,7 @@ class AddFavoriteUseCase:
         description: str | None = None,
         cover_url: str | None = None,
         genres: list[str] | str | None = None,
+        original_title: str | None = None,
     ) -> Favorite:
         favorite = Favorite(
             user_id=int(user_id),
@@ -53,6 +57,7 @@ class AddFavoriteUseCase:
             description=await self._normalize_text(description),
             cover_url=await self._normalize_text(cover_url),
             genres=await self._normalize_genres(genres),
+            original_title=await self._normalize_text(original_title),
         )
         result = await self.repo.add(favorite)
         if self.recommendation_service:

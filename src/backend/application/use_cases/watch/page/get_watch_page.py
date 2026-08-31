@@ -205,6 +205,7 @@ class GetWatchPageUseCase:
         return WatchPageData(
             anime_id=anime_id,
             anime_title=anime.title if anime and anime.title else f"Anime #{anime_id}",
+            anime_title_original=(anime.original_title if anime else None),
             anime_cover=anime.cover_url if anime else None,
             anime_description=(
                 anime.description if anime and anime.description else "Описание недоступно"

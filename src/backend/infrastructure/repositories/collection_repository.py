@@ -117,6 +117,7 @@ class CollectionRepository:
             description=item.description,
             cover_url=item.cover_url,
             genres_json=await self._dump_genres(item.genres),
+            original_title=item.original_title,
         )
         self.session.add(row)
         await self.session.flush()
@@ -199,6 +200,7 @@ class CollectionRepository:
             cover_url=row.cover_url,
             genres=await self._load_genres(row.genres_json),
             added_at=row.added_at,
+            original_title=row.original_title,
         )
 
     async def _dump_genres(self, genres: list[str] | None) -> str | None:

@@ -40,6 +40,7 @@ async def _extract_favorite_payload(payload, user_id_fallback=None):
         "description": payload.get("description"),
         "cover_url": payload.get("cover_url"),
         "genres": payload.get("genres"),
+        "original_title": payload.get("original_title"),
     }
 
 

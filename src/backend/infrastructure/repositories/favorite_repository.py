@@ -26,6 +26,7 @@ class FavoriteRepository:
             description=favorite.description,
             cover_url=favorite.cover_url,
             genres_json=await self._dump_genres(favorite.genres),
+            original_title=favorite.original_title,
         )
         self.session.add(db_fav)
         await self.session.flush()
@@ -71,6 +72,7 @@ class FavoriteRepository:
                 description=r.description,
                 cover_url=r.cover_url,
                 genres=await self._load_genres(r.genres_json),
+                original_title=r.original_title,
             )
             for r in result.scalars().all()
         ]

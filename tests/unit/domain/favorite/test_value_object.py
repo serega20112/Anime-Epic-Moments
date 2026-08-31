@@ -20,6 +20,7 @@ class TestFavoriteAnimeCard:
         card = FavoriteAnimeCard(
             anime_id=185,
             title="Initial D First Stage",
+            original_title="Initial D First Stage",
             description="Street racing",
             cover_url="https://example.com/cover.jpg",
             genres=["Action", "Cars"],
@@ -30,6 +31,7 @@ class TestFavoriteAnimeCard:
         assert asdict(card) == {
             "anime_id": 185,
             "title": "Initial D First Stage",
+            "original_title": "Initial D First Stage",
             "description": "Street racing",
             "cover_url": "https://example.com/cover.jpg",
             "genres": ["Action", "Cars"],

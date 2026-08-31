@@ -14,6 +14,7 @@ class AnimeCollectionItem:
         genres: list[str] | None = None,
         added_at: datetime | None = None,
         id: int | None = None,
+        original_title: str | None = None,
     ):
         self.id = id
         self.collection_id = int(collection_id)
@@ -23,6 +24,7 @@ class AnimeCollectionItem:
         self.cover_url = str(cover_url).strip() if cover_url else None
         self.genres = [str(item).strip() for item in (genres or []) if str(item).strip()]
         self.added_at = added_at or datetime.utcnow()
+        self.original_title = str(original_title).strip() if original_title else None
         self._validate()
 
     def _validate(self):

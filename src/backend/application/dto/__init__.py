@@ -44,6 +44,7 @@ from backend.application.dto.recommendation import AskAiRecommendationsCommand
 from backend.application.dto.support import CreateSupportTicketCommand
 from backend.application.dto.watch import (
     AddAnimeCommentCommand,
+    CompleteEpisodeCommand,
     CreateWatchHighlightCommand,
     SaveViewingSessionCommand,
     SetAnimeCommentLikeCommand,
@@ -58,6 +59,7 @@ __all__ = [
     "AskAiRecommendationsCommand",
     "AutocompleteAnimeQuery",
     "ConfirmPasswordResetCommand",
+    "CompleteEpisodeCommand",
     "CreateCollectionCommand",
     "CreateHighlightCommand",
     "CreateSupportTicketCommand",

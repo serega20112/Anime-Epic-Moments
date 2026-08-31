@@ -23,6 +23,7 @@ class TestGetFavoritesUseCase:
                     "description": "desc",
                     "cover_url": "cover",
                     "genres": ["Action"],
+                    "original_title": "Initial D",
                 },
                 "Initial D First Stage",
                 "/watch/185?episode=1",
@@ -35,6 +36,7 @@ class TestGetFavoritesUseCase:
                     "description": None,
                     "cover_url": None,
                     "genres": [],
+                    "original_title": None,
                 },
                 "New Initial D Movie: Legend 1 - Kakusei",
                 "/watch/22507?episode=1",
@@ -63,6 +65,7 @@ class TestGetFavoritesUseCase:
                 description=favorite_payload["description"],
                 cover_url=favorite_payload["cover_url"],
                 genres=favorite_payload["genres"],
+                original_title=favorite_payload["original_title"],
                 added_at=datetime(2026, 3, 28),
             )
         ]
@@ -94,12 +97,18 @@ class TestGetFavoritesUseCase:
                 description=None,
                 cover_url="cover",
                 genres=[],
+                original_title=None,
                 added_at=datetime(2026, 3, 28),
             )
         ]
         anime_client = AsyncMock()
         anime_client.get_by_id.return_value = SimpleNamespace(
-            external_id=None, title=None, description=None, cover_url=None, genres=[]
+            external_id=None,
+            title=None,
+            description=None,
+            cover_url=None,
+            genres=[],
+            original_title=None,
         )
         use_case = GetFavoritesUseCase(repo, anime_client)
 

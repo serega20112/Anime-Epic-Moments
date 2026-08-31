@@ -22,6 +22,7 @@ class CreateWatchHighlightCommand:
         emotion: Optional emotion label.
         watch_source_id: Active watch source identifier.
         translation_id: Translation identifier.
+        original_title: Original (non-Russian) anime title.
     """
 
     user_id: int
@@ -36,3 +37,4 @@ class CreateWatchHighlightCommand:
     emotion: str | None
     watch_source_id: int
     translation_id: int
+    original_title: str | None = None

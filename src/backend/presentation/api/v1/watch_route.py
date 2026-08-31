@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 from backend.application.use_cases import (
     AddAnimeCommentUseCase,
+    CompleteEpisodeUseCase,
     GetAnimeDiscussionUseCase,
     SetAnimeCommentLikeUseCase,
     SyncWatchSourcesUseCase,
@@ -35,6 +36,7 @@ from backend.presentation.api.redirects.watch import discussion_redirect
 from backend.presentation.api.requests.watch_mapper import (
     _to_int,
     map_add_anime_comment_command,
+    map_complete_episode_command,
     map_create_watch_highlight_command,
     map_save_session_command,
     map_set_comment_like_command,
@@ -235,6 +237,39 @@ async def save_session(
     if not result.ok:
         return JSONResponse({"error": result.error}, status_code=result.status_code)
     return {"session_id": result.data.id}
+
+
+@watch_router.post("/{anime_id}/episode/complete", name="watch.complete_episode")
+async def complete_episode(
+    request: Request,
+    anime_id: int,
+    use_case: FromDishka[CompleteEpisodeUseCase],
+):
+    """Record that the user finished watching an episode.
+
+    Args:
+        request: Incoming HTTP request with JSON payload.
+        anime_id: Anime ID from path.
+        use_case: Complete episode use case.
+
+    Returns:
+        JSONResponse: Updated progress or an error.
+    """
+    user = await get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "auth_required"}, status_code=401)
+    command = await map_complete_episode_command(
+        await read_payload(request),
+        user_id=user.id,
+        anime_id=anime_id,
+    )
+    result = await use_case.execute(command)
+    if not result.ok:
+        return JSONResponse({"error": result.error}, status_code=result.status_code)
+    return {
+        "current_episode": result.data.current_episode,
+        "status": result.data.status,
+    }
 
 
 @watch_router.post("/{anime_id}/highlights", name="watch.create_highlight")

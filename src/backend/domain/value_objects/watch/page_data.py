@@ -113,3 +113,4 @@ class WatchPageData:
     can_discover_sources: bool = False
     discovery_provider_name: str | None = None
     translation_episode_counts: list[TranslationEpisodeCount] = field(default_factory=list)
+    anime_title_original: str | None = None
