@@ -32,6 +32,7 @@ class GetUserCollectionsUseCase:
                         is_public=collection.is_public,
                         created_at=collection.created_at.strftime("%Y-%m-%d"),
                         share_url=f"/collections/share/{collection.id}",
+                        cover_url=collection.cover_url,
                     ),
                     items=[
                         CollectionItemCard(

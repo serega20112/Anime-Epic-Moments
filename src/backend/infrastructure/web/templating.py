@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
@@ -18,6 +19,44 @@ _environment = Environment(
     loader=FileSystemLoader(str(TEMPLATES_ROOT)),
     autoescape=select_autoescape(("html", "xml")),
 )
+
+
+def _time_ago(value: Any) -> str:
+    """Format a datetime as a short relative time for templates.
+
+    Times within the last day are rendered in Russian relative form
+    ("5 минут назад"), older timestamps fall back to a date and time.
+
+    Args:
+        value: Datetime or string to format.
+
+    Returns:
+        str: Human readable timestamp.
+    """
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(str(value))
+        except ValueError:
+            return str(value)
+    if not isinstance(value, datetime):
+        return str(value)
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    delta = (datetime.now(UTC) - value).total_seconds()
+    if delta < 0:
+        return value.strftime("%Y-%m-%d %H:%M")
+    if delta < 60:
+        return "только что"
+    minutes = max(1, int(delta // 60))
+    if minutes < 60:
+        return f"{minutes} мин назад"
+    hours = max(1, int(minutes // 60))
+    if hours < 24:
+        return f"{hours} ч назад"
+    return value.strftime("%Y-%m-%d %H:%M")
+
+
+_environment.filters["time_ago"] = _time_ago
 
 _route_param_names_cache: dict[str, set[str]] = {}
 

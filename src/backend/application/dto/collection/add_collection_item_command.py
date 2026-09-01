@@ -10,6 +10,7 @@ class AddCollectionItemCommand:
     """Add anime item to a collection form payload.
 
     Attributes:
+        user_id: Acting user identifier, used for the ownership check.
         collection_id: Target collection identifier.
         anime_id: Anime identifier to add.
         title: Anime title snapshot.
@@ -21,7 +22,8 @@ class AddCollectionItemCommand:
 
     collection_id: int
     anime_id: int
-    title: str
+    user_id: int | None = None
+    title: str = ""
     description: str = ""
     cover_url: str | None = None
     genres: list[str] = field(default_factory=list)

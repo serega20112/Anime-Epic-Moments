@@ -25,6 +25,7 @@ from backend.infrastructure.external import AnimeApiClient
 from backend.infrastructure.external.failover_llm_client import FailoverLLMClient
 from backend.infrastructure.repositories.favorite_repository import FavoriteRepository
 from backend.infrastructure.repositories.highlight_repository import HighlightRepository
+from backend.infrastructure.repositories.rating_repository import RatingRepository
 from backend.infrastructure.repositories.user_repository import UserRepository
 from backend.infrastructure.repositories.watch_repository import WatchRepository
 
@@ -42,6 +43,7 @@ class AnimeUseCaseProvider(Provider):
         watch_repository: WatchRepository,
         llm_client: FailoverLLMClient,
         profile_overview_cache: ProfileOverviewCache,
+        rating_repository: RatingRepository,
     ) -> GetProfileOverviewUseCase:
         """Provide the get profile overview use case.
 
@@ -53,6 +55,7 @@ class AnimeUseCaseProvider(Provider):
             watch_repository: Watch repository.
             llm_client: LLM client.
             profile_overview_cache: Profile overview cache.
+            rating_repository: Rating repository.
 
         Returns:
             GetProfileOverviewUseCase: Configured use case.
@@ -65,6 +68,7 @@ class AnimeUseCaseProvider(Provider):
             watch_repository,
             llm_client,
             profile_overview_cache,
+            rating_repository,
         )
 
     @provide(scope=Scope.REQUEST)

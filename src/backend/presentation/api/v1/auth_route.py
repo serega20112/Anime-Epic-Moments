@@ -28,6 +28,7 @@ from backend.application.use_cases.auth.verification.resend_email_verification i
 )
 from backend.application.use_cases.auth.verification.verify_email import VerifyEmailUseCase
 from backend.config import Settings
+from backend.infrastructure.files.uploads import UploadValidationError, save_image
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
 from backend.infrastructure.web import flash, render_template
 from backend.presentation.api.auth_responses import (
@@ -385,9 +386,20 @@ async def update_profile(request: Request, use_case: FromDishka[UpdateUserProfil
         return await redirect(request, "auth.login_page")
     form = await request.form()
     command = await map_update_profile_command(form, user_id=user.id)
+    avatar_url = command.avatar_url
+    avatar_upload = form.get("avatar_url")
+    if hasattr(avatar_upload, "filename") and avatar_upload.filename:
+        try:
+            avatar_url = await save_image(avatar_upload, "avatars")
+        except UploadValidationError as error:
+            await flash(request, str(error))
+            return await redirect(request, "auth.profile_page")
     result = await use_case.execute(
         user_id=command.user_id,
         username=command.username,
-        avatar_url=command.avatar_url,
+        avatar_url=avatar_url,
+        status=command.status,
+        show_watch_activity=command.show_watch_activity,
+        show_recent_episodes=command.show_recent_episodes,
     )
     return await resolve(request, result)

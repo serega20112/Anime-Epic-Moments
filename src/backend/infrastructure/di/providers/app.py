@@ -7,6 +7,9 @@ from typing import Any
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.services import (
+    AnimeApiClientInterface,
+)
 from backend.config import Settings
 from backend.infrastructure.cache import HighlightDashboardCache, RecommendationCache
 from backend.infrastructure.cache.key_value_store import KeyValueStore
@@ -75,6 +78,21 @@ class AppProvider(Provider):
         client = AnimeApiClient(store=store)
         yield client
         await client.aclose()
+
+    @provide(scope=Scope.APP)
+    async def anime_api_client_interface(
+        self,
+        client: AnimeApiClient,
+    ) -> AnimeApiClientInterface:
+        """Expose the anime API client under its interface key.
+
+        Args:
+            client: Concrete anime API client.
+
+        Returns:
+            AnimeApiClientInterface: Same shared client instance.
+        """
+        return client
 
     @provide(scope=Scope.APP)
     async def kodik_client(self) -> AsyncIterator[KodikClient]:

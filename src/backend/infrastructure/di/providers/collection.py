@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases import (
     AddCollectionItemUseCase,
@@ -42,17 +43,21 @@ class CollectionUseCaseProvider(Provider):
         self,
         collection_repository: CollectionRepository,
         unit_of_work: UnitOfWorkInterface,
+        anime_api_client: AnimeApiClient,
     ) -> AddCollectionItemUseCase:
         """Provide the add collection item use case.
 
         Args:
             collection_repository: Collection repository.
             unit_of_work: Transaction boundary.
+            anime_api_client: External anime data client for snapshots.
 
         Returns:
             AddCollectionItemUseCase: Configured use case.
         """
-        return AddCollectionItemUseCase(collection_repository, unit_of_work)
+        return AddCollectionItemUseCase(
+            collection_repository, unit_of_work, anime_api_client=anime_api_client
+        )
 
     @provide(scope=Scope.REQUEST)
     async def remove_collection_item(

@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from http import HTTPStatus
 
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 from backend.application.use_cases import (
     AddCollectionItemUseCase,
@@ -16,11 +17,13 @@ from backend.application.use_cases import (
     GetUserCollectionsUseCase,
     RemoveCollectionItemUseCase,
 )
+from backend.application.use_cases.collection.add_collection_item import CollectionAccessError
 from backend.application.use_cases.collection.get_shared_collection import (
     GetSharedCollectionUseCase,
 )
+from backend.infrastructure.files.uploads import UploadValidationError, save_image
 from backend.infrastructure.web import flash, render_template
-from backend.presentation.api.helpers import get_current_user
+from backend.presentation.api.helpers import get_current_user, read_payload, wants_json
 from backend.presentation.api.requests.collection_mapper import (
     map_add_collection_item_command,
     map_create_collection_command,
@@ -65,6 +68,9 @@ async def collections_page(
 async def create_collection(request: Request, use_case: FromDishka[CreateCollectionUseCase]):
     """Create a new collection from form data.
 
+    The cover is taken from an uploaded file when present, otherwise from the
+    ``cover_url`` field. Uploaded files are stored under ``/static/uploads``.
+
     Args:
         request: Incoming HTTP request with form data.
         use_case: Create collection use case.
@@ -76,7 +82,17 @@ async def create_collection(request: Request, use_case: FromDishka[CreateCollect
     user = await get_current_user(request)
     if not user:
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
-    command = await map_create_collection_command(await request.form(), user_id=user.id)
+    form = await request.form()
+    cover_url = str(form.get("cover_url") or "").strip() or None
+    cover_file = form.get("cover_file")
+    if cover_file is not None and getattr(cover_file, "filename", None):
+        try:
+            cover_url = await save_image(cover_file, "covers")
+        except UploadValidationError as error:
+            await flash(request, str(error))
+            return await redirect_collections(request)
+    command = await map_create_collection_command(form, user_id=user.id)
+    command = replace(command, cover_url=cover_url)
     try:
         await use_case.execute(command)
     except ValueError as error:
@@ -93,22 +109,42 @@ async def add_collection_item(
 ):
     """Add an anime item to a collection.
 
+    Accepts both JSON payloads (picker UI) and classic form posts. Snapshot
+    fields are optional: when only the anime id is sent the use case resolves
+    the snapshot server-side. Only the collection owner may add items.
+
     Args:
-        request: Incoming HTTP request with form data.
+        request: Incoming HTTP request with JSON or form data.
         collection_id: Collection ID from path.
         use_case: Add collection item use case.
 
     Returns:
         Response: 401 for guests.
-        RedirectResponse: Redirect to the collections page.
+        JSONResponse: 201 on success, 403/400 on access or validation errors.
+        RedirectResponse: Redirect to the collections page for form posts.
     """
     user = await get_current_user(request)
     if not user:
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
     command = await map_add_collection_item_command(
-        await request.form(), collection_id=collection_id
+        await read_payload(request),
+        collection_id=collection_id,
+        user_id=user.id,
     )
-    await use_case.execute(command)
+    try:
+        await use_case.execute(command)
+    except CollectionAccessError as error:
+        if await wants_json(request):
+            return JSONResponse({"error": str(error)}, status_code=HTTPStatus.FORBIDDEN)
+        await flash(request, str(error))
+        return await redirect_collections(request)
+    except ValueError as error:
+        if await wants_json(request):
+            return JSONResponse({"error": str(error)}, status_code=HTTPStatus.BAD_REQUEST)
+        await flash(request, str(error))
+        return await redirect_collections(request)
+    if await wants_json(request):
+        return JSONResponse({"status": "added"}, status_code=HTTPStatus.CREATED)
     return await redirect_collections(request)
 
 
@@ -140,6 +176,34 @@ async def remove_collection_item(
     )
     await use_case.execute(command)
     return await redirect_collections(request)
+
+
+@collection_router.get("/api/mine", name="collection.my_collections_api")
+async def my_collections_api(
+    request: Request,
+    use_case: FromDishka[GetUserCollectionsUseCase],
+):
+    """Return the current user's collections as JSON for the picker UI.
+
+    Args:
+        request: Incoming HTTP request.
+        use_case: Get user collections use case.
+
+    Returns:
+        Response: 401 for guests.
+        JSONResponse: Collection id/title pairs.
+    """
+    user = await get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "unauthorized"}, status_code=HTTPStatus.UNAUTHORIZED)
+    details = await use_case.execute(user.id)
+    return JSONResponse(
+        {
+            "collections": [
+                {"id": item.collection.id, "title": item.collection.title} for item in details
+            ]
+        }
+    )
 
 
 @collection_router.get("/share/{collection_id}", name="collection.shared_collection_page")

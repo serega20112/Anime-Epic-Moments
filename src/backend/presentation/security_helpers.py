@@ -251,6 +251,11 @@ async def validate_csrf(request: Request) -> bool:
     :func:`is_cross_origin_write_request` and only need a matching header token.
     Form submissions must include the csrf_token field rendered by the template.
 
+    The request body is cached via ``body()`` before parsing the form. Starlette
+    ``BaseHTTPMiddleware`` replays the body downstream only when the middleware
+    called ``body()``; calling ``form()`` directly consumes the stream and the
+    route below receives an empty form, losing every submitted field.
+
     Args:
         request: Current HTTP request.
 
@@ -263,6 +268,7 @@ async def validate_csrf(request: Request) -> bool:
         return bool(session_token) and secrets.compare_digest(header_token, session_token)
     if await wants_json(request):
         return True
+    await request.body()
     form = await request.form()
     form_token = form.get("csrf_token")
     if isinstance(form_token, str) and session_token:

@@ -2,6 +2,7 @@ import asyncio
 
 from backend.application.dto import WatchPageQuery
 from backend.application.interface.repositories.highlight_repository import HighlightRepository
+from backend.application.interface.repositories.rating_repository import RatingRepository
 from backend.application.interface.repositories.watch_repository import WatchRepository
 from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
 from backend.application.interface.services import (
@@ -30,12 +31,14 @@ class GetWatchPageUseCase:
         anime_api_client: AnimeApiClient,
         watch_source_sync_service: WatchSourceSyncService,
         unit_of_work: UnitOfWorkInterface,
+        rating_repo: RatingRepository | None = None,
     ):
         self.watch_repo = watch_repo
         self.highlight_repo = highlight_repo
         self.anime_api_client = anime_api_client
         self.watch_source_sync_service = watch_source_sync_service
         self.unit_of_work = unit_of_work
+        self.rating_repo = rating_repo
 
     async def execute(
         self,
@@ -90,6 +93,11 @@ class GetWatchPageUseCase:
         status = (
             await self.watch_repo.get_status(user_id=user_id, anime_id=anime_id)
             if user_id
+            else None
+        )
+        user_rating = (
+            await self.rating_repo.get_user_rating(user_id=user_id, anime_id=anime_id)
+            if user_id and self.rating_repo is not None
             else None
         )
 
@@ -236,6 +244,7 @@ class GetWatchPageUseCase:
             ),
             can_discover_sources=can_discover_sources,
             discovery_provider_name=discovery_provider_name,
+            user_rating=user_rating,
         )
 
     async def _format_timestamp(self, seconds: float) -> str:

@@ -72,6 +72,7 @@ async def init_db():
         await connection.run_sync(_ensure_highlight_columns)
         await connection.run_sync(_ensure_highlight_context_columns)
         await connection.run_sync(_ensure_collection_item_columns)
+        await connection.run_sync(_ensure_collection_columns)
         await connection.run_sync(_ensure_support_ticket_columns)
     logger.info("tables_initialized")
 
@@ -189,6 +190,20 @@ def _ensure_collection_item_columns(connection):
     }
     missing_columns = {
         "original_title": ("ALTER TABLE anime_collection_items ADD COLUMN original_title VARCHAR"),
+    }
+    for column_name, ddl in missing_columns.items():
+        if column_name not in existing_columns:
+            connection.execute(text(ddl))
+
+
+def _ensure_collection_columns(connection):
+    """Add legacy-compatible columns in anime_collections."""
+    inspector = inspect(connection)
+    if "anime_collections" not in inspector.get_table_names():
+        return
+    existing_columns = {column["name"] for column in inspector.get_columns("anime_collections")}
+    missing_columns = {
+        "cover_url": "ALTER TABLE anime_collections ADD COLUMN cover_url VARCHAR",
     }
     for column_name, ddl in missing_columns.items():
         if column_name not in existing_columns:

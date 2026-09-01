@@ -24,7 +24,20 @@ from backend.infrastructure.models import (
 @pytest.mark.parametrize(
     ("model", "expected_columns"),
     [
-        (UserModel, {"id", "email", "username", "password_hash", "avatar_url", "created_at"}),
+        (
+            UserModel,
+            {
+                "id",
+                "email",
+                "username",
+                "password_hash",
+                "avatar_url",
+                "status",
+                "show_watch_activity",
+                "show_recent_episodes",
+                "created_at",
+            },
+        ),
         (
             HighlightModel,
             {
@@ -72,7 +85,7 @@ from backend.infrastructure.models import (
         ),
         (
             AnimeCollectionModel,
-            {"id", "user_id", "title", "description", "is_public", "created_at"},
+            {"id", "user_id", "title", "description", "cover_url", "is_public", "created_at"},
         ),
         (
             AnimeCollectionItemModel,

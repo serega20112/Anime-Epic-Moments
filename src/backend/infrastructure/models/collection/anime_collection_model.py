@@ -26,4 +26,5 @@ class AnimeCollectionModel(Base):
     title = Column(String(80), nullable=False)
     description = Column(String(400), nullable=True)
     is_public = Column(Boolean, nullable=False, default=True)
+    cover_url = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

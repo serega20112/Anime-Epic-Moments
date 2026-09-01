@@ -15,6 +15,7 @@ from backend.application.dto.auth import (
     UpdateProfileCommand,
     VerifyEmailCommand,
 )
+from backend.domain.aggregates.user.user import STATUS_MAX_LENGTH
 from backend.domain.policies.user_credentials_policy import normalize_email
 
 EMAIL_MAX_LENGTH = 254
@@ -205,9 +206,31 @@ async def map_update_profile_command(form: dict, *, user_id: int) -> UpdateProfi
         UpdateProfileCommand: Validated command.
     """
     username = await _field_text(form, "username")
-    avatar_url = await _clean_optional(form.get("avatar_url"))
+    avatar_value = form.get("avatar_url")
+    avatar_url = (
+        await _clean_optional(avatar_value) if not hasattr(avatar_value, "filename") else None
+    )
+    status = await _field_text(form, "status")
+    if len(status) > STATUS_MAX_LENGTH:
+        raise FormValidationError(f"Статус не может быть длиннее {STATUS_MAX_LENGTH} символов")
     return UpdateProfileCommand(
         user_id=user_id,
         username=username,
         avatar_url=avatar_url,
+        status=status or None,
+        show_watch_activity=_checkbox(form, "show_watch_activity"),
+        show_recent_episodes=_checkbox(form, "show_recent_episodes"),
     )
+
+
+def _checkbox(form: dict, name: str) -> bool:
+    """Read a checkbox-like form field as a boolean.
+
+    Args:
+        form: Parsed form data.
+        name: Field name.
+
+    Returns:
+        bool: True when the field is present.
+    """
+    return bool(str(form.get(name) or "").strip())

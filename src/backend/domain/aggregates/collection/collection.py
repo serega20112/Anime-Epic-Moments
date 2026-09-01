@@ -12,6 +12,7 @@ class AnimeCollection:
         title: str,
         description: str = "",
         is_public: bool = True,
+        cover_url: str | None = None,
         created_at: datetime | None = None,
         id: int | None = None,
     ):
@@ -20,6 +21,7 @@ class AnimeCollection:
         self.title = str(title or "").strip()
         self.description = str(description or "").strip()
         self.is_public = bool(is_public)
+        self.cover_url = str(cover_url).strip() if cover_url else None
         self.created_at = created_at or datetime.utcnow()
         self._validate()
 

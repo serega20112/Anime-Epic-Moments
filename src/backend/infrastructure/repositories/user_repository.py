@@ -25,6 +25,9 @@ class UserRepository:
             username=user.username,
             password_hash=user.password_hash,
             avatar_url=user.avatar_url,
+            status=user.status,
+            show_watch_activity=user.show_watch_activity,
+            show_recent_episodes=user.show_recent_episodes,
         )
         self.session.add(db_user)
         await self.session.flush()
@@ -73,7 +76,7 @@ class UserRepository:
         return [await self._to_entity(row) for row in result.scalars().all()]
 
     async def update(self, user: User) -> User:
-        """Update the username and avatar of a user.
+        """Update profile fields of a user.
 
         Args:
             user: User aggregate with updated fields.
@@ -87,6 +90,9 @@ class UserRepository:
             raise ValueError("Пользователь для обновления не найден")
         db_user.username = user.username
         db_user.avatar_url = user.avatar_url
+        db_user.status = user.status
+        db_user.show_watch_activity = user.show_watch_activity
+        db_user.show_recent_episodes = user.show_recent_episodes
         await self.session.flush()
         return user
 
@@ -270,5 +276,8 @@ class UserRepository:
             username=db_user.username,
             password_hash=db_user.password_hash,
             avatar_url=db_user.avatar_url,
+            status=db_user.status,
+            show_watch_activity=db_user.show_watch_activity,
+            show_recent_episodes=db_user.show_recent_episodes,
             created_at=db_user.created_at,
         )

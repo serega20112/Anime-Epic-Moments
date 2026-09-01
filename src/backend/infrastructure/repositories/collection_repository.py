@@ -31,6 +31,7 @@ class CollectionRepository:
             title=collection.title,
             description=collection.description,
             is_public=collection.is_public,
+            cover_url=collection.cover_url,
         )
         self.session.add(row)
         await self.session.flush()
@@ -187,6 +188,7 @@ class CollectionRepository:
             title=row.title,
             description=row.description or "",
             is_public=row.is_public,
+            cover_url=row.cover_url,
             created_at=row.created_at,
         )
 

@@ -8,6 +8,7 @@ thin and free of error-handling logic.
 from __future__ import annotations
 
 from http import HTTPStatus
+from urllib.parse import urlencode
 
 from fastapi import Request
 from fastapi.responses import RedirectResponse
@@ -79,20 +80,25 @@ async def resolve_verify(request: Request, result: AuthResult) -> RedirectRespon
     return await redirect_verify(request, result.redirect_email)
 
 
-async def redirect(request: Request, endpoint: str) -> RedirectResponse:
+async def redirect(
+    request: Request, endpoint: str, *, query: dict | None = None, **kwargs
+) -> RedirectResponse:
     """Build a see-other redirect to a named route.
 
     Args:
         request: Incoming HTTP request.
         endpoint: Named route endpoint.
+        query: Optional query parameters to append to the URL.
+        kwargs: Optional path parameters for the named route.
 
     Returns:
         RedirectResponse: SEE_OTHER redirect.
     """
-    return RedirectResponse(
-        url=request.app.url_path_for(endpoint),
-        status_code=SEE_OTHER,
-    )
+    url = request.app.url_path_for(endpoint, **kwargs)
+    if query:
+        query_string = urlencode({key: str(value) for key, value in query.items()})
+        url = f"{url}?{query_string}"
+    return RedirectResponse(url=url, status_code=SEE_OTHER)
 
 
 async def redirect_verify(request: Request, email) -> RedirectResponse:

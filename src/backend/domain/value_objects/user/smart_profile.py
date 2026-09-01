@@ -39,6 +39,14 @@ class AchievementBadge:
 
 
 @dataclass
+class ProfileLevel:
+    level: int
+    xp: int
+    next_level_xp: int | None
+    progress: float
+
+
+@dataclass
 class SmartProfile:
     favorite_genres: list[GenreAffinity]
     dominant_mood: ProfileMoodInsight

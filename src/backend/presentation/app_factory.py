@@ -26,6 +26,7 @@ from backend.presentation.api.v1.health_route import health_router
 from backend.presentation.api.v1.highlight_route import highlight_router
 from backend.presentation.api.v1.index_route import index_router
 from backend.presentation.api.v1.moment_route import moment_router, watch_moment_router
+from backend.presentation.api.v1.rating_route import rating_router
 from backend.presentation.api.v1.reaction_route import reaction_router
 from backend.presentation.api.v1.recommendation_route import recommendation_router
 from backend.presentation.api.v1.support_route import support_router
@@ -186,6 +187,7 @@ def create_app() -> FastAPI:
     app.include_router(watch_router)
     app.include_router(watch_moment_router)
     app.include_router(reaction_router)
+    app.include_router(rating_router)
     app.include_router(moment_router)
     app.include_router(recommendation_router)
     app.include_router(support_router)

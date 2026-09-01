@@ -37,18 +37,44 @@ class UpdateUserProfileUseCase:
         self.profile_overview_cache = profile_overview_cache
         self.unit_of_work = unit_of_work
 
-    async def execute(self, user_id: int, username: str, avatar_url: str | None) -> AuthResult:
+    async def execute(
+        self,
+        user_id: int,
+        username: str,
+        avatar_url: str | None,
+        status: str | None = None,
+        show_watch_activity: bool = True,
+        show_recent_episodes: bool = True,
+    ) -> AuthResult:
         """Update the user profile within a transaction."""
         async with self.unit_of_work:
-            return await self._execute(user_id, username, avatar_url)
+            return await self._execute(
+                user_id,
+                username,
+                avatar_url,
+                status,
+                show_watch_activity,
+                show_recent_episodes,
+            )
 
-    async def _execute(self, user_id: int, username: str, avatar_url: str | None) -> AuthResult:
-        """Обновляет имя и аватар текущего пользователя.
+    async def _execute(
+        self,
+        user_id: int,
+        username: str,
+        avatar_url: str | None,
+        status: str | None,
+        show_watch_activity: bool,
+        show_recent_episodes: bool,
+    ) -> AuthResult:
+        """Обновляет профиль текущего пользователя.
 
         Args:
             user_id: Authenticated user id.
             username: New username.
             avatar_url: New avatar url.
+            status: New status text or None.
+            show_watch_activity: Публиковать ли динамику просмотра.
+            show_recent_episodes: Публиковать ли недавно просмотренное.
 
         Returns:
             AuthResult: Success toward the profile page or failure back to it.
@@ -66,11 +92,14 @@ class UpdateUserProfileUseCase:
 
         try:
             user.change_username(cleaned_username)
-        except InvalidUsernameError as exc:
+            user.change_status(status)
+        except (InvalidUsernameError, ValueError) as exc:
             return await AuthResult.failure(str(exc), "auth.profile_page")
 
         normalized_avatar = avatar_url.strip() if avatar_url else None
         user.update_avatar(normalized_avatar)
+        user.toggle_watch_activity_visibility(show_watch_activity)
+        user.toggle_recent_episodes_visibility(show_recent_episodes)
         updated_user = await self.user_repo.update(user)
         if self.profile_overview_cache is not None:
             await self.profile_overview_cache.invalidate_overview(user_id)

@@ -26,6 +26,7 @@ from backend.application.use_cases.watch.session.save_viewing_session import (
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from backend.infrastructure.external import AnimeApiClient
 from backend.infrastructure.repositories.highlight_repository import HighlightRepository
+from backend.infrastructure.repositories.rating_repository import RatingRepository
 from backend.infrastructure.repositories.watch_repository import WatchRepository
 
 
@@ -40,6 +41,7 @@ class WatchUseCaseProvider(Provider):
         anime_api_client: AnimeApiClient,
         watch_source_sync_service: WatchSourceSyncService,
         unit_of_work: UnitOfWorkInterface,
+        rating_repository: RatingRepository,
     ) -> GetWatchPageUseCase:
         """Provide the get watch page use case.
 
@@ -49,6 +51,7 @@ class WatchUseCaseProvider(Provider):
             anime_api_client: Anime API client.
             watch_source_sync_service: Watch source sync service.
             unit_of_work: Transaction boundary.
+            rating_repository: Rating repository.
 
         Returns:
             GetWatchPageUseCase: Configured use case.
@@ -59,6 +62,7 @@ class WatchUseCaseProvider(Provider):
             anime_api_client,
             watch_source_sync_service,
             unit_of_work,
+            rating_repository,
         )
 
     @provide(scope=Scope.REQUEST)

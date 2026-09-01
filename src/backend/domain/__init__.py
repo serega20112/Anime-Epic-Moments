@@ -8,6 +8,7 @@ from backend.domain.aggregates.highlight.highlight import Highlight
 from backend.domain.aggregates.user.user import User
 from backend.domain.entities.favorite.favorite import Favorite
 from backend.domain.entities.moment.viewing_moment import ViewingMoment
+from backend.domain.entities.rating.anime_rating import UserAnimeRating
 from backend.domain.entities.reaction.episode_reaction import EpisodeReaction
 from backend.domain.entities.support.channel import is_support_channel, normalize_support_channel
 from backend.domain.entities.watch.highlight_context import HighlightContext
@@ -40,8 +41,11 @@ from backend.domain.value_objects.user.profile_overview import (
     FollowUserCard,
     ProfileOverview,
     PublicProfileOverview,
+    RecentEpisodeCard,
+    UserRatingCard,
 )
 from backend.domain.value_objects.user.smart_profile import (
+    ProfileLevel,
     SmartProfile,
     TopAnimeEntry,
     ViewingHeatmapCell,
@@ -69,13 +73,17 @@ __all__ = [
     "HighlightStats",
     "PendingEmailVerification",
     "ProfileOverview",
+    "ProfileLevel",
     "PublicProfileOverview",
     "RecommendationResult",
+    "RecentEpisodeCard",
     "SmartProfile",
     "TopAnimeEntry",
     "Translation",
     "User",
+    "UserAnimeRating",
     "UserAnimeStatus",
+    "UserRatingCard",
     "ViewingHeatmapCell",
     "ViewingMoment",
     "ViewingSession",

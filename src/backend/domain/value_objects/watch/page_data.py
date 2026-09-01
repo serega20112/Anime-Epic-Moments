@@ -114,3 +114,4 @@ class WatchPageData:
     discovery_provider_name: str | None = None
     translation_episode_counts: list[TranslationEpisodeCount] = field(default_factory=list)
     anime_title_original: str | None = None
+    user_rating: int | None = None

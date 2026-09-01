@@ -29,7 +29,7 @@ endblock %} {% block head %}
       <a class="cc-cover" href="{{ c.share_url }}">
         {% if cd.items %}
         <img
-          src="{{ cd.items[0].cover_url or url_for('static', filename='images/no-cover.svg') }}"
+          src="{{ c.cover_url or cd.items[0].cover_url or url_for('static', filename='images/no-cover.svg') }}"
           alt=""
           loading="lazy"
           onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';"
@@ -82,7 +82,11 @@ endblock %} {% block head %}
         &times;
       </button>
     </div>
-    <form method="post" action="{{ url_for('collection.create_collection') }}">
+    <form
+      method="post"
+      action="{{ url_for('collection.create_collection') }}"
+      enctype="multipart/form-data"
+    >
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="form-group">
         <label for="col-title">Название</label>
@@ -94,6 +98,28 @@ endblock %} {% block head %}
           maxlength="120"
           placeholder="Например: Лучшие миры"
         />
+      </div>
+      <div class="form-group">
+        <label for="col-cover-url">Обложка — ссылка</label>
+        <input
+          type="url"
+          id="col-cover-url"
+          name="cover_url"
+          maxlength="500"
+          placeholder="https://… (необязательно)"
+        />
+      </div>
+      <div class="form-group">
+        <label for="col-cover-file">…или загрузите файл</label>
+        <input
+          type="file"
+          id="col-cover-file"
+          name="cover_file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+        />
+        <p class="muted" style="font-size: 0.78rem; margin-top: 4px">
+          Файл имеет приоритет над ссылкой. До 5 МБ, jpg/png/webp/gif.
+        </p>
       </div>
       <div class="form-group">
         <label for="col-desc">Описание</label>

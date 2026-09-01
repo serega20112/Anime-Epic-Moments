@@ -34,5 +34,6 @@ class CreateCollectionUseCase:
             title=command.title,
             description=command.description,
             is_public=command.is_public,
+            cover_url=command.cover_url,
         )
         return await self.collection_repo.create_collection(collection)

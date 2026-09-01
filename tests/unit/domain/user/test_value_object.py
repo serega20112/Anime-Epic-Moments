@@ -10,10 +10,15 @@ from backend.domain.value_objects.highlight.profile_summary import (
     HighlightProfileSummary,
 )
 from backend.domain.value_objects.user.pending_email_verification import PendingEmailVerification
-from backend.domain.value_objects.user.profile_overview import ProfileOverview
+from backend.domain.value_objects.user.profile_overview import (
+    ProfileOverview,
+    RecentEpisodeCard,
+    UserRatingCard,
+)
 from backend.domain.value_objects.user.smart_profile import (
     AchievementBadge,
     GenreAffinity,
+    ProfileLevel,
     ProfileMoodInsight,
     SmartProfile,
     TopAnimeEntry,
@@ -64,6 +69,9 @@ class TestProfileOverviewValueObject:
             email="user@example.com",
             username="tester",
             avatar_url="https://example.com/avatar.png",
+            status="Смотрю Gintama",
+            show_watch_activity=True,
+            show_recent_episodes=True,
             created_at="2026-03-20",
             summary=HighlightProfileSummary(highlight_count=4, like_count=5, saved_count=6),
             recent_highlights=[card],
@@ -78,6 +86,26 @@ class TestProfileOverviewValueObject:
                     highlight_id=1,
                     highlight_title="Лучший момент",
                     created_at="2026-03-28 12:00",
+                )
+            ],
+            recent_episodes=[
+                RecentEpisodeCard(
+                    anime_id=7,
+                    title="Gintama",
+                    original_title=None,
+                    cover_url=None,
+                    episode=3,
+                    updated_at="2026-03-28 12:00",
+                )
+            ],
+            profile_level=ProfileLevel(level=2, xp=128, next_level_xp=180, progress=0.71),
+            ratings=[
+                UserRatingCard(
+                    anime_id=7,
+                    title="Gintama",
+                    cover_url=None,
+                    score=5,
+                    rated_at="2026-03-28 20:00",
                 )
             ],
             smart_profile=SmartProfile(
@@ -119,6 +147,11 @@ class TestProfileOverviewValueObject:
         assert payload["recent_activity"][0]["actor_username"] == "viewer"
         assert payload["smart_profile"]["favorite_genres"][0]["name"] == "Comedy"
         assert payload["smart_profile"]["achievements"][0]["rarity"] == "epic"
+        assert payload["status"] == "Смотрю Gintama"
+        assert payload["show_watch_activity"] is True
+        assert payload["recent_episodes"][0]["title"] == "Gintama"
+        assert payload["profile_level"]["level"] == 2
+        assert payload["ratings"][0]["score"] == 5
 
 
 class TestPendingEmailVerificationValueObject:

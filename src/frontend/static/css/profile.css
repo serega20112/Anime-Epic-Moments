@@ -258,6 +258,270 @@
   background: var(--accent-glow-color);
 }
 
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* ---------- Уровень и статус ---------- */
+.profile-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  border-radius: var(--radius-full);
+  background: var(--button-ghost-bg);
+  border: 1px solid var(--color-border);
+}
+
+.level-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  color: #02160e;
+  font-weight: 800;
+  font-size: var(--text-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px var(--color-success);
+}
+
+.level-xp {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.level-xp small {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.level-xp b {
+  font-size: var(--text-xs);
+  color: var(--color-text);
+}
+
+.level-xp .bar {
+  width: 76px;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: var(--button-ghost-bg);
+  overflow: hidden;
+}
+
+.level-xp .bar i {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+}
+
+.profile-status {
+  margin-top: 10px;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  font-style: italic;
+}
+
+/* ---------- Динамика просмотра (heatmap) ---------- */
+.heatmap-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 92px;
+  padding-top: 4px;
+}
+
+.heatmap-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heatmap-bar {
+  height: var(--heatmap-h, 12px);
+  border-radius: var(--radius-sm);
+  background: var(--button-primary-bg);
+  opacity: 0.85;
+  transition: opacity var(--transition-fast);
+}
+
+.heatmap-col:hover .heatmap-bar {
+  opacity: 1;
+}
+
+.heatmap-col label {
+  font-size: 9px;
+  color: var(--color-text-faint);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Просмотрено недавно ---------- */
+.recent-episodes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: var(--space-5);
+}
+
+.recent-episode {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--button-ghost-bg);
+  border: 1px solid var(--color-border);
+  transition:
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.recent-episode:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.recent-episode img {
+  width: 44px;
+  height: 62px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  background: var(--color-surface-solid);
+}
+
+.re-el-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.re-el-info .re-title {
+  display: block;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.re-el-info .re-sub {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ---------- Лента активности ---------- */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: var(--space-5);
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--button-ghost-bg);
+  border: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+
+.activity-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  background: var(--accent-glow-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.activity-item b {
+  font-weight: 700;
+}
+
+.activity-item time {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  white-space: nowrap;
+}
+
+/* ---------- Оценки релизов ---------- */
+.rating-stars {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--color-accent);
+  font-size: var(--text-base);
+  letter-spacing: 1px;
+}
+
+.rating-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: var(--space-5);
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--button-ghost-bg);
+  border: 1px solid var(--color-border);
+  transition: border-color var(--transition-fast);
+}
+
+.rating-row:hover {
+  border-color: var(--color-accent);
+}
+
+.rating-row img {
+  width: 40px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-solid);
+  flex-shrink: 0;
+}
+
+.rating-row .rr-title {
+  min-width: 0;
+  flex: 1;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rating-row time {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  white-space: nowrap;
+}
+
 /* ---------- Коллекции ---------- */
 .collection-grid {
   display: grid;

@@ -10,6 +10,7 @@ class CollectionCard:
     is_public: bool
     created_at: str
     share_url: str
+    cover_url: str | None = None
 
 
 @dataclass

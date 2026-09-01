@@ -15,20 +15,13 @@
 {% endblock %} {% set c = collection.collection %} {% block content %}
 <div class="container">
   <section class="collection-hero glass">
-    {% if collection.items %}
+    {% set hero_cover = c.cover_url or (collection.items[0].cover_url if collection.items else None) %}
     <img
       class="ch-cover"
-      src="{{ collection.items[0].cover_url or url_for('static', filename='images/no-cover.svg') }}"
+      src="{{ hero_cover or url_for('static', filename='images/no-cover.svg') }}"
       alt=""
       onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';"
     />
-    {% else %}
-    <img
-      class="ch-cover"
-      src="{{ url_for('static', filename='images/no-cover.svg') }}"
-      alt=""
-    />
-    {% endif %}
     <div class="ch-info">
       <p class="hero-kicker">✦ коллекция {{ c.created_at }}</p>
       <h1 class="hero-title" style="font-family: var(--font-sans)">

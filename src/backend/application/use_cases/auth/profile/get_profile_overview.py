@@ -3,6 +3,7 @@ from statistics import mean
 
 from backend.application.interface.repositories.favorite_repository import FavoriteRepository
 from backend.application.interface.repositories.highlight_repository import HighlightRepository
+from backend.application.interface.repositories.rating_repository import RatingRepository
 from backend.application.interface.repositories.user_repository import UserRepository
 from backend.application.interface.repositories.watch_repository import WatchRepository
 from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
@@ -19,10 +20,18 @@ from backend.application.use_cases.highlight.feed.get_saved_highlights import (
 from backend.application.use_cases.highlight.feed.get_user_highlights import (
     GetUserHighlightsUseCase,
 )
-from backend.domain import ProfileOverview, SmartProfile, TopAnimeEntry, ViewingHeatmapCell
+from backend.domain import (
+    ProfileOverview,
+    RecentEpisodeCard,
+    SmartProfile,
+    TopAnimeEntry,
+    UserRatingCard,
+    ViewingHeatmapCell,
+)
 from backend.domain.policies.user_profile_policy import (
     build_achievement_badges,
     build_genre_affinities,
+    compute_profile_level,
     detect_profile_mood,
 )
 
@@ -39,11 +48,13 @@ class GetProfileOverviewUseCase:
         watch_repo: WatchRepository,
         hf_llm_client: HuggingFaceLLMClient | None = None,
         profile_overview_cache: ProfileOverviewCache | None = None,
+        rating_repo: RatingRepository | None = None,
     ):
         self.user_repo = user_repo
         self.highlight_repo = highlight_repo
         self.favorite_repo = favorite_repo
         self.watch_repo = watch_repo
+        self.rating_repo = rating_repo
         self.recent_highlights_use_case = GetUserHighlightsUseCase(
             highlight_repo,
             anime_api_client,
@@ -77,11 +88,20 @@ class GetProfileOverviewUseCase:
         own_highlights = await self.highlight_repo.get_by_user(user_id)
         watched_stats = await self.watch_repo.get_watched_anime_stats(user_id=user_id, limit=10)
         heatmap = await self.watch_repo.get_viewing_heatmap(user_id=user_id, days=35)
+        recent_sessions = await self.watch_repo.get_recent_viewing_sessions(
+            user_id=user_id, limit=10
+        )
+        ratings = (
+            await self.rating_repo.get_by_user(user_id) if self.rating_repo is not None else []
+        )
+        recent_ratings_anime = {int(item.anime_id) for item in ratings}
+        recent_ratings_anime.update(int(item.anime_id) for item in recent_sessions)
         anime_map = await self._load_anime_map(
             favorites=favorites,
             own_highlights=own_highlights,
             watched_stats=watched_stats,
         )
+        anime_map = await self._extend_anime_map(anime_map, recent_ratings_anime)
         genre_pool = await self._collect_genres(favorites=favorites, anime_map=anime_map)
         favorite_genres = build_genre_affinities(genre_pool)
         mood = detect_profile_mood(
@@ -155,11 +175,41 @@ class GetProfileOverviewUseCase:
             ),
         )
 
+        rating_cards = [
+            UserRatingCard(
+                anime_id=int(item.anime_id),
+                title=self._anime_title(anime_map.get(int(item.anime_id)), int(item.anime_id)),
+                cover_url=self._anime_cover(anime_map.get(int(item.anime_id))),
+                score=item.score,
+                rated_at=item.rated_at.strftime("%Y-%m-%d %H:%M"),
+            )
+            for item in ratings
+        ]
+        recent_episode_cards = [
+            RecentEpisodeCard(
+                anime_id=int(item.anime_id),
+                title=self._anime_title(anime_map.get(int(item.anime_id)), int(item.anime_id)),
+                original_title=self._anime_original_title(anime_map.get(int(item.anime_id))),
+                cover_url=self._anime_cover(anime_map.get(int(item.anime_id))),
+                episode=int(item.episode),
+                updated_at=item.updated_at,
+            )
+            for item in recent_sessions
+        ]
+        profile_level = compute_profile_level(
+            hours_watched=hours_watched,
+            highlight_count=summary.highlight_count,
+            likes_received=sum(item.likes_count for item in own_highlights),
+            ratings_count=len(ratings),
+        )
         overview = ProfileOverview(
             user_id=user.id or user_id,
             email=user.email,
             username=user.username,
             avatar_url=user.avatar_url,
+            status=user.status,
+            show_watch_activity=user.show_watch_activity,
+            show_recent_episodes=user.show_recent_episodes,
             created_at=user.created_at.strftime("%Y-%m-%d"),
             summary=summary,
             recent_highlights=recent_dashboard.items[:4],
@@ -167,6 +217,9 @@ class GetProfileOverviewUseCase:
             liked_highlights=liked_dashboard.items[:4],
             saved_highlights=saved_dashboard.items[:4],
             recent_activity=recent_activity,
+            recent_episodes=recent_episode_cards,
+            profile_level=profile_level,
+            ratings=rating_cards,
             smart_profile=smart_profile,
             followers_count=followers_count,
             following_count=following_count,
@@ -194,6 +247,39 @@ class GetProfileOverviewUseCase:
         ):
             anime_map[anime_id] = None if isinstance(anime, BaseException) else anime
         return anime_map
+
+    async def _extend_anime_map(
+        self,
+        anime_map: dict[int, object | None],
+        anime_ids: set[int],
+    ) -> dict[int, object | None]:
+        """Догружает недостающие аниме из внешнего API в общую карту."""
+        missing = {int(anime_id) for anime_id in anime_ids if int(anime_id) not in anime_map}
+        if not missing:
+            return anime_map
+        for anime_id, anime in zip(
+            missing,
+            await asyncio.gather(
+                *(self.anime_api_client.get_by_id(anime_id) for anime_id in missing),
+                return_exceptions=True,
+            ),
+        ):
+            anime_map[anime_id] = None if isinstance(anime, BaseException) else anime
+        return anime_map
+
+    @staticmethod
+    def _anime_title(anime: object | None, anime_id: int) -> str:
+        if anime and getattr(anime, "title", None):
+            return str(anime.title)
+        return f"Anime #{anime_id}"
+
+    @staticmethod
+    def _anime_cover(anime: object | None) -> str | None:
+        return getattr(anime, "cover_url", None) if anime else None
+
+    @staticmethod
+    def _anime_original_title(anime: object | None) -> str | None:
+        return getattr(anime, "original_title", None) if anime else None
 
     async def _collect_genres(self, favorites, anime_map: dict[int, object | None]) -> list[str]:
         genres: list[str] = []

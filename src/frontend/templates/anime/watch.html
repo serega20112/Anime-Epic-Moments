@@ -138,6 +138,26 @@ watch.episode }} серия | Anime Epic Moments{% endblock %} {% block head %}
             <button class="btn btn-ghost btn-sm" id="favorite-badge-btn">
               ❤️ Нравится
             </button>
+            <form
+              class="wa-rating"
+              method="post"
+              action="{{ url_for('rating.rate_anime') }}"
+              title="Моя оценка тайтла"
+            >
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <input type="hidden" name="anime_id" value="{{ watch.anime_id }}" />
+              <span class="wa-rating-label">Моя оценка</span>
+              {% for star in [1, 2, 3, 4, 5] %}
+              <button
+                class="wa-star {{ 'active' if watch.user_rating >= star else '' }}"
+                type="submit"
+                name="score"
+                value="{{ star }}"
+                data-score="{{ star }}"
+                aria-label="Оценить на {{ star }}"
+              ></button>
+              {% endfor %}
+            </form>
             {% endif %}
           </div>
         </div>

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 
 from backend.application.use_cases import GetProfileOverviewUseCase
 from backend.domain import Favorite, HighlightProfileSummary, User
@@ -10,9 +10,9 @@ from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 
 
-def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
+async def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
     """Проверяем, что GetProfileOverviewUseCase собирает статистику, подборки и social-активность для профиля."""
-    user_repo = Mock()
+    user_repo = AsyncMock()
     user_repo.get_by_id.return_value = User(
         id=4,
         email="user@example.com",
@@ -22,7 +22,7 @@ def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
         created_at=datetime(2026, 3, 20),
     )
     user_repo.get_follow_stats.return_value = (11, 6)
-    highlight_repo = Mock()
+    highlight_repo = AsyncMock()
     highlight_repo.get_profile_summary.return_value = HighlightProfileSummary(
         highlight_count=3,
         like_count=5,
@@ -33,7 +33,7 @@ def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
         SimpleNamespace(anime_id=8, likes_count=4, emotion="hype"),
     ]
     highlight_repo.get_recent_activity.return_value = [SimpleNamespace(action="like")]
-    anime_client = Mock()
+    anime_client = AsyncMock()
     anime_client.get_by_id.side_effect = lambda anime_id: {
         7: SimpleNamespace(
             title="Gintama",
@@ -48,7 +48,7 @@ def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
             cover_url="https://example.com/initial-d.jpg",
         ),
     }.get(anime_id)
-    favorite_repo = Mock()
+    favorite_repo = AsyncMock()
     favorite_repo.get_by_user.return_value = [
         Favorite(
             user_id=4,
@@ -57,7 +57,7 @@ def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
             genres=["Comedy", "Action"],
         )
     ]
-    watch_repo = Mock()
+    watch_repo = AsyncMock()
     watch_repo.get_watched_anime_stats.return_value = [
         SimpleNamespace(anime_id=7, watched_seconds=7200.0),
         SimpleNamespace(anime_id=8, watched_seconds=3600.0),
@@ -65,7 +65,10 @@ def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
     watch_repo.get_viewing_heatmap.return_value = [
         SimpleNamespace(date="2026-03-28", interactions=3)
     ]
-    hf_client = Mock()
+    watch_repo.get_recent_viewing_sessions.return_value = [
+        SimpleNamespace(anime_id=7, episode=2, updated_at=datetime(2026, 3, 28, 19, 0))
+    ]
+    hf_client = AsyncMock()
     hf_client.describe_taste_profile.return_value = "Тебя тянет к экшен-комедиям с хорошим темпом."
     use_case = GetProfileOverviewUseCase(
         user_repo,
@@ -77,18 +80,20 @@ def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
     )
 
     use_case.recent_highlights_use_case = SimpleNamespace(
-        execute=lambda **kwargs: SimpleNamespace(
-            items=["recent-1", "recent-2", "recent-3", "recent-4", "recent-5"]
+        execute=AsyncMock(
+            return_value=SimpleNamespace(
+                items=["recent-1", "recent-2", "recent-3", "recent-4", "recent-5"]
+            )
         )
     )
     use_case.liked_highlights_use_case = SimpleNamespace(
-        execute=lambda **kwargs: SimpleNamespace(items=["liked-1", "liked-2"])
+        execute=AsyncMock(return_value=SimpleNamespace(items=["liked-1", "liked-2"]))
     )
     use_case.saved_highlights_use_case = SimpleNamespace(
-        execute=lambda **kwargs: SimpleNamespace(items=["saved-1", "saved-2"])
+        execute=AsyncMock(return_value=SimpleNamespace(items=["saved-1", "saved-2"]))
     )
 
-    overview = use_case.execute(4)
+    overview = await use_case.execute(4)
 
     assert overview.summary.saved_count == 7
     assert overview.recent_highlights == ["recent-1", "recent-2", "recent-3", "recent-4"]
@@ -104,16 +109,24 @@ def test_get_profile_overview_use_case_builds_profile_sections(monkeypatch):
     )
     assert overview.followers_count == 11
     assert overview.following_count == 6
+    assert overview.status is None
+    assert overview.show_watch_activity is True
+    assert overview.show_recent_episodes is True
+    assert overview.profile_level.xp == 185
+    assert overview.profile_level.level == 3
+    assert overview.recent_episodes[0].episode == 2
+    assert overview.recent_episodes[0].title == "Gintama"
+    assert overview.ratings == []
 
 
-def test_get_profile_overview_use_case_uses_cached_overview_and_ai_summary():
+async def test_get_profile_overview_use_case_uses_cached_overview_and_ai_summary():
     """Проверяем, что GetProfileOverviewUseCase берет overview и AI summary из кэша без повторного тяжелого вызова."""
     cache = ProfileOverviewCache(
         store=KeyValueStore(redis_url=None, namespace="test-profile-overview"),
         overview_ttl_seconds=180,
         ai_summary_ttl_seconds=1800,
     )
-    user_repo = Mock()
+    user_repo = AsyncMock()
     user_repo.get_by_id.return_value = User(
         id=4,
         email="user@example.com",
@@ -122,7 +135,7 @@ def test_get_profile_overview_use_case_uses_cached_overview_and_ai_summary():
         created_at=datetime(2026, 3, 20),
     )
     user_repo.get_follow_stats.return_value = (11, 6)
-    highlight_repo = Mock()
+    highlight_repo = AsyncMock()
     highlight_repo.get_profile_summary.return_value = HighlightProfileSummary(
         highlight_count=1,
         like_count=2,
@@ -132,14 +145,14 @@ def test_get_profile_overview_use_case_uses_cached_overview_and_ai_summary():
         SimpleNamespace(anime_id=7, likes_count=2, emotion="funny"),
     ]
     highlight_repo.get_recent_activity.return_value = [SimpleNamespace(action="like")]
-    anime_client = Mock()
+    anime_client = AsyncMock()
     anime_client.get_by_id.return_value = SimpleNamespace(
         title="Gintama",
         genres=["Comedy", "Action"],
         rating=8.9,
         cover_url="https://example.com/gintama.jpg",
     )
-    favorite_repo = Mock()
+    favorite_repo = AsyncMock()
     favorite_repo.get_by_user.return_value = [
         Favorite(
             user_id=4,
@@ -148,14 +161,15 @@ def test_get_profile_overview_use_case_uses_cached_overview_and_ai_summary():
             genres=["Comedy", "Action"],
         )
     ]
-    watch_repo = Mock()
+    watch_repo = AsyncMock()
     watch_repo.get_watched_anime_stats.return_value = [
         SimpleNamespace(anime_id=7, watched_seconds=7200.0),
     ]
     watch_repo.get_viewing_heatmap.return_value = [
         SimpleNamespace(date="2026-03-28", interactions=3)
     ]
-    hf_client = Mock()
+    watch_repo.get_recent_viewing_sessions.return_value = []
+    hf_client = AsyncMock()
     hf_client.describe_taste_profile.return_value = "Кэшируемый AI summary."
     use_case = GetProfileOverviewUseCase(
         user_repo,
@@ -167,20 +181,20 @@ def test_get_profile_overview_use_case_uses_cached_overview_and_ai_summary():
         cache,
     )
     use_case.recent_highlights_use_case = SimpleNamespace(
-        execute=lambda **kwargs: SimpleNamespace(items=["recent-1"])
+        execute=AsyncMock(return_value=SimpleNamespace(items=["recent-1"]))
     )
     use_case.liked_highlights_use_case = SimpleNamespace(
-        execute=lambda **kwargs: SimpleNamespace(items=["liked-1"])
+        execute=AsyncMock(return_value=SimpleNamespace(items=["liked-1"]))
     )
     use_case.saved_highlights_use_case = SimpleNamespace(
-        execute=lambda **kwargs: SimpleNamespace(items=["saved-1"])
+        execute=AsyncMock(return_value=SimpleNamespace(items=["saved-1"]))
     )
 
-    first = use_case.execute(4)
+    first = await use_case.execute(4)
 
     user_repo.get_by_id.reset_mock()
     hf_client.describe_taste_profile.reset_mock()
-    second = use_case.execute(4)
+    second = await use_case.execute(4)
 
     assert first.smart_profile.ai_taste_summary == "Кэшируемый AI summary."
     assert second.smart_profile.ai_taste_summary == "Кэшируемый AI summary."
@@ -189,7 +203,7 @@ def test_get_profile_overview_use_case_uses_cached_overview_and_ai_summary():
 
     cache.invalidate_overview(4)
     user_repo.get_by_id.reset_mock()
-    third = use_case.execute(4)
+    third = await use_case.execute(4)
 
     assert third.smart_profile.ai_taste_summary == "Кэшируемый AI summary."
     hf_client.describe_taste_profile.assert_not_called()

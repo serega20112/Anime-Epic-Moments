@@ -6,8 +6,57 @@ from backend.domain.value_objects.highlight.profile_summary import HighlightProf
 from backend.domain.value_objects.user.smart_profile import (
     AchievementBadge,
     GenreAffinity,
+    ProfileLevel,
     ProfileMoodInsight,
 )
+
+HOURS_XP_RATE = 25
+HIGHLIGHT_XP = 15
+LIKE_RECEIVED_XP = 5
+RATING_XP = 10
+
+
+def compute_profile_level(
+    hours_watched: float,
+    highlight_count: int,
+    likes_received: int,
+    ratings_count: int,
+) -> ProfileLevel:
+    """Рассчитывает уровень пользователя по суммарному опыту.
+
+    Опыт растёт от часов просмотра, созданных хайлайтов, полученных лайков
+    и выставленных оценок. Уровень — это целая часть логарифмической кривой:
+    xp до следующего уровня удваивается на каждом шаге.
+
+    Args:
+        hours_watched: Часы просмотра.
+        highlight_count: Количество хайлайтов.
+        likes_received: Полученные лайки.
+        ratings_count: Количество оценок.
+
+    Returns:
+        ProfileLevel: Уровень, текущий опыт и прогресс до следующего уровня.
+    """
+    xp = (
+        int(float(hours_watched) * HOURS_XP_RATE)
+        + int(highlight_count) * HIGHLIGHT_XP
+        + int(likes_received) * LIKE_RECEIVED_XP
+        + int(ratings_count) * RATING_XP
+    )
+    level = 1
+    required = 50
+    remaining = max(0, int(xp))
+    while remaining >= required:
+        remaining -= required
+        level += 1
+        required *= 2
+    progress = remaining / required if required else 0.0
+    return ProfileLevel(
+        level=level,
+        xp=int(xp),
+        next_level_xp=required if level < 100 else None,
+        progress=round(min(max(progress, 0.0), 1.0), 3),
+    )
 
 
 def build_genre_affinities(genres: list[str], limit: int = 5) -> list[GenreAffinity]:

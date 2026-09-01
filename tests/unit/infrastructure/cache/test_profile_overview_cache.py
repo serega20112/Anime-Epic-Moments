@@ -4,7 +4,10 @@ import pytest
 
 from backend.domain.value_objects.highlight.profile_summary import HighlightProfileSummary
 from backend.domain.value_objects.user.profile_overview import ProfileOverview
-from backend.domain.value_objects.user.smart_profile import SmartProfile
+from backend.domain.value_objects.user.smart_profile import (
+    ProfileLevel,
+    SmartProfile,
+)
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 
@@ -15,6 +18,9 @@ def _build_overview(user_id: int, username: str):
         email=f"{username}@example.com",
         username=username,
         avatar_url=None,
+        status=None,
+        show_watch_activity=True,
+        show_recent_episodes=True,
         created_at="2025-01-01",
         summary=HighlightProfileSummary(highlight_count=0, like_count=0, saved_count=0),
         recent_highlights=[],
@@ -22,6 +28,9 @@ def _build_overview(user_id: int, username: str):
         liked_highlights=[],
         saved_highlights=[],
         recent_activity=[],
+        recent_episodes=[],
+        profile_level=ProfileLevel(level=1, xp=0, next_level_xp=50, progress=0.0),
+        ratings=[],
         smart_profile=SmartProfile(
             favorite_genres=[],
             dominant_mood=object(),

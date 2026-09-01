@@ -80,6 +80,8 @@ from backend.application.use_cases.moment.get_user_viewing_moments import (
 from backend.application.use_cases.moment.publish_viewing_moment import PublishViewingMomentUseCase
 from backend.application.use_cases.moment.result import MomentResult
 from backend.application.use_cases.moment.save_viewing_moment import SaveViewingMomentUseCase
+from backend.application.use_cases.rating.get_user_ratings import GetUserRatingsUseCase
+from backend.application.use_cases.rating.set_user_anime_rating import SetUserAnimeRatingUseCase
 from backend.application.use_cases.reaction.get_episode_reactions import (
     GetEpisodeReactionsUseCase,
 )
@@ -155,6 +157,7 @@ __all__ = [
     "GetSharedHighlightUseCase",
     "GetUserCollectionsUseCase",
     "GetUserHighlightsUseCase",
+    "GetUserRatingsUseCase",
     "GetUserViewingMomentsUseCase",
     "GetWatchPageUseCase",
     "HighlightResult",
@@ -177,6 +180,7 @@ __all__ = [
     "SetEpisodeReactionUseCase",
     "SetHighlightLikeUseCase",
     "SetSavedHighlightUseCase",
+    "SetUserAnimeRatingUseCase",
     "SetUserFollowUseCase",
     "SyncWatchSourcesUseCase",
     "UpdateUserProfileUseCase",

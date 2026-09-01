@@ -549,6 +549,79 @@ class WatchRepository:
             for row in rows
         ]
 
+    async def get_recent_viewing_sessions(
+        self,
+        user_id: int,
+        limit: int = 10,
+    ) -> list[ViewingSession]:
+        """Fetch the most recently updated viewing sessions of a user.
+
+        Oбновления одной и той же серии схлопываются в одну запись: берём
+        последнюю по времени строку на каждую пару (anime_id, episode).
+
+        Args:
+            user_id: User identifier.
+            limit: Maximum number of sessions to return.
+
+        Returns:
+            list[ViewingSession]: Recent sessions ordered by update time.
+        """
+        rank_expr = (
+            func.row_number()
+            .over(
+                partition_by=(
+                    ViewingSessionModel.anime_id,
+                    ViewingSessionModel.episode,
+                ),
+                order_by=(
+                    ViewingSessionModel.updated_at.desc(),
+                    ViewingSessionModel.id.desc(),
+                ),
+            )
+            .label("position_rank")
+        )
+        top_ids_result = await self.session.execute(
+            select(
+                ViewingSessionModel.id,
+                rank_expr,
+            )
+            .where(ViewingSessionModel.user_id == user_id)
+            .order_by(
+                ViewingSessionModel.updated_at.desc(),
+                ViewingSessionModel.id.desc(),
+            )
+            .limit(max(int(limit), 1) * 4)
+        )
+        top_ids = [int(row.id) for row in top_ids_result.all() if int(row.position_rank) == 1][
+            : max(int(limit), 1)
+        ]
+        if not top_ids:
+            return []
+        result = await self.session.execute(
+            select(ViewingSessionModel)
+            .where(ViewingSessionModel.id.in_(top_ids))
+            .order_by(
+                ViewingSessionModel.updated_at.desc(),
+                ViewingSessionModel.id.desc(),
+            )
+        )
+        return [await self._map_session(row) for row in result.scalars().all()]
+
+    @staticmethod
+    async def _map_session(row: ViewingSessionModel) -> ViewingSession:
+        return ViewingSession(
+            id=row.id,
+            user_id=row.user_id,
+            anime_id=row.anime_id,
+            episode=row.episode,
+            watch_source_id=row.watch_source_id,
+            position_seconds=row.position_seconds,
+            volume=row.volume,
+            quality_label=row.quality_label,
+            is_paused=row.is_paused,
+            updated_at=row.updated_at,
+        )
+
     async def add_anime_comment(
         self,
         anime_id: int,

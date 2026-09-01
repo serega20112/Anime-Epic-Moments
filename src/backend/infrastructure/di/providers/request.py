@@ -30,6 +30,7 @@ from backend.infrastructure.repositories.collection_repository import Collection
 from backend.infrastructure.repositories.favorite_repository import FavoriteRepository
 from backend.infrastructure.repositories.highlight_repository import HighlightRepository
 from backend.infrastructure.repositories.moment_repository import MomentRepository
+from backend.infrastructure.repositories.rating_repository import RatingRepository
 from backend.infrastructure.repositories.reaction_repository import ReactionRepository
 from backend.infrastructure.repositories.support_repository import SupportRepository
 from backend.infrastructure.repositories.user_repository import UserRepository
@@ -122,6 +123,18 @@ class RequestProvider(Provider):
             WatchRepository: Configured repository.
         """
         return WatchRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    async def rating_repository(self, session: AsyncSession) -> RatingRepository:
+        """Provide the rating repository.
+
+        Args:
+            session: Database session.
+
+        Returns:
+            RatingRepository: Configured repository.
+        """
+        return RatingRepository(session)
 
     @provide(scope=Scope.REQUEST)
     async def support_repository(self, session: AsyncSession) -> SupportRepository:

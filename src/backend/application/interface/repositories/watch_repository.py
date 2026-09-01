@@ -80,6 +80,14 @@ class WatchRepository(ABC):
         """Возвращает тепловую карту активности просмотра по дням."""
 
     @abstractmethod
+    async def get_recent_viewing_sessions(
+        self,
+        user_id: int,
+        limit: int = 10,
+    ) -> list[ViewingSession]:
+        """Возвращает последние сессии просмотра без повторов одной серии."""
+
+    @abstractmethod
     async def add_anime_comment(
         self,
         anime_id: int,

@@ -21,7 +21,22 @@ endblock %} {% block head %}
       <div class="profile-name">
         {{ profile_user.username }}
         <span class="profile-badge">вы</span>
+        {% if profile_overview and profile_overview.profile_level %} {% set pl =
+        profile_overview.profile_level %} {% set pct = (pl.progress * 100)|round
+        if pl.progress is not none else 0 %}
+        <span class="profile-level" title="Уровень {{ pl.level }} — {{ pl.xp }} XP">
+          <span class="level-circle">{{ pl.level }}</span>
+          <span class="level-xp">
+            <small>уровень</small>
+            <b>{{ pl.xp }} XP</b>
+            <span class="bar"><i style="width: {{ pct }}%"></i></span>
+          </span>
+        </span>
+        {% endif %}
       </div>
+      {% if profile_user.status %}
+      <p class="profile-status">«{{ profile_user.status }}»</p>
+      {% endif %}
       <p class="profile-bio">{{ profile_user.email }}</p>
       <p class="profile-joined">
         На платформе с {{ profile_user.created_at.strftime('%d.%m.%Y') if
@@ -59,72 +74,67 @@ endblock %} {% block head %}
     {% endif %}
   </header>
 
-  <div class="profile-layout" style="margin-top: var(--space-6)">
-    <aside class="side-card">
-      {% if profile_overview and profile_overview.smart_profile %} {% set sp =
-      profile_overview.smart_profile %} {% if sp.dominant_mood %}
-      <div class="ai-mood">
-        <span class="emoji">{{ sp.dominant_mood.emoji }}</span>
-        <div>
-          <b>{{ sp.dominant_mood.label }}</b>
-          <span>{{ sp.dominant_mood.description }}</span>
-        </div>
-      </div>
-      {% endif %} {% if sp.favorite_genres %}
-      <div>
-        <h4>Любимые жанры</h4>
-        <div class="genre-bars">
-          {% for g in sp.favorite_genres %}
-          <div class="genre-bar">
-            <span>{{ g.name }} · {{ g.count }}</span>
-            <div class="bar">
-              <i
-                style="width:{{ (g.count * 12)|round|int if g.count else 0 }}%"
-              ></i>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-      {% endif %} {% if sp.hours_watched is not none or sp.average_rating is not
-      none %}
-      <div class="follow-counts">
-        {% if sp.hours_watched is not none %}<span
-          >⏱ <b>{{ sp.hours_watched|round|int }}</b> часов</span
-        >{% endif %} {% if sp.average_rating is not none %}<span
-          >★ <b>{{ sp.average_rating|round(1) }}</b> рейтинг</span
-        >{% endif %}
-      </div>
-      {% endif %} {% if sp.achievements %}
-      <div>
-        <h4>Достижения</h4>
-        <div class="achievements">
-          {% for a in sp.achievements %}
-          <div class="achievement" title="{{ a.description }}">
-            <span class="emoji">{{ a.icon or '🏅' }}</span>
-            <small>{{ a.title }}</small>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-      {% endif %} {% if sp.ai_taste_summary %}
-      <div
-        class="ai-card"
-        style="padding: 12px; border-radius: var(--radius-md)"
-      >
-        <h4 style="margin-bottom: 6px">ИИ-вкус</h4>
-        <p class="muted" style="font-size: var(--text-sm)">
-          {{ sp.ai_taste_summary }}
-        </p>
-      </div>
-      {% endif %} {% endif %}
-    </aside>
+  {% set sp = profile_overview.smart_profile if profile_overview else none %}
+  <div class="profile-tabs" style="margin-top: var(--space-6)" role="tablist">
+    <button class="tab active" data-profile-tab="overview" role="tab">Обзор</button>
+    <button class="tab" data-profile-tab="stats" role="tab">Статистика</button>
+    <button class="tab" data-profile-tab="activity" role="tab">Активность</button>
+    <button class="tab" data-profile-tab="ratings" role="tab">Оценки релизов</button>
+  </div>
 
-    <div>
-      {% if profile_overview and profile_overview.recent_highlights %}
-      <div class="section-title">
-        <span class="emoji">⭐</span> Последние хайлайты
-      </div>
+  <div class="tab-panel active" data-profile-panel="overview">
+    {% if profile_overview and sp %}
+    <div style="display: grid; gap: var(--space-6)">
+      <section class="side-card">
+        <h4>📊 Динамика просмотра серий — 35 дней</h4>
+        <div class="heatmap-chart">
+          {% set max_interactions = sp.heatmap|map(attribute='interactions')|list|max
+          if sp.heatmap and sp.heatmap|map(attribute='interactions')|list|max > 0 else 1 %}
+          {% for cell in sp.heatmap %}
+          <div class="heatmap-col" title="{{ cell.date }}: {{ cell.interactions }} серий">
+            <span
+              class="heatmap-bar"
+              style="--heatmap-h: {{ (cell.interactions / max_interactions * 100)|round|int if cell.interactions else 4 }}%; opacity: {{ 1 if cell.interactions else 0.25 }}"
+            ></span>
+            <label>{{ cell.date[5:10] }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="side-card">
+        <h4>🎬 Просмотрено недавно</h4>
+        {% if profile_overview.recent_episodes %}
+        <div class="recent-episodes">
+          {% for r in profile_overview.recent_episodes %}
+          <a
+            class="recent-episode"
+            href="{{ url_for('watch.watch_page', anime_id=r.anime_id, episode=r.episode) }}"
+          >
+            <img
+              src="{{ r.cover_url or url_for('static', filename='images/no-cover.svg') }}"
+              alt=""
+              loading="lazy"
+              onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';"
+            />
+            <span class="re-el-info">
+              <span class="re-title">{{ r.title }}</span>
+              <span class="re-sub"
+                >Серия {{ r.episode }} · {{ r.updated_at|time_ago }}</span
+              >
+            </span>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="muted" style="font-size: var(--text-sm); margin-top: 12px">
+          Вы ещё не смотрели серии — или просмотр скрыт.
+        </p>
+        {% endif %}
+      </section>
+
+      {% if profile_overview.recent_highlights %}
+      <div class="section-title"><span class="emoji">⭐</span> Последние хайлайты</div>
       <div class="highlight-grid tight">
         {% for highlight in profile_overview.recent_highlights %} {% include
         "highlight/_card.html" %} {% endfor %}
@@ -142,6 +152,172 @@ endblock %} {% block head %}
       </div>
       {% endif %}
     </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-emoji">✨</span>
+      <h3>Профиль ещё формируется</h3>
+      <p>Смотрите серии и делитесь моментами, чтобы здесь появилась статистика.</p>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('anime.catalog_page') }}"
+        >Открыть каталог</a
+      >
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="tab-panel" data-profile-panel="stats">
+    {% if sp %}
+    <div class="profile-layout">
+      <aside class="side-card" style="grid-column: 1">
+        {% if sp.dominant_mood %}
+        <div class="ai-mood">
+          <span class="emoji">{{ sp.dominant_mood.emoji }}</span>
+          <div>
+            <b>{{ sp.dominant_mood.label }}</b>
+            <span>{{ sp.dominant_mood.description }}</span>
+          </div>
+        </div>
+        {% endif %}
+        {% if sp.hours_watched is not none or sp.average_rating is not none %}
+        <div class="follow-counts">
+          {% if sp.hours_watched is not none %}<span
+            >⏱ <b>{{ sp.hours_watched|round|int }}</b> часов</span
+          >{% endif %} {% if sp.average_rating is not none %}<span
+            >★ <b>{{ sp.average_rating|round(1) }}</b> средняя оценка</span
+          >{% endif %}
+        </div>
+        {% endif %}
+      </aside>
+      <div style="grid-column: 2">
+        {% if sp.favorite_genres %}
+        <div class="section-title"><span class="emoji">🎨</span> Любимые жанры</div>
+        <div class="genre-bars" style="margin-top: var(--space-4)">
+          {% for g in sp.favorite_genres %}
+          <div class="genre-bar">
+            <span>{{ g.name }} · {{ g.count }}</span>
+            <div class="bar">
+              <i style="width:{{ (g.count * 12)|round|int if g.count else 0 }}%"></i>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %} {% if sp.top_anime %}
+        <div class="section-title" style="margin-top: var(--space-6)">
+          <span class="emoji">🏆</span> Топ аниме
+        </div>
+        <div class="recent-episodes">
+          {% for t in sp.top_anime %}
+          <a
+            class="recent-episode"
+            href="{{ url_for('watch.watch_page', anime_id=t.anime_id) }}"
+          >
+            <img
+              src="{{ t.cover_url or url_for('static', filename='images/no-cover.svg') }}"
+              alt=""
+              loading="lazy"
+              onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';"
+            />
+            <span class="re-el-info">
+              <span class="re-title">{{ t.title }}</span>
+              {% if t.rating is not none %}<span class="re-sub"
+                >★ {{ t.rating|round(1) }}</span
+              >{% endif %}
+            </span>
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %} {% if sp.achievements %}
+        <div class="section-title" style="margin-top: var(--space-6)">
+          <span class="emoji">🏅</span> Достижения
+        </div>
+        <div class="achievements" style="margin-top: var(--space-4)">
+          {% for a in sp.achievements %}
+          <div class="achievement" title="{{ a.description }}">
+            <span class="emoji">{{ a.icon or '🏅' }}</span>
+            <small>{{ a.title }}</small>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %} {% if sp.ai_taste_summary %}
+        <div
+          class="ai-card"
+          style="margin-top: var(--space-6); padding: 12px; border-radius: var(--radius-md)"
+        >
+          <h4 style="margin-bottom: 6px">ИИ-вкус</h4>
+          <p class="muted" style="font-size: var(--text-sm)">
+            {{ sp.ai_taste_summary }}
+          </p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-emoji">📊</span>
+      <h3>Нет данных для статистики</h3>
+      <p>Активность в профиле пока не собрана.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="tab-panel" data-profile-panel="activity">
+    <div class="section-title"><span class="emoji">⚡</span> Недавняя активность</div>
+    {% if profile_overview and profile_overview.recent_activity %}
+    <div class="activity-list">
+      {% for item in profile_overview.recent_activity %}
+      <div class="activity-item">
+        <span class="activity-icon"
+          >{% if item.action == 'like' %}❤️{% elif item.action == 'comment'
+          %}💬{% elif item.action == 'save' %}🔖{% elif item.action == 'view'
+          %}🎬{% elif item.action == 'highlight' %}✂️{% else %}⚡{% endif %}</span
+        >
+        <span><b>{{ item.actor_username }}</b>: {{ item.highlight_title }}</span>
+        <time>{{ item.created_at|time_ago }}</time>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-emoji">⚡</span>
+      <h3>Активности пока нет</h3>
+      <p>Здесь появится лента ваших действий в сервисе.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="tab-panel" data-profile-panel="ratings">
+    <div class="section-title"><span class="emoji">⭐</span> Мои оценки релизов</div>
+    {% if profile_overview and profile_overview.ratings %}
+    <div class="rating-list">
+      {% for r in profile_overview.ratings %}
+      <a
+        class="rating-row"
+        href="{{ url_for('watch.watch_page', anime_id=r.anime_id) }}"
+      >
+        <img
+          src="{{ r.cover_url or url_for('static', filename='images/no-cover.svg') }}"
+          alt=""
+          loading="lazy"
+          onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/no-cover.svg') }}';"
+        />
+        <span class="rr-title">{{ r.title }}</span>
+        <span class="rating-stars"
+          >{% for n in range(1, 6) %}{{ '★' if r.score >= n else '☆' }}{% endfor
+          %}</span
+        >
+        <time>{{ r.rated_at }}</time>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-emoji">⭐</span>
+      <h3>Вы ещё не оценивали релизы</h3>
+      <p>Поставьте оценку на странице просмотра аниме — она появится здесь.</p>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('anime.catalog_page') }}"
+        >Открыть каталог</a
+      >
+    </div>
+    {% endif %}
   </div>
 </div>
 
@@ -154,7 +330,11 @@ endblock %} {% block head %}
         &times;
       </button>
     </div>
-    <form method="post" action="{{ url_for('auth.update_profile') }}">
+    <form
+      method="post"
+      action="{{ url_for('auth.update_profile') }}"
+      enctype="multipart/form-data"
+    >
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="form-group">
         <label for="pf-username">Имя пользователя</label>
@@ -167,19 +347,52 @@ endblock %} {% block head %}
         />
       </div>
       <div class="form-group">
-        <label for="pf-avatar">Ссылка на аватар</label>
+        <label for="pf-status">Статус</label>
         <input
-          type="url"
-          id="pf-avatar"
-          name="avatar_url"
-          value="{{ profile_user.avatar_url or '' }}"
-          placeholder="https://…"
+          type="text"
+          id="pf-status"
+          name="status"
+          value="{{ profile_user.status or '' }}"
+          maxlength="80"
+          placeholder="Чем сейчас увлекаетесь?"
         />
       </div>
+      <div class="form-group">
+        <label for="pf-avatar-url">Ссылка на аватар</label>
+        <input
+          type="url"
+          id="pf-avatar-url"
+          name="avatar_url_text"
+          value="{{ profile_user.avatar_url or '' }}"
+          placeholder="https://… (или загрузите файл ниже)"
+        />
+      </div>
+      <div class="form-group">
+        <label for="pf-avatar-file">Или загрузите файл</label>
+        <input type="file" id="pf-avatar-file" name="avatar_url" accept="image/*" />
+      </div>
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input
+            type="checkbox"
+            name="show_watch_activity"
+            value="1"
+            {{ 'checked' if profile_user.show_watch_activity }}
+          />
+          Показывать в профиле мои просмотры серий
+        </label>
+        <label class="checkbox-row">
+          <input
+            type="checkbox"
+            name="show_recent_episodes"
+            value="1"
+            {{ 'checked' if profile_user.show_recent_episodes }}
+          />
+          Показывать блок «Просмотрено недавно»
+        </label>
+      </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-ghost" data-action="close-edit">
-          Отмена
-        </button>
+        <button type="button" class="btn btn-ghost" data-action="close-edit">Отмена</button>
         <button type="submit" class="btn btn-primary">Сохранить</button>
       </div>
     </form>
@@ -211,6 +424,22 @@ endblock %} {% block head %}
       });
     overlay.addEventListener("click", function (e) {
       if (e.target === overlay) close();
+    });
+    document.querySelectorAll("[data-profile-tab]").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var name = tab.getAttribute("data-profile-tab");
+        document.querySelectorAll("[data-profile-tab]").forEach(function (t) {
+          t.classList.remove("active");
+        });
+        document.querySelectorAll("[data-profile-panel]").forEach(function (p) {
+          p.classList.remove("active");
+        });
+        tab.classList.add("active");
+        var panel = document.querySelector(
+          '[data-profile-panel="' + name + '"]'
+        );
+        if (panel) panel.classList.add("active");
+      });
     });
   });
 </script>

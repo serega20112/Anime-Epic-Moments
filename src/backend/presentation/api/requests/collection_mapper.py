@@ -32,27 +32,38 @@ async def map_create_collection_command(form, *, user_id: int) -> CreateCollecti
         title=await _trim(form.get("title"), TITLE_MAX_LENGTH),
         description=await _trim(form.get("description"), DESCRIPTION_MAX_LENGTH),
         is_public=await _to_bool(form.get("is_public"), default=True),
+        cover_url=await _optional(form.get("cover_url")),
     )
 
 
-async def map_add_collection_item_command(form, *, collection_id: int) -> AddCollectionItemCommand:
-    """Build an add collection item command from form data.
+async def map_add_collection_item_command(
+    payload,
+    *,
+    collection_id: int,
+    user_id: int | None = None,
+) -> AddCollectionItemCommand:
+    """Build an add collection item command from a JSON or form payload.
+
+    Snapshot fields are optional: when the caller sends only the anime id the
+    use case resolves the snapshot server-side through the anime API client.
 
     Args:
-        form: Parsed form data.
+        payload: Parsed JSON dict or form data.
         collection_id: Target collection identifier.
+        user_id: Acting user identifier for the ownership check.
 
     Returns:
         AddCollectionItemCommand: Validated add item command.
     """
     return AddCollectionItemCommand(
         collection_id=collection_id,
-        anime_id=await _to_int(form.get("anime_id")) or 0,
-        title=await _trim(form.get("title"), ITEM_TITLE_MAX_LENGTH),
-        description=await _trim(form.get("description"), DESCRIPTION_MAX_LENGTH),
-        cover_url=await _optional(form.get("cover_url")),
-        genres=await _genres(form),
-        original_title=await _optional(form.get("original_title")),
+        anime_id=await _to_int(payload.get("anime_id")) or 0,
+        user_id=user_id,
+        title=await _trim(payload.get("title"), ITEM_TITLE_MAX_LENGTH),
+        description=await _trim(payload.get("description"), DESCRIPTION_MAX_LENGTH),
+        cover_url=await _optional(payload.get("cover_url")),
+        genres=await _genres(payload),
+        original_title=await _optional(payload.get("original_title")),
     )
 
 
