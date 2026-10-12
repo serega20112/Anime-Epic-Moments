@@ -405,6 +405,33 @@ def eporner_timeout() -> float:
     return float(os.getenv("EPORNER_TIMEOUT", "10"))
 
 
+def hentaigasm_enabled() -> bool:
+    """Return whether the Hentaigasm hentai/adult source is enabled.
+
+    Returns:
+        bool: True when HENTAIGASM_ENABLED is enabled.
+    """
+    return os.getenv("HENTAIGASM_ENABLED", "1") == "1"
+
+
+def hentaigasm_base_url() -> str:
+    """Return the Hentaigasm site base URL.
+
+    Returns:
+        str: Hentaigasm base URL.
+    """
+    return os.getenv("HENTAIGASM_BASE_URL", "https://hentaigasm.com")
+
+
+def hentaigasm_timeout() -> float:
+    """Return the Hentaigasm request timeout in seconds.
+
+    Returns:
+        float: Hentaigasm timeout in seconds.
+    """
+    return float(os.getenv("HENTAIGASM_TIMEOUT", "10"))
+
+
 def sibnet_base_url() -> str:
     """Return the Sibnet video base URL.
 

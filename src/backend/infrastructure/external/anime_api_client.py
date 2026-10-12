@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Sequence
 from typing import Any
 
 import httpx
 
 from backend.domain.entities.anime.anime import Anime
+from backend.domain.value_objects.anime.catalog_page import CatalogPage
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.external.anilist_client import (
     AniListAnimeClient,
@@ -18,6 +20,25 @@ from backend.infrastructure.external.mapping.anime import passes_filters, saniti
 from backend.infrastructure.external.shikimori_client import ShikimoriClient
 
 _CACHE_MISS = object()
+
+
+async def _catalog_page_from_cache(cached: object, page: int, per_page: int) -> CatalogPage:
+    """Rebuild a catalog page from a cached payload.
+
+    Args:
+        cached: Payload restored from the cache store.
+        page: Requested page number.
+        per_page: Requested page size.
+
+    Returns:
+        CatalogPage: Page rebuilt from the cached anime and total.
+    """
+    if isinstance(cached, dict):
+        items = list(cached.get("items") or [])
+        total = int(cached.get("total") or len(items))
+        return CatalogPage.build(items, page=page, per_page=per_page, total=total)
+    items = list(cached or [])
+    return CatalogPage.build(items, page=page, per_page=per_page, total=len(items))
 
 
 class AnimeApiClient:
@@ -295,7 +316,7 @@ class AnimeApiClient:
     async def filter_catalog(
         self,
         *,
-        genre: str = "",
+        genres: Sequence[str] = (),
         media_type: str = "",
         status: str = "",
         year_from: int | None = None,
@@ -303,12 +324,13 @@ class AnimeApiClient:
         min_score: float | None = None,
         sort: str = "rating",
         order: str = "desc",
-        limit: int = 30,
-    ) -> list[Anime]:
+        page: int = 1,
+        per_page: int = 25,
+    ) -> CatalogPage:
         """Browse anime with Anixart-like filters, racing Jikan and AniList.
 
         Args:
-            genre: Comma-separated genre/tag names or empty string for all.
+            genres: Genre or tag names to narrow the catalog by.
             media_type: Format filter (tv, movie, ova, ona, special). Empty means all.
             status: Status filter (airing, complete, upcoming). Empty means all.
             year_from: Optional lower bound release year.
@@ -316,19 +338,23 @@ class AnimeApiClient:
             min_score: Optional minimum normalized rating (0-10).
             sort: Sorting strategy (rating, popularity, newest, title).
             order: Sorting direction (asc, desc).
-            limit: Maximum number of results to return.
+            page: One-based page number to request.
+            per_page: Number of items per page.
 
         Returns:
-            list[Anime]: Filtered and sorted anime.
+            CatalogPage: Requested page of anime with pagination metadata.
         """
         sort_key = sort
         valid_sorts = {"rating", "popularity", "newest", "title"}
         if sort_key not in valid_sorts:
             sort_key = "rating"
         order_key = "asc" if str(order).strip().lower() == "asc" else "desc"
+        normalized_genres = tuple(str(name).strip() for name in genres if str(name).strip())
+        page_number = max(1, int(page))
+        page_size = max(1, int(per_page))
         cache_key = await self._cache_key(
-            "filter_catalog_v1",
-            str(genre).strip().lower(),
+            "filter_catalog_v2",
+            "|".join(sorted(normalized_genres)),
             str(media_type).strip().lower(),
             str(status).strip().lower(),
             year_from if year_from is not None else "",
@@ -336,15 +362,16 @@ class AnimeApiClient:
             min_score if min_score is not None else "",
             sort_key,
             order_key,
-            int(limit),
+            page_number,
+            page_size,
         )
         cached = await self._get_cached(cache_key)
         if cached is not _CACHE_MISS:
-            return list(cached)
+            return _catalog_page_from_cache(cached, page_number, page_size)
 
-        result = await self._first_truthy(
+        result = await self._first_catalog_page(
             self.jikan.filter_catalog(
-                genre=genre,
+                genres=normalized_genres,
                 media_type=media_type,
                 status=status,
                 year_from=year_from,
@@ -352,10 +379,11 @@ class AnimeApiClient:
                 min_score=min_score,
                 sort=sort_key,
                 order=order_key,
-                limit=limit,
+                page=page_number,
+                per_page=page_size,
             ),
             self.anilist.filter_catalog(
-                genre=genre,
+                genres=normalized_genres,
                 media_type=media_type,
                 status=status,
                 year_from=year_from,
@@ -363,17 +391,43 @@ class AnimeApiClient:
                 min_score=min_score,
                 sort=sort_key,
                 order=order_key,
-                limit=limit,
+                page=page_number,
+                per_page=page_size,
             ),
         )
-        ttl_seconds = 600 if result else 60
-        return list(
-            await self._set_cached(
-                cache_key,
-                await self._enrich_with_russian(result or []),
-                ttl_seconds=ttl_seconds,
-            )
+        ttl_seconds = 600 if len(result) else 60
+        enriched = await self._enrich_with_russian(list(result))
+        await self._set_cached(
+            cache_key,
+            {"items": enriched, "total": result.total},
+            ttl_seconds=ttl_seconds,
         )
+        return CatalogPage.build(enriched, page=page_number, per_page=page_size, total=result.total)
+
+    @staticmethod
+    async def _first_catalog_page(*candidates) -> CatalogPage:
+        """Return the first provider page that actually contains items.
+
+        Args:
+            candidates: Provider calls racing each other.
+
+        Returns:
+            CatalogPage: First non-empty page, or an empty page.
+        """
+        tasks = [asyncio.ensure_future(item) for item in candidates]
+        pending = list(tasks)
+        while pending:
+            done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+            for task in done:
+                try:
+                    value = task.result()
+                except Exception:
+                    value = None
+                if value is not None and len(value):
+                    for other in pending:
+                        other.cancel()
+                    return value
+        return CatalogPage.build([], page=1, per_page=1, total=0)
 
     async def _enrich_with_russian(self, animes: list[Anime]) -> list[Anime]:
         """Fill Russian titles/descriptions for a list of anime, in place.

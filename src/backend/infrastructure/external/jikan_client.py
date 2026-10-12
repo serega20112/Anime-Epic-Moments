@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import httpx
 
 from backend.domain.entities.anime.anime import Anime
+from backend.domain.value_objects.anime.catalog_page import CatalogPage
 from backend.infrastructure.external.mapping.anime import (
     build_anime_from_jikan_item,
     is_nsfw_jikan,
@@ -168,7 +171,7 @@ class JikanAnimeClient:
     async def filter_catalog(
         self,
         *,
-        genre: str = "",
+        genres: Sequence[str] = (),
         media_type: str = "",
         status: str = "",
         year_from: int | None = None,
@@ -176,12 +179,13 @@ class JikanAnimeClient:
         min_score: float | None = None,
         sort: str = "rating",
         order: str = "desc",
-        limit: int = 30,
-    ) -> list[Anime]:
+        page: int = 1,
+        per_page: int = 25,
+    ) -> CatalogPage:
         """Filter and sort anime through the Jikan /anime endpoint.
 
         Args:
-            genre: Comma-separated genre names.
+            genres: Genre names to narrow the catalog by.
             media_type: Format filter value.
             status: Status filter value.
             year_from: Optional lower bound release year.
@@ -189,15 +193,16 @@ class JikanAnimeClient:
             min_score: Optional minimum normalized rating.
             sort: Normalized sort key.
             order: Sorting direction.
-            limit: Maximum number of results.
+            page: One-based page number.
+            per_page: Number of items per page.
 
         Returns:
-            list[Anime]: Filtered and sorted anime, or an empty list on failure.
+            CatalogPage: Requested page of anime, empty on provider failure.
         """
-        params: dict[str, object] = {"limit": limit}
+        params: dict[str, object] = {"limit": per_page, "page": max(1, int(page))}
         genre_ids = []
-        for genre_name in str(genre or "").split(","):
-            genre_id = self.genre_id_by_lower.get(genre_name.strip().lower())
+        for genre_name in genres:
+            genre_id = self.genre_id_by_lower.get(str(genre_name).strip().lower())
             if genre_id:
                 genre_ids.append(genre_id)
         if genre_ids:
@@ -225,11 +230,15 @@ class JikanAnimeClient:
         try:
             resp = await self.session.get(f"{self.base_url}/anime", params=params)
             resp.raise_for_status()
-            data = resp.json().get("data", [])
+            payload = resp.json()
+            data = payload.get("data", []) or []
         except (httpx.HTTPError, ValueError, KeyError, TypeError):
-            return []
+            return CatalogPage.build([], page=page, per_page=per_page, total=0)
+
+        pagination = payload.get("pagination") or {}
+        total = int(pagination.get("items", {}).get("total") or 0)
 
         result = []
         for item in data:
             result.append(await build_anime_from_jikan_item(item))
-        return result
+        return CatalogPage.build(result, page=page, per_page=per_page, total=total)

@@ -34,6 +34,7 @@ function boot() {
 
   core.state.shell.addEventListener("click", function (ev) {
     if (ev.target.closest && ev.target.closest(".controls-row")) return;
+    if (ev.target.closest && ev.target.closest(".pc-select")) return;
     if (ev.target.closest && ev.target.closest(".pc-highlight-editor")) return;
     if (ev.target.closest && ev.target.closest(".pc-resume-popup")) return;
     core.togglePlay();

@@ -16,6 +16,9 @@ import re
 import httpx
 
 from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
+from backend.domain.value_objects.watch.translation_availability import (
+    TranslationEpisodeAvailability,
+)
 from backend.infrastructure.external.errors import (
     ExternalServiceError,
     ExternalServiceTimeoutError,
@@ -29,11 +32,19 @@ _VIDEO_ID_RE = re.compile(r"^[a-zA-Z0-9]+$")
 _BASE36_DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz"
 _MAX_EXTRA_WORDS = 3
 _MAX_STREAMS_PER_VIDEO = 3
+# Сколько видео опрашиваем в карте доступности: нужно лишь понять, есть ли
+# контент по тайтлу, поэтому глубокий обход не нужен.
+_AVAILABILITY_LIMIT = 10
 
 _BROWSER_UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 )
+
+# Стабильный псевдо-id озвучки: у Eporner нет справочника переводов, поэтому
+# весь сайт выступает единственной дорожкой. Значение фиксировано, чтобы
+# карта доступности была детерминированной между запросами и рестартами.
+_TRANSLATION_ID = 1
 
 
 def _to_base36(number: int) -> str:
@@ -71,6 +82,11 @@ class EpornerProvider(WatchSourceProvider):
     деградирует в пустой результат. Кандидаты фильтруются строгим
     token-match по названию, чтобы не подменять тайтл похожим видео.
     """
+
+    #: CDN-ссылка содержит Unix-время подписи в пути (TTL ~2 часа), а по
+    #: протухшей ссылке Eporner отдаёт минутный трейлер-заглушку. Такие
+    #: ссылки нельзя хранить в базе как долговременные.
+    ephemeral_links = True
 
     def __init__(self, *, base_url: str, enabled: bool, timeout: float):
         self.base_url = base_url.rstrip("/")
@@ -161,6 +177,75 @@ class EpornerProvider(WatchSourceProvider):
                     )
                 )
         return discovered
+
+    async def get_translations_availability(
+        self,
+        title: str,
+        year: int | None = None,
+        shikimori_id: int | None = None,
+    ) -> list[TranslationEpisodeAvailability]:
+        """Строит карту доступности серий по хентай-тайтлу.
+
+        Eporner — видеосайт, а не каталог серий: в выдаче нет нумерации
+        эпизодов, только отдельные видео. Поэтому карта доступности
+        подтверждает лишь сам факт наличия контента по тайтлу и относит его
+        к первой серии. Без этого метода провайдер считался бы «не умеющим»
+        (:meth:`WatchSourceProvider.get_translations_availability`), и хентай
+        без озвучки отсекался фильтром «только с озвучкой».
+
+        Args:
+            title: Название тайтла.
+            year: Год выпуска (игнорируется: у Eporner нет года в выдаче).
+            shikimori_id: Внешний id (игнорируется: у Eporner свои id,
+                текстовая адресация остаётся строгой по токенам).
+
+        Returns:
+            list[TranslationEpisodeAvailability]: Одна запись, если по
+            тайтлу есть хотя бы одно релевантное видео, иначе пустой список.
+        """
+        if not await self.is_enabled():
+            return []
+
+        query = str(title or "").strip()
+        if not query:
+            return []
+        try:
+            payload = await self._search_page(query, per_page=max(_AVAILABILITY_LIMIT, 1))
+        except ExternalServiceError:
+            return []
+        videos = payload.get("videos") if isinstance(payload, dict) else None
+        if not isinstance(videos, list):
+            return []
+
+        for video in videos:
+            if not isinstance(video, dict) or not await self._is_relevant(query, video):
+                continue
+            return [
+                TranslationEpisodeAvailability(
+                    translation_id=_TRANSLATION_ID,
+                    title=self.provider_name,
+                    translation_type="voice",
+                    episodes_count=1,
+                    available_episodes=[1],
+                    link=self._video_url(video),
+                )
+            ]
+        return []
+
+    @staticmethod
+    def _video_url(video: dict) -> str | None:
+        """Собирает публичную ссылку на видео из ответа поиска.
+
+        Args:
+            video: Элемент выдачи поиска Eporner.
+
+        Returns:
+            str | None: Ссылка на страницу видео или None, если id нет.
+        """
+        video_id = str(video.get("id") or "").strip()
+        if not _VIDEO_ID_RE.match(video_id):
+            return None
+        return f"https://www.eporner.com/video-{video_id}/"
 
     async def _search_page(self, query: str, per_page: int) -> dict:
         """Возвращает страницу поиска Eporner в виде JSON.

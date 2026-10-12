@@ -267,18 +267,22 @@ class GetWatchPageUseCase:
         return priorities.get(str(value or "").strip().lower(), 3)
 
     async def _dedupe_by_quality(self, sources: list) -> list:
-        """Оставляет один источник на озвучку и качество (дубли качества убирает).
+        """Убирает точные дубли источника, оставляя разные релизы рядом.
 
-        Из-за нескольких релизов одного провайдера в БД может оказаться
-        несколько источников с одинаковым качеством (например, «1080, 1080»).
-        Здесь оставляем только первый — он лучший по приоритету/сортировке.
+        Ключ — тройка (озвучка, качество, источник). Раньше источник в ключ
+        не входил, и для провайдеров без честной разметки качества это
+        схлопывало всю выдачу в один элемент: у Hentaigasm одна «озвучка»
+        на весь сайт и качество ``auto`` у каждого ролика, поэтому из
+        десяти найденных видео оставалось одно. Разные ``source_name`` —
+        это разные ролики/релизы, и они должны быть видны все.
         """
         deduped: list = []
-        seen: set[tuple[int, str]] = set()
+        seen: set[tuple[int, str, str]] = set()
         for item in sources:
             key = (
                 int(item.translation_id),
                 str(item.quality_label or "").strip().lower(),
+                str(item.source_name or "").strip().lower(),
             )
             if key in seen:
                 continue
@@ -325,6 +329,15 @@ class GetWatchPageUseCase:
         Счётчик берётся из ответа провайдера по каждой озвучке отдельно,
         а не из метаданных каталога — это исключает «12 серий» там, где
         студия выпустила только 8.
+
+        Args:
+            availability: Карта доступности серий по озвучкам.
+            source_cards: Источники, найденные для текущей серии.
+            translations: Локальные дорожки тайтла (по id).
+            active_translation_name: Озвучка, выбранная в плеере.
+
+        Returns:
+            list[TranslationEpisodeCount]: Счётчики для отображения.
         """
         if not availability:
             return []

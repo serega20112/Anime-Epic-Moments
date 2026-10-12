@@ -1,4 +1,4 @@
-.PHONY: install lint check-imports test test-fast precommit-install precommit-run-all precommit-init docker-build docker-run docker-down clean
+.PHONY: install lint check-imports test test-fast precommit-install precommit-run-all precommit-init docker-build docker-run docker-up docker-dev docker-rebuild docker-restart docker-shell docker-logs docker-exec docker-down docker-nuke clean run
 
 install:
 	uv sync
@@ -35,8 +35,36 @@ docker-build:
 docker-run:
 	docker compose -f docker-compose.yml up --build -d
 
+docker-up:
+	docker compose up -d
+
+а:
+	docker compose up -d
+
+docker-rebuild:
+	docker compose up -d --build
+
+docker-restart:
+	docker compose restart app
+
+docker-shell:
+	docker compose exec app sh
+
+# Локальный запуск без контейнера приложения (postgres/redis остаются в docker).
+run:
+	uv run python -m src.backend.main
+
+docker-logs:
+	docker compose logs -f app
+
+docker-exec:
+	docker compose exec app sh
+
 docker-down:
-	docker compose -f docker-compose.yml down
+	docker compose down
+
+docker-nuke:
+	docker compose down -v --remove-orphans
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

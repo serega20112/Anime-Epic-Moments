@@ -34,16 +34,19 @@ class TestHentaiRouting:
         assert WatchSourceSyncService._is_adult(None) is False
         assert WatchSourceSyncService._is_adult([]) is False
 
-    def test_filtered_providers_adult_restricts_to_eporner_only(self):
+    def test_filtered_providers_adult_keeps_only_hentai_sources(self):
         service = WatchSourceSyncService.__new__(WatchSourceSyncService)
         service.providers = [
             _FakeProvider("Kodik"),
             _FakeProvider("Eporner"),
+            _FakeProvider("Hentaigasm"),
             _FakeProvider("Hanime"),
             _FakeProvider("YouTube"),
         ]
         adult = [p.provider_name for p in service._filtered_providers(True)]
-        assert adult == ["Eporner"]
+        # Kodik сознательно исключён: хентай-тайлы лежат там под
+        # не-озвучками и засоряют выдачу.
+        assert adult == ["Eporner", "Hentaigasm", "Hanime"]
 
     def test_filtered_providers_normal_keeps_all(self):
         service = WatchSourceSyncService.__new__(WatchSourceSyncService)

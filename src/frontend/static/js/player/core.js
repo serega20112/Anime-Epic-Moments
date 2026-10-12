@@ -14,6 +14,8 @@ var state = {
   lastVolume: cfg.savedVolume != null ? Number(cfg.savedVolume) : 1,
   currentVolume: cfg.savedVolume != null ? Number(cfg.savedVolume) : 1,
   isTheater: false,
+  qualitySelect: null,
+  sourceSelect: null,
   hideTimer: null,
   listeners: {}
 };
@@ -100,10 +102,7 @@ function loadSource(source) {
     state.video.src = source.url;
   }
 
-  try {
-    var qsel = qs("pc-quality-select");
-    if (qsel) qsel.disabled = !state.hls;
-  } catch (e) {}
+  if (state.qualitySelect) state.qualitySelect.setDisabled(!state.hls);
 
   state.video.volume = state.currentVolume;
   state.video.play().catch(function () {});

@@ -1,14 +1,47 @@
 /* Anime Epic Moments — anime_catalog_ui.js
-   Логика каталога с фильтрами (жанр, формат, статус, рейтинг, сортировка)
-   и переключением вида отображения (сетка / список). */
+   Каталог с пагинацией, мультивыбором жанров и фильтром по озвучке.
+
+   Фильтры живут в обычной GET-форме, поэтому состояние всегда
+   воспроизводится из адресной строки и страницу можно переслать ссылкой.
+   Скрипт перехватывает отправку, чтобы не перезагружать страницу, и
+   синхронизирует адресную строку через History API. */
 (function () {
   "use strict";
 
   var NO_COVER = "/static/images/no-cover.svg";
   var VIEW_KEY = "aem_catalog_view";
-  var PAGE_SIZE = 30;
-  var currentPage = 0;
-  var currentList = [];
+  var PAGE_WINDOW = 2;
+  var FACET_LIMIT = 60;
+
+  var form = document.getElementById("catalog-filters");
+  var grid = document.getElementById("results-grid");
+  var emptyState = document.getElementById("results-empty");
+  var countLabel = document.getElementById("results-count");
+  var loadingState = document.getElementById("results-loading");
+  var pagination = document.getElementById("pagination");
+  var pageNumbers = document.getElementById("page-numbers");
+  var genreMenu = document.getElementById("genre-menu");
+  var genreMenuEmpty = document.getElementById("genre-menu-empty");
+  var genreTrigger = document.getElementById("genre-trigger");
+  var genreTriggerLabel = document.getElementById("genre-trigger-label");
+  var genreChosen = document.getElementById("genre-chosen");
+
+  var state = {
+    genres: [],
+    genreMode: "all",
+    type: "",
+    status: "",
+    minScore: "",
+    yearFrom: "",
+    yearTo: "",
+    sort: "rating",
+    hasDub: false,
+    page: 1,
+    perPage: 25,
+    totalPages: 1,
+    total: 0,
+  };
+  var knownGenres = [];
   var isLoading = false;
 
   function elementFromHtml(html) {
@@ -28,14 +61,11 @@
     var title = anime.title || "Без названия";
     var originalTitle = anime.original_title || "";
     var cover = anime.cover_url || anime.image_url || NO_COVER;
-    var rating = anime.rating;
-    var year = anime.year;
-    var genres = anime.genres || [];
-    var episodeCount = anime.episode_count;
     var meta = [];
-    if (year) meta.push(year);
-    if (episodeCount) meta.push(episodeCount + " серий");
-    var genreText = genres.length ? genres.slice(0, 3).join(", ") : "";
+    if (anime.year) meta.push(anime.year);
+    if (anime.episode_count) meta.push(anime.episode_count + " серий");
+    var genreText = (anime.genres || []).slice(0, 3).join(", ");
+
     return (
       '<a class="anime-card anime-card-list" href="/watch/' +
       id +
@@ -48,20 +78,26 @@
       '" loading="lazy" onerror="this.onerror=null;this.src=\'' +
       NO_COVER +
       "';\">" +
-      (rating ? '<span class="rating-badge">★ ' + rating + "</span>" : "") +
+      (anime.rating
+        ? '<span class="rating-badge">★ ' + anime.rating + "</span>"
+        : "") +
       "</div>" +
       '<div class="card-body">' +
       '<div class="card-title">' +
-      '<span class="card-title-ru">' + AEM.escapeHtml(title) + "</span>" +
+      '<span class="card-title-ru">' +
+      AEM.escapeHtml(title) +
+      "</span>" +
       (originalTitle && originalTitle !== title
-        ? '<span class="card-title-original">' + AEM.escapeHtml(originalTitle) + "</span>"
+        ? '<span class="card-title-original">' +
+          AEM.escapeHtml(originalTitle) +
+          "</span>"
         : "") +
       "</div>" +
       (meta.length
         ? '<div class="card-meta">' +
           meta
-            .map(function (m) {
-              return "<span>" + AEM.escapeHtml(String(m)) + "</span>";
+            .map(function (item) {
+              return "<span>" + AEM.escapeHtml(String(item)) + "</span>";
             })
             .join('<span class="dot"></span>') +
           "</div>"
@@ -75,197 +111,411 @@
     );
   }
 
-  function renderResults(list) {
-    var grid = document.getElementById("results-grid");
-    var empty = document.getElementById("results-empty");
-    var count = document.getElementById("results-count");
+  function renderResults(items) {
     var view = getView();
     grid.innerHTML = "";
     grid.classList.toggle("results-list", view === "list");
-    list.forEach(function (anime) {
+    items.forEach(function (anime) {
       grid.appendChild(
         elementFromHtml(view === "list" ? listCard(anime) : card(anime)),
       );
     });
-    if (count) {
-      count.textContent = list.length
-        ? "Найдено: " +
-          list.length +
-          (list.length === 1 ? " тайтл" : " тайтлов")
-        : "";
-    }
-    if (empty) empty.classList.toggle("hidden", list.length > 0);
-    updateLoadMore();
+    if (emptyState) emptyState.classList.toggle("hidden", items.length > 0);
   }
 
-  function updateLoadMore() {
-    var wrap = document.getElementById("load-more-wrap");
-    if (!wrap) return;
-    var hasMore = currentList.length > (currentPage + 1) * PAGE_SIZE;
-    wrap.classList.toggle("hidden", !hasMore);
+  function pluralizePages(total) {
+    if (!total) return "";
+    return total + " " + (total === 1 ? "страница" : "страниц");
+  }
+
+  function renderCount(payload) {
+    if (!countLabel) return;
+    var total = payload.total || 0;
+    if (!total) {
+      countLabel.textContent = "";
+      return;
+    }
+    var suffix = payload.total_is_exact ? "" : "+";
+    countLabel.textContent =
+      "Найдено: " + total + suffix + " · " + pluralizePages(payload.total_pages);
+  }
+
+  function renderPagination(payload) {
+    if (!pagination || !pageNumbers) return;
+    var totalPages = payload.total_pages || 1;
+    state.totalPages = totalPages;
+    state.total = payload.total || 0;
+
+    pagination.classList.toggle("hidden", totalPages <= 1);
+    pageNumbers.innerHTML = "";
+
+    if (totalPages <= 1) return;
+
+    var current = payload.page || 1;
+    setDisabled("page-first", current <= 1);
+    setDisabled("page-prev", current <= 1);
+    setDisabled("page-next", current >= totalPages);
+    setDisabled("page-last", current >= totalPages);
+
+    buildPageList(current, totalPages);
+  }
+
+  function buildPageList(current, totalPages) {
+    var start = Math.max(1, current - PAGE_WINDOW);
+    var end = Math.min(totalPages, current + PAGE_WINDOW);
+
+    if (start > 1) {
+      appendPageButton(1, current);
+      if (start > 2) appendPageGap();
+    }
+    for (var index = start; index <= end; index += 1) {
+      appendPageButton(index, current);
+    }
+    if (end < totalPages) {
+      if (end < totalPages - 1) appendPageGap();
+      appendPageButton(totalPages, current);
+    }
+  }
+
+  function appendPageGap() {
+    var gap = document.createElement("span");
+    gap.className = "page-gap";
+    gap.textContent = "…";
+    pageNumbers.appendChild(gap);
+  }
+
+  function appendPageButton(number, current) {
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "page-number";
+    button.textContent = String(number);
+    button.setAttribute("aria-label", "Страница " + number);
+    if (number === current) {
+      button.classList.add("active");
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.addEventListener("click", function () {
+        goToPage(number);
+      });
+    }
+    pageNumbers.appendChild(button);
+  }
+
+  function setDisabled(id, disabled) {
+    var button = document.getElementById(id);
+    if (button) button.disabled = disabled;
   }
 
   function setLoading(on) {
     isLoading = on;
-    var loading = document.getElementById("results-loading");
-    if (loading) loading.classList.toggle("hidden", !on);
-    var loadMore = document.getElementById("load-more");
-    if (loadMore) loadMore.disabled = on;
+    if (loadingState) loadingState.classList.toggle("hidden", !on);
   }
 
-  function collectState() {
-    var activeChips = document.querySelectorAll(
-      "#genre-chips .filter-chip.active, #demographic-chips .filter-chip.active",
-    );
-    var categories = [];
-    Array.prototype.forEach.call(activeChips, function (chip) {
-      var value = chip.getAttribute("data-value");
-      if (value) categories.push(value);
-    });
-    var type = document.getElementById("filter-type");
-    var status = document.getElementById("filter-status");
-    var score = document.getElementById("filter-score");
-    var sort = document.getElementById("filter-sort");
-    var yearFrom = document.getElementById("filter-year-from");
-    var yearTo = document.getElementById("filter-year-to");
-    var hasDubEl = document.getElementById("filter-has-dub");
+  function readForm() {
     return {
-      genre: categories.join(","),
-      type: type ? type.value : "",
-      status: status ? status.value : "",
-      min_score: score ? score.value : "",
-      year_from: yearFrom ? yearFrom.value : "",
-      year_to: yearTo ? yearTo.value : "",
-      sort: sort ? sort.value : "rating",
-      has_dub: hasDubEl && hasDubEl.checked ? "1" : "",
+      genres: state.genres.slice(),
+      genreMode: readGenreMode(),
+      type: valueOf("filter-type"),
+      status: valueOf("filter-status"),
+      minScore: valueOf("filter-score"),
+      yearFrom: valueOf("filter-year-from"),
+      yearTo: valueOf("filter-year-to"),
+      sort: valueOf("filter-sort") || "rating",
+      hasDub: isDubChecked(),
+      page: 1,
+      perPage: Number(valueOf("filter-per-page")) || 25,
     };
   }
 
-  function loadCatalog() {
-    var state = collectState();
+  function valueOf(id) {
+    var node = document.getElementById(id);
+    return node ? String(node.value || "").trim() : "";
+  }
+
+  function isDubChecked() {
+    var node = document.getElementById("filter-has-dub");
+    return Boolean(node && node.checked);
+  }
+
+  function readGenreMode() {
+    var checked = document.querySelector(
+      'input[name="genre_mode"]:checked',
+    );
+    return checked ? checked.value : "all";
+  }
+
+  function buildParams() {
     var params = new URLSearchParams();
-    params.set("limit", "100");
-    params.set("order", "desc");
-    [
-      "genre",
-      "type",
-      "status",
-      "min_score",
-      "year_from",
-      "year_to",
-      "sort",
-      "has_dub",
-    ].forEach(function (name) {
-      if (state[name]) params.set(name, state[name]);
+    state.genres.forEach(function (genre) {
+      params.append("genre", genre);
     });
+    if (state.genreMode === "any") params.set("genre_mode", "any");
+    ["type", "status", "min_score", "year_from", "year_to", "sort"].forEach(
+      function (key) {
+        var source = {
+          type: state.type,
+          status: state.status,
+          min_score: state.minScore,
+          year_from: state.yearFrom,
+          year_to: state.yearTo,
+          sort: state.sort,
+        }[key];
+        if (source) params.set(key, source);
+      },
+    );
+    if (state.hasDub) params.set("has_dub", "1");
+    if (state.page > 1) params.set("page", String(state.page));
+    params.set("per_page", String(state.perPage));
+    return params;
+  }
+
+  function syncUrl() {
+    var query = buildParams().toString();
+    window.history.replaceState({}, "", window.location.pathname + "?" + query);
+  }
+
+  function loadCatalog() {
     setLoading(true);
-    AEM.api("/anime/api/catalog?" + params.toString())
-      .then(function (list) {
+    AEM.api("/anime/api/catalog?" + buildParams().toString())
+      .then(function (payload) {
         setLoading(false);
-        currentList = Array.isArray(list) ? list : [];
-        currentPage = 0;
-        renderResults(currentList.slice(0, PAGE_SIZE));
+        if (!payload || typeof payload !== "object") {
+          renderResults([]);
+          renderCount({});
+          renderPagination({ page: 1, total_pages: 1, total: 0 });
+          return;
+        }
+        state.page = payload.page || 1;
+        state.perPage = payload.per_page || state.perPage;
+        renderResults(payload.items || []);
+        renderCount(payload);
+        renderPagination(payload);
+        updateGenres(payload.genre_facets || []);
+        syncUrl();
       })
       .catch(function () {
         setLoading(false);
-        var empty = document.getElementById("results-empty");
-        if (empty) empty.classList.remove("hidden");
+        if (emptyState) emptyState.classList.remove("hidden");
         AEM.toast("Не удалось загрузить каталог. Попробуйте ещё раз.", "error");
       });
   }
 
-  function loadMore() {
-    if (isLoading) return;
-    currentPage += 1;
-    var grid = document.getElementById("results-grid");
-    var view = getView();
-    var slice = currentList.slice(0, (currentPage + 1) * PAGE_SIZE);
-    grid.innerHTML = "";
-    slice.forEach(function (anime) {
-      grid.appendChild(
-        elementFromHtml(view === "list" ? listCard(anime) : card(anime)),
-      );
-    });
-    var count = document.getElementById("results-count");
-    if (count) {
-      count.textContent = slice.length
-        ? "Найдено: " +
-          slice.length +
-          (slice.length === 1 ? " тайтл" : " тайтлов")
-        : "";
+  function goToPage(page) {
+    var target = Math.min(Math.max(1, page), state.totalPages);
+    if (target === state.page) return;
+    state.page = target;
+    syncUrl();
+    loadCatalog();
+    var section = document.getElementById("results-grid");
+    if (section) {
+      var top = section.getBoundingClientRect().top + window.pageYOffset - 90;
+      window.scrollTo({ top: top, behavior: "smooth" });
     }
-    updateLoadMore();
   }
 
-  function bindGenreChips() {
-    var chips = document.querySelectorAll(
-      "#genre-chips .filter-chip, #demographic-chips .filter-chip",
-    );
-    var anyChip = document.querySelector(
-      '#genre-chips .filter-chip[data-value=""]',
-    );
-    Array.prototype.forEach.call(chips, function (chip) {
+  function updateGenres(facets) {
+    var counts = {};
+    facets.forEach(function (facet) {
+      counts[facet.name] = facet.count;
+    });
+
+    var names = [];
+    state.genres.forEach(function (genre) {
+      names.push({ name: genre, count: counts[genre] || null, chosen: true });
+    });
+    facets.slice(0, FACET_LIMIT).forEach(function (facet) {
+      if (names.some(function (item) { return item.name === facet.name; })) return;
+      names.push({ name: facet.name, count: facet.count, chosen: false });
+    });
+
+    knownGenres = names;
+    renderGenreMenu(names);
+    renderChosenChips();
+  }
+
+  function renderGenreMenu(names) {
+    if (!genreMenu) return;
+    genreMenu.innerHTML = "";
+
+    if (!names.length) {
+      var empty = document.createElement("p");
+      empty.className = "genre-picker-empty";
+      empty.textContent = "Жанры появятся после загрузки каталога";
+      genreMenu.appendChild(empty);
+      return;
+    }
+
+    names.forEach(function (item) {
+      var option = document.createElement("button");
+      option.type = "button";
+      option.className = "genre-option";
+      option.setAttribute("role", "option");
+      option.setAttribute("data-value", item.name);
+      option.setAttribute("aria-selected", item.chosen ? "true" : "false");
+      option.classList.toggle("is-active", item.chosen);
+
+      var box = document.createElement("span");
+      box.className = "genre-option-box";
+      box.textContent = item.chosen ? "✓" : "";
+      option.appendChild(box);
+
+      var label = document.createElement("span");
+      label.className = "genre-option-label";
+      label.textContent = item.name;
+      option.appendChild(label);
+
+      if (typeof item.count === "number") {
+        var counter = document.createElement("span");
+        counter.className = "genre-option-count";
+        counter.textContent = String(item.count);
+        option.appendChild(counter);
+      }
+
+      genreMenu.appendChild(option);
+    });
+  }
+
+  function renderChosenChips() {
+    if (!genreChosen || !genreTriggerLabel) return;
+
+    genreChosen.innerHTML = "";
+    if (!state.genres.length) {
+      genreTriggerLabel.textContent = "Любые жанры";
+      return;
+    }
+    genreTriggerLabel.textContent =
+      state.genres.length === 1
+        ? state.genres[0]
+        : "Выбрано: " + state.genres.length;
+
+    state.genres.forEach(function (genre) {
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "genre-chip";
+      chip.setAttribute("data-value", genre);
+      chip.setAttribute("title", "Убрать " + genre);
+      chip.textContent = genre + " ×";
       chip.addEventListener("click", function () {
-        if (chip.getAttribute("data-value") === "") {
-          Array.prototype.forEach.call(chips, function (other) {
-            other.classList.toggle("active", other === chip);
-          });
-          return;
-        }
-        chip.classList.toggle("active");
-        var anyActive = false;
-        Array.prototype.forEach.call(chips, function (other) {
-          if (
-            other.getAttribute("data-value") !== "" &&
-            other.classList.contains("active")
-          ) {
-            anyActive = true;
+        toggleGenre(genre);
+      });
+      genreChosen.appendChild(chip);
+    });
+  }
+
+  function toggleGenre(genre) {
+    var index = state.genres.indexOf(genre);
+    if (index === -1) state.genres.push(genre);
+    else state.genres.splice(index, 1);
+
+    renderGenreMenu(knownGenres);
+    renderChosenChips();
+    state.page = 1;
+    loadCatalog();
+  }
+
+  function openGenreMenu() {
+    if (!genreMenu || !genreTrigger) return;
+    genreMenu.classList.remove("hidden");
+    genreTrigger.setAttribute("aria-expanded", "true");
+  }
+
+  function closeGenreMenu() {
+    if (!genreMenu || !genreTrigger) return;
+    genreMenu.classList.add("hidden");
+    genreTrigger.setAttribute("aria-expanded", "false");
+  }
+
+  function toggleGenreMenu() {
+    if (genreMenu && genreMenu.classList.contains("hidden")) openGenreMenu();
+    else closeGenreMenu();
+  }
+
+  function bindGenres() {
+    if (genreTrigger) {
+      genreTrigger.addEventListener("click", function (event) {
+        event.preventDefault();
+        toggleGenreMenu();
+      });
+    }
+    if (genreMenu) {
+      genreMenu.addEventListener("click", function (event) {
+        var option = event.target.closest(".genre-option");
+        if (!option) return;
+        event.preventDefault();
+        toggleGenre(option.getAttribute("data-value"));
+      });
+    }
+    document.addEventListener("click", function (event) {
+      if (!genreMenu || genreMenu.classList.contains("hidden")) return;
+      if (event.target.closest("#genre-picker")) return;
+      closeGenreMenu();
+    });
+
+    Array.prototype.forEach.call(
+      document.querySelectorAll('input[name="genre_mode"]'),
+      function (radio) {
+        radio.addEventListener("change", function () {
+          if (state.genreMode !== radio.value && radio.checked) {
+            state.genreMode = radio.value;
+            state.page = 1;
+            loadCatalog();
           }
         });
-        if (anyChip) anyChip.classList.toggle("active", !anyActive);
+      },
+    );
+  }
+
+  function bindPagination() {
+    var bindings = [
+      ["page-first", function () { return 1; }],
+      ["page-prev", function () { return state.page - 1; }],
+      ["page-next", function () { return state.page + 1; }],
+      ["page-last", function () { return state.totalPages; }],
+    ];
+    bindings.forEach(function (binding) {
+      var button = document.getElementById(binding[0]);
+      if (!button) return;
+      button.addEventListener("click", function () {
+        goToPage(binding[1]());
       });
     });
   }
 
-  function bindControls() {
-    var apply = document.getElementById("filter-apply");
-    var reset = document.getElementById("filter-reset");
-    var loadMoreBtn = document.getElementById("load-more");
-    var selects = [
-      "filter-type",
-      "filter-status",
-      "filter-score",
-      "filter-sort",
-    ];
-    if (apply) apply.addEventListener("click", loadCatalog);
-    if (loadMoreBtn) loadMoreBtn.addEventListener("click", loadMore);
-    selects.forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.addEventListener("change", loadCatalog);
+  function bindForm() {
+    if (!form) return;
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var next = readForm();
+      state.genres = next.genres;
+      state.genreMode = next.genreMode;
+      state.type = next.type;
+      state.status = next.status;
+      state.minScore = next.minScore;
+      state.yearFrom = next.yearFrom;
+      state.yearTo = next.yearTo;
+      state.sort = next.sort;
+      state.hasDub = next.hasDub;
+      state.perPage = next.perPage;
+      state.page = 1;
+      closeGenreMenu();
+      loadCatalog();
     });
-    var hasDubEl = document.getElementById("filter-has-dub");
-    if (hasDubEl) hasDubEl.addEventListener("change", loadCatalog);
+
+    var reset = document.getElementById("filter-reset");
     if (reset) {
       reset.addEventListener("click", function () {
-        var chips = document.querySelectorAll(
-          "#genre-chips .filter-chip, #demographic-chips .filter-chip",
+        state.genres = [];
+        state.genreMode = "all";
+        state.page = 1;
+        form.reset();
+        var allMode = document.querySelector(
+          'input[name="genre_mode"][value="all"]',
         );
-        Array.prototype.forEach.call(chips, function (chip) {
-          chip.classList.toggle(
-            "active",
-            chip.getAttribute("data-value") === "",
-          );
-        });
-        selects.forEach(function (id) {
-          var el = document.getElementById(id);
-          if (el) el.value = "";
-        });
-        var sort = document.getElementById("filter-sort");
-        if (sort) sort.value = "rating";
-        var yearFrom = document.getElementById("filter-year-from");
-        var yearTo = document.getElementById("filter-year-to");
-        if (yearFrom) yearFrom.value = "";
-        if (yearTo) yearTo.value = "";
+        if (allMode) allMode.checked = true;
+        var sortField = document.getElementById("filter-sort");
+        if (sortField) sortField.value = "rating";
+        renderChosenChips();
+        renderGenreMenu(knownGenres);
         loadCatalog();
       });
     }
@@ -274,7 +524,7 @@
   function getView() {
     try {
       return localStorage.getItem(VIEW_KEY) === "list" ? "list" : "grid";
-    } catch (e) {
+    } catch (error) {
       return "grid";
     }
   }
@@ -282,92 +532,116 @@
   function setView(view) {
     try {
       localStorage.setItem(VIEW_KEY, view);
-    } catch (e) {}
-    var buttons = document.querySelectorAll(".view-toggle-btn");
-    Array.prototype.forEach.call(buttons, function (btn) {
-      btn.classList.toggle("active", btn.getAttribute("data-view") === view);
-    });
-    var grid = document.getElementById("results-grid");
+    } catch (error) {
+      /* localStorage is unavailable in private mode */
+    }
+    Array.prototype.forEach.call(
+      document.querySelectorAll(".view-toggle-btn"),
+      function (button) {
+        button.classList.toggle(
+          "active",
+          button.getAttribute("data-view") === view,
+        );
+      },
+    );
     if (grid) grid.classList.toggle("results-list", view === "list");
   }
 
-  function handleScroll() {
-    if (isLoading) return;
-    var wrap = document.getElementById("load-more-wrap");
-    if (!wrap || wrap.classList.contains("hidden")) return;
-    var scrollY = window.scrollY || window.pageYOffset;
-    var innerHeight = window.innerHeight;
-    var docHeight = document.documentElement.scrollHeight;
-    if (docHeight - (scrollY + innerHeight) < 400) {
-      loadMore();
-    }
-  }
-
   function bindViewToggle() {
-    var buttons = document.querySelectorAll(".view-toggle-btn");
-    Array.prototype.forEach.call(buttons, function (btn) {
-      btn.addEventListener("click", function () {
-        var view = btn.getAttribute("data-view") === "list" ? "list" : "grid";
-        setView(view);
-        var grid = document.getElementById("results-grid");
-        if (grid && grid.children.length) {
-          var list = Array.prototype.map.call(grid.children, function (child) {
-            return child;
-          });
+    Array.prototype.forEach.call(
+      document.querySelectorAll(".view-toggle-btn"),
+      function (button) {
+        button.addEventListener("click", function () {
+          var view = button.getAttribute("data-view") === "list" ? "list" : "grid";
+          setView(view);
+          if (!grid || !grid.children.length) return;
+          var children = Array.prototype.slice.call(grid.children);
           grid.innerHTML = "";
-          list.forEach(function (child) {
+          children.forEach(function (child) {
             grid.appendChild(child);
           });
-        }
-      });
-    });
+        });
+      },
+    );
   }
 
-  function applyInitial() {
-    var initial = (window.AEMCatalogPage || {}).initial || {};
-    var selected = String(initial.genre || "")
-      .split(",")
-      .map(function (value) {
-        return value.trim();
-      });
-    var chips = document.querySelectorAll(
-      "#genre-chips .filter-chip, #demographic-chips .filter-chip",
-    );
-    Array.prototype.forEach.call(chips, function (chip) {
-      var on = selected.indexOf(chip.getAttribute("data-value")) !== -1;
-      chip.classList.toggle("active", on);
-    });
-    var map = {
+  function applyInitial(initial) {
+    state.genres = (initial.genres || []).filter(Boolean);
+    state.genreMode = initial.genre_mode === "any" ? "any" : "all";
+    state.page = Math.max(1, parseInt(initial.page, 10) || 1);
+    state.perPage = parseInt(initial.per_page, 10) || 25;
+
+    var fields = {
       type: "filter-type",
       status: "filter-status",
       min_score: "filter-score",
-      sort: "filter-sort",
       year_from: "filter-year-from",
       year_to: "filter-year-to",
+      sort: "filter-sort",
+      per_page: "filter-per-page",
     };
-    Object.keys(map).forEach(function (key) {
-      var el = document.getElementById(map[key]);
-      if (el && initial[key]) el.value = initial[key];
+    Object.keys(fields).forEach(function (key) {
+      var node = document.getElementById(fields[key]);
+      if (node && initial[key]) node.value = initial[key];
     });
-    var hasDubEl = document.getElementById("filter-has-dub");
-    if (hasDubEl) {
-      try {
-        hasDubEl.checked = Boolean(initial.has_dub) && String(initial.has_dub) !== "";
-      } catch (e) {
-        hasDubEl.checked = false;
-      }
-    }
+
+    var dubField = document.getElementById("filter-has-dub");
+    if (dubField) dubField.checked = initial.has_dub === "1" || initial.has_dub === "true";
+
+    var modeField = document.querySelector(
+      'input[name="genre_mode"][value="' + state.genreMode + '"]',
+    );
+    if (modeField) modeField.checked = true;
+
+    renderChosenChips();
+  }
+
+  function bindPopState() {
+    window.addEventListener("popstate", function () {
+      var params = new URLSearchParams(window.location.search);
+      applyInitial({
+        genres: params.getAll("genre"),
+        genre_mode: params.get("genre_mode"),
+        page: params.get("page"),
+        per_page: params.get("per_page"),
+        type: params.get("type"),
+        status: params.get("status"),
+        min_score: params.get("min_score"),
+        year_from: params.get("year_from"),
+        year_to: params.get("year_to"),
+        sort: params.get("sort"),
+        has_dub: params.get("has_dub"),
+      });
+      state.type = params.get("type") || "";
+      state.status = params.get("status") || "";
+      state.minScore = params.get("min_score") || "";
+      state.yearFrom = params.get("year_from") || "";
+      state.yearTo = params.get("year_to") || "";
+      state.sort = params.get("sort") || "rating";
+      state.hasDub = params.get("has_dub") === "1";
+      loadCatalog();
+    });
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    var grid = document.getElementById("results-grid");
     if (!grid) return;
-    bindGenreChips();
-    bindControls();
+
+    var initial = (window.AEMCatalogPage || {}).initial || {};
+    applyInitial(initial);
+    state.type = initial.type || "";
+    state.status = initial.status || "";
+    state.minScore = initial.min_score || "";
+    state.yearFrom = initial.year_from || "";
+    state.yearTo = initial.year_to || "";
+    state.sort = initial.sort || "rating";
+    state.hasDub = initial.has_dub === "1" || initial.has_dub === "true";
+
+    bindGenres();
+    bindForm();
+    bindPagination();
     bindViewToggle();
-    applyInitial();
+    bindPopState();
     setView(getView());
-    window.addEventListener("scroll", handleScroll);
     loadCatalog();
   });
 })();

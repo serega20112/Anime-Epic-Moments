@@ -2,60 +2,57 @@
 "use strict";
 
 import core from "./core.js";
+import { createPlayerSelect } from "./select.js";
 
 var s = core.state;
 
 function buildControlsHTML() {
   return (
     '<div class="controls-row">' +
-
     /* LEFT group: playback */
     '<div class="pc-group pc-group-left">' +
-      '<button class="pc-btn pc-btn-play" id="pc-play" aria-label="Воспроизведение">▶</button>' +
-      '<button class="pc-btn pc-btn-skip pc-btn-skip-long" id="pc-skip90" aria-label="Вперёд 90 секунд" title="+1:30 (S)">+1:30</button>' +
-      '<div class="pc-volume-group">' +
-        '<button class="pc-btn pc-btn-icon" id="pc-mute" aria-label="Звук">🔊</button>' +
-        '<div class="pc-volume" id="pc-volume" role="slider" aria-label="Громкость" aria-valuemin="0" aria-valuemax="1" aria-valuenow="1">' +
-          '<div class="pc-vol-fill" id="pc-vol-fill"></div>' +
-          '<div class="pc-vol-handle" id="pc-vol-handle"></div>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-
+    '<button class="pc-btn pc-btn-play" id="pc-play" aria-label="Воспроизведение">▶</button>' +
+    '<button class="pc-btn pc-btn-skip pc-btn-skip-long" id="pc-skip90" aria-label="Вперёд 90 секунд" title="+1:30 (S)">+1:30</button>' +
+    '<div class="pc-volume-group">' +
+    '<button class="pc-btn pc-btn-icon" id="pc-mute" aria-label="Звук">🔊</button>' +
+    '<div class="pc-volume" id="pc-volume" role="slider" aria-label="Громкость" aria-valuemin="0" aria-valuemax="1" aria-valuenow="1">' +
+    '<div class="pc-vol-fill" id="pc-vol-fill"></div>' +
+    '<div class="pc-vol-handle" id="pc-vol-handle"></div>' +
+    "</div>" +
+    "</div>" +
+    "</div>" +
     /* CENTER: timeline */
     '<div class="pc-group pc-group-center">' +
-      '<span class="pc-time" id="pc-cur">00:00</span>' +
-      '<div class="pc-timeline" id="pc-timeline" role="slider" aria-label="Прогресс воспроизведения" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +
-        '<div class="pc-tl-buffer" id="pc-tl-buffer"></div>' +
-        '<div class="pc-tl-fill" id="pc-tl-fill"></div>' +
-        '<div class="pc-tl-handle" id="pc-tl-handle"></div>' +
-        '<div class="pc-tl-heatmap" id="pc-tl-heatmap"></div>' +
-      '</div>' +
-      '<span class="pc-time" id="pc-dur">00:00</span>' +
-    '</div>' +
-
+    '<span class="pc-time" id="pc-cur">00:00</span>' +
+    '<div class="pc-timeline" id="pc-timeline" role="slider" aria-label="Прогресс воспроизведения" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +
+    '<div class="pc-tl-buffer" id="pc-tl-buffer"></div>' +
+    '<div class="pc-tl-fill" id="pc-tl-fill"></div>' +
+    '<div class="pc-tl-handle" id="pc-tl-handle"></div>' +
+    '<div class="pc-tl-heatmap" id="pc-tl-heatmap"></div>' +
+    "</div>" +
+    '<span class="pc-time" id="pc-dur">00:00</span>' +
+    "</div>" +
     /* RIGHT group: settings */
     '<div class="pc-group pc-group-right">' +
-      '<div class="pc-settings-menu" id="pc-settings-menu">' +
-        '<button class="pc-btn pc-btn-icon" id="pc-settings-btn" aria-label="Настройки" title="Настройки">⚙️</button>' +
-        '<div class="pc-settings-dropdown" id="pc-settings-dropdown">' +
-          '<div class="pc-settings-section">' +
-            '<div class="pc-settings-label">Качество</div>' +
-            '<select id="pc-quality-select" class="pc-settings-select" aria-label="Качество видео (HLS)"></select>' +
-          '</div>' +
-          '<div class="pc-settings-section">' +
-            '<div class="pc-settings-label">Озвучка</div>' +
-            '<select id="pc-source-select" class="pc-settings-select" aria-label="Озвучка / Источник"></select>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-      '<button class="pc-btn pc-btn-icon" id="pc-mark-highlight" aria-label="Отметить момент" title="Отметить момент (H)">★</button>' +
-      '<button class="pc-btn pc-btn-icon pc-btn-hide-mobile" id="pc-theater-btn" aria-label="Театральный режим" title="Театральный режим (T)">🎬</button>' +
-      '<button class="pc-btn pc-btn-icon pc-btn-hide-mobile" id="pc-pip-btn" aria-label="Картинка-в-картинке" title="Картинка-в-картинке (P)">🖼</button>' +
-      '<button class="pc-btn pc-btn-icon" id="pc-fullscreen" aria-label="Полноэкранный режим" title="Полноэкранный режим (F)">⛶</button>' +
-    '</div>' +
-
-    '</div>'
+    '<div class="pc-settings-menu" id="pc-settings-menu">' +
+    '<button class="pc-btn pc-btn-icon" id="pc-settings-btn" aria-label="Настройки" title="Настройки">⚙️</button>' +
+    '<div class="pc-settings-dropdown" id="pc-settings-dropdown">' +
+    '<div class="pc-settings-section">' +
+    '<div class="pc-settings-label">Качество</div>' +
+    '<div id="pc-quality-select"></div>' +
+    "</div>" +
+    '<div class="pc-settings-section">' +
+    '<div class="pc-settings-label">Озвучка</div>' +
+    '<div id="pc-source-select"></div>' +
+    "</div>" +
+    "</div>" +
+    "</div>" +
+    '<button class="pc-btn pc-btn-icon" id="pc-mark-highlight" aria-label="Отметить момент" title="Отметить момент (H)">★</button>' +
+    '<button class="pc-btn pc-btn-icon pc-btn-hide-mobile" id="pc-theater-btn" aria-label="Театральный режим" title="Театральный режим (T)">🎬</button>' +
+    '<button class="pc-btn pc-btn-icon pc-btn-hide-mobile" id="pc-pip-btn" aria-label="Картинка-в-картинке" title="Картинка-в-картинке (P)">🖼</button>' +
+    '<button class="pc-btn pc-btn-icon" id="pc-fullscreen" aria-label="Полноэкранный режим" title="Полноэкранный режим (F)">⛶</button>' +
+    "</div>" +
+    "</div>"
   );
 }
 
@@ -72,9 +69,12 @@ function buildShell() {
 
   var dtOverlay = document.createElement("div");
   dtOverlay.className = "pc-double-tap-overlay";
-  var left = document.createElement("div"); left.className = "pc-dt-zone";
-  var right = document.createElement("div"); right.className = "pc-dt-zone";
-  dtOverlay.appendChild(left); dtOverlay.appendChild(right);
+  var left = document.createElement("div");
+  left.className = "pc-dt-zone";
+  var right = document.createElement("div");
+  right.className = "pc-dt-zone";
+  dtOverlay.appendChild(left);
+  dtOverlay.appendChild(right);
   s.shell.appendChild(dtOverlay);
 
   var controls = document.createElement("div");
@@ -94,71 +94,124 @@ function buildShell() {
   s.shell.appendChild(errorBox);
 
   s.shell.classList.add("controls-visible");
-  setTimeout(function () { s.shell.classList.remove("controls-visible"); }, 1200);
+  setTimeout(function () {
+    s.shell.classList.remove("controls-visible");
+  }, 1200);
 
   var src = core.activeSource();
-  if (src) core.loadSource(src); else core.setStatus("Нет источников");
+  if (src) core.loadSource(src);
+  else core.setStatus("Нет источников");
 
   setupDoubleTap(left, right);
 }
 
 function initSourceSelect() {
-  var select = core.qs("pc-source-select");
-  if (!select || !s.cfg.sources) return;
-  select.innerHTML = s.cfg.sources.map(function (sr) {
-    var label = sr.translationName || sr.label || "Источник";
-    return '<option value="' + (sr.id != null ? sr.id : sr.url) + '" ' + (sr.active ? "selected" : "") + '>' + label + '</option>';
-  }).join("");
-  core.on(select, "change", function () {
-    core.switchSource(select.value);
+  var host = core.qs("pc-source-select");
+  if (!host || !s.cfg.sources) return;
+
+  var items = groupSources(s.cfg.sources).map(function (sr) {
+    var hint = sr.qualityLabel || "";
+    if (sr.providerName && sr.providerName !== sr.translationName) {
+      hint = hint ? hint + " · " + sr.providerName : sr.providerName;
+    }
+    return {
+      value: String(sr.id != null ? sr.id : sr.url),
+      label: sr.translationName || sr.label || "Источник",
+      hint: hint,
+    };
+  });
+  if (!items.length) return;
+
+  var active = null;
+  s.cfg.sources.forEach(function (sr) {
+    if (sr.active && active === null)
+      active = String(sr.id != null ? sr.id : sr.url);
   });
 
-  try {
-    var savedKey = "aem_src_" + (s.cfg.animeId || "");
-    var saved = localStorage.getItem(savedKey);
-    if (saved) {
-      var found = false;
-      for (var i = 0; i < select.options.length; i++) {
-        if (String(select.options[i].value) === String(saved)) {
-          select.value = saved;
-          found = true;
-          break;
-        }
-      }
-      if (found) {
-        var evt = document.createEvent("Event");
-        evt.initEvent("change", true, true);
-        select.dispatchEvent(evt);
-      }
+  s.sourceSelect = createPlayerSelect(host, {
+    id: "pc-source-select",
+    label: "Озвучка / Источник",
+    placeholder: "Источник",
+    emptyText: "Нет источников",
+    onChange: function (value) {
+      core.switchSource(value);
+    },
+  });
+  s.sourceSelect.setOptions(items, active);
+  s.sourceSelect.setDisabled(items.length < 2);
+}
+
+function groupSources(sources) {
+  var byTranslation = {};
+  var order = [];
+  sources.forEach(function (sr) {
+    var key =
+      sr.translationId != null
+        ? "t:" + sr.translationId
+        : "n:" + (sr.translationName || sr.id);
+    if (!byTranslation[key]) {
+      byTranslation[key] = [];
+      order.push(key);
     }
-  } catch (e) {}
+    byTranslation[key].push(sr);
+  });
+
+  var best = [];
+  order.forEach(function (key) {
+    var group = byTranslation[key];
+    var active =
+      group.find(function (sr) {
+        return sr.active;
+      }) || group[0];
+    best.push(pickBestVariant(group, active));
+  });
+  return best;
+}
+
+function qualityRank(source) {
+  var label = String(source.qualityLabel || "").toLowerCase();
+  if (!label) return 0;
+  var match = label.match(/(\d{3,4})/);
+  if (match) return parseInt(match[1], 10);
+  return 0;
+}
+
+function pickBestVariant(group, active) {
+  var ranked = group.slice().sort(function (a, b) {
+    return qualityRank(b) - qualityRank(a);
+  });
+  var chosen = ranked[0];
+  if (!chosen) return active;
+  var activeRank = qualityRank(active);
+  return qualityRank(chosen) > activeRank ? chosen : active;
 }
 
 function populateHlsLevels(source) {
-  var select = core.qs("pc-quality-select");
+  var select = s.qualitySelect;
   if (!select) return;
 
-  var sourceKey = "aem_quality_" + (s.cfg.animeId || "") + "_" + (source && source.id != null ? source.id : encodeURIComponent(source.url));
+  var sourceKey =
+    "aem_quality_" +
+    (s.cfg.animeId || "") +
+    "_" +
+    (source && source.id != null ? source.id : encodeURIComponent(source.url));
   var hasLevels = s.hls && s.hls.levels && s.hls.levels.length > 0;
 
-  select.innerHTML = "";
-  var autoOpt = document.createElement("option");
-  autoOpt.value = "auto";
-  autoOpt.textContent = "Авто";
-  select.appendChild(autoOpt);
-
+  var items = [{ value: "auto", label: "Авто", hint: "ABR" }];
   if (hasLevels) {
     s.hls.levels.forEach(function (l, idx) {
-      var opt = document.createElement("option");
-      opt.value = String(idx);
-      opt.textContent = l.height ? (l.height + "p") : (Math.round((l.bitrate || 0) / 1000) + "kbps");
-      select.appendChild(opt);
+      items.push({
+        value: String(idx),
+        label: l.height
+          ? l.height + "p"
+          : Math.round((l.bitrate || 0) / 1000) + " kbps",
+        hint: l.height
+          ? String(Math.round((l.bitrate || 0) / 1000)) + " kbps"
+          : "",
+      });
     });
   }
 
-  select.disabled = !hasLevels;
-
-  // Determine the level to select: saved preference first, else the active HLS level.
   var desired = null;
   try {
     var saved = sourceKey && localStorage.getItem(sourceKey);
@@ -169,18 +222,18 @@ function populateHlsLevels(source) {
     desired = cur === -1 || cur == null ? "auto" : String(cur);
   }
 
-  if (desired === "auto" && s.hls) s.hls.currentLevel = -1;
-  else if (desired != null && !isNaN(Number(desired)) && desired !== "auto" && s.hls) s.hls.currentLevel = Number(desired);
-  select.value = (desired === "auto" || !select.options[desired]) ? "auto" : desired;
-
-  // Single onchange handler (property assignment overwrites previous), no accumulation.
-  select.onchange = function () {
-    var v = select.value;
-    try { if (sourceKey) localStorage.setItem(sourceKey, v); } catch (e) {}
+  select.onChange = function (value) {
+    try {
+      if (sourceKey) localStorage.setItem(sourceKey, value);
+    } catch (e) {}
     if (!s.hls) return;
-    if (v === "auto") s.hls.currentLevel = -1;
-    else s.hls.currentLevel = Number(v);
+    s.hls.currentLevel = value === "auto" ? -1 : Number(value);
   };
+  select.setOptions(items, desired);
+  select.setDisabled(!hasLevels);
+
+  if (!s.hls) return;
+  s.hls.currentLevel = desired === "auto" ? -1 : Number(desired);
 }
 
 function bindPlayback() {
@@ -192,19 +245,33 @@ function bindPlayback() {
     if (playBtn) playBtn.textContent = s.video && !s.video.paused ? "⏸" : "▶";
   }
 
-  if (playBtn) core.on(playBtn, "click", function (e) { e.stopPropagation(); core.togglePlay(); });
-  if (playCenter) core.on(playCenter, "click", function (e) { e.stopPropagation(); core.togglePlay(); });
-  if (skip90) core.on(skip90, "click", function (e) { e.stopPropagation(); core.seekBy(90); });
+  if (playBtn)
+    core.on(playBtn, "click", function (e) {
+      e.stopPropagation();
+      core.togglePlay();
+    });
+  if (playCenter)
+    core.on(playCenter, "click", function (e) {
+      e.stopPropagation();
+      core.togglePlay();
+    });
+  if (skip90)
+    core.on(skip90, "click", function (e) {
+      e.stopPropagation();
+      core.seekBy(90);
+    });
 
   if (s.video) {
     core.on(s.video, "play", function () {
       s.shell.classList.remove("controls-visible");
+      s.shell.classList.add("playing");
       showControlsBrief();
       updatePlayIcon();
       core.setStatus("Смотрю");
       core.emit("play");
     });
     core.on(s.video, "pause", function () {
+      s.shell.classList.remove("playing");
       s.shell.classList.add("controls-visible");
       updatePlayIcon();
       core.setStatus("Пауза");
@@ -213,7 +280,9 @@ function bindPlayback() {
     core.on(s.video, "timeupdate", updateTimeline);
     core.on(s.video, "progress", updateTimeline);
     core.on(s.video, "loadedmetadata", updateTimeline);
-    core.on(s.video, "ended", function () { core.emit("ended"); });
+    core.on(s.video, "ended", function () {
+      core.emit("ended");
+    });
   }
 }
 
@@ -229,12 +298,12 @@ function updateTimeline() {
   if (dur) dur.textContent = core.fmtTime(s.video.duration);
 
   var pct = s.video.duration ? s.video.currentTime / s.video.duration : 0;
-  if (tlFill) tlFill.style.width = (pct * 100) + "%";
-  if (tlHandle) tlHandle.style.left = (pct * 100) + "%";
+  if (tlFill) tlFill.style.width = pct * 100 + "%";
+  if (tlHandle) tlHandle.style.left = pct * 100 + "%";
 
   if (tlBuffer && s.video.buffered && s.video.buffered.length) {
     var be = s.video.buffered.end(s.video.buffered.length - 1);
-    tlBuffer.style.width = (Math.min(1, be / s.video.duration) * 100) + "%";
+    tlBuffer.style.width = Math.min(1, be / s.video.duration) * 100 + "%";
   }
 
   var timeline = core.qs("pc-timeline");
@@ -253,15 +322,22 @@ function bindTimeline() {
 
   function seekTo(pct) {
     if (!s.video || !s.video.duration) return;
-    s.video.currentTime = Math.min(s.video.duration, Math.max(0, pct * s.video.duration));
+    s.video.currentTime = Math.min(
+      s.video.duration,
+      Math.max(0, pct * s.video.duration),
+    );
     updateTimeline();
   }
 
   if (timeline) {
     core.on(timeline, "pointerdown", function (ev) {
-      ev.preventDefault(); ev.stopPropagation();
+      ev.preventDefault();
+      ev.stopPropagation();
       scrubbing = true;
-      if (timeline.setPointerCapture) try { timeline.setPointerCapture(ev.pointerId); } catch (e) {}
+      if (timeline.setPointerCapture)
+        try {
+          timeline.setPointerCapture(ev.pointerId);
+        } catch (e) {}
       seekTo(pctFromEvent(ev));
     });
   }
@@ -285,9 +361,11 @@ function bindVolume() {
 
   function updateVolumeUI() {
     var frac = s.currentVolume;
-    if (muteBtn) muteBtn.textContent = (s.video && (s.video.muted || s.video.volume === 0)) ? "🔇" : "🔊";
-    if (volFill) volFill.style.width = (frac * 100) + "%";
-    if (volHandle) volHandle.style.left = (frac * 100) + "%";
+    if (muteBtn)
+      muteBtn.textContent =
+        s.video && (s.video.muted || s.video.volume === 0) ? "🔇" : "🔊";
+    if (volFill) volFill.style.width = frac * 100 + "%";
+    if (volHandle) volHandle.style.left = frac * 100 + "%";
     if (vol) vol.setAttribute("aria-valuenow", String(frac));
   }
 
@@ -304,8 +382,12 @@ function bindVolume() {
     core.on(vol, "pointerdown", function (ev) {
       if (ev.button !== undefined && ev.button !== 0) return;
       scrubbingVol = true;
-      if (vol.setPointerCapture) try { vol.setPointerCapture(ev.pointerId); } catch (e) {}
-      ev.preventDefault(); ev.stopPropagation();
+      if (vol.setPointerCapture)
+        try {
+          vol.setPointerCapture(ev.pointerId);
+        } catch (e) {}
+      ev.preventDefault();
+      ev.stopPropagation();
       core.setVolumeFraction(volFromX(ev.clientX));
     });
     core.on(vol, "pointermove", function (ev) {
@@ -314,9 +396,13 @@ function bindVolume() {
     });
     core.on(vol, "pointerup", function () {
       scrubbingVol = false;
-      try { localStorage.setItem("aem_volume", String(s.currentVolume)); } catch (e) {}
+      try {
+        localStorage.setItem("aem_volume", String(s.currentVolume));
+      } catch (e) {}
     });
-    core.on(vol, "pointercancel", function () { scrubbingVol = false; });
+    core.on(vol, "pointercancel", function () {
+      scrubbingVol = false;
+    });
     updateVolumeUI();
   }
 
@@ -342,8 +428,18 @@ function bindFullscreen() {
       e.stopPropagation();
       if (document.fullscreenElement) document.exitFullscreen();
       else if (s.shell.requestFullscreen) s.shell.requestFullscreen();
+      if (fsBtn.blur) fsBtn.blur();
     });
   }
+  core.on(document, "fullscreenchange", function () {
+    s.shell.classList.toggle(
+      "is-fullscreen",
+      Boolean(document.fullscreenElement),
+    );
+    if (s.sourceSelect) s.sourceSelect.close();
+    if (s.qualitySelect) s.qualitySelect.close();
+    showControlsBrief();
+  });
 }
 
 function bindTheater() {
@@ -355,7 +451,11 @@ function bindTheater() {
     if (layout) layout.classList.toggle("theater", s.isTheater);
     if (theaterBtn) theaterBtn.classList.toggle("active", s.isTheater);
   }
-  if (theaterBtn) core.on(theaterBtn, "click", function (e) { e.stopPropagation(); toggleTheater(); });
+  if (theaterBtn)
+    core.on(theaterBtn, "click", function (e) {
+      e.stopPropagation();
+      toggleTheater();
+    });
   core.toggleTheater = toggleTheater;
 }
 
@@ -364,8 +464,10 @@ function bindPiP() {
   if (pipBtn) {
     core.on(pipBtn, "click", function (e) {
       e.stopPropagation();
-      if (document.pictureInPictureElement) document.exitPictureInPicture().catch(function () {});
-      else if (s.video.requestPictureInPicture) s.video.requestPictureInPicture().catch(function () {});
+      if (document.pictureInPictureElement)
+        document.exitPictureInPicture().catch(function () {});
+      else if (s.video.requestPictureInPicture)
+        s.video.requestPictureInPicture().catch(function () {});
     });
   }
 }
@@ -380,7 +482,8 @@ function bindSettingsMenu() {
     dropdown.classList.toggle("open");
   });
   core.on(document, "click", function (e) {
-    if (!dropdown.contains(e.target) && e.target !== btn) dropdown.classList.remove("open");
+    if (!dropdown.contains(e.target) && e.target !== btn)
+      dropdown.classList.remove("open");
   });
 }
 
@@ -394,7 +497,9 @@ function showControlsBrief() {
 }
 
 function setupDoubleTap(leftEl, rightEl) {
-  var lastLeft = 0, lastRight = 0, WINDOW = 350;
+  var lastLeft = 0,
+    lastRight = 0,
+    WINDOW = 350;
   function flash(text, x, y) {
     var f = document.createElement("div");
     f.className = "pc-dt-hint";
@@ -417,47 +522,81 @@ function setupDoubleTap(leftEl, rightEl) {
       f.style.opacity = "1";
       f.style.transform = "translate(-50%,-60%)";
     });
-    setTimeout(function () { f.remove(); }, 700);
+    setTimeout(function () {
+      f.remove();
+    }, 700);
   }
 
   function togglePlaySilent() {
     if (!s.video) return;
-    if (s.video.paused) s.video.play().catch(function () {}); else s.video.pause();
+    if (s.video.paused) s.video.play().catch(function () {});
+    else s.video.pause();
   }
 
   leftEl.addEventListener("pointerup", function (ev) {
-    ev.stopPropagation(); ev.preventDefault();
+    ev.stopPropagation();
+    ev.preventDefault();
     var now = Date.now();
     if (now - lastLeft <= WINDOW) {
-      if (s.video) s.video.currentTime = Math.max(0, (s.video.currentTime || 0) - 10);
+      if (s.video)
+        s.video.currentTime = Math.max(0, (s.video.currentTime || 0) - 10);
       flash("−10s", ev.clientX + "px", ev.clientY + "px");
       lastLeft = 0;
     } else {
       lastLeft = now;
       setTimeout(function () {
-        if (Date.now() - lastLeft >= WINDOW) { togglePlaySilent(); lastLeft = 0; }
+        if (Date.now() - lastLeft >= WINDOW) {
+          togglePlaySilent();
+          lastLeft = 0;
+        }
       }, WINDOW + 20);
     }
   });
 
   rightEl.addEventListener("pointerup", function (ev) {
-    ev.stopPropagation(); ev.preventDefault();
+    ev.stopPropagation();
+    ev.preventDefault();
     var now = Date.now();
     if (now - lastRight <= WINDOW) {
-      if (s.video && s.video.duration) s.video.currentTime = Math.min(s.video.duration, s.video.currentTime + 10);
+      if (s.video && s.video.duration)
+        s.video.currentTime = Math.min(
+          s.video.duration,
+          s.video.currentTime + 10,
+        );
       flash("+10s", ev.clientX + "px", ev.clientY + "px");
       lastRight = 0;
     } else {
       lastRight = now;
       setTimeout(function () {
-        if (Date.now() - lastRight >= WINDOW) { togglePlaySilent(); lastRight = 0; }
+        if (Date.now() - lastRight >= WINDOW) {
+          togglePlaySilent();
+          lastRight = 0;
+        }
       }, WINDOW + 20);
     }
   });
 }
 
+function initQualitySelect() {
+  var host = core.qs("pc-quality-select");
+  if (!host) return;
+  s.qualitySelect = createPlayerSelect(host, {
+    id: "pc-quality-select",
+    label: "Качество видео",
+    placeholder: "Авто",
+    emptyText: "Качество недоступно",
+    onChange: function () {},
+  });
+  s.qualitySelect.setOptions(
+    [{ value: "auto", label: "Авто", hint: "ABR" }],
+    "auto",
+  );
+  s.qualitySelect.setDisabled(true);
+}
+
 export function initControls() {
   buildShell();
+  initQualitySelect();
   initSourceSelect();
   bindPlayback();
   bindTimeline();
@@ -468,7 +607,9 @@ export function initControls() {
   bindSettingsMenu();
 
   core.on("manifestParsed", function (source) {
-    try { populateHlsLevels(source); } catch (e) {}
+    try {
+      populateHlsLevels(source);
+    } catch (e) {}
   });
 }
 

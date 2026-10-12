@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain import (
@@ -328,6 +328,31 @@ class WatchRepository:
         source.id = row.id
         source.created_at = row.created_at
         return source
+
+    async def delete_sources_by_provider(
+        self,
+        anime_id: int,
+        provider_name: str,
+        episode: int | None = None,
+    ) -> None:
+        """Delete watch sources of a provider before re-inserting fresh links.
+
+        Needed for providers whose stream URLs are signed and short-lived:
+        stale rows would keep serving an expired link forever, because the
+        sync skips providers that already have stored sources.
+
+        Args:
+            anime_id: Anime identifier.
+            provider_name: Provider whose sources are removed.
+            episode: Optional episode filter.
+        """
+        stmt = delete(WatchSourceModel).where(
+            WatchSourceModel.anime_id == anime_id,
+            WatchSourceModel.provider_name == provider_name,
+        )
+        if episode is not None:
+            stmt = stmt.where(WatchSourceModel.episode == episode)
+        await self.session.execute(stmt)
 
     async def get_session(
         self,

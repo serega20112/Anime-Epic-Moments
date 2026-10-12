@@ -3,7 +3,7 @@ name = "anime-epic-moments"
 version = "0.1.0"
 description = "Anime Epic Moments — каталог аниме с поиском по описанию, просмотром и персональными рекомендациями"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "aiosqlite==0.21.0",
     "alembic==1.18.4",
@@ -28,6 +28,7 @@ dependencies = [
     "requests==2.32.3",
     "SQLAlchemy==2.0.36",
     "uvicorn==0.35.0",
+    "watchfiles>=1.0.0,<2",
 ]
 
 [dependency-groups]
@@ -46,6 +47,7 @@ lint = [
 [tool.uv]
 default-groups = ["dev", "lint"]
 required-version = ">=0.10"
+python-preference = "only-managed"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

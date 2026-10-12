@@ -401,7 +401,7 @@ class KodikClient(WatchSourceProvider):
     async def _extract_episode_link(self, material: dict, episode: int) -> str | None:
         seasons = material.get("seasons") or {}
         if not isinstance(seasons, dict) or not seasons:
-            return None
+            return await self._extract_single_part_link(material, episode)
 
         preferred_keys: list[str] = []
         last_season = material.get("last_season")
@@ -426,6 +426,32 @@ class KodikClient(WatchSourceProvider):
             if isinstance(raw_episode, dict):
                 return raw_episode.get("link")
         return None
+
+    async def _extract_single_part_link(self, material: dict, episode: int) -> str | None:
+        """Достаёт ссылку из материала без ``seasons`` (фильм/OVA/спешкал).
+
+        Kodik отдаёт одиночные материалы без структуры сезонов: ссылка лежит
+        в верхнеуровневом поле ``link`` и принадлежит конкретному материалу,
+        а не серии. Такой материал — это одна серия, поэтому ссылка валидна
+        только для первой серии; для остальных возвращается None, чтобы
+        страница не подменяла серию фильмом.
+
+        Args:
+            material: Материал Kodik без ``seasons``.
+            episode: Запрошенный номер серии.
+
+        Returns:
+            str | None: Ссылка на материал для первой серии, иначе None.
+        """
+        if int(episode) != 1:
+            return None
+        link = await self._normalize_link(material.get("link"))
+        if not link:
+            return None
+        parsed = await self._parse_link(link)
+        if not parsed or parsed["type"] in {"serial", "seria", "season"}:
+            return None
+        return link
 
     async def _get_video_links(self, link: str) -> dict[str, list[dict[str, str]]]:
         normalized_link = await self._normalize_link(link)

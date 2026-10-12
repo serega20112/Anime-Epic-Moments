@@ -22,6 +22,7 @@ from backend.infrastructure.external import (
     EpornerProvider,
     HanimeProvider,
     HDRezkaProvider,
+    HentaigasmProvider,
     JustWatchClient,
     KinoboxProvider,
     KodikClient,
@@ -267,6 +268,21 @@ class AppProvider(Provider):
             base_url=Settings.rezka_base_url,
             enabled=Settings.rezka_enabled,
             timeout=Settings.rezka_timeout,
+        )
+        yield provider
+        await provider.aclose()
+
+    @provide(scope=Scope.APP)
+    async def hentaigasm_provider(self) -> AsyncIterator[HentaigasmProvider]:
+        """Provide the Hentaigasm hentai/adult provider.
+
+        Yields:
+            HentaigasmProvider: Configured provider.
+        """
+        provider = HentaigasmProvider(
+            base_url=Settings.hentaigasm_base_url,
+            enabled=Settings.hentaigasm_enabled,
+            timeout=Settings.hentaigasm_timeout,
         )
         yield provider
         await provider.aclose()

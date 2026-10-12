@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any
 
 import httpx
 
 from backend.domain.entities.anime.anime import Anime
+from backend.domain.value_objects.anime.catalog_page import CatalogPage
 from backend.infrastructure.external.errors import ExternalServiceError
 from backend.infrastructure.external.mapping.anime import (
     build_anime_from_anilist_item,
@@ -385,20 +386,21 @@ class AniListAnimeClient:
     async def filter_catalog(
         self,
         *,
-        genre: str,
-        media_type: str,
-        status: str,
-        year_from: int | None,
-        year_to: int | None,
-        min_score: float | None,
-        sort: str,
+        genres: Sequence[str] = (),
+        media_type: str = "",
+        status: str = "",
+        year_from: int | None = None,
+        year_to: int | None = None,
+        min_score: float | None = None,
+        sort: str = "rating",
         order: str = "desc",
-        limit: int,
-    ) -> list[Anime]:
+        page: int = 1,
+        per_page: int = 25,
+    ) -> CatalogPage:
         """Filter and sort anime via an AniList GraphQL fallback.
 
         Args:
-            genre: Comma-separated genre/tag names.
+            genres: Genre or tag names to narrow the catalog by.
             media_type: Format filter value.
             status: Status filter value.
             year_from: Optional lower bound release year.
@@ -406,10 +408,11 @@ class AniListAnimeClient:
             min_score: Optional minimum normalized rating.
             sort: Normalized sort key.
             order: Sorting direction (asc, desc).
-            limit: Maximum number of results.
+            page: One-based page number.
+            per_page: Number of items per page.
 
         Returns:
-            list[Anime]: Filtered and sorted anime, or an empty list on failure.
+            CatalogPage: Requested page of anime, empty on provider failure.
         """
         format_map = {
             "tv": "TV",
@@ -427,11 +430,11 @@ class AniListAnimeClient:
             "title": {"desc": "TITLE_ROMAJI_DESC", "asc": "TITLE_ROMAJI"},
         }
 
-        selected = [part.strip() for part in str(genre or "").split(",") if part.strip()]
+        selected = [str(name).strip() for name in genres if str(name).strip()]
         selected_genres = [name for name in selected if name in ANILIST_GENRES]
         selected_tags = [name for name in selected if name not in ANILIST_GENRES]
 
-        async def run_query(use_genres: bool, use_tags: bool) -> list[Anime]:
+        async def run_query(use_genres: bool, use_tags: bool) -> tuple[list[Anime], int]:
             """Execute one catalog query with the requested category filters.
 
             Args:
@@ -439,11 +442,11 @@ class AniListAnimeClient:
                 use_tags: Apply tag_in filter with selected tags.
 
             Returns:
-                list[Anime]: Mapped anime, or an empty list on failure.
+                tuple[list[Anime], int]: Mapped anime and the total match count.
             """
             args = ["type: ANIME", "sort: PLACEHOLDER_SORT"]
-            declarations = ["$perPage: Int"]
-            variables: dict[str, object] = {"perPage": int(limit)}
+            declarations = ["$perPage: Int", "$page: Int"]
+            variables: dict[str, object] = {"perPage": int(per_page), "page": int(page)}
 
             if use_genres and selected_genres:
                 args.append("genre_in: $genre")
@@ -482,7 +485,8 @@ class AniListAnimeClient:
             query = (
                 """
                 query (__DECLARATIONS__) {
-                  Page(perPage: $perPage) {
+                  Page(page: $page, perPage: $perPage) {
+                    pageInfo { total }
                     media(__ARGS__) {
                       id
                       idMal
@@ -506,30 +510,42 @@ class AniListAnimeClient:
                     json={"query": query, "variables": variables},
                 )
                 resp.raise_for_status()
-                data = resp.json().get("data", {}).get("Page", {}).get("media", [])
+                payload = resp.json().get("data", {}).get("Page", {})
+                data = payload.get("media", []) or []
+                total = int(payload.get("pageInfo", {}).get("total") or 0)
             except (httpx.HTTPError, ValueError, KeyError, TypeError):
-                return []
+                return [], 0
 
             result = []
             for item in data:
                 result.append(
                     await build_anime_from_anilist_item(item, fallback_to_anilist_id=True)
                 )
-            return result
+            return result, total
 
         if selected_genres and selected_tags:
-            merged = await run_query(True, False)
+            merged, total = await run_query(True, False)
             seen = {(item.external_id or "", item.title) for item in merged}
-            for item in await run_query(False, True):
+            tags_only, _ = await run_query(False, True)
+            for item in tags_only:
                 if (item.external_id or "", item.title) not in seen:
                     seen.add((item.external_id or "", item.title))
                     merged.append(item)
-            return self._sort_catalog_items(merged, sort, direction)[: int(limit)]
+            ordered = self._sort_catalog_items(merged, sort, direction)
+            start = (max(1, int(page)) - 1) * int(per_page)
+            return CatalogPage.build(
+                ordered[start : start + int(per_page)],
+                page=page,
+                per_page=per_page,
+                total=max(total, start + len(merged)),
+            )
         if selected_genres:
-            return await run_query(True, False)
-        if selected_tags:
-            return await run_query(False, True)
-        return await run_query(False, False)
+            items, total = await run_query(True, False)
+        elif selected_tags:
+            items, total = await run_query(False, True)
+        else:
+            items, total = await run_query(False, False)
+        return CatalogPage.build(items, page=page, per_page=per_page, total=total)
 
     @staticmethod
     def _sort_catalog_items(items: list[Anime], sort: str, direction: str) -> list[Anime]:

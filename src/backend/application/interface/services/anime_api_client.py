@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import Any
+
+from backend.domain.value_objects.anime.catalog_page import CatalogPage
 
 
 class AnimeApiClientInterface(ABC):
@@ -59,7 +62,7 @@ class AnimeApiClientInterface(ABC):
     async def filter_catalog(
         self,
         *,
-        genre: str = "",
+        genres: Sequence[str] = (),
         media_type: str = "",
         status: str = "",
         year_from: int | None = None,
@@ -67,12 +70,18 @@ class AnimeApiClientInterface(ABC):
         min_score: float | None = None,
         sort: str = "rating",
         order: str = "desc",
-        limit: int = 30,
-    ) -> list[Any]:
+        page: int = 1,
+        per_page: int = 25,
+    ) -> CatalogPage:
         """Browse anime with Anixart-like filters.
 
+        Genre selection is applied with OR semantics on the provider side
+        because neither upstream API supports conjunction. The caller is
+        responsible for narrowing the returned window further when a stricter
+        match mode is required.
+
         Args:
-            genre: Comma-separated genre/tag names or empty string for all.
+            genres: Genre or tag names to narrow the catalog by.
             media_type: Format filter (tv, movie, ova, ona, special). Empty means all.
             status: Status filter (airing, complete, upcoming). Empty means all.
             year_from: Optional lower bound release year.
@@ -80,8 +89,9 @@ class AnimeApiClientInterface(ABC):
             min_score: Optional minimum normalized rating (0-10).
             sort: Sorting strategy (rating, popularity, newest, title).
             order: Sorting direction (asc, desc).
-            limit: Maximum number of results to return.
+            page: One-based page number to request.
+            per_page: Number of items per page.
 
         Returns:
-            list[Any]: Filtered and sorted anime.
+            CatalogPage: Requested page of anime with pagination metadata.
         """

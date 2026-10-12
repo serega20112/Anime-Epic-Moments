@@ -9,6 +9,7 @@ from backend.infrastructure.external.animego_provider import AnimeGoProvider
 from backend.infrastructure.external.eporner_provider import EpornerProvider
 from backend.infrastructure.external.hanime_provider import HanimeProvider
 from backend.infrastructure.external.hdrezka_provider import HDRezkaProvider
+from backend.infrastructure.external.hentaigasm_provider import HentaigasmProvider
 from backend.infrastructure.external.justwatch_client import JustWatchClient
 from backend.infrastructure.external.kinobox_provider import KinoboxProvider
 from backend.infrastructure.external.kodik_client import KodikClient
@@ -28,6 +29,7 @@ __all__ = [
     "EpornerProvider",
     "HDRezkaProvider",
     "HanimeProvider",
+    "HentaigasmProvider",
     "JustWatchClient",
     "KinoboxProvider",
     "KodikClient",

@@ -48,4 +48,22 @@ if [ "$1" = "web" ]; then
     backend.main:app
 fi
 
+if [ "$1" = "dev" ]; then
+  if [ "${RUN_DB_MIGRATIONS:-1}" = "1" ]; then
+    if ls /app/build/alembic/versions/*.py >/dev/null 2>&1; then
+      alembic -c build/alembic/alembic.ini upgrade head
+    fi
+  fi
+
+  exec uvicorn backend.main:app \
+    --host 0.0.0.0 \
+    --port "${APP_PORT:-5000}" \
+    --reload \
+    --reload-dir /app/src \
+    --reload-dir /app/build \
+    --reload-exclude '*.db' \
+    --reload-exclude '__pycache__/*' \
+    --reload-exclude '*.log'
+fi
+
 exec "$@"

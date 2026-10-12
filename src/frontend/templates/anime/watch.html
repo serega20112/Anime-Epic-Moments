@@ -149,7 +149,7 @@ watch.episode }} серия | Anime Epic Moments{% endblock %} {% block head %}
               <span class="wa-rating-label">Моя оценка</span>
               {% for star in [1, 2, 3, 4, 5] %}
               <button
-                class="wa-star {{ 'active' if watch.user_rating >= star else '' }}"
+                class="wa-star {{ 'active' if (watch.user_rating or 0) >= star else '' }}"
                 type="submit"
                 name="score"
                 value="{{ star }}"

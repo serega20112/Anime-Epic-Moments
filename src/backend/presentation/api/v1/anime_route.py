@@ -15,6 +15,7 @@ from backend.application.use_cases.anime.search_anime_by_description import (
 from backend.infrastructure.security.flask_protection import client_ip, rate_limit
 from backend.infrastructure.web import render_template
 from backend.presentation.api.requests.anime_requests import (
+    CATALOG_PER_PAGE_OPTIONS,
     build_autocomplete_anime_query,
     build_filter_anime_catalog_query,
     build_get_season_popular_query,
@@ -66,19 +67,24 @@ async def catalog_page(request: Request):
     Returns:
         HTMLResponse: Rendered catalog page.
     """
+    params = request.query_params
     return await render_template(
         request,
         "anime/catalog.html",
         initial_filters={
-            "genre": request.query_params.get("genre", ""),
-            "type": request.query_params.get("type", ""),
-            "status": request.query_params.get("status", ""),
-            "min_score": request.query_params.get("min_score", ""),
-            "year_from": request.query_params.get("year_from", ""),
-            "year_to": request.query_params.get("year_to", ""),
-            "sort": request.query_params.get("sort", ""),
-            "has_dub": request.query_params.get("has_dub", ""),
+            "genres": params.getlist("genre"),
+            "genre_mode": params.get("genre_mode", ""),
+            "type": params.get("type", ""),
+            "status": params.get("status", ""),
+            "min_score": params.get("min_score", ""),
+            "year_from": params.get("year_from", ""),
+            "year_to": params.get("year_to", ""),
+            "sort": params.get("sort", ""),
+            "has_dub": params.get("has_dub", ""),
+            "page": params.get("page", ""),
+            "per_page": params.get("per_page", ""),
         },
+        per_page_options=list(CATALOG_PER_PAGE_OPTIONS),
     )
 
 
@@ -175,11 +181,12 @@ async def filter_anime_catalog(
         use_case: Catalog filter use case.
 
     Returns:
-        list[dict]: List of anime dictionaries.
+        dict[str, object]: Requested page of anime together with pagination
+            metadata and the genre facets found in the results.
     """
     query = await build_filter_anime_catalog_query(request)
-    results = await use_case.execute(query)
-    return [vars(anime) for anime in results]
+    result = await use_case.execute(query)
+    return result.to_dict()
 
 
 @anime_router.get("/api/season/popular", name="anime.get_season_popular")

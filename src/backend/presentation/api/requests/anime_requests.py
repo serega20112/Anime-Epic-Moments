@@ -12,6 +12,14 @@ from backend.application.dto.anime import (
     SearchAnimeQuery,
 )
 from backend.config import Settings
+from backend.domain.value_objects.anime.genre_filter import GenreMatchMode
+
+CATALOG_PER_PAGE_OPTIONS = (10, 25, 50, 100)
+CATALOG_DEFAULT_PER_PAGE = 25
+CATALOG_MIN_PER_PAGE = 10
+CATALOG_MAX_PER_PAGE = 100
+CATALOG_MAX_PAGE = 500
+CATALOG_MAX_GENRES = 12
 
 
 async def _to_int(value) -> int | None:
@@ -186,30 +194,43 @@ async def build_get_season_popular_query(request: Request) -> GetSeasonPopularQu
 async def build_filter_anime_catalog_query(request: Request) -> FilterAnimeCatalogQuery:
     """Build an anime catalog filter query from request parameters.
 
+    Genres may be repeated (``?genre=Action&genre=Comedy``) or comma separated
+    (``?genre=Action,Comedy``); both forms are normalized to a tuple. The
+    ``genre_mode`` parameter decides whether every selected genre is required
+    or whether any single match is enough.
+
     Args:
         request: Incoming HTTP request.
 
     Returns:
         FilterAnimeCatalogQuery: Validated query DTO.
     """
-    limit = await _clamp_int(
-        request.query_params.get("limit"),
-        default=30,
-        minimum=1,
-        maximum=Settings.anime_query_limit_max,
+    per_page = await _clamp_int(
+        request.query_params.get("per_page"),
+        default=CATALOG_DEFAULT_PER_PAGE,
+        minimum=CATALOG_MIN_PER_PAGE,
+        maximum=CATALOG_MAX_PER_PAGE,
     )
+    if per_page not in CATALOG_PER_PAGE_OPTIONS:
+        per_page = min(CATALOG_PER_PAGE_OPTIONS, key=lambda option: abs(option - per_page))
+
+    page = await _clamp_int(
+        request.query_params.get("page"),
+        default=1,
+        minimum=1,
+        maximum=CATALOG_MAX_PAGE,
+    )
+
     min_score = await _to_float(request.query_params.get("min_score"))
     if min_score is not None:
         min_score = max(0.0, min(min_score, 10.0))
 
-    # Parse optional has_dub parameter: empty -> None (no filtering), otherwise parse bool
     raw_has_dub = request.query_params.get("has_dub")
     has_dub = None if raw_has_dub in (None, "") else await _to_bool(raw_has_dub)
 
     return FilterAnimeCatalogQuery(
-        genre=str(request.query_params.get("genre", "")).strip()[
-            : Settings.anime_genre_hint_max_length
-        ],
+        genres=_collect_genres(request),
+        genre_mode=GenreMatchMode.parse(request.query_params.get("genre_mode")),
         media_type=str(request.query_params.get("type", "")).strip().lower(),
         status=str(request.query_params.get("status", "")).strip().lower(),
         has_dub=has_dub,
@@ -224,5 +245,24 @@ async def build_filter_anime_catalog_query(request: Request) -> FilterAnimeCatal
         min_score=min_score,
         sort=str(request.query_params.get("sort", "rating")).strip(),
         order=str(request.query_params.get("order", "desc")).strip().lower(),
-        limit=limit,
+        page=page,
+        per_page=per_page,
     )
+
+
+def _collect_genres(request: Request) -> tuple[str, ...]:
+    """Collect selected genre names from repeated or comma separated params.
+
+    Args:
+        request: Incoming HTTP request.
+
+    Returns:
+        tuple[str, ...]: Unique genre names in request order.
+    """
+    collected: list[str] = []
+    for raw in request.query_params.getlist("genre"):
+        for part in str(raw).split(","):
+            name = part.strip()
+            if name and name not in collected:
+                collected.append(name)
+    return tuple(collected[:CATALOG_MAX_GENRES])

@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 from backend.application.services.watch_source_service import WatchSourceSyncService
+from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
 from backend.infrastructure.external.errors import ExternalServiceUnavailableError
 
 
@@ -19,6 +20,20 @@ class TestWatchSourceSyncService:
         service = WatchSourceSyncService(watch_repo, providers)
         await service.empty_result_cache.clear()
         return service, watch_repo
+
+    @staticmethod
+    def _provider(name="AniLibria", *, ephemeral_links=False):
+        """Создаёт провайдера с явными полями контракта.
+
+        ``Mock`` без явного ``ephemeral_links`` вернул бы авто-атрибут Mock,
+        который истинен, и сломал бы проверку ветки синхронизации.
+        """
+        provider = Mock()
+        provider.provider_name = name
+        provider.ephemeral_links = ephemeral_links
+        provider.is_enabled = AsyncMock(return_value=True)
+        provider.search_sources = AsyncMock(return_value=[])
+        return provider
 
     async def test_skips_disabled_providers(self):
         """Что тестируем: отключенные провайдеры не запрашиваются.
@@ -43,10 +58,7 @@ class TestWatchSourceSyncService:
         Что передаём: два вызова sync_for_anime с включенным провайдером без источников.
         Что ожидаем: при force второе обращение сбрасывает кэш, иначе кэш отсекает запрос.
         """
-        provider = Mock()
-        provider.provider_name = "AniLibria"
-        provider.is_enabled = AsyncMock(return_value=True)
-        provider.search_sources = AsyncMock(return_value=[])
+        provider = self._provider()
         service, _watch_repo = await self._service([provider])
 
         await service.sync_for_anime(
@@ -70,10 +82,7 @@ class TestWatchSourceSyncService:
         Что передаём: существующие источники с тем же именем провайдера.
         Что ожидаем: поиск не вызывается, возвращается существующий список.
         """
-        provider = Mock()
-        provider.provider_name = "AniLibria"
-        provider.is_enabled = AsyncMock(return_value=True)
-        provider.search_sources = AsyncMock()
+        provider = self._provider()
         existing = [SimpleNamespace(provider_name="anilibria")]
         service, _watch_repo = await self._service([provider], get_sources=existing)
 
@@ -83,6 +92,62 @@ class TestWatchSourceSyncService:
 
         assert result == existing
         provider.search_sources.assert_not_awaited()
+
+    async def test_ephemeral_provider_is_requeried_and_stale_links_dropped(self):
+        """Что тестируем: провайдер с подписанными ссылками опрашивается заново
+        даже когда источники уже записаны, а протухшие строки удаляются.
+        Что передаём: Eporner-подобный провайдер (ephemeral_links=True)
+        и уже сохранённые источники того же провайдера.
+        Что ожидаем: поиск вызван, старые источники провайдера удалены,
+        свежие сохранены — иначе плеер отдаёт трейлер-заглушку по истёкшей ссылке.
+        """
+        provider = self._provider("Eporner", ephemeral_links=True)
+        provider.search_sources = AsyncMock(
+            return_value=[
+                DiscoveredWatchSource(
+                    episode=1,
+                    translation_name="Eporner",
+                    translation_type="voice",
+                    provider_name="Eporner",
+                    source_name="eporner-abc",
+                    quality_label="720p",
+                    stream_url="https://cdn.eporner.com/v5/fresh/1/abc-720p.mp4",
+                )
+            ]
+        )
+        existing = [SimpleNamespace(provider_name="Eporner")]
+        service, watch_repo = await self._service([provider], get_sources=existing)
+
+        await service.sync_for_anime(
+            anime_id=10,
+            anime=SimpleNamespace(title="Bible Black", year=2021, genres=["Hentai"]),
+            episode=1,
+        )
+
+        provider.search_sources.assert_awaited()
+        watch_repo.delete_sources_by_provider.assert_awaited_once_with(
+            anime_id=10,
+            provider_name="Eporner",
+            episode=1,
+        )
+        watch_repo.add_source.assert_awaited()
+
+    async def test_ephemeral_stale_rows_kept_when_nothing_found(self):
+        """Что тестируем: при пустом ответе провайдера протухшие строки не трогаем.
+        Что передаём: провайдер с ephemeral_links=True, не нашедший ничего.
+        Что ожидаем: удаления нет — иначе серия пропала бы у пользователя
+        до появления свежей ссылки.
+        """
+        provider = self._provider("Eporner", ephemeral_links=True)
+        service, watch_repo = await self._service([provider], get_sources=[])
+
+        await service.sync_for_anime(
+            anime_id=10,
+            anime=SimpleNamespace(title="Bible Black", year=2021, genres=["Hentai"]),
+            episode=1,
+        )
+
+        watch_repo.delete_sources_by_provider.assert_not_awaited()
 
     async def test_discovered_source_saved_once(self):
         """Что тестируем: новый источник сохраняется в репозиторий без дубликатов.

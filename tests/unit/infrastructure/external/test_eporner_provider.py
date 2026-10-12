@@ -212,6 +212,66 @@ async def test_eporner_hls_fallback():
 
 
 @pytest.mark.asyncio
+async def test_eporner_availability_reports_relevant_video():
+    """Карта доступности подтверждает наличие контента по тайтлу."""
+    provider = _provider()
+    search_payload = {
+        "videos": [
+            {"id": "irr0", "title": "Totally Different Movie", "keywords": ""},
+            {"id": "i2VSqDiCBlR", "title": "Bible Black 01", "keywords": ""},
+        ]
+    }
+    provider.session.get = AsyncMock(return_value=_FakeJsonResponse(search_payload))
+
+    availability = await provider.get_translations_availability(title="Bible Black")
+
+    assert len(availability) == 1
+    assert availability[0].episodes_count == 1
+    assert availability[0].has_episode(1) is True
+    assert availability[0].title == "Eporner"
+    assert availability[0].link == "https://www.eporner.com/video-i2VSqDiCBlR/"
+
+
+@pytest.mark.asyncio
+async def test_eporner_availability_empty_when_no_relevant_video():
+    """Нет релевантных видео — пустая карта доступности."""
+    provider = _provider()
+    search_payload = {
+        "videos": [{"id": "irr0", "title": "Totally Different Movie", "keywords": ""}]
+    }
+    provider.session.get = AsyncMock(return_value=_FakeJsonResponse(search_payload))
+
+    assert await provider.get_translations_availability(title="Bible Black") == []
+
+
+@pytest.mark.asyncio
+async def test_eporner_availability_empty_when_disabled():
+    """Выключенный провайдер не опрашивается при проверке доступности."""
+    provider = _provider(enabled=False)
+    provider.session.get = AsyncMock(side_effect=AssertionError("must not be called"))
+
+    assert await provider.get_translations_availability(title="Bible Black") == []
+
+
+@pytest.mark.asyncio
+async def test_eporner_availability_degrades_on_network_error():
+    """Сбой сети при проверке доступности деградирует в пустой список."""
+    provider = _provider()
+    provider.session.get = AsyncMock(side_effect=httpx.ConnectError("refused"))
+
+    assert await provider.get_translations_availability(title="Bible Black") == []
+
+
+@pytest.mark.asyncio
+async def test_eporner_availability_ignores_blank_title():
+    """Пустое название не порождает сетевых запросов."""
+    provider = _provider()
+    provider.session.get = AsyncMock(side_effect=AssertionError("must not be called"))
+
+    assert await provider.get_translations_availability(title="   ") == []
+
+
+@pytest.mark.asyncio
 async def test_calc_hash_matches_live_example():
     """Ответ r.jhash совпадает с live-примером (2a8179fe...) → bsktfihk1who10itmqyowuny8."""
     assert _calc_hash("2a8179fe3f46d2bc83a17a6a59c954c0") == "bsktfihk1who10itmqyowuny8"

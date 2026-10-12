@@ -28,6 +28,10 @@ ALLOWED_MEDIA_HOST_SUFFIXES: tuple[str, ...] = (
     "vk.com",
     "vkvideo.ru",
     "mail.ru",
+    "hentaigasm.com",
+    "hgasm1.com",
+    "hgasm2.com",
+    "hgasm3.com",
 )
 
 _DEFAULT_USER_AGENT = "Mozilla/5.0"

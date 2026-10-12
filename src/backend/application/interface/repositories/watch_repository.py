@@ -48,6 +48,15 @@ class WatchRepository(ABC):
         """Создает источник просмотра."""
 
     @abstractmethod
+    async def delete_sources_by_provider(
+        self,
+        anime_id: int,
+        provider_name: str,
+        episode: int | None = None,
+    ) -> None:
+        """Удаляет источники просмотра конкретного провайдера."""
+
+    @abstractmethod
     async def get_session(self, user_id: int, anime_id: int, episode: int) -> ViewingSession | None:
         """Возвращает последнюю сессию просмотра."""
 

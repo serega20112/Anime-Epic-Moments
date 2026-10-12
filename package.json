@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@langchain/anthropic": "^1.5.6",
+    "prettier": "^3.9.6"
+  }
+}

@@ -1,7 +1,7 @@
 import uvicorn
 
-from backend.config import Settings
-from backend.presentation.app_factory import create_app
+from src.backend.config import Settings
+from src.backend.presentation.app_factory import create_app
 
 app = create_app()
 

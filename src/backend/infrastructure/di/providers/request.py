@@ -19,6 +19,7 @@ from backend.infrastructure.external import (
     EpornerProvider,
     HanimeProvider,
     HDRezkaProvider,
+    HentaigasmProvider,
     JustWatchClient,
     KinoboxProvider,
     KodikClient,
@@ -210,6 +211,7 @@ class RequestProvider(Provider):
         animego_provider: AnimeGoProvider,
         kinobox_provider: KinoboxProvider,
         hdrezka_provider: HDRezkaProvider,
+        hentaigasm_provider: HentaigasmProvider,
         eporner_provider: EpornerProvider,
         youtube_client: YouTubeClient,
         justwatch_client: JustWatchClient,
@@ -226,6 +228,7 @@ class RequestProvider(Provider):
             animego_provider: AnimeGo scraper (feeds Sibnet/AniBoom extractors).
             kinobox_provider: Kinobox aggregator provider.
             hdrezka_provider: HDRezka parser.
+            hentaigasm_provider: Hentaigasm hentai provider (прямой MP4).
             eporner_provider: Eporner hentai/adult API provider (для тайтлов,
                 где hanime недоступен).
             youtube_client: YouTube client.
@@ -244,6 +247,7 @@ class RequestProvider(Provider):
                 sameband_provider,
                 aniboom_provider,
                 hanime_provider,
+                hentaigasm_provider,
                 eporner_provider,
                 anilibria_client,
                 youtube_client,
