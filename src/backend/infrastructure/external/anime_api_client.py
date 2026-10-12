@@ -395,8 +395,8 @@ class AnimeApiClient:
                 per_page=page_size,
             ),
         )
-        ttl_seconds = 600 if len(result) else 60
-        enriched = await self._enrich_with_russian(list(result))
+        ttl_seconds = 600 if len(result.items) else 60
+        enriched = await self._enrich_with_russian(list(result.items))
         await self._set_cached(
             cache_key,
             {"items": enriched, "total": result.total},

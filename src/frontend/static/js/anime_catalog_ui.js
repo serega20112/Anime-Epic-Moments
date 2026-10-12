@@ -11,7 +11,6 @@
   var NO_COVER = "/static/images/no-cover.svg";
   var VIEW_KEY = "aem_catalog_view";
   var PAGE_WINDOW = 2;
-  var FACET_LIMIT = 60;
 
   var form = document.getElementById("catalog-filters");
   var grid = document.getElementById("results-grid");
@@ -20,11 +19,83 @@
   var loadingState = document.getElementById("results-loading");
   var pagination = document.getElementById("pagination");
   var pageNumbers = document.getElementById("page-numbers");
-  var genreMenu = document.getElementById("genre-menu");
-  var genreMenuEmpty = document.getElementById("genre-menu-empty");
-  var genreTrigger = document.getElementById("genre-trigger");
-  var genreTriggerLabel = document.getElementById("genre-trigger-label");
+  var genreList = document.getElementById("genre-list");
   var genreChosen = document.getElementById("genre-chosen");
+
+  var CATALOG_GENRES = [
+    {
+      category: "Аудитория",
+      items: [
+        ["Shounen", "Сёнэн"],
+        ["Seinen", "Сэйнэн"],
+        ["Shoujo", "Сёдзё"],
+        ["Josei", "Дзёсэй"],
+        ["Kids", "Детское"],
+      ],
+    },
+    {
+      category: "Основные жанры",
+      items: [
+        ["Action", "Экшен"],
+        ["Adventure", "Приключения"],
+        ["Comedy", "Комедия"],
+        ["Drama", "Драма"],
+        ["Fantasy", "Фэнтези"],
+        ["Sci-Fi", "Фантастика"],
+        ["Romance", "Романтика"],
+        ["Slice of Life", "Повседневность"],
+        ["Mystery", "Детектив"],
+        ["Thriller", "Триллер"],
+        ["Horror", "Ужасы"],
+        ["Supernatural", "Сверхъестественное"],
+        ["Psychological", "Психологическое"],
+      ],
+    },
+    {
+      category: "Сеттинги и тематика",
+      items: [
+        ["Isekai", "Исэкай"],
+        ["Mecha", "Меха"],
+        ["Military", "Военное"],
+        ["Historical", "Историческое"],
+        ["Space", "Космос"],
+        ["Cyberpunk", "Киберпанк"],
+        ["Samurai", "Самураи"],
+        ["Martial Arts", "Боевые искусства"],
+        ["School", "Школа"],
+        ["Music", "Музыка"],
+        ["Parody", "Пародия"],
+        ["Gourmet", "Кулинария"],
+        ["Vampire", "Вампиры"],
+        ["Demons", "Демоны"],
+        ["Game", "Видеоигры"],
+        ["Cars", "Гонки"],
+        ["Police", "Полиция"],
+        ["Mythology", "Мифология"],
+      ],
+    },
+    {
+      category: "Спорт",
+      items: [
+        ["Sports", "Спорт"],
+        ["Team Sports", "Командный спорт"],
+        ["Racing", "Автоспорт"],
+        ["Combat Sports", "Единоборства"],
+      ],
+    },
+    {
+      category: "Специфические",
+      items: [
+        ["Harem", "Гарем"],
+        ["Reverse Harem", "Реверс-гарем"],
+        ["Mahou Shoujo", "Махо-сёдзё"],
+        ["Ecchi", "Эччи"],
+        ["Shounen Ai", "Сёнен-ай"],
+        ["Shoujo Ai", "Сёдзё-ай"],
+        ["Hentai", "Хентай"],
+      ],
+    },
+  ];
 
   var state = {
     genres: [],
@@ -35,14 +106,13 @@
     yearFrom: "",
     yearTo: "",
     sort: "rating",
-    hasDub: false,
     page: 1,
     perPage: 25,
     totalPages: 1,
     total: 0,
   };
-  var knownGenres = [];
   var isLoading = false;
+
 
   function elementFromHtml(html) {
     var template = document.createElement("template");
@@ -221,7 +291,6 @@
       yearFrom: valueOf("filter-year-from"),
       yearTo: valueOf("filter-year-to"),
       sort: valueOf("filter-sort") || "rating",
-      hasDub: isDubChecked(),
       page: 1,
       perPage: Number(valueOf("filter-per-page")) || 25,
     };
@@ -230,11 +299,6 @@
   function valueOf(id) {
     var node = document.getElementById(id);
     return node ? String(node.value || "").trim() : "";
-  }
-
-  function isDubChecked() {
-    var node = document.getElementById("filter-has-dub");
-    return Boolean(node && node.checked);
   }
 
   function readGenreMode() {
@@ -263,7 +327,6 @@
         if (source) params.set(key, source);
       },
     );
-    if (state.hasDub) params.set("has_dub", "1");
     if (state.page > 1) params.set("page", String(state.page));
     params.set("per_page", String(state.perPage));
     return params;
@@ -290,7 +353,6 @@
         renderResults(payload.items || []);
         renderCount(payload);
         renderPagination(payload);
-        updateGenres(payload.genre_facets || []);
         syncUrl();
       })
       .catch(function () {
@@ -313,85 +375,49 @@
     }
   }
 
-  function updateGenres(facets) {
-    var counts = {};
-    facets.forEach(function (facet) {
-      counts[facet.name] = facet.count;
-    });
+  function renderGenreList() {
+    if (!genreList) return;
+    genreList.innerHTML = "";
 
-    var names = [];
-    state.genres.forEach(function (genre) {
-      names.push({ name: genre, count: counts[genre] || null, chosen: true });
-    });
-    facets.slice(0, FACET_LIMIT).forEach(function (facet) {
-      if (names.some(function (item) { return item.name === facet.name; })) return;
-      names.push({ name: facet.name, count: facet.count, chosen: false });
-    });
+    CATALOG_GENRES.forEach(function (group) {
+      var block = document.createElement("div");
+      block.className = "genre-category";
 
-    knownGenres = names;
-    renderGenreMenu(names);
-    renderChosenChips();
-  }
+      var title = document.createElement("span");
+      title.className = "genre-category-title";
+      title.textContent = group.category;
+      block.appendChild(title);
 
-  function renderGenreMenu(names) {
-    if (!genreMenu) return;
-    genreMenu.innerHTML = "";
-
-    if (!names.length) {
-      var empty = document.createElement("p");
-      empty.className = "genre-picker-empty";
-      empty.textContent = "Жанры появятся после загрузки каталога";
-      genreMenu.appendChild(empty);
-      return;
-    }
-
-    names.forEach(function (item) {
-      var option = document.createElement("button");
-      option.type = "button";
-      option.className = "genre-option";
-      option.setAttribute("role", "option");
-      option.setAttribute("data-value", item.name);
-      option.setAttribute("aria-selected", item.chosen ? "true" : "false");
-      option.classList.toggle("is-active", item.chosen);
-
-      var box = document.createElement("span");
-      box.className = "genre-option-box";
-      box.textContent = item.chosen ? "✓" : "";
-      option.appendChild(box);
-
-      var label = document.createElement("span");
-      label.className = "genre-option-label";
-      label.textContent = item.name;
-      option.appendChild(label);
-
-      if (typeof item.count === "number") {
-        var counter = document.createElement("span");
-        counter.className = "genre-option-count";
-        counter.textContent = String(item.count);
-        option.appendChild(counter);
-      }
-
-      genreMenu.appendChild(option);
+      var chips = document.createElement("div");
+      chips.className = "genre-category-chips";
+      group.items.forEach(function (pair) {
+        var value = pair[0];
+        var label = pair[1];
+        var chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "genre-chip";
+        chip.setAttribute("data-value", value);
+        chip.textContent = label;
+        chip.classList.toggle("active", state.genres.indexOf(value) !== -1);
+        chip.addEventListener("click", function () {
+          toggleGenre(value);
+        });
+        chips.appendChild(chip);
+      });
+      block.appendChild(chips);
+      genreList.appendChild(block);
     });
   }
 
   function renderChosenChips() {
-    if (!genreChosen || !genreTriggerLabel) return;
-
+    if (!genreChosen) return;
     genreChosen.innerHTML = "";
-    if (!state.genres.length) {
-      genreTriggerLabel.textContent = "Любые жанры";
-      return;
-    }
-    genreTriggerLabel.textContent =
-      state.genres.length === 1
-        ? state.genres[0]
-        : "Выбрано: " + state.genres.length;
+    if (!state.genres.length) return;
 
     state.genres.forEach(function (genre) {
       var chip = document.createElement("button");
       chip.type = "button";
-      chip.className = "genre-chip";
+      chip.className = "genre-chip genre-chip-chosen";
       chip.setAttribute("data-value", genre);
       chip.setAttribute("title", "Убрать " + genre);
       chip.textContent = genre + " ×";
@@ -402,55 +428,31 @@
     });
   }
 
+  function refreshGenreSelection() {
+    if (!genreList) return;
+    Array.prototype.forEach.call(
+      genreList.querySelectorAll(".genre-chip"),
+      function (chip) {
+        chip.classList.toggle(
+          "active",
+          state.genres.indexOf(chip.getAttribute("data-value")) !== -1,
+        );
+      },
+    );
+  }
+
   function toggleGenre(genre) {
     var index = state.genres.indexOf(genre);
     if (index === -1) state.genres.push(genre);
     else state.genres.splice(index, 1);
 
-    renderGenreMenu(knownGenres);
+    refreshGenreSelection();
     renderChosenChips();
     state.page = 1;
     loadCatalog();
   }
 
-  function openGenreMenu() {
-    if (!genreMenu || !genreTrigger) return;
-    genreMenu.classList.remove("hidden");
-    genreTrigger.setAttribute("aria-expanded", "true");
-  }
-
-  function closeGenreMenu() {
-    if (!genreMenu || !genreTrigger) return;
-    genreMenu.classList.add("hidden");
-    genreTrigger.setAttribute("aria-expanded", "false");
-  }
-
-  function toggleGenreMenu() {
-    if (genreMenu && genreMenu.classList.contains("hidden")) openGenreMenu();
-    else closeGenreMenu();
-  }
-
   function bindGenres() {
-    if (genreTrigger) {
-      genreTrigger.addEventListener("click", function (event) {
-        event.preventDefault();
-        toggleGenreMenu();
-      });
-    }
-    if (genreMenu) {
-      genreMenu.addEventListener("click", function (event) {
-        var option = event.target.closest(".genre-option");
-        if (!option) return;
-        event.preventDefault();
-        toggleGenre(option.getAttribute("data-value"));
-      });
-    }
-    document.addEventListener("click", function (event) {
-      if (!genreMenu || genreMenu.classList.contains("hidden")) return;
-      if (event.target.closest("#genre-picker")) return;
-      closeGenreMenu();
-    });
-
     Array.prototype.forEach.call(
       document.querySelectorAll('input[name="genre_mode"]'),
       function (radio) {
@@ -494,10 +496,8 @@
       state.yearFrom = next.yearFrom;
       state.yearTo = next.yearTo;
       state.sort = next.sort;
-      state.hasDub = next.hasDub;
       state.perPage = next.perPage;
       state.page = 1;
-      closeGenreMenu();
       loadCatalog();
     });
 
@@ -514,8 +514,8 @@
         if (allMode) allMode.checked = true;
         var sortField = document.getElementById("filter-sort");
         if (sortField) sortField.value = "rating";
+        refreshGenreSelection();
         renderChosenChips();
-        renderGenreMenu(knownGenres);
         loadCatalog();
       });
     }
@@ -585,14 +585,12 @@
       if (node && initial[key]) node.value = initial[key];
     });
 
-    var dubField = document.getElementById("filter-has-dub");
-    if (dubField) dubField.checked = initial.has_dub === "1" || initial.has_dub === "true";
-
     var modeField = document.querySelector(
       'input[name="genre_mode"][value="' + state.genreMode + '"]',
     );
     if (modeField) modeField.checked = true;
 
+    refreshGenreSelection();
     renderChosenChips();
   }
 
@@ -610,7 +608,6 @@
         year_from: params.get("year_from"),
         year_to: params.get("year_to"),
         sort: params.get("sort"),
-        has_dub: params.get("has_dub"),
       });
       state.type = params.get("type") || "";
       state.status = params.get("status") || "";
@@ -618,7 +615,6 @@
       state.yearFrom = params.get("year_from") || "";
       state.yearTo = params.get("year_to") || "";
       state.sort = params.get("sort") || "rating";
-      state.hasDub = params.get("has_dub") === "1";
       loadCatalog();
     });
   }
@@ -634,8 +630,8 @@
     state.yearFrom = initial.year_from || "";
     state.yearTo = initial.year_to || "";
     state.sort = initial.sort || "rating";
-    state.hasDub = initial.has_dub === "1" || initial.has_dub === "true";
 
+    renderGenreList();
     bindGenres();
     bindForm();
     bindPagination();

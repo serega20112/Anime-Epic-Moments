@@ -15,34 +15,8 @@ Moments{% endblock %} {% block head %}
 
     <form class="filter-panel glass" id="catalog-filters">
       <div class="filter-group filter-group-genres">
-        <span class="filter-label">Найденные жанры</span>
-        <div class="genre-picker" id="genre-picker">
-          <button
-            type="button"
-            class="genre-picker-trigger"
-            id="genre-trigger"
-            aria-haspopup="listbox"
-            aria-expanded="false"
-            aria-controls="genre-menu"
-          >
-            <span class="genre-picker-label" id="genre-trigger-label">
-              Пока нет данных — выполните поиск
-            </span>
-            <span class="genre-picker-caret" aria-hidden="true">▾</span>
-          </button>
-          <div
-            class="genre-picker-menu hidden"
-            id="genre-menu"
-            role="listbox"
-            aria-multiselectable="true"
-            aria-label="Фильтр по жанрам"
-          >
-            <p class="genre-picker-empty" id="genre-menu-empty">
-              Жанры появятся после загрузки каталога
-            </p>
-          </div>
-        </div>
-
+        <span class="filter-label">Жанры</span>
+        <div class="genre-list" id="genre-list"></div>
         <div class="genre-chosen" id="genre-chosen"></div>
 
         <fieldset class="genre-mode">
@@ -123,17 +97,6 @@ Moments{% endblock %} {% block head %}
           />
         </div>
 
-        <div class="filter-field filter-field-dub">
-          <label class="filter-check" for="filter-has-dub">
-            <input type="checkbox" id="filter-has-dub" name="has_dub" />
-            <span class="filter-check-box" aria-hidden="true"></span>
-            <span class="filter-check-text">
-              <span class="filter-check-title">Только с озвучкой</span>
-              <span class="filter-check-hint">Есть русский дубляж</span>
-            </span>
-          </label>
-        </div>
-
         <div class="filter-field">
           <span class="filter-label">Сортировка</span>
           <select id="filter-sort" class="filter-select">
@@ -154,15 +117,15 @@ Moments{% endblock %} {% block head %}
             {% endfor %}
           </select>
         </div>
+      </div>
 
-        <div class="filter-field filter-submit">
-          <button type="submit" class="btn btn-primary" id="filter-apply">
-            Применить
-          </button>
-          <button type="button" class="btn btn-ghost" id="filter-reset">
-            Сбросить
-          </button>
-        </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary" id="filter-apply">
+          Применить
+        </button>
+        <button type="button" class="btn btn-ghost" id="filter-reset">
+          Сбросить
+        </button>
       </div>
     </form>
   </div>

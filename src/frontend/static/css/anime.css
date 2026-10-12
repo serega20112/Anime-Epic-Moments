@@ -1,15 +1,15 @@
-/* ============================================================
+﻿/* ============================================================
    Anime Epic Moments — anime.css
    Страницы поиска аниме.
    ============================================================ */
 
 .search-hero {
-  padding: var(--space-7) 0 var(--space-5);
+  padding: var(--space-8) 0 var(--space-6);
   text-align: center;
 }
 
 .search-hero h1 {
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .search-hero p {
@@ -26,7 +26,7 @@
 
 .search-bar {
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-4);
   align-items: stretch;
 }
 
@@ -91,7 +91,7 @@
 
 .search-hints {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-3);
   flex-wrap: wrap;
   justify-content: center;
   margin-top: var(--space-3);
@@ -122,7 +122,7 @@
   padding: var(--space-4);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .filters-panel .filter-field label {
@@ -138,7 +138,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-4);
   margin-bottom: var(--space-4);
   flex-wrap: wrap;
 }
@@ -171,7 +171,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3);
+  gap: var(--space-4);
   text-align: center;
   padding: var(--space-5);
   background: color-mix(in srgb, var(--color-surface-solid) 72%, transparent);
@@ -233,14 +233,14 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-text-faint);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
   display: block;
 }
 
 .filter-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .filter-chip {
@@ -285,7 +285,7 @@
 .filter-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--space-3);
+  gap: var(--space-4);
   align-items: end;
 }
 
@@ -297,17 +297,332 @@
   border: 1px solid var(--color-border);
   color: var(--color-text);
   font-size: var(--text-sm);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
 }
 
+.filter-select:hover {
+  border-color: var(--color-border-strong);
+  background: color-mix(in srgb, var(--color-surface-solid) 90%, var(--color-accent) 5%);
+}
+
+.filter-select:focus {
+  border-color: var(--color-accent);
+  background: var(--color-surface-solid);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 25%, transparent);
+  outline: none;
+}
+
+/* ============================================
+   КНОПКИ ПРИМЕНЕНИЯ / СБРОСА
+   ============================================ */
+
+.filter-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  padding-top: var(--space-3);
+  margin-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.filter-actions .btn {
+  flex: 1;
+  min-height: 41px;
+  font-weight: 600;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    filter var(--transition-fast);
+}
+
+.filter-actions .btn-primary {
+  background: var(--button-primary-bg);
+  color: #fff;
+  box-shadow: var(--glow-accent);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  border: none;
+}
+
+.filter-actions .btn-primary:hover {
+  background: var(--button-primary-bg-hover);
+  box-shadow: var(--glow-accent-strong);
+  transform: translateY(-2px);
+}
+
+.filter-actions .btn-primary:active {
+  transform: scale(0.97);
+}
+
+.filter-actions .btn-ghost {
+  background: var(--button-ghost-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.filter-actions .btn-ghost:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  transform: translateY(-1px);
+}
+
+.filter-actions .btn-ghost:active {
+  transform: scale(0.97);
+}
+
+/* Нижний ряд фильтров — отступ сверху */
+.filter-row-bottom {
+  margin-top: var(--space-2);
+}
+
+/* Отступ после группы жанров, чтобы не слипалось */
+.filter-group-genres {
+  margin-bottom: var(--space-4);
+}
+
+/* Поля фильтров (переопределяем) */
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* Кнопки в строке "на странице" - теперь просто гибкий контейнер */
 .filter-submit {
   display: flex;
   gap: var(--space-2);
-  grid-column: span 2;
 }
 
 .filter-submit .btn {
   flex: 1;
   white-space: nowrap;
+}
+
+/* ============================================
+   КАТАЛОГ: панель фильтров (усиленный glass)
+   ============================================ */
+
+.filter-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Декоративный градиентный блик внутри панели */
+.filter-panel::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(
+      circle at 30% 0%,
+      color-mix(in srgb, var(--color-accent) 8%, transparent) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 70% 100%,
+      color-mix(in srgb, var(--color-accent-2) 8%, transparent) 0%,
+      transparent 50%
+    );
+  pointer-events: none;
+  opacity: 0.6;
+  z-index: 0;
+  animation: filterPanelGlow 12s ease-in-out infinite alternate;
+}
+
+@keyframes filterPanelGlow {
+  0% {
+    transform: translate(-2%, -3%);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(2%, 3%);
+    opacity: 0.7;
+  }
+}
+
+.filter-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   ЖАНРЫ: категории и чипсы
+   ============================================ */
+
+.filter-group-genres {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.genre-category-title {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-faint);
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.genre-category-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-border-strong), transparent);
+}
+
+.genre-category {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.genre-category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.genre-chip {
+  position: relative;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: var(--button-ghost-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast),
+    color var(--transition-fast);
+  white-space: nowrap;
+  outline: none;
+  user-select: none;
+}
+
+.genre-chip:hover {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 18%, transparent);
+  transform: translateY(-1px);
+}
+
+.genre-chip:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
+.genre-chip.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text-inverse, #fff);
+  box-shadow:
+    0 0 14px var(--color-accent),
+    0 0 0 1px var(--color-accent-contrast);
+}
+
+.genre-chip.active:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 22px var(--color-accent),
+    0 0 0 1px var(--color-accent-contrast);
+}
+
+@keyframes chipIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.genre-chip:not(.active):not(:hover) {
+  animation: chipIn 0.25s ease forwards;
+}
+
+.genre-chosen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  min-height: 24px;
+}
+
+.genre-chosen:empty {
+  display: none;
+}
+
+/* ============================================
+   УСЛОВИЕ СОВПАДЕНИЯ ЖАНРОВ (сегмент)
+   ============================================ */
+
+.genre-mode-options {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-full);
+  background: var(--button-ghost-bg);
+  border: 1px solid var(--color-border);
+}
+
+.genre-mode-option {
+  display: inline-flex;
+}
+
+.genre-mode-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.genre-mode-option span {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.genre-mode-option:hover span {
+  transform: translateY(-1px);
+}
+
+.genre-mode-option input:focus-visible + span {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
+/* ============================================
+   ПОЛЯ ФИЛЬТРОВ
+   ============================================ */
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
 }
 
 @media (max-width: 900px) {
@@ -374,7 +689,7 @@
 .results-grid.results-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .results-grid.results-list .anime-card-list {
@@ -415,7 +730,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
   align-items: flex-start;
 }
 
@@ -428,7 +743,7 @@
 .results-grid.results-list .anime-card-list .card-meta {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
@@ -444,7 +759,7 @@
 
 @media (max-width: 640px) {
   .results-grid.results-list .anime-card-list {
-    gap: var(--space-3);
+    gap: var(--space-4);
   }
 
   .results-grid.results-list .anime-card-list .poster {
@@ -456,7 +771,7 @@
   .filter-group-genres {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-4);
   }
 
   .genre-picker {
@@ -468,7 +783,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-2);
+    gap: var(--space-3);
     padding: 9px 12px;
     border-radius: var(--radius-md);
     background: var(--color-surface-solid);
@@ -527,7 +842,7 @@
   .genre-option {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-3);
     padding: 8px 10px;
     border: none;
     border-radius: var(--radius-sm);
@@ -581,7 +896,7 @@
   .genre-chosen {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
+    gap: var(--space-3);
   }
 
   .genre-chosen:empty {
@@ -612,13 +927,13 @@
   }
 
   .genre-mode .filter-label {
-    margin-bottom: var(--space-2);
+    margin-bottom: var(--space-3);
   }
 
   .genre-mode-options {
     display: inline-flex;
-    padding: 3px;
-    gap: 3px;
+    padding: 4px;
+    gap: 4px;
     border-radius: var(--radius-full);
     background: var(--button-ghost-bg);
     border: 1px solid var(--color-border);
@@ -663,7 +978,7 @@
     position: relative;
     display: inline-flex;
     align-items: flex-start;
-    gap: var(--space-2);
+    gap: var(--space-3);
     cursor: pointer;
   }
 
