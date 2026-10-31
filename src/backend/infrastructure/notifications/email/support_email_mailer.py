@@ -1,0 +1,79 @@
+"""Пересылка тикета поддержки на служебный адрес по SMTP.
+
+Реализует порт `SupportEmailMailerInterface`: письмо формируется из доменной сущности
+тикета, а сбой доставки не отменяет сам тикет — статус проставляет сценарий.
+"""
+
+import asyncio
+import smtplib
+from email.message import EmailMessage
+
+from backend.config import Settings
+from backend.domain.entities.support.support_ticket import SupportTicket
+from backend.infrastructure.external._common import (
+    ExternalServiceConfigurationError,
+    ExternalServiceUnavailableError,
+)
+from backend.infrastructure.notifications.email.smtp_delivery import deliver_via_smtp
+
+
+class SupportEmailMailer:
+    """Отправляет тикеты поддержки на email команды."""
+
+    def __init__(self):
+        """Создать отправителя писем поддержки."""
+        self.recipient_emails = Settings.support_email_to
+
+    async def is_enabled(self) -> bool:
+        """Возвращает доступность email-канала поддержки по текущей конфигурации."""
+        return bool(Settings.smtp_host and Settings.smtp_from_email and self.recipient_emails)
+
+    async def send_ticket_created(self, ticket: SupportTicket) -> int:
+        """Отправляет тикет поддержки по email во все настроенные адреса."""
+        if not await self.is_enabled():
+            raise ExternalServiceConfigurationError(
+                "Support email delivery is not configured", service_name="smtp"
+            )
+
+        message = EmailMessage()
+        message["Subject"] = await self._build_subject(ticket)
+        message["From"] = Settings.smtp_from_email
+        message["To"] = ", ".join(self.recipient_emails)
+        if ticket.email:
+            message["Reply-To"] = ticket.email
+        message.set_content(await self._build_plain_text(ticket))
+
+        try:
+            await asyncio.to_thread(deliver_via_smtp, message)
+        except (OSError, smtplib.SMTPException) as error:
+            raise ExternalServiceUnavailableError(
+                "Не удалось отправить тикет по email. Проверьте SMTP и SUPPORT_EMAIL_TO.",
+                service_name="smtp",
+            ) from error
+
+        return len(self.recipient_emails)
+
+    async def _build_subject(self, ticket: SupportTicket) -> str:
+        """Формирует тему письма support-тикета."""
+        subject = " ".join(str(ticket.subject or "").split())
+        safe_subject = subject[:120] if len(subject) > 120 else subject
+        return f"AEM support #{ticket.id}: {safe_subject}"
+
+    async def _build_plain_text(self, ticket: SupportTicket) -> str:
+        """Собирает plain-text тело письма для нового тикета."""
+        created_at = ticket.created_at.strftime("%Y-%m-%d %H:%M:%S UTC")
+        lines = [
+            "Новый тикет поддержки Anime Epic Moments",
+            "",
+            f"ID: {ticket.id}",
+            f"Канал: {ticket.channel}",
+            f"Пользователь: {ticket.username}",
+            f"Email: {ticket.email}",
+            f"User ID: {ticket.user_id if ticket.user_id is not None else 'guest'}",
+            f"Тема: {ticket.subject}",
+            f"Создан: {created_at}",
+        ]
+        if ticket.page_url:
+            lines.append(f"Страница: {ticket.page_url}")
+        lines.extend(["", "Сообщение:", ticket.message])
+        return "\n".join(lines)
