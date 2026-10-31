@@ -1,7 +1,12 @@
+"""Правила уровня профиля, заметных тайтлов и накопленного просмотра."""
+
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable, Sequence
 
+from backend.domain.aggregates.highlight.highlight import Highlight
+from backend.domain.entities.favorite.favorite import Favorite
 from backend.domain.value_objects.highlight.profile_summary import HighlightProfileSummary
 from backend.domain.value_objects.user.smart_profile import (
     AchievementBadge,
@@ -9,11 +14,65 @@ from backend.domain.value_objects.user.smart_profile import (
     ProfileLevel,
     ProfileMoodInsight,
 )
+from backend.domain.value_objects.watch.page_data import WatchedAnimeStat
 
 HOURS_XP_RATE = 25
 HIGHLIGHT_XP = 15
 LIKE_RECEIVED_XP = 5
 RATING_XP = 10
+SECONDS_PER_HOUR = 3600
+WATCH_MINUTES_PER_WEIGHT = 600
+FAVORITE_WEIGHT = 8.0
+HIGHLIGHT_WEIGHT = 3.0
+
+
+def compute_hours_watched(watched_stats: Iterable[WatchedAnimeStat]) -> float:
+    """Переводит накопленные секунды просмотра в часы.
+
+    Args:
+        watched_stats: Агрегированная статистика просмотра по тайтлам.
+
+    Returns:
+        float: Часы просмотра с точностью до десятых.
+    """
+    total_seconds = sum(item.watched_seconds for item in watched_stats)
+    return round(total_seconds / SECONDS_PER_HOUR, 1)
+
+
+def rank_top_anime(
+    watched_stats: Sequence[WatchedAnimeStat],
+    favorites: Sequence[Favorite],
+    own_highlights: Sequence[Highlight],
+    limit: int = 5,
+) -> list[tuple[int, float]]:
+    """Ранжирует тайтлы пользователя по весу его внимания.
+
+    Часы просмотра считаются дробным весом, а осознанные действия —
+    фиксированными: избранное ценится выше, чем хайлайт, потому что в избранник
+    пользователь кладёт тайтл, который собирается смотреть дальше.
+
+    Args:
+        watched_stats: Агрегированная статистика просмотра по тайтлам.
+        favorites: Избранные тайтлы пользователя.
+        own_highlights: Хайлайты, созданные пользователем.
+        limit: Максимальное число тайтлов в выдаче.
+
+    Returns:
+        list[tuple[int, float]]: Пары «идентификатор, вес» по убыванию веса.
+    """
+    weights: dict[int, float] = {}
+    for item in watched_stats:
+        weights[item.anime_id] = weights.get(item.anime_id, 0.0) + (
+            item.watched_seconds / WATCH_MINUTES_PER_WEIGHT
+        )
+    for item in favorites:
+        anime_id = int(item.anime_id)
+        weights[anime_id] = weights.get(anime_id, 0.0) + FAVORITE_WEIGHT
+    for item in own_highlights:
+        anime_id = int(item.anime_id)
+        weights[anime_id] = weights.get(anime_id, 0.0) + HIGHLIGHT_WEIGHT
+    ranked = sorted(weights.items(), key=lambda value: (-value[1], value[0]))
+    return ranked[: max(int(limit), 0)]
 
 
 def compute_profile_level(

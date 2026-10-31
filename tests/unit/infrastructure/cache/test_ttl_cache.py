@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from backend.infrastructure.cache import ttl_cache as ttl_cache_module
 from backend.infrastructure.cache.ttl_cache import TTLCache
-from backend.utils import ttl_cache as ttl_cache_module
 
 
 @pytest.mark.unit

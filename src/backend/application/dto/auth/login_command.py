@@ -1,4 +1,4 @@
-"""Login form payload."""
+"""Данные формы входа."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class LoginCommand:
-    """Login form payload.
+    """Данные формы входа.
 
     Attributes:
-        email: Normalized user email.
-        password: Plain password.
+        email: Нормализованный адрес почты.
+        password: Пароль в открытом виде.
     """
 
     email: str

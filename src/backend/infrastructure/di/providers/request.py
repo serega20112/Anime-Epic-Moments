@@ -1,4 +1,4 @@
-"""Request-scoped providers: session, repositories, and business services."""
+"""Провайдеры уровня запроса: сессия, репозитории и бизнес-сервисы."""
 
 from __future__ import annotations
 
@@ -7,10 +7,24 @@ from collections.abc import AsyncIterator
 from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.application.interface.repositories.user_repository import (
+    UserRepository as UserRepositoryPort,
+)
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.services import WatchSourceSyncService
 from backend.application.services.recommendation_service import RecommendationService
-from backend.infrastructure.cache import RecommendationCache
+from backend.infrastructure.cache import RecommendationCache, WatchSourceCaches
+from backend.infrastructure.database.repositories.collection_repository import CollectionRepository
+from backend.infrastructure.database.repositories.favorite_repository import FavoriteRepository
+from backend.infrastructure.database.repositories.highlight_repository import HighlightRepository
+from backend.infrastructure.database.repositories.moment_repository import MomentRepository
+from backend.infrastructure.database.repositories.rating_repository import RatingRepository
+from backend.infrastructure.database.repositories.reaction_repository import ReactionRepository
+from backend.infrastructure.database.repositories.support_repository import SupportRepository
+from backend.infrastructure.database.repositories.user_repository import UserRepository
+from backend.infrastructure.database.repositories.watch_repository import WatchRepository
+from backend.infrastructure.database.session import get_session_factory
+from backend.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWork
 from backend.infrastructure.external import (
     AniBoomProvider,
     AniLibriaClient,
@@ -25,176 +39,89 @@ from backend.infrastructure.external import (
     KodikClient,
     SamebandProvider,
 )
-from backend.infrastructure.external.youtube_client import YouTubeClient
-from backend.infrastructure.files.database import get_session_factory
-from backend.infrastructure.repositories.collection_repository import CollectionRepository
-from backend.infrastructure.repositories.favorite_repository import FavoriteRepository
-from backend.infrastructure.repositories.highlight_repository import HighlightRepository
-from backend.infrastructure.repositories.moment_repository import MomentRepository
-from backend.infrastructure.repositories.rating_repository import RatingRepository
-from backend.infrastructure.repositories.reaction_repository import ReactionRepository
-from backend.infrastructure.repositories.support_repository import SupportRepository
-from backend.infrastructure.repositories.user_repository import UserRepository
-from backend.infrastructure.repositories.watch_repository import WatchRepository
-from backend.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
+from backend.infrastructure.external.video import YouTubeClient
 
 
 class RequestProvider(Provider):
-    """Provide request-scoped repositories and services."""
+    """Провайдер репозиториев и сервисов уровня запроса."""
 
     @provide(scope=Scope.REQUEST)
     async def session(self) -> AsyncIterator[AsyncSession]:
-        """Provide an async database session.
-
-        Yields:
-            AsyncSession: Database session.
-        """
+        """Открыть асинхронную сессию базы данных на время запроса."""
         factory = await get_session_factory()
         async with factory() as session:
             yield session
 
     @provide(scope=Scope.REQUEST)
     async def unit_of_work(self, session: AsyncSession) -> UnitOfWorkInterface:
-        """Provide the transaction boundary for a request.
-
-        Args:
-            session: Database session.
-
-        Returns:
-            UnitOfWorkInterface: Unit of work sharing the request session.
-        """
+        """Создать единицу работы с общей сессией запроса."""
         return SqlAlchemyUnitOfWork(session)
 
     @provide(scope=Scope.REQUEST)
     async def user_repository(self, session: AsyncSession) -> UserRepository:
-        """Provide the user repository.
-
-        Args:
-            session: Database session.
-
-        Returns:
-            UserRepository: Configured repository.
-        """
+        """Создать репозиторий пользователей."""
         return UserRepository(session)
 
     @provide(scope=Scope.REQUEST)
-    async def highlight_repository(self, session: AsyncSession) -> HighlightRepository:
-        """Provide the highlight repository.
+    async def user_repository_port(self, repository: UserRepository) -> UserRepositoryPort:
+        """Опубликовать репозиторий пользователей через его порт.
 
         Args:
-            session: Database session.
+            repository: Конкретный репозиторий пользователей.
 
         Returns:
-            HighlightRepository: Configured repository.
+            UserRepositoryPort: Тот же репозиторий под абстракцией порта.
         """
+        return repository
+
+    @provide(scope=Scope.REQUEST)
+    async def highlight_repository(self, session: AsyncSession) -> HighlightRepository:
+        """Создать репозиторий хайлайтов."""
         return HighlightRepository(session)
 
     @provide(scope=Scope.REQUEST)
     async def favorite_repository(self, session: AsyncSession) -> FavoriteRepository:
-        """Provide the favorite repository.
-
-        Args:
-            session: Database session.
-
-        Returns:
-            FavoriteRepository: Configured repository.
-        """
+        """Создать репозиторий избранного."""
         return FavoriteRepository(session)
 
     @provide(scope=Scope.REQUEST)
     async def collection_repository(self, session: AsyncSession) -> CollectionRepository:
-        """Provide the collection repository.
-
-        Args:
-            session: Database session.
-
-        Returns:
-            CollectionRepository: Configured repository.
-        """
+        """Создать репозиторий коллекций."""
         return CollectionRepository(session)
 
     @provide(scope=Scope.REQUEST)
     async def watch_repository(self, session: AsyncSession) -> WatchRepository:
-        """Provide the watch repository.
-
-        Args:
-            session: Database session.
-
-        Returns:
-            WatchRepository: Configured repository.
-        """
+        """Создать репозиторий просмотра."""
         return WatchRepository(session)
 
     @provide(scope=Scope.REQUEST)
     async def rating_repository(self, session: AsyncSession) -> RatingRepository:
-        """Provide the rating repository.
-
-        Args:
-            session: Database session.
-
-        Returns:
-            RatingRepository: Configured repository.
-        """
+        """Создать репозиторий оценок."""
         return RatingRepository(session)
 
     @provide(scope=Scope.REQUEST)
     async def support_repository(self, session: AsyncSession) -> SupportRepository:
-        """Provide the support repository.
-
-        Args:
-            session: Database session.
-
-        Returns:
-            SupportRepository: Configured repository.
-        """
+        """Создать репозиторий обращений в поддержку."""
         return SupportRepository(session)
 
     @provide(scope=Scope.REQUEST)
     async def reaction_repository(self, session: AsyncSession) -> ReactionRepository:
-        """Provide the reaction repository.
-
-        Args:
-            session: Database session.
-
-        Returns:
-            ReactionRepository: Configured repository.
-        """
+        """Создать репозиторий реакций."""
         return ReactionRepository(session)
 
     @provide(scope=Scope.REQUEST)
     async def moment_repository(self, session: AsyncSession) -> MomentRepository:
-        """Provide the moment repository.
-
-        Args:
-            session: Database session.
-
-        Returns:
-            MomentRepository: Configured repository.
-        """
+        """Создать репозиторий моментов просмотра."""
         return MomentRepository(session)
 
     @provide(scope=Scope.REQUEST)
     async def recommendation_service(
         self,
-        favorite_repository: FavoriteRepository,
-        highlight_repository: HighlightRepository,
         anime_api_client: AnimeApiClient,
         recommendation_cache: RecommendationCache,
     ) -> RecommendationService:
-        """Provide the recommendation service.
-
-        Args:
-            favorite_repository: Favorite repository.
-            highlight_repository: Highlight repository.
-            anime_api_client: Anime API client.
-            recommendation_cache: Recommendation cache.
-
-        Returns:
-            RecommendationService: Configured service.
-        """
+        """Создать сервис рекомендаций."""
         return RecommendationService(
-            favorite_repository,
-            highlight_repository,
             anime_api_client,
             recommendation_cache,
         )
@@ -202,7 +129,6 @@ class RequestProvider(Provider):
     @provide(scope=Scope.REQUEST)
     async def watch_source_sync_service(
         self,
-        watch_repository: WatchRepository,
         kodik_client: KodikClient,
         anilibria_client: AniLibriaClient,
         sameband_provider: SamebandProvider,
@@ -215,30 +141,31 @@ class RequestProvider(Provider):
         eporner_provider: EpornerProvider,
         youtube_client: YouTubeClient,
         justwatch_client: JustWatchClient,
+        caches: WatchSourceCaches,
     ) -> WatchSourceSyncService:
-        """Provide the watch source sync service.
+        """Создать сервис синхронизации источников просмотра.
 
         Args:
-            watch_repository: Watch repository.
-            kodik_client: Kodik client.
-            anilibria_client: AniLibria client.
-            sameband_provider: SameBand provider.
-            aniboom_provider: AniBoom provider.
-            hanime_provider: Hanime.tv provider.
-            animego_provider: AnimeGo scraper (feeds Sibnet/AniBoom extractors).
-            kinobox_provider: Kinobox aggregator provider.
-            hdrezka_provider: HDRezka parser.
-            hentaigasm_provider: Hentaigasm hentai provider (прямой MP4).
-            eporner_provider: Eporner hentai/adult API provider (для тайтлов,
-                где hanime недоступен).
-            youtube_client: YouTube client.
-            justwatch_client: JustWatch client.
+            kodik_client: Клиент Kodik.
+            anilibria_client: Клиент AniLibria.
+            sameband_provider: Провайдер SameBand.
+            aniboom_provider: Провайдер AniBoom.
+            hanime_provider: Провайдер Hanime.tv.
+            animego_provider: Скрапер AnimeGo, питающий извлекатели Sibnet и
+                AniBoom.
+            kinobox_provider: Провайдер-агрегатор Kinobox.
+            hdrezka_provider: Парсер HDRezka.
+            hentaigasm_provider: Провайдер хентая Hentaigasm с прямыми MP4.
+            eporner_provider: API-провайдер хентая Eporner для тайтлов, где
+                Hanime недоступен.
+            youtube_client: Клиент YouTube.
+            justwatch_client: Клиент JustWatch.
+            caches: Внутрипроцессные кэши сервиса.
 
         Returns:
-            WatchSourceSyncService: Configured service.
+            WatchSourceSyncService: Настроенный сервис.
         """
         return WatchSourceSyncService(
-            watch_repository,
             [
                 animego_provider,
                 kodik_client,
@@ -253,4 +180,6 @@ class RequestProvider(Provider):
                 youtube_client,
                 justwatch_client,
             ],
+            empty_result_cache=caches.empty_results,
+            availability_cache=caches.availability,
         )

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from backend.domain.aggregates.highlight.highlight import Highlight, InvalidHighlightTimeError
+from backend.domain.aggregates.highlight.highlight import Highlight
+from backend.domain.exceptions import ValidationError
 
 
 class TestHighlightValidation:
@@ -14,9 +15,9 @@ class TestHighlightValidation:
         """Что тестируем: валидацию временного интервала при создании Highlight.
 
         Что передаём: интервал, где end_timestamp не больше start_timestamp.
-        Что ожидаем: выбрасывается InvalidHighlightTimeError.
+        Что ожидаем: выбрасывается ValidationError.
         """
-        with pytest.raises(InvalidHighlightTimeError):
+        with pytest.raises(ValidationError):
             Highlight(
                 user_id=1,
                 anime_id=7,

@@ -14,6 +14,7 @@ from backend.application.use_cases import (
 )
 from backend.domain import EpisodeReactionType
 from backend.domain.value_objects.reaction.reaction_summary import EpisodeReactionCount
+from tests.support.fakes import FakeUnitOfWork
 
 
 @pytest.mark.unit
@@ -30,7 +31,7 @@ class TestGetEpisodeReactionsUseCase:
             EpisodeReactionCount(reaction_type=EpisodeReactionType.FIRE, count=3)
         ]
         reaction_repo.get_user_reaction.return_value = SimpleReaction(EpisodeReactionType.FIRE)
-        use_case = GetEpisodeReactionsUseCase(reaction_repo)
+        use_case = GetEpisodeReactionsUseCase(FakeUnitOfWork(ReactionRepository=reaction_repo))
 
         result = await use_case.execute(GetEpisodeReactionsQuery(anime_id=9, episode=2, user_id=1))
 
@@ -44,7 +45,7 @@ class TestGetEpisodeReactionsUseCase:
         Что ожидаем: failure со статусом 400, репозиторий не вызывается.
         """
         reaction_repo = AsyncMock()
-        use_case = GetEpisodeReactionsUseCase(reaction_repo)
+        use_case = GetEpisodeReactionsUseCase(FakeUnitOfWork(ReactionRepository=reaction_repo))
 
         result = await use_case.execute(GetEpisodeReactionsQuery(anime_id=9, episode=0, user_id=1))
 
@@ -65,7 +66,7 @@ class TestSetEpisodeReactionUseCase:
         reaction_repo = AsyncMock()
         reaction_repo.get_reaction_counts.return_value = []
         reaction_repo.get_user_reaction.return_value = SimpleReaction(EpisodeReactionType.LOVE)
-        use_case = SetEpisodeReactionUseCase(reaction_repo)
+        use_case = SetEpisodeReactionUseCase(FakeUnitOfWork(ReactionRepository=reaction_repo))
 
         result = await use_case.execute(
             SetEpisodeReactionCommand(
@@ -94,7 +95,7 @@ class TestSetEpisodeReactionUseCase:
         reaction_repo = AsyncMock()
         reaction_repo.get_reaction_counts.return_value = []
         reaction_repo.get_user_reaction.return_value = None
-        use_case = SetEpisodeReactionUseCase(reaction_repo)
+        use_case = SetEpisodeReactionUseCase(FakeUnitOfWork(ReactionRepository=reaction_repo))
 
         result = await use_case.execute(
             SetEpisodeReactionCommand(
@@ -117,7 +118,7 @@ class TestSetEpisodeReactionUseCase:
         Что ожидаем: failure со статусом 400, репозиторий не вызывается.
         """
         reaction_repo = AsyncMock()
-        use_case = SetEpisodeReactionUseCase(reaction_repo)
+        use_case = SetEpisodeReactionUseCase(FakeUnitOfWork(ReactionRepository=reaction_repo))
 
         result = await use_case.execute(
             SetEpisodeReactionCommand(

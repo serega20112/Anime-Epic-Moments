@@ -1,8 +1,12 @@
+"""Карточка аниме из избранного."""
+
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class FavoriteAnimeCard:
+    """Аниме из избранного в виде карточки для интерфейса."""
+
     anime_id: int
     title: str
     description: str

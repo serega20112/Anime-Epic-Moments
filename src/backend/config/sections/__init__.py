@@ -1,8 +1,4 @@
-"""Settings section loaders.
-
-Each module provides pure builder functions that read environment
-variables at call time so values can be refreshed on module reload.
-"""
+"""Загрузчики секций настроек."""
 
 from backend.config.sections import auth, database, external, redis_, security, server
 

@@ -1,3 +1,5 @@
+"""Обзор профиля пользователя: активность, оценки и подписки."""
+
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -10,14 +12,10 @@ from backend.domain.value_objects.highlight.profile_summary import (
 from backend.domain.value_objects.user.smart_profile import ProfileLevel, SmartProfile
 
 
-@dataclass
-class ViewingHeatmapCell:
-    date: str
-    interactions: int
-
-
-@dataclass
+@dataclass(frozen=True)
 class RecentEpisodeCard:
+    """Карточка недавно просмотренной серии."""
+
     anime_id: int
     title: str
     original_title: str | None
@@ -26,8 +24,10 @@ class RecentEpisodeCard:
     updated_at: datetime
 
 
-@dataclass
+@dataclass(frozen=True)
 class UserRatingCard:
+    """Карточка оценки, выставленной пользователем."""
+
     anime_id: int
     title: str
     cover_url: str | None
@@ -35,8 +35,10 @@ class UserRatingCard:
     rated_at: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProfileOverview:
+    """Полный обзор собственного профиля пользователя."""
+
     user_id: int
     email: str
     username: str
@@ -59,16 +61,20 @@ class ProfileOverview:
     following_count: int = 0
 
 
-@dataclass
+@dataclass(frozen=True)
 class FollowUserCard:
+    """Карточка пользователя из подписок или подписчиков."""
+
     user_id: int
     username: str
     avatar_url: str | None
     profile_url: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class PublicProfileOverview:
+    """Обзор публичного профиля для других пользователей."""
+
     profile: ProfileOverview
     public_collections: list[CollectionCard]
     followers_preview: list[FollowUserCard]

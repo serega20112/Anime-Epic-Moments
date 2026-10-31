@@ -1,34 +1,70 @@
-"""Abstract watch source sync service interface."""
+"""Порт сервиса синхронизации источников просмотра."""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
+from backend.domain.entities.anime.anime import Anime
+from backend.domain.entities.watch.watch_source import WatchSource
+from backend.domain.value_objects.watch.translation_availability import (
+    TranslationEpisodeAvailability,
+)
 
 
 class WatchSourceSyncServiceInterface(ABC):
-    """Interface for syncing watch sources."""
+    """Синхронизация источников и доступности озвучек.
+
+    Границу транзакции задаёт вызывающий сценарий: запись источников всегда
+    выполняется через переданную единицу работы, поэтому сервис не держит
+    собственный репозиторий и не решает, когда фиксировать изменения.
+    """
 
     @abstractmethod
-    async def sync_sources(self, anime_id: int) -> list[Any]:
-        """Sync watch sources for an anime.
+    async def sync_for_anime(
+        self,
+        unit_of_work: UnitOfWorkInterface,
+        anime_id: int,
+        anime: Anime | None,
+        episode: int,
+        force: bool = False,
+    ) -> list[WatchSource]:
+        """Подтянуть и сохранить источники для конкретной серии тайтла.
 
         Args:
-            anime_id: The anime identifier.
+            unit_of_work: Граница транзакции вызывающего сценария.
+            anime_id: Идентификатор тайтла в локальном каталоге.
+            anime: Карточка тайтла из каталога либо None.
+            episode: Номер серии.
+            force: Признак принудительного опроса, сбрасывающего кэш отметок.
 
         Returns:
-            list[Any]: List of watch source objects.
+            list[WatchSource]: Источники серии после синхронизации.
         """
 
     @abstractmethod
-    async def add_watch_source(self, source_data: dict[str, Any]) -> Any:
-        """Add a watch source.
-
-        Args:
-            source_data: Dictionary with source information.
+    async def is_enabled(self) -> bool:
+        """Проверить, включён ли хотя бы один внешний провайдер.
 
         Returns:
-            Any: The created watch source.
+            bool: True, если есть хотя бы один включённый провайдер.
+        """
+
+    @abstractmethod
+    async def get_enabled_provider_names(self) -> list[str]:
+        """Перечислить имена включённых провайдеров.
+
+        Returns:
+            list[str]: Имена включённых провайдеров.
+        """
+
+    @abstractmethod
+    async def get_provider_label(self) -> str | None:
+        """Собрать подпись провайдеров для интерфейса.
+
+        Returns:
+            str | None: Перечисленные через запятую имена либо None, если
+            включённых провайдеров нет.
         """
 
     @abstractmethod
@@ -38,8 +74,8 @@ class WatchSourceSyncServiceInterface(ABC):
         year: int | None = None,
         shikimori_id: int | None = None,
         genres: list[str] | None = None,
-    ) -> list[Any]:
-        """Возвращает карту доступности серий по озвучкам тайтла.
+    ) -> list[TranslationEpisodeAvailability]:
+        """Вернуть карту доступности серий по озвучкам тайтла.
 
         Args:
             title: Название тайтла.
@@ -49,6 +85,6 @@ class WatchSourceSyncServiceInterface(ABC):
                 профильные провайдеры).
 
         Returns:
-            list[Any]: Карта доступности серий по озвучкам; пустой список,
-            если ни один провайдер не умеет.
+            list[TranslationEpisodeAvailability]: Карта доступности серий по
+            озвучкам; пустой список, если ни один провайдер её не поддерживает.
         """

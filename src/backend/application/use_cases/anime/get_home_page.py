@@ -1,50 +1,38 @@
-"""Use case for the home page: resolves the current anime season and year."""
+"""Сценарий домашней страницы: разрешает текущее время года аниме."""
 
 from __future__ import annotations
 
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime
+
+from backend.application.dto.anime import HomePageQuery
+from backend.domain.policies.anime_season_policy import season_of
 
 
+@dataclass(frozen=True, slots=True)
 class CurrentSeason:
-    """Current anime season resolved for the home page.
+    """Текущий сезон аниме для главной страницы.
 
     Attributes:
-        year: Calendar year of the season.
-        season: Season name (winter, spring, summer, fall).
+        year: Год, к которому относится сезон.
+        season: Название сезона по нумерации аниме-индустрии.
     """
 
-    __slots__ = ("year", "season")
-
-    def __init__(self, year: int, season: str):
-        """Initialize the season value object.
-
-        Args:
-            year: Season year.
-            season: Season name.
-        """
-        self.year = year
-        self.season = season
+    year: int
+    season: str
 
 
 class GetHomePageUseCase:
-    """Build home page context including the current anime season."""
+    """Сценарий подготовки домашней страницы: разрешает текущее время года аниме."""
 
-    async def execute(self, now: datetime | None = None) -> CurrentSeason:
-        """Resolve the current anime season from the current month.
+    async def execute(self, query: HomePageQuery) -> CurrentSeason:
+        """Разрешить текущее время года аниме из месяца запроса.
 
         Args:
-            now: Fixed clock for deterministic testing. Defaults to UTC now.
+            query: Момент наблюдения сезона; без значения берётся текущее UTC.
 
         Returns:
-            CurrentSeason: Current season and year.
+            CurrentSeason: Текущее время года и год.
         """
-        current = now or datetime.utcnow()
-        month = int(current.month)
-        year = int(current.year)
-        if month in {12, 1, 2}:
-            return CurrentSeason(year, "winter")
-        if month in {3, 4, 5}:
-            return CurrentSeason(year, "spring")
-        if month in {6, 7, 8}:
-            return CurrentSeason(year, "summer")
-        return CurrentSeason(year, "fall")
+        moment = query.moment or datetime.now(UTC)
+        return CurrentSeason(year=int(moment.year), season=season_of(moment))

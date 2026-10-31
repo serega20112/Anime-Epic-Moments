@@ -1,22 +1,48 @@
+"""Список избранного пользователя."""
+
+from __future__ import annotations
+
+from backend.application.dto.favorite.get_favorites_query import GetFavoritesQuery
 from backend.application.interface.repositories.favorite_repository import FavoriteRepository
-from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.interface.services import AnimeApiClientInterface
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.domain.value_objects.favorite.favorite_card import FavoriteAnimeCard
 
 
 class GetFavoritesUseCase:
-    def __init__(self, repo: FavoriteRepository, anime_api_client: AnimeApiClient):
-        self.repo = repo
-        self.anime_api_client = anime_api_client
+    """Возвращает карточки избранного пользователя."""
 
-    async def execute(self, user_id: int) -> list[FavoriteAnimeCard]:
-        favorites = await self.repo.get_by_user(user_id)
+    def __init__(
+        self,
+        uow: UnitOfWorkInterface,
+        anime_api_client: AnimeApiClientInterface,
+    ) -> None:
+        """Инициализирует сценарий получения избранного.
+
+        Args:
+            uow: Единица работы, через которую берётся репозиторий.
+            anime_api_client: Клиент API аниме для дополнения данных.
+        """
+        self._uow = uow
+        self._anime_api_client = anime_api_client
+
+    async def execute(self, query: GetFavoritesQuery) -> list[FavoriteAnimeCard]:
+        """Собирает карточки избранного, дополняя их данными каталога.
+
+        Args:
+            query: Запрос с идентификатором пользователя.
+
+        Returns:
+            list[FavoriteAnimeCard]: Карточки аниме в порядке добавления.
+        """
+        async with self._uow as uow:
+            favorites = await uow.repository(FavoriteRepository).get_by_user(query.user_id)
         result: list[FavoriteAnimeCard] = []
         for favorite in favorites:
             anime = None
-            needs_remote_lookup = not favorite.title
-            if needs_remote_lookup:
-                anime = await self.anime_api_client.get_by_id(favorite.anime_id)
-            watch_id = await self._resolve_watch_id(
+            if not favorite.title:
+                anime = await self._anime_api_client.get_by_id(favorite.anime_id)
+            watch_id = self._resolve_watch_id(
                 stored_anime_id=favorite.anime_id,
                 resolved_external_id=anime.external_id if anime else None,
             )
@@ -47,10 +73,16 @@ class GetFavoritesUseCase:
             )
         return result
 
-    async def _resolve_watch_id(
-        self, stored_anime_id: int, resolved_external_id: str | None
-    ) -> int:
-        """Выбирает id для построения watch-ссылки."""
+    def _resolve_watch_id(self, stored_anime_id: int, resolved_external_id: str | None) -> int:
+        """Выбирает идентификатор для построения watch-ссылки.
+
+        Args:
+            stored_anime_id: Хранимый идентификатор аниме.
+            resolved_external_id: Внешний идентификатор от API.
+
+        Returns:
+            int: Идентификатор для watch-ссылки.
+        """
         try:
             numeric_id = int(str(resolved_external_id or "").strip())
             return numeric_id if numeric_id > 0 else int(stored_anime_id)

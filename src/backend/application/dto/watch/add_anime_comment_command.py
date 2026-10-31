@@ -1,4 +1,4 @@
-"""Add a comment to an anime discussion."""
+"""Добавление комментария в обсуждение аниме."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class AddAnimeCommentCommand:
-    """Add a comment to an anime discussion.
+    """Команда добавления комментария в обсуждение.
 
     Attributes:
-        anime_id: Anime identifier.
-        user_id: Author identifier.
-        content: Comment text.
+        anime_id: Идентификатор аниме.
+        user_id: Идентификатор автора комментария.
+        content: Текст комментария.
     """
 
     anime_id: int

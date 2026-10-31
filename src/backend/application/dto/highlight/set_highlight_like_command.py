@@ -1,4 +1,4 @@
-"""Set or remove a highlight like payload."""
+"""Постановка и снятие лайка хайлайту."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class SetHighlightLikeCommand:
-    """Set or remove a highlight like payload.
+    """Команда изменения лайка хайлайта.
 
     Attributes:
-        highlight_id: Highlight identifier.
-        user_id: Acting user identifier.
-        liked: True to like, False to remove like.
+        highlight_id: Идентификатор хайлайта.
+        user_id: Идентификатор действующего пользователя.
+        liked: True — поставить лайк, False — снять.
     """
 
     highlight_id: int

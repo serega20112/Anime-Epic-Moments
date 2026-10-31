@@ -2,6 +2,16 @@
 
 from backend.domain.policies.anime_safety_policy import AnimeSafetyPolicy
 from backend.domain.policies.highlight_policy import HighlightPolicy
+from backend.domain.policies.recommendation_lexicon import (
+    extract_subject_terms,
+    extract_terms,
+    normalize_term,
+)
+from backend.domain.policies.recommendation_policy import (
+    finalize_recommendations,
+    score_candidate,
+    score_taste_similarity,
+)
 from backend.domain.policies.user_profile_policy import (
     build_achievement_badges,
     build_genre_affinities,
@@ -15,6 +25,8 @@ from backend.domain.policies.watch_policy import (
     is_valid_anime_status,
     normalize_anime_status,
     normalize_translation_name,
+    quality_rank,
+    source_type_priority,
 )
 
 __all__ = [
@@ -25,9 +37,17 @@ __all__ = [
     "build_genre_affinities",
     "canonicalize_translation_name",
     "detect_profile_mood",
+    "extract_subject_terms",
+    "extract_terms",
+    "finalize_recommendations",
     "get_translation_priority",
     "is_preferred_translation",
     "is_valid_anime_status",
     "normalize_anime_status",
+    "normalize_term",
     "normalize_translation_name",
+    "quality_rank",
+    "score_candidate",
+    "score_taste_similarity",
+    "source_type_priority",
 ]

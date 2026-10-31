@@ -1,12 +1,16 @@
+"""Сценарий сохранения и удаления хайлайта из сохранённых."""
+
+from __future__ import annotations
+
 from starlette import status
 
 from backend.application.dto import SetSavedHighlightCommand
 from backend.application.interface.repositories.highlight_repository import HighlightRepository
 from backend.application.interface.services.profile_overview_cache import (
-    ProfileOverviewCacheInterface as ProfileOverviewCache,
+    ProfileOverviewCacheInterface,
 )
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
-from backend.application.use_cases.highlight.result import HighlightResult
+from backend.application.use_cases.result import UseCaseResult
 
 
 class SetSavedHighlightUseCase:
@@ -14,38 +18,37 @@ class SetSavedHighlightUseCase:
 
     def __init__(
         self,
-        repo: HighlightRepository,
         unit_of_work: UnitOfWorkInterface,
-        profile_overview_cache: ProfileOverviewCache | None = None,
-    ):
-        self.repo = repo
-        self.profile_overview_cache = profile_overview_cache
-        self.unit_of_work = unit_of_work
-
-    async def execute(self, command: SetSavedHighlightCommand) -> HighlightResult:
-        """Save or unsave a highlight within a transaction."""
-        async with self.unit_of_work:
-            return await self._execute(command)
-
-    async def _execute(self, command: SetSavedHighlightCommand) -> HighlightResult:
-        """Save or unsave a highlight.
+        profile_overview_cache: ProfileOverviewCacheInterface,
+    ) -> None:
+        """Инициализирует сценарий сохранения хайлайта.
 
         Args:
-            command: Set saved command.
+            unit_of_work: Граница транзакции изменения отметки сохранения.
+            profile_overview_cache: Кэш обзора профиля зрителя.
+        """
+        self._unit_of_work = unit_of_work
+        self._profile_overview_cache = profile_overview_cache
+
+    async def execute(self, command: SetSavedHighlightCommand) -> UseCaseResult:
+        """Сохраняет или удаляет хайлайт из коллекции внутри транзакции.
+
+        Args:
+            command: Команда сохранения или удаления из коллекции.
 
         Returns:
-            HighlightResult: Result with the saved state.
+            UseCaseResult: Результат с состоянием сохранения.
         """
-        highlight = await self.repo.get_by_id(command.highlight_id)
-        if not highlight:
-            return await HighlightResult.failure(
-                "highlight_not_found", status_code=status.HTTP_404_NOT_FOUND
+        async with self._unit_of_work as uow:
+            repository = uow.repository(HighlightRepository)
+            if await repository.get_by_id(command.highlight_id) is None:
+                return UseCaseResult.failure(
+                    "highlight_not_found", status_code=status.HTTP_404_NOT_FOUND
+                )
+            saved = await repository.set_saved(
+                highlight_id=command.highlight_id,
+                user_id=command.user_id,
+                saved=command.saved,
             )
-        result = await self.repo.set_saved(
-            highlight_id=command.highlight_id,
-            user_id=command.user_id,
-            saved=command.saved,
-        )
-        if self.profile_overview_cache is not None:
-            await self.profile_overview_cache.invalidate_user(command.user_id)
-        return await HighlightResult.success(result)
+        await self._profile_overview_cache.invalidate_user(command.user_id)
+        return UseCaseResult.success(saved)

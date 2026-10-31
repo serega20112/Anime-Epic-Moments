@@ -1,19 +1,23 @@
-"""Application use cases facade."""
+"""Фасад сценариев использования приложения."""
 
 from __future__ import annotations
 
+from backend.application.use_cases.anime.autocomplete_anime import AutocompleteAnimeUseCase
 from backend.application.use_cases.anime.filter_anime_catalog import FilterAnimeCatalogUseCase
+from backend.application.use_cases.anime.get_home_page import GetHomePageUseCase
 from backend.application.use_cases.anime.get_season_popular import GetSeasonPopularUseCase
 from backend.application.use_cases.anime.search_anime import SearchAnimeUseCase
 from backend.application.use_cases.anime.search_anime_by_description import (
     SearchAnimeByDescriptionUseCase,
 )
+from backend.application.use_cases.auth.login_register.login_user import LoginUserUseCase
 from backend.application.use_cases.auth.login_register.logout_user import LogoutUserUseCase
 from backend.application.use_cases.auth.login_register.refresh_session import RefreshSessionUseCase
 from backend.application.use_cases.auth.login_register.register_user import RegisterUserUseCase
 from backend.application.use_cases.auth.password_reset.request_password_reset import (
     RequestPasswordResetUseCase,
 )
+from backend.application.use_cases.auth.password_reset.reset_password import ResetPasswordUseCase
 from backend.application.use_cases.auth.profile.get_profile_overview import (
     GetProfileOverviewUseCase,
 )
@@ -34,8 +38,11 @@ from backend.application.use_cases.collection.get_user_collections import GetUse
 from backend.application.use_cases.collection.remove_collection_item import (
     RemoveCollectionItemUseCase,
 )
+from backend.application.use_cases.favorite.add_favorite import AddFavoriteUseCase
 from backend.application.use_cases.favorite.get_favorite_ids import GetFavoriteIdsUseCase
 from backend.application.use_cases.favorite.get_favorites import GetFavoritesUseCase
+from backend.application.use_cases.favorite.remove_favorite import RemoveFavoriteUseCase
+from backend.application.use_cases.highlight.crud.create_highlight import CreateHighlightUseCase
 from backend.application.use_cases.highlight.crud.delete_highlight import DeleteHighlightUseCase
 from backend.application.use_cases.highlight.crud.edit_highlight import EditHighlightUseCase
 from backend.application.use_cases.highlight.feed.get_highlight_feed import GetHighlightFeedUseCase
@@ -54,7 +61,6 @@ from backend.application.use_cases.highlight.feed.get_shared_highlight import (
 from backend.application.use_cases.highlight.feed.get_user_highlights import (
     GetUserHighlightsUseCase,
 )
-from backend.application.use_cases.highlight.result import HighlightResult
 from backend.application.use_cases.highlight.social.add_highlight_comment import (
     AddHighlightCommentUseCase,
 )
@@ -78,14 +84,12 @@ from backend.application.use_cases.moment.get_user_viewing_moments import (
     GetUserViewingMomentsUseCase,
 )
 from backend.application.use_cases.moment.publish_viewing_moment import PublishViewingMomentUseCase
-from backend.application.use_cases.moment.result import MomentResult
 from backend.application.use_cases.moment.save_viewing_moment import SaveViewingMomentUseCase
 from backend.application.use_cases.rating.get_user_ratings import GetUserRatingsUseCase
 from backend.application.use_cases.rating.set_user_anime_rating import SetUserAnimeRatingUseCase
 from backend.application.use_cases.reaction.get_episode_reactions import (
     GetEpisodeReactionsUseCase,
 )
-from backend.application.use_cases.reaction.result import ReactionResult
 from backend.application.use_cases.reaction.set_episode_reaction import (
     SetEpisodeReactionUseCase,
 )
@@ -98,7 +102,7 @@ from backend.application.use_cases.recommendation.generate_recommendations impor
 from backend.application.use_cases.recommendation.refresh_recommendations import (
     RefreshRecommendationsUseCase,
 )
-from backend.application.use_cases.recommendation.result import RecommendationUseCaseResult
+from backend.application.use_cases.result import UseCaseResult
 from backend.application.use_cases.support.create_support_ticket import CreateSupportTicketUseCase
 from backend.application.use_cases.user.get_following_highlights import (
     GetFollowingHighlightsUseCase,
@@ -106,7 +110,6 @@ from backend.application.use_cases.user.get_following_highlights import (
 from backend.application.use_cases.user.get_public_profile_overview import (
     GetPublicProfileOverviewUseCase,
 )
-from backend.application.use_cases.user.result import UserResult
 from backend.application.use_cases.user.set_user_follow import SetUserFollowUseCase
 from backend.application.use_cases.watch.discussion.add_anime_comment import AddAnimeCommentUseCase
 from backend.application.use_cases.watch.discussion.get_anime_discussion import (
@@ -115,9 +118,14 @@ from backend.application.use_cases.watch.discussion.get_anime_discussion import 
 from backend.application.use_cases.watch.discussion.set_anime_comment_like import (
     SetAnimeCommentLikeUseCase,
 )
+from backend.application.use_cases.watch.highlight.create_watch_highlight import (
+    CreateWatchHighlightUseCase,
+)
 from backend.application.use_cases.watch.page.get_watch_page import GetWatchPageUseCase
-from backend.application.use_cases.watch.result import WatchResult
 from backend.application.use_cases.watch.session.complete_episode import CompleteEpisodeUseCase
+from backend.application.use_cases.watch.session.save_viewing_session import (
+    SaveViewingSessionUseCase,
+)
 from backend.application.use_cases.watch.session.upsert_user_anime_status import (
     UpsertUserAnimeStatusUseCase,
 )
@@ -127,12 +135,16 @@ from backend.application.use_cases.watch.sources.sync_watch_sources import SyncW
 __all__ = [
     "AddAnimeCommentUseCase",
     "AddCollectionItemUseCase",
+    "AddFavoriteUseCase",
     "AddHighlightCommentUseCase",
     "AddWatchSourceUseCase",
     "AskAiRecommendationsUseCase",
+    "AutocompleteAnimeUseCase",
     "CompleteEpisodeUseCase",
     "CreateCollectionUseCase",
+    "CreateHighlightUseCase",
     "CreateSupportTicketUseCase",
+    "CreateWatchHighlightUseCase",
     "DeleteHighlightUseCase",
     "DeleteViewingMomentUseCase",
     "EditHighlightUseCase",
@@ -147,6 +159,7 @@ __all__ = [
     "GetHighlightFeedUseCase",
     "GetHighlightLikersUseCase",
     "GetHighlightNotificationsUseCase",
+    "GetHomePageUseCase",
     "GetLikedHighlightsUseCase",
     "GetProfileOverviewUseCase",
     "GetPublicProfileOverviewUseCase",
@@ -160,22 +173,22 @@ __all__ = [
     "GetUserRatingsUseCase",
     "GetUserViewingMomentsUseCase",
     "GetWatchPageUseCase",
-    "HighlightResult",
+    "LoginUserUseCase",
     "LogoutUserUseCase",
-    "MomentResult",
     "PublishViewingMomentUseCase",
-    "RecommendationUseCaseResult",
-    "ReactionResult",
     "RefreshRecommendationsUseCase",
     "RefreshSessionUseCase",
     "RegisterUserUseCase",
     "RemoveCollectionItemUseCase",
+    "RemoveFavoriteUseCase",
     "RequestEmailVerificationUseCase",
     "RequestPasswordResetUseCase",
     "ResendEmailVerificationUseCase",
+    "ResetPasswordUseCase",
     "SearchAnimeByDescriptionUseCase",
     "SearchAnimeUseCase",
     "SaveViewingMomentUseCase",
+    "SaveViewingSessionUseCase",
     "SetAnimeCommentLikeUseCase",
     "SetEpisodeReactionUseCase",
     "SetHighlightLikeUseCase",
@@ -185,7 +198,6 @@ __all__ = [
     "SyncWatchSourcesUseCase",
     "UpdateUserProfileUseCase",
     "UpsertUserAnimeStatusUseCase",
-    "UserResult",
+    "UseCaseResult",
     "VerifyEmailUseCase",
-    "WatchResult",
 ]

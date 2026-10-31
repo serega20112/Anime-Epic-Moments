@@ -19,10 +19,13 @@
     />
     <div class="profile-info">
       <div class="profile-name">
-        {{ prof.username }}
-        {% if prof.profile_level %} {% set pl = prof.profile_level %} {% set pct =
-        (pl.progress * 100)|round if pl.progress is not none else 0 %}
-        <span class="profile-level" title="Уровень {{ pl.level }} — {{ pl.xp }} XP">
+        {{ prof.username }} {% if prof.profile_level %} {% set pl =
+        prof.profile_level %} {% set pct = (pl.progress * 100)|round if
+        pl.progress is not none else 0 %}
+        <span
+          class="profile-level"
+          title="Уровень {{ pl.level }} — {{ pl.xp }} XP"
+        >
           <span class="level-circle">{{ pl.level }}</span>
           <span class="level-xp">
             <small>уровень</small>
@@ -34,8 +37,8 @@
       </div>
       {% if prof.status %}
       <p class="profile-status">«{{ prof.status }}»</p>
-      {% endif %}
-      {% if prof.smart_profile and prof.smart_profile.dominant_mood %}
+      {% endif %} {% if prof.smart_profile and prof.smart_profile.dominant_mood
+      %}
       <p class="profile-bio">
         {{ prof.smart_profile.dominant_mood.emoji }} {{
         prof.smart_profile.dominant_mood.label }}
@@ -82,10 +85,16 @@
 
   {% set sp = prof.smart_profile %}
   <div class="profile-tabs" style="margin-top: var(--space-6)" role="tablist">
-    <button class="tab active" data-profile-tab="overview" role="tab">Обзор</button>
+    <button class="tab active" data-profile-tab="overview" role="tab">
+      Обзор
+    </button>
     <button class="tab" data-profile-tab="stats" role="tab">Статистика</button>
-    <button class="tab" data-profile-tab="activity" role="tab">Активность</button>
-    <button class="tab" data-profile-tab="ratings" role="tab">Оценки релизов</button>
+    <button class="tab" data-profile-tab="activity" role="tab">
+      Активность
+    </button>
+    <button class="tab" data-profile-tab="ratings" role="tab">
+      Оценки релизов
+    </button>
   </div>
 
   <div class="tab-panel active" data-profile-panel="overview">
@@ -93,19 +102,36 @@
       <section class="side-card">
         <h4>📊 Динамика просмотра серий — 35 дней</h4>
         {% if prof.show_watch_activity and sp.heatmap %}
-        <div class="heatmap-chart">
-          {% set max_interactions = sp.heatmap|map(attribute='interactions')|list|max
-          if sp.heatmap and sp.heatmap|map(attribute='interactions')|list|max > 0 else 1 %}
-          {% for cell in sp.heatmap %}
-          <div class="heatmap-col" title="{{ cell.date }}: {{ cell.interactions }} серий">
-            <span
-              class="heatmap-bar"
-              style="--heatmap-h: {{ (cell.interactions / max_interactions * 100)|round|int if cell.interactions else 4 }}%; opacity: {{ 1 if cell.interactions else 0.25 }}"
-            ></span>
-            <label>{{ cell.date[5:10] }}</label>
+        <div class="heatmap">
+          {% set max_interactions = sp.heatmap | map(attribute='interactions') | list | max or 1 %}
+          <div class="heatmap-chart">
+            {% for cell in sp.heatmap %}
+            <div
+              class="heatmap-col{{ ' is-empty' if not cell.interactions }}{{ ' is-today' if loop.last }}"
+              style="--heatmap-h: {{ (cell.interactions / max_interactions * 100) | round | int }}%"
+              title="{{ cell.date }}: {{ cell.interactions }} серий"
+            >
+              <div class="heatmap-plot">
+                <span class="heatmap-count">{{ cell.interactions or '' }}</span>
+                <span class="heatmap-bar"></span>
+              </div>
+            </div>
+            {% endfor %}
           </div>
-          {% endfor %}
+          <div class="heatmap-axis">
+            {% for cell in sp.heatmap %}
+            <div class="heatmap-axis-cell">
+              {% if loop.index0 % 10 == 0 or loop.last %}
+              <span>{{ cell.date[8:10] }}.{{ cell.date[5:7] }}</span>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
         </div>
+        <p class="heatmap-caption">
+          Столбец — день, высота — просмотренные за день серии. Максимум за день:
+          {{ max_interactions }}. Дни без просмотров отмечены тонкими метками.
+        </p>
         {% else %}
         <p class="muted" style="font-size: var(--text-sm); margin-top: 12px">
           Пользователь скрыл историю просмотра.
@@ -163,7 +189,9 @@
         {% endfor %}
       </div>
       {% endif %} {% if prof.popular_highlights %}
-      <div class="section-title"><span class="emoji">⭐</span> Популярные хайлайты</div>
+      <div class="section-title">
+        <span class="emoji">⭐</span> Популярные хайлайты
+      </div>
       <div class="highlight-grid tight">
         {% for highlight in prof.popular_highlights %} {% include
         "highlight/_card.html" %} {% endfor %}
@@ -184,8 +212,7 @@
             >★ <b>{{ sp.average_rating|round(1) }}</b> средняя оценка</span
           >{% endif %}
         </div>
-        {% endif %}
-        {% if public_profile.following_preview %}
+        {% endif %} {% if public_profile.following_preview %}
         <div>
           <h4>Подписки</h4>
           {% for u in public_profile.following_preview %}
@@ -204,13 +231,17 @@
       </aside>
       <div style="grid-column: 2">
         {% if sp.favorite_genres %}
-        <div class="section-title"><span class="emoji">🎨</span> Любимые жанры</div>
+        <div class="section-title">
+          <span class="emoji">🎨</span> Любимые жанры
+        </div>
         <div class="genre-bars" style="margin-top: var(--space-4)">
           {% for g in sp.favorite_genres %}
           <div class="genre-bar">
             <span>{{ g.name }} · {{ g.count }}</span>
             <div class="bar">
-              <i style="width:{{ (g.count * 12)|round|int if g.count else 0 }}%"></i>
+              <i
+                style="width:{{ (g.count * 12)|round|int if g.count else 0 }}%"
+              ></i>
             </div>
           </div>
           {% endfor %}
@@ -255,7 +286,11 @@
         {% endif %} {% if sp.ai_taste_summary %}
         <div
           class="ai-card"
-          style="margin-top: var(--space-6); padding: 12px; border-radius: var(--radius-md)"
+          style="
+            margin-top: var(--space-6);
+            padding: 12px;
+            border-radius: var(--radius-md);
+          "
         >
           <h4 style="margin-bottom: 6px">ИИ-вкус</h4>
           <p class="muted" style="font-size: var(--text-sm)">
@@ -275,7 +310,9 @@
   </div>
 
   <div class="tab-panel" data-profile-panel="activity">
-    <div class="section-title"><span class="emoji">⚡</span> Недавняя активность</div>
+    <div class="section-title">
+      <span class="emoji">⚡</span> Недавняя активность
+    </div>
     {% if prof.recent_activity %}
     <div class="activity-list">
       {% for item in prof.recent_activity %}
@@ -283,9 +320,12 @@
         <span class="activity-icon"
           >{% if item.action == 'like' %}❤️{% elif item.action == 'comment'
           %}💬{% elif item.action == 'save' %}🔖{% elif item.action == 'view'
-          %}🎬{% elif item.action == 'highlight' %}✂️{% else %}⚡{% endif %}</span
+          %}🎬{% elif item.action == 'highlight' %}✂️{% else %}⚡{% endif
+          %}</span
         >
-        <span><b>{{ item.actor_username }}</b>: {{ item.highlight_title }}</span>
+        <span
+          ><b>{{ item.actor_username }}</b>: {{ item.highlight_title }}</span
+        >
         <time>{{ item.created_at|time_ago }}</time>
       </div>
       {% endfor %}
@@ -300,7 +340,9 @@
   </div>
 
   <div class="tab-panel" data-profile-panel="ratings">
-    <div class="section-title"><span class="emoji">⭐</span> Оценки релизов</div>
+    <div class="section-title">
+      <span class="emoji">⭐</span> Оценки релизов
+    </div>
     {% if prof.ratings %}
     <div class="rating-list">
       {% for r in prof.ratings %}
@@ -350,7 +392,7 @@
         });
         tab.classList.add("active");
         var panel = document.querySelector(
-          '[data-profile-panel="' + name + '"]'
+          '[data-profile-panel="' + name + '"]',
         );
         if (panel) panel.classList.add("active");
       });

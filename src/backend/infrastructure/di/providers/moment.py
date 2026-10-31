@@ -1,4 +1,4 @@
-"""Viewing moment use case providers."""
+"""Провайдеры сценариев моментов просмотра."""
 
 from __future__ import annotations
 
@@ -12,76 +12,40 @@ from backend.application.use_cases import (
     SaveViewingMomentUseCase,
 )
 from backend.application.use_cases.highlight.crud.create_highlight import CreateHighlightUseCase
-from backend.infrastructure.repositories.moment_repository import MomentRepository
 
 
 class MomentUseCaseProvider(Provider):
-    """Provide viewing moment use cases."""
+    """Провайдер сценариев моментов просмотра."""
 
     @provide(scope=Scope.REQUEST)
     async def save_viewing_moment(
         self,
-        moment_repository: MomentRepository,
         unit_of_work: UnitOfWorkInterface,
     ) -> SaveViewingMomentUseCase:
-        """Provide the save viewing moment use case.
-
-        Args:
-            moment_repository: Moment repository.
-            unit_of_work: Transaction boundary.
-
-        Returns:
-            SaveViewingMomentUseCase: Configured use case.
-        """
-        return SaveViewingMomentUseCase(moment_repository, unit_of_work)
+        """Создать сценарий сохранения черновика момента."""
+        return SaveViewingMomentUseCase(unit_of_work)
 
     @provide(scope=Scope.REQUEST)
     async def publish_viewing_moment(
         self,
-        moment_repository: MomentRepository,
-        create_highlight: CreateHighlightUseCase,
         unit_of_work: UnitOfWorkInterface,
+        create_highlight: CreateHighlightUseCase,
     ) -> PublishViewingMomentUseCase:
-        """Provide the publish viewing moment use case.
-
-        Args:
-            moment_repository: Moment repository.
-            create_highlight: Create highlight use case.
-            unit_of_work: Transaction boundary.
-
-        Returns:
-            PublishViewingMomentUseCase: Configured use case.
-        """
-        return PublishViewingMomentUseCase(moment_repository, create_highlight, unit_of_work)
+        """Создать сценарий публикации момента."""
+        return PublishViewingMomentUseCase(unit_of_work, create_highlight)
 
     @provide(scope=Scope.REQUEST)
     async def get_user_viewing_moments(
         self,
-        moment_repository: MomentRepository,
+        unit_of_work: UnitOfWorkInterface,
     ) -> GetUserViewingMomentsUseCase:
-        """Provide the get user viewing moments use case.
-
-        Args:
-            moment_repository: Moment repository.
-
-        Returns:
-            GetUserViewingMomentsUseCase: Configured use case.
-        """
-        return GetUserViewingMomentsUseCase(moment_repository)
+        """Создать сценарий списка моментов пользователя."""
+        return GetUserViewingMomentsUseCase(unit_of_work)
 
     @provide(scope=Scope.REQUEST)
     async def delete_viewing_moment(
         self,
-        moment_repository: MomentRepository,
         unit_of_work: UnitOfWorkInterface,
     ) -> DeleteViewingMomentUseCase:
-        """Provide the delete viewing moment use case.
-
-        Args:
-            moment_repository: Moment repository.
-            unit_of_work: Transaction boundary.
-
-        Returns:
-            DeleteViewingMomentUseCase: Configured use case.
-        """
-        return DeleteViewingMomentUseCase(moment_repository, unit_of_work)
+        """Создать сценарий удаления черновика момента."""
+        return DeleteViewingMomentUseCase(unit_of_work)

@@ -1,8 +1,12 @@
+"""Карточки коллекций для интерфейса."""
+
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class CollectionCard:
+    """Краткая карточка коллекции со счётчиком элементов."""
+
     id: int
     title: str
     description: str
@@ -13,8 +17,10 @@ class CollectionCard:
     cover_url: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class CollectionItemCard:
+    """Карточка аниме внутри коллекции."""
+
     anime_id: int
     title: str
     description: str
@@ -24,7 +30,9 @@ class CollectionItemCard:
     original_title: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class CollectionDetails:
+    """Коллекция вместе с её элементами и владельцем."""
+
     collection: CollectionCard
     items: list[CollectionItemCard]

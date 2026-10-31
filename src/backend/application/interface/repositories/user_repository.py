@@ -9,6 +9,8 @@ from backend.domain.aggregates.user.user import User
 
 
 class UserRepository(ABC):
+    """Хранилище пользователей и подписок между ними."""
+
     @abstractmethod
     async def add(self, user: User) -> User:
         """Сохраняет нового пользователя и возвращает с id"""

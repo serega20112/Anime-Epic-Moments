@@ -1,3 +1,5 @@
+"""Значимые объекты хайлайтов."""
+
 from backend.domain.value_objects.highlight.cards import (
     HighlightCard,
     HighlightCommentItem,

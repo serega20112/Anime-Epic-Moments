@@ -1,8 +1,7 @@
-"""Shared result types returned by authentication use cases.
+"""Общий результат сценариев аутентификации.
 
-Use cases return a :class:`AuthResult` instead of raising domain errors so the
-presentation layer stays free of error-handling logic and only reads the
-outcome fields to decide the HTTP transition (redirect + flash).
+Сценарии возвращают :class:`AuthResult` вместо исключений домена,
+чтобы слой представления только читал итог и выбирал переход.
 """
 
 from __future__ import annotations
@@ -11,18 +10,18 @@ from dataclasses import dataclass
 from typing import Any
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class AuthResult:
-    """Outcome of an authentication use case.
+    """Итог сценария аутентификации.
 
     Attributes:
-        ok: Whether the operation succeeded.
-        data: Optional payload produced on success.
-        message: Flash message displayed on success.
-        error_message: Flash message displayed on failure.
-        error_endpoint: Named endpoint for the failure redirect.
-        redirect_endpoint: Named endpoint for the success redirect.
-        redirect_email: Email to preserve on a redirect to the verify page.
+        ok: Признак успешного завершения.
+        data: Данные успешного сценария.
+        message: Сообщение для пользователя.
+        error_message: Текст ошибки.
+        error_endpoint: Куда вернуть пользователя при ошибке.
+        redirect_endpoint: Куда перейти после успеха.
+        redirect_email: Адрес почты, подставляемый в форму.
     """
 
     ok: bool
@@ -34,23 +33,23 @@ class AuthResult:
     redirect_email: str | None = None
 
     @classmethod
-    async def success(
+    def success(
         cls,
         data: Any = None,
         message: str | None = None,
         redirect_endpoint: str | None = None,
         redirect_email: str | None = None,
     ) -> AuthResult:
-        """Build a successful result.
+        """Собрать успешный результат.
 
         Args:
-            data: Optional payload.
-            message: Flash message on success.
-            redirect_endpoint: Named endpoint for the redirect.
-            redirect_email: Email preserved on a redirect to the verify page.
+            data: Данные успешного сценария.
+            message: Сообщение для пользователя.
+            redirect_endpoint: Куда перейти после успеха.
+            redirect_email: Адрес почты, подставляемый в форму.
 
         Returns:
-            AuthResult: Successful result.
+            AuthResult: Результат с ``ok=True``.
         """
         return cls(
             ok=True,
@@ -61,21 +60,21 @@ class AuthResult:
         )
 
     @classmethod
-    async def failure(
+    def failure(
         cls,
         error_message: str,
         error_endpoint: str,
         redirect_email: str | None = None,
     ) -> AuthResult:
-        """Build a failure result.
+        """Собрать результат с ошибкой.
 
         Args:
-            error_message: Message to display.
-            error_endpoint: Endpoint to redirect back to.
-            redirect_email: Email preserve on the verify redirect.
+            error_message: Текст ошибки для пользователя.
+            error_endpoint: Куда вернуть пользователя при ошибке.
+            redirect_email: Адрес почты, подставляемый в форму.
 
         Returns:
-            AuthResult: Failed result.
+            AuthResult: Результат с ``ok=False``.
         """
         return cls(
             ok=False,

@@ -1,4 +1,4 @@
-"""Email verification routes."""
+"""Маршруты подтверждения адреса почты."""
 
 from __future__ import annotations
 
@@ -10,8 +10,6 @@ from backend.application.use_cases.auth.verification.resend_email_verification i
     ResendEmailVerificationUseCase,
 )
 from backend.application.use_cases.auth.verification.verify_email import VerifyEmailUseCase
-from backend.infrastructure.security import client_ip
-from backend.infrastructure.web import render_template
 from backend.presentation.api.auth_responses import (
     redirect_verify,
     resolve_auth,
@@ -22,6 +20,8 @@ from backend.presentation.api.requests.auth_mapper import (
     map_resend_verification_command,
     map_verify_email_command,
 )
+from backend.presentation.dependencies.client_ip import client_ip
+from backend.presentation.web import render_template
 from backend.utils import log_security_event
 
 verification_router = APIRouter(route_class=DishkaRoute)
@@ -29,14 +29,7 @@ verification_router = APIRouter(route_class=DishkaRoute)
 
 @verification_router.get("/verify-email", name="auth.verify_email_page")
 async def verify_email_page(request: Request):
-    """Render the email verification page.
-
-    Args:
-        request: Incoming HTTP request.
-
-    Returns:
-        HTMLResponse: Rendered verification page.
-    """
+    """Отдать страницу подтверждения почты."""
     return await render_template(
         request,
         "auth/verify_email.html",
@@ -46,21 +39,13 @@ async def verify_email_page(request: Request):
 
 @verification_router.post("/verify-email", name="auth.verify_email")
 async def verify_email(request: Request, use_case: FromDishka[VerifyEmailUseCase]):
-    """Verify an email verification code and complete registration.
-
-    Args:
-        request: Incoming HTTP request.
-        use_case: Verify email use case.
-
-    Returns:
-        RedirectResponse: Redirect to the index page on success.
-    """
+    """Проверить код и завершить регистрацию."""
     form = await request.form()
     try:
-        command = await map_verify_email_command(form)
+        command = map_verify_email_command(form)
     except FormValidationError as error:
         return await redirect_verify(request, str(error))
-    result = await use_case.execute(email=command.email, code=command.code)
+    result = await use_case.execute(command)
     return await resolve_auth(request, result)
 
 
@@ -69,24 +54,16 @@ async def resend_verification_email(
     request: Request,
     use_case: FromDishka[ResendEmailVerificationUseCase],
 ):
-    """Resend the email verification code.
-
-    Args:
-        request: Incoming HTTP request.
-        use_case: Resend email verification use case.
-
-    Returns:
-        RedirectResponse: Redirect back to the verification page.
-    """
+    """Повторно отправить код подтверждения почты."""
     form = await request.form()
     try:
-        command = await map_resend_verification_command(form)
+        command = map_resend_verification_command(form)
     except FormValidationError as error:
         return await redirect_verify(request, str(error))
-    await log_security_event(
+    log_security_event(
         event="email_verification_resend_requested",
         email=command.email,
         ip_address=await client_ip(request),
     )
-    result = await use_case.execute(email=command.email)
+    result = await use_case.execute(command)
     return await resolve_verify(request, result)

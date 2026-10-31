@@ -1,8 +1,4 @@
-"""Map incoming auth form data to application command DTOs.
-
-All HTTP form parsing, normalization and validation live here so that route
-handlers stay thin and only orchestrate use case execution.
-"""
+"""Преобразование данных форм аутентификации в команды application."""
 
 from __future__ import annotations
 
@@ -16,6 +12,7 @@ from backend.application.dto.auth import (
     VerifyEmailCommand,
 )
 from backend.domain.aggregates.user.user import STATUS_MAX_LENGTH
+from backend.domain.policies.email_verification_policy import normalize_theme
 from backend.domain.policies.user_credentials_policy import normalize_email
 
 EMAIL_MAX_LENGTH = 254
@@ -24,87 +21,111 @@ PASSWORD_MAX_LENGTH = 128
 USERNAME_MAX_LENGTH = 20
 VERIFICATION_CODE_DIGITS = 6
 
-THEMES = {"neon", "dark", "light", "rose"}
-DEFAULT_THEME = "neon"
-
 
 class FormValidationError(ValueError):
-    """Raised when an HTML form fails validation."""
+    """Ошибка проверки данных HTML-формы."""
 
 
-async def _field_text(form: dict, name: str) -> str:
-    """Return a stripped string form field.
+def _field_text(form: dict, name: str) -> str:
+    """Вернуть строковое поле формы без пробелов по краям.
 
     Args:
-        form: Parsed form data.
-        name: Field name.
+        form: Разобранные данные формы.
+        name: Имя поля.
 
     Returns:
-        str: Stripped field value.
+        str: Значение поля либо пустая строка.
     """
     return str(form.get(name) or "").strip()
 
 
-async def _normalize_email(value: object) -> str:
-    return normalize_email(value)
+def _extract_digits(value: object) -> str:
+    """Оставить только цифры из значения поля формы.
 
+    Args:
+        value: Исходное значение поля.
 
-async def _normalize_theme(value: object) -> str:
-    normalized = str(value or "").strip().lower()
-    return normalized if normalized in THEMES else DEFAULT_THEME
-
-
-async def _extract_digits(value: object) -> str:
+    Returns:
+        str: Последовательность цифр без разделителей.
+    """
     return "".join(character for character in str(value or "") if character.isdigit())
 
 
-async def _require_valid_email(email: str) -> None:
+def _require_valid_email(email: str) -> None:
+    """Проверить, что адрес почты не пуст и умещается в ограничение длины.
+
+    Args:
+        email: Нормализованный адрес почты.
+
+    Raises:
+        FormValidationError: Адрес пуст или слишком длинный.
+    """
     if not email or len(email) > EMAIL_MAX_LENGTH:
         raise FormValidationError("Некорректный email")
 
 
-async def _clean_optional(value: object) -> str | None:
+def _clean_optional(value: object) -> str | None:
+    """Вернуть необязательное поле без пробелов или None.
+
+    Args:
+        value: Исходное значение поля.
+
+    Returns:
+        str | None: Непустое значение либо None.
+    """
     cleaned = str(value or "").strip()
     return cleaned or None
 
 
-async def map_login_command(form: dict) -> LoginCommand:
-    """Validate and build a login command from form data.
+def _checkbox(form: dict, name: str) -> bool:
+    """Прочитать флажок формы как булево значение.
 
     Args:
-        form: Parsed form data.
+        form: Разобранные данные формы.
+        name: Имя флажка.
 
     Returns:
-        LoginCommand: Validated login command.
+        bool: True, если флажок отмечен.
+    """
+    return bool(str(form.get(name) or "").strip())
+
+
+def map_login_command(form: dict) -> LoginCommand:
+    """Проверить форму и собрать команду входа.
+
+    Args:
+        form: Разобранные данные формы входа.
+
+    Returns:
+        LoginCommand: Команда аутентификации.
 
     Raises:
-        FormValidationError: If email or password is missing or email is too long.
+        FormValidationError: Почта или пароль не заполнены.
     """
-    email = (await _field_text(form, "email")).lower()
+    email = _field_text(form, "email").lower()
     password = str(form.get("password") or "")
     if not email or len(email) > EMAIL_MAX_LENGTH or not password:
         raise FormValidationError("Некорректные данные для входа")
     return LoginCommand(email=email, password=password)
 
 
-async def map_register_command(form: dict) -> RegisterCommand:
-    """Validate and build a registration command from form data.
+def map_register_command(form: dict) -> RegisterCommand:
+    """Проверить форму и собрать команду регистрации.
 
     Args:
-        form: Parsed form data.
+        form: Разобранные данные формы регистрации.
 
     Returns:
-        RegisterCommand: Validated registration command.
+        RegisterCommand: Команда регистрации с темой оформления.
 
     Raises:
-        FormValidationError: If any required field is invalid.
+        FormValidationError: Почта, пароль или имя не прошли проверку.
     """
-    email = await _normalize_email(form.get("email"))
+    email = normalize_email(form.get("email"))
     password = str(form.get("password") or "")
-    username = await _field_text(form, "username")
-    theme = await _normalize_theme(form.get("theme"))
-    await _require_valid_email(email)
-    if len(password) < PASSWORD_MIN_LENGTH or len(password) > PASSWORD_MAX_LENGTH:
+    username = _field_text(form, "username")
+    _require_valid_email(email)
+    if not PASSWORD_MIN_LENGTH <= len(password) <= PASSWORD_MAX_LENGTH:
         raise FormValidationError("Пароль должен быть не короче 8 символов")
     if not username or len(username) > USERNAME_MAX_LENGTH:
         raise FormValidationError("Некорректный username")
@@ -112,105 +133,112 @@ async def map_register_command(form: dict) -> RegisterCommand:
         email=email,
         password=password,
         username=username,
-        theme=theme,
+        theme=normalize_theme(form.get("theme")),
     )
 
 
-async def map_verify_email_command(form: dict) -> VerifyEmailCommand:
-    """Validate and build an email verification command from form data.
+def map_verify_email_command(form: dict) -> VerifyEmailCommand:
+    """Проверить форму и собрать команду подтверждения почты.
 
     Args:
-        form: Parsed form data.
+        form: Разобранные данные формы подтверждения.
 
     Returns:
-        VerifyEmailCommand: Validated verification command.
+        VerifyEmailCommand: Команда с почтой и кодом из цифр.
 
     Raises:
-        FormValidationError: If email or code is invalid.
+        FormValidationError: Почта некорректна или код не состоит из шести цифр.
     """
-    email = await _normalize_email(form.get("email"))
-    code = await _extract_digits(form.get("code"))
-    await _require_valid_email(email)
+    email = normalize_email(form.get("email"))
+    code = _extract_digits(form.get("code"))
+    _require_valid_email(email)
     if len(code) != VERIFICATION_CODE_DIGITS:
         raise FormValidationError("Код подтверждения должен содержать 6 цифр")
     return VerifyEmailCommand(email=email, code=code)
 
 
-async def map_resend_verification_command(form: dict) -> ResendVerificationCommand:
-    """Validate and build a resend verification command from form data.
+def map_resend_verification_command(form: dict) -> ResendVerificationCommand:
+    """Проверить форму и собрать команду повторной отправки кода.
 
     Args:
-        form: Parsed form data.
+        form: Разобранные данные формы повторной отправки.
 
     Returns:
-        ResendVerificationCommand: Validated command.
+        ResendVerificationCommand: Команда с нормализованным адресом почты.
 
     Raises:
-        FormValidationError: If email is missing or invalid.
+        FormValidationError: Адрес почты некорректен.
     """
-    email = await _normalize_email(form.get("email"))
-    await _require_valid_email(email)
+    email = normalize_email(form.get("email"))
+    _require_valid_email(email)
     return ResendVerificationCommand(email=email)
 
 
-async def map_request_password_reset_command(
-    form: dict, *, base_url: str
-) -> RequestPasswordResetCommand:
-    """Validate and build a password reset request command from form data.
+def map_request_password_reset_command(form: dict, *, base_url: str) -> RequestPasswordResetCommand:
+    """Проверить форму и собрать команду запроса сброса пароля.
 
     Args:
-        form: Parsed form data.
-        base_url: Origin used to build the reset link.
+        form: Разобранные данные формы запроса сброса.
+        base_url: Базовый адрес приложения для ссылки в письме.
 
     Returns:
-        RequestPasswordResetCommand: Validated command.
+        RequestPasswordResetCommand: Команда запроса сброса.
 
     Raises:
-        FormValidationError: If email is missing or invalid.
+        FormValidationError: Адрес почты некорректен.
     """
-    email = await _normalize_email(form.get("email"))
-    await _require_valid_email(email)
+    email = normalize_email(form.get("email"))
+    _require_valid_email(email)
     return RequestPasswordResetCommand(email=email, base_url=base_url)
 
 
-async def map_confirm_password_reset_command(form: dict) -> ConfirmPasswordResetCommand:
-    """Validate and build a password reset confirmation command from form data.
+def map_confirm_password_reset_command(form: dict) -> ConfirmPasswordResetCommand:
+    """Проверить форму и собрать команду подтверждения сброса пароля.
 
     Args:
-        form: Parsed form data.
+        form: Разобранные данные формы с новым паролем и токеном.
 
     Returns:
-        ConfirmPasswordResetCommand: Validated command.
+        ConfirmPasswordResetCommand: Команда подтверждения сброса.
 
     Raises:
-        FormValidationError: If password or repeat do not match requirements.
+        FormValidationError: Пароли не совпадают или пароль слишком короткий.
     """
-    token = await _field_text(form, "token")
+    token = _field_text(form, "token")
     password = str(form.get("password") or "")
     password_repeat = str(form.get("password_repeat") or "")
     if password != password_repeat:
         raise FormValidationError("Пароли не совпадают")
-    if len(password) < PASSWORD_MIN_LENGTH or len(password) > PASSWORD_MAX_LENGTH:
+    if not PASSWORD_MIN_LENGTH <= len(password) <= PASSWORD_MAX_LENGTH:
         raise FormValidationError("Пароль должен быть не короче 8 символов")
     return ConfirmPasswordResetCommand(token=token, password=password)
 
 
-async def map_update_profile_command(form: dict, *, user_id: int) -> UpdateProfileCommand:
-    """Validate and build a profile update command from form data.
+def map_update_profile_command(
+    form: dict,
+    *,
+    user_id: int,
+    uploaded_avatar_url: str | None = None,
+) -> UpdateProfileCommand:
+    """Проверить форму и собрать команду правки профиля.
 
     Args:
-        form: Parsed form data.
-        user_id: Authenticated user identifier.
+        form: Разобранные данные формы профиля.
+        user_id: Идентификатор вошедшего пользователя.
+        uploaded_avatar_url: Адрес аватара, уже сохранённый хранилищем; перекрывает
+            поле формы, если передан.
 
     Returns:
-        UpdateProfileCommand: Validated command.
+        UpdateProfileCommand: Команда обновления профиля.
+
+    Raises:
+        FormValidationError: Статус длиннее допустимого.
     """
-    username = await _field_text(form, "username")
+    username = _field_text(form, "username")
     avatar_value = form.get("avatar_url")
-    avatar_url = (
-        await _clean_optional(avatar_value) if not hasattr(avatar_value, "filename") else None
-    )
-    status = await _field_text(form, "status")
+    form_avatar_url = None if hasattr(avatar_value, "filename") else _clean_optional(avatar_value)
+    avatar_url = uploaded_avatar_url or form_avatar_url
+    status = _field_text(form, "status")
     if len(status) > STATUS_MAX_LENGTH:
         raise FormValidationError(f"Статус не может быть длиннее {STATUS_MAX_LENGTH} символов")
     return UpdateProfileCommand(
@@ -221,16 +249,3 @@ async def map_update_profile_command(form: dict, *, user_id: int) -> UpdateProfi
         show_watch_activity=_checkbox(form, "show_watch_activity"),
         show_recent_episodes=_checkbox(form, "show_recent_episodes"),
     )
-
-
-def _checkbox(form: dict, name: str) -> bool:
-    """Read a checkbox-like form field as a boolean.
-
-    Args:
-        form: Parsed form data.
-        name: Field name.
-
-    Returns:
-        bool: True when the field is present.
-    """
-    return bool(str(form.get(name) or "").strip())

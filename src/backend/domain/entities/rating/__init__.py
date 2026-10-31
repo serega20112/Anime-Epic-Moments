@@ -1,3 +1,3 @@
-"""Rating domain entities package."""
+"""Сущности оценок аниме."""
 
 from __future__ import annotations

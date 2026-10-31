@@ -1,3 +1,5 @@
+"""Порт хранилища оценок аниме."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -6,6 +8,8 @@ from backend.domain.entities.rating.anime_rating import UserAnimeRating
 
 
 class RatingRepository(ABC):
+    """Хранилище оценок аниме пользователями."""
+
     @abstractmethod
     async def upsert(self, rating: UserAnimeRating) -> UserAnimeRating:
         """Создает или обновляет оценку пользователя по аниме."""

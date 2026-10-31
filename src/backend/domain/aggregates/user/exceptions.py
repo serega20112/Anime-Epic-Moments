@@ -1,6 +1,11 @@
-class InvalidEmailError(Exception):
-    pass
+"""Исключения агрегата пользователя."""
+
+from backend.domain.exceptions import ValidationError
 
 
-class InvalidUsernameError(Exception):
-    pass
+class InvalidEmailError(ValidationError):
+    """Ошибка некорректного адреса почты."""
+
+
+class InvalidUsernameError(ValidationError):
+    """Ошибка некорректного имени пользователя."""

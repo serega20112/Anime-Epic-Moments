@@ -6,6 +6,7 @@ import pytest
 
 from backend.application.dto import CreateCollectionCommand
 from backend.application.use_cases.collection.create_collection import CreateCollectionUseCase
+from tests.support.fakes import FakeUnitOfWork
 
 
 @pytest.mark.unit
@@ -19,7 +20,7 @@ class TestCreateCollectionUseCase:
         """
         repo = AsyncMock()
         repo.create_collection.side_effect = lambda collection: collection
-        use_case = CreateCollectionUseCase(repo, AsyncMock())
+        use_case = CreateCollectionUseCase(FakeUnitOfWork(CollectionRepository=repo))
 
         result = await use_case.execute(
             CreateCollectionCommand(

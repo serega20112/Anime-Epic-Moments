@@ -37,18 +37,21 @@ class TestHighlightPolicy:
     @pytest.mark.parametrize(
         ("description", "expected"),
         [
-            ("красивый момент без спама", False),
+            ("красивый момент без спама", True),
             ("очень вредный спам-контент", False),
             ("эмоциональный safe highlight", True),
+            ("математика в комнате", True),
+            ("тут мат", False),
         ],
     )
-    async def test_filter_spoiler_content_filters_banned_words(self, description, expected):
-        """Что тестируем: метод filter_spoiler_content.
+    async def test_is_content_allowed_matches_whole_banned_words(self, description, expected):
+        """Что тестируем: метод is_content_allowed.
 
-        Что передаём: описания с запрещёнными маркерами и без них.
-        Что ожидаем: безопасное описание возвращает True, содержащее бан-слова — False.
+        Что передаём: описания с запрещёнными словами, с их словоформами и без них.
+        Что ожидаем: совпадение ищется по границам слова, поэтому «спама» и
+        «математика» разрешены, а отдельные «спам», «вредный» и «мат» — нет.
         """
-        result = HighlightPolicy.filter_spoiler_content(description)
+        result = HighlightPolicy.is_content_allowed(description)
 
         assert result is expected
 

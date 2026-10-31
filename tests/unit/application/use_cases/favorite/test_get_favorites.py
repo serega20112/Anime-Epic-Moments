@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from backend.application.dto.favorite import GetFavoritesQuery
 from backend.application.use_cases.favorite.get_favorites import GetFavoritesUseCase
+from tests.support.fakes import FakeUnitOfWork
 
 
 @pytest.mark.unit
@@ -75,9 +77,12 @@ class TestGetFavoritesUseCase:
             title="New Initial D Movie: Legend 1 - Kakusei",
             genres=["Action"],
         )
-        use_case = GetFavoritesUseCase(repo, anime_client)
+        use_case = GetFavoritesUseCase(
+            FakeUnitOfWork(FavoriteRepository=repo),
+            anime_client,
+        )
 
-        result = await use_case.execute(user_id=1)
+        result = await use_case.execute(GetFavoritesQuery(user_id=1))
 
         assert result[0].title == expected_title
         assert result[0].watch_url == expected_watch_url
@@ -110,9 +115,12 @@ class TestGetFavoritesUseCase:
             genres=[],
             original_title=None,
         )
-        use_case = GetFavoritesUseCase(repo, anime_client)
+        use_case = GetFavoritesUseCase(
+            FakeUnitOfWork(FavoriteRepository=repo),
+            anime_client,
+        )
 
-        result = await use_case.execute(user_id=1)
+        result = await use_case.execute(GetFavoritesQuery(user_id=1))
 
         assert result[0].title == "Anime #777"
         assert result[0].description == "Описание недоступно"

@@ -1,7 +1,11 @@
+"""Агрегат пользователя: учётные данные, профиль и видимость активности."""
+
 import re
 from datetime import datetime
 
 from backend.domain.aggregates.user.exceptions import InvalidEmailError, InvalidUsernameError
+from backend.domain.clock import utc_now
+from backend.domain.exceptions import ValidationError
 from backend.domain.policies.user_credentials_policy import (
     EMAIL_PATTERN,
     USERNAME_MAX_LENGTH,
@@ -26,6 +30,7 @@ class User:
         created_at: datetime | None = None,
         id: int | None = None,
     ):
+        """Создать пользователя с заданными учётными данными и профилем."""
         self._validate_email(email)
         self._validate_username(username)
 
@@ -36,18 +41,29 @@ class User:
         self.status = self._clean_status(status)
         self.show_watch_activity = bool(show_watch_activity)
         self.show_recent_episodes = bool(show_recent_episodes)
-        self.created_at = created_at or datetime.utcnow()
+        self.created_at = created_at or utc_now()
         self.password_hash = password_hash
 
     @staticmethod
     def _clean_status(status: str | None) -> str | None:
+        """Привести статус профиля к допустимому виду.
+
+        Args:
+            status: Введённый пользователем статус либо None.
+
+        Returns:
+            str | None: Текст статуса без обрамляющих пробелов либо None для пустого ввода.
+
+        Raises:
+            ValidationError: Если статус длиннее допустимого предела.
+        """
         if status is None:
             return None
         cleaned = str(status).strip()
         if not cleaned:
             return None
         if len(cleaned) > STATUS_MAX_LENGTH:
-            raise ValueError(f"Статус не может быть длиннее {STATUS_MAX_LENGTH} символов")
+            raise ValidationError(f"Статус не может быть длиннее {STATUS_MAX_LENGTH} символов")
         return cleaned
 
     @staticmethod
@@ -63,23 +79,23 @@ class User:
                 f"сейчас {len(username)}"
             )
 
-    def check_password(self, password: str) -> bool:
-        raise NotImplementedError(
-            "Password verification must be performed in application layer via PasswordService"
-        )
-
     def update_avatar(self, avatar_url: str):
+        """Обновить адрес аватара пользователя."""
         self.avatar_url = avatar_url
 
     def change_username(self, new_username: str):
+        """Сменить имя пользователя с проверкой длины."""
         self._validate_username(new_username)
         self.username = new_username
 
     def change_status(self, status: str | None):
+        """Сменить статус профиля с проверкой длины."""
         self.status = self._clean_status(status)
 
     def toggle_watch_activity_visibility(self, visible: bool):
+        """Переключить видимость истории просмотра."""
         self.show_watch_activity = bool(visible)
 
     def toggle_recent_episodes_visibility(self, visible: bool):
+        """Переключить видимость недавних серий."""
         self.show_recent_episodes = bool(visible)

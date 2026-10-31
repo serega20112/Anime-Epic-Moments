@@ -1,3 +1,5 @@
+"""Значимые объекты каталога аниме."""
+
 from backend.domain.value_objects.anime.catalog_page import CatalogPage
 from backend.domain.value_objects.anime.discussion import (
     AnimeDiscussionBoard,

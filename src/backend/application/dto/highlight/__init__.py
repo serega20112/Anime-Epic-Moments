@@ -1,12 +1,19 @@
+"""DTO хайлайтов и их социальных действий."""
+
 from backend.application.dto.highlight.add_highlight_comment_command import (
     AddHighlightCommentCommand,
 )
 from backend.application.dto.highlight.create_highlight_command import CreateHighlightCommand
 from backend.application.dto.highlight.delete_highlight_command import DeleteHighlightCommand
 from backend.application.dto.highlight.edit_highlight_command import EditHighlightCommand
+from backend.application.dto.highlight.highlight_comments_query import HighlightCommentsQuery
 from backend.application.dto.highlight.highlight_dashboard_query import HighlightDashboardQuery
 from backend.application.dto.highlight.highlight_feed_query import HighlightFeedQuery
-from backend.application.dto.highlight.highlight_list_query import HighlightListQuery
+from backend.application.dto.highlight.highlight_likers_query import HighlightLikersQuery
+from backend.application.dto.highlight.highlight_notifications_query import (
+    HighlightNotificationsQuery,
+)
+from backend.application.dto.highlight.highlight_shared_query import HighlightSharedQuery
 from backend.application.dto.highlight.set_highlight_like_command import SetHighlightLikeCommand
 from backend.application.dto.highlight.set_saved_highlight_command import SetSavedHighlightCommand
 
@@ -15,9 +22,12 @@ __all__ = [
     "CreateHighlightCommand",
     "DeleteHighlightCommand",
     "EditHighlightCommand",
+    "HighlightCommentsQuery",
     "HighlightDashboardQuery",
     "HighlightFeedQuery",
-    "HighlightListQuery",
+    "HighlightLikersQuery",
+    "HighlightNotificationsQuery",
+    "HighlightSharedQuery",
     "SetHighlightLikeCommand",
     "SetSavedHighlightCommand",
 ]

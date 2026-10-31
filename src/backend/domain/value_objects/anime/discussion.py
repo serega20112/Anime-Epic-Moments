@@ -1,3 +1,6 @@
+"""Комментарий в обсуждении аниме."""
+
+
 class AnimeDiscussionComment:
     """Комментарий в обсуждении аниме."""
 
@@ -12,6 +15,7 @@ class AnimeDiscussionComment:
         created_at: str,
         is_liked: bool = False,
     ):
+        """Создать комментарий обсуждения с заданными полями."""
         self.id = id
         self.anime_id = anime_id
         self.user_id = user_id
@@ -32,6 +36,7 @@ class AnimeDiscussionBoard:
         selected_sort: str,
         total_comments: int,
     ):
+        """Создать доску обсуждения аниме."""
         self.anime_id = anime_id
         self.items = items
         self.selected_sort = selected_sort

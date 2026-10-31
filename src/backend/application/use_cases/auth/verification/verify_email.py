@@ -1,86 +1,73 @@
+"""Подтверждение адреса почты одноразовым кодом."""
+
+from __future__ import annotations
+
+from backend.application.dto import VerifyEmailCommand
 from backend.application.interface.repositories.user_repository import UserRepository
 from backend.application.interface.services import (
-    EmailVerificationStoreInterface as EmailVerificationStore,
+    EmailVerificationStoreInterface,
 )
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases.auth.result import AuthResult
 from backend.domain import User
+from backend.domain.policies.user_credentials_policy import normalize_email
 
-
-class EmailVerificationExpiredError(Exception):
-    """Raised when a verification payload has expired or is missing."""
-
-
-class InvalidEmailVerificationCodeError(Exception):
-    """Raised when the supplied verification code does not match."""
+VERIFICATION_PAGE = "auth.verify_email_page"
+EXPIRED_CODE_MESSAGE = "Код подтверждения истёк. Запроси новый."
+INVALID_CODE_MESSAGE = "Неверный код подтверждения."
 
 
 class VerifyEmailUseCase:
-    """Подтверждает email кодом и создает пользователя после успешной проверки."""
+    """Подтверждает email кодом и создаёт пользователя после успешной проверки."""
 
     def __init__(
         self,
-        user_repo: UserRepository,
-        verification_store: EmailVerificationStore,
         unit_of_work: UnitOfWorkInterface,
-    ):
-        """Initialize the use case.
+        verification_store: EmailVerificationStoreInterface,
+    ) -> None:
+        """Инициализирует сценарий подтверждения email.
 
         Args:
-            user_repo: User repository port.
-            verification_store: Verification code store.
-            unit_of_work: Transaction boundary.
+            unit_of_work: Граница транзакции создания пользователя.
+            verification_store: Хранилище кодов подтверждения.
         """
-        self.user_repo = user_repo
-        self.verification_store = verification_store
-        self.unit_of_work = unit_of_work
+        self._unit_of_work = unit_of_work
+        self._verification_store = verification_store
 
-    async def execute(self, email: str, code: str) -> AuthResult:
-        """Verify an email code and create a user within a transaction."""
-        async with self.unit_of_work:
-            return await self._execute(email, code)
-
-    async def _execute(self, email: str, code: str) -> AuthResult:
-        """Confirm an email code and create a user.
+    async def execute(self, command: VerifyEmailCommand) -> AuthResult:
+        """Подтверждает email-код и создаёт пользователя в рамках транзакции.
 
         Args:
-            email: Normalized user email.
-            code: Verification code.
+            command: Адрес почты и код подтверждения из письма.
 
         Returns:
-            AuthResult: Success with the created user or failure redirect.
+            AuthResult: Success с созданным пользователем или failure с редиректом.
         """
-        normalized_email = str(email or "").strip().lower()
-        normalized_code = str(code or "").strip()
-        payload = await self.verification_store.get(normalized_email)
+        email = normalize_email(command.email)
+        code = str(command.code or "").strip()
+        payload = await self._verification_store.get(email)
         if payload is None:
-            return await AuthResult.failure(
-                "Код подтверждения истёк. Запроси новый.",
-                "auth.verify_email_page",
-                redirect_email=normalized_email,
-            )
-        if payload.code != normalized_code:
-            return await AuthResult.failure(
-                "Неверный код подтверждения.",
-                "auth.verify_email_page",
-                redirect_email=normalized_email,
-            )
-        if await self.user_repo.get_by_email(normalized_email):
-            await self.verification_store.delete(normalized_email)
-            return await AuthResult.failure(
-                f"Пользователь с email {normalized_email} уже существует",
-                "auth.verify_email_page",
-                redirect_email=normalized_email,
-            )
+            return AuthResult.failure(EXPIRED_CODE_MESSAGE, VERIFICATION_PAGE, redirect_email=email)
+        if payload.code != code:
+            return AuthResult.failure(INVALID_CODE_MESSAGE, VERIFICATION_PAGE, redirect_email=email)
 
         user = User(
             email=payload.email,
             username=payload.username,
             password_hash=payload.password_hash,
         )
-        created_user = await self.user_repo.add(user)
-        await self.verification_store.delete(normalized_email)
-        return await AuthResult.success(
+        async with self._unit_of_work as uow:
+            repository = uow.repository(UserRepository)
+            if await repository.get_by_email(email) is not None:
+                await self._verification_store.delete(email)
+                return AuthResult.failure(
+                    f"Пользователь с email {email} уже существует",
+                    VERIFICATION_PAGE,
+                    redirect_email=email,
+                )
+            created_user = await repository.add(user)
+        await self._verification_store.delete(email)
+        return AuthResult.success(
             data=created_user,
             message=f"Добро пожаловать, {created_user.username}!",
             redirect_endpoint="index.index",

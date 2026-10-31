@@ -1,4 +1,4 @@
-"""Liveness and readiness endpoints for orchestration probes."""
+"""Проверки живости и готовности для оркестратора."""
 
 from __future__ import annotations
 
@@ -8,61 +8,39 @@ from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from sqlalchemy import text
 
-from backend.infrastructure.cache.key_value_store import KeyValueStore
-from backend.infrastructure.files.database import get_session_factory
+from backend.application.interface.services import HealthCheckPort
+from backend.presentation.api.responses.health_responses import LivenessResponse, ReadinessResponse
 
 health_router = APIRouter(route_class=DishkaRoute)
 
+READY_RESPONSES = {"503": {"model": ReadinessResponse}}
 
-@health_router.get("/health")
-async def health() -> dict[str, str]:
-    """Report process liveness without touching dependencies.
+
+@health_router.get("/health", response_model=LivenessResponse)
+async def health() -> LivenessResponse:
+    """Сообщить, что процесс жив, не трогая зависимости.
 
     Returns:
-        dict[str, str]: Liveness payload.
+        LivenessResponse: Метка живости процесса.
     """
-    return {"status": "ok"}
+    return LivenessResponse()
 
 
-@health_router.get("/ready")
-async def ready(store: FromDishka[KeyValueStore]) -> JSONResponse:
-    """Report readiness of the database and optional Redis.
+@health_router.get("/ready", response_model=ReadinessResponse, responses=READY_RESPONSES)
+async def ready(health_check: FromDishka[HealthCheckPort]) -> JSONResponse:
+    """Сообщить готовность базы и дополнительных зависимостей.
+
+    Ответ отдаётся JSONResponse вручную, потому что код статуса зависит от
+    результата проверки: 200 при готовности и 503 при отказе зависимости.
 
     Args:
-        store: Application-wide key-value store.
+        health_check: Порт проверки готовности; как именно опрашиваются
+            зависимости — дело инфраструктуры.
 
     Returns:
-        JSONResponse: 200 with per-dependency checks, 503 when any fails.
+        JSONResponse: 200 с отметками по зависимостям либо 503 при отказе.
     """
-    checks: dict[str, str] = {}
-    is_ready = True
-
-    try:
-        session_factory = await get_session_factory()
-        async with session_factory() as session:
-            await session.execute(text("SELECT 1"))
-        checks["database"] = "ok"
-    except Exception:
-        is_ready = False
-        checks["database"] = "unreachable"
-
-    if store.uses_redis:
-        try:
-            if await store.ping():
-                checks["redis"] = "ok"
-            else:
-                is_ready = False
-                checks["redis"] = "unreachable"
-        except Exception:
-            is_ready = False
-            checks["redis"] = "unreachable"
-    else:
-        checks["redis"] = "disabled"
-
-    status_code = HTTPStatus.OK if is_ready else HTTPStatus.SERVICE_UNAVAILABLE
-    return JSONResponse(
-        {"status": "ready" if is_ready else "unavailable", "checks": checks},
-        status_code=status_code,
-    )
+    status = await health_check.check()
+    status_code = HTTPStatus.OK if status.ready else HTTPStatus.SERVICE_UNAVAILABLE
+    return JSONResponse(status.payload, status_code=status_code)

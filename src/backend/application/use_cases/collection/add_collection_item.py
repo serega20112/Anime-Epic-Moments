@@ -1,55 +1,47 @@
+"""Сценарий добавления аниме в коллекцию."""
+
 from backend.application.dto import AddCollectionItemCommand
 from backend.application.interface.repositories.collection_repository import CollectionRepository
-from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.interface.services import AnimeApiClientInterface
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.domain.entities.collection.collection_item import AnimeCollectionItem
+from backend.domain.exceptions import AuthorizationError
 
 
-class CollectionAccessError(PermissionError):
-    """Raised when a user acts on a collection they do not own."""
+class CollectionAccessError(AuthorizationError):
+    """Пользователь пытается изменить чужую коллекцию."""
 
 
 class AddCollectionItemUseCase:
     """Добавляет аниме в пользовательскую коллекцию."""
 
-    def __init__(
-        self,
-        collection_repo: CollectionRepository,
-        unit_of_work: UnitOfWorkInterface,
-        anime_api_client: AnimeApiClient | None = None,
-    ):
-        self.collection_repo = collection_repo
-        self.unit_of_work = unit_of_work
-        self.anime_api_client = anime_api_client
-
-    async def execute(self, command: AddCollectionItemCommand) -> AnimeCollectionItem:
-        """Add an anime item to a collection within a transaction."""
-        async with self.unit_of_work:
-            return await self._execute(command)
-
-    async def _execute(self, command: AddCollectionItemCommand) -> AnimeCollectionItem:
-        """Add an anime item to a collection.
-
-        The collection must belong to the acting user. When the caller did not
-        provide a title snapshot, the anime is resolved through the anime API
-        client so the stored snapshot carries the enriched Russian title.
+    def __init__(self, uow: UnitOfWorkInterface, anime_api_client: AnimeApiClientInterface) -> None:
+        """Инициализирует сценарий добавления элемента в коллекцию.
 
         Args:
-            command: Add collection item command.
+            uow: Единица работы, через которую берётся репозиторий.
+            anime_api_client: Клиент API аниме для обогащения снимка карточки.
+        """
+        self._uow = uow
+        self._anime_api_client = anime_api_client
+
+    async def execute(self, command: AddCollectionItemCommand) -> AnimeCollectionItem:
+        """Добавляет элемент аниме в коллекцию внутри транзакции.
+
+        Снимок карточки собирается до открытия транзакции: обращение к внешнему
+        API не должно удерживать соединение с базой. Коллекция должна
+        принадлежать выполняющему пользователю.
+
+        Args:
+            command: Команда добавления элемента коллекции.
 
         Returns:
-            AnimeCollectionItem: Created collection item.
+            AnimeCollectionItem: Созданный элемент коллекции.
 
         Raises:
-            CollectionAccessError: When the collection does not exist or
-                belongs to another user.
+            CollectionAccessError: Когда коллекция не найдена или принадлежит
+                другому пользователю.
         """
-        collection = await self.collection_repo.get_by_id(command.collection_id)
-        if collection is None:
-            raise CollectionAccessError("Коллекция не найдена")
-        if command.user_id is not None and collection.user_id != command.user_id:
-            raise CollectionAccessError("Нет доступа к этой коллекции")
-
         snapshot = await self._resolve_snapshot(command)
         item = AnimeCollectionItem(
             collection_id=command.collection_id,
@@ -60,16 +52,23 @@ class AddCollectionItemUseCase:
             genres=snapshot["genres"],
             original_title=snapshot["original_title"],
         )
-        return await self.collection_repo.add_item(item)
+        async with self._uow as uow:
+            repository = uow.repository(CollectionRepository)
+            collection = await repository.get_by_id(command.collection_id)
+            if collection is None:
+                raise CollectionAccessError("Коллекция не найдена")
+            if collection.user_id != command.user_id:
+                raise CollectionAccessError("Нет доступа к этой коллекции")
+            return await repository.add_item(item)
 
     async def _resolve_snapshot(self, command: AddCollectionItemCommand) -> dict:
-        """Build the item snapshot, fetching the anime when fields are missing.
+        """Собрать снимок карточки, подгрузив аниме при нехватке полей.
 
         Args:
-            command: Add collection item command.
+            command: Команда добавления элемента коллекции.
 
         Returns:
-            dict: Snapshot fields with command values taking priority.
+            dict: Поля карточки для сохранения снимка.
         """
         snapshot = {
             "title": command.title,
@@ -78,9 +77,9 @@ class AddCollectionItemUseCase:
             "genres": command.genres,
             "original_title": command.original_title,
         }
-        if snapshot["title"] or self.anime_api_client is None:
+        if snapshot["title"]:
             return snapshot
-        anime = await self.anime_api_client.get_by_id(command.anime_id)
+        anime = await self._anime_api_client.get_by_id(command.anime_id)
         if anime is None:
             return snapshot
         snapshot["title"] = anime.title or f"Anime #{command.anime_id}"

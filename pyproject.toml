@@ -56,12 +56,13 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
+markers = [
+    "unit: pure logic tests without external IO (domain, use cases with mocks)",
+    "integration: tests exercising real components (DB, routers, repository + session)",
+    "e2e: full application flows through HTTP",
+    "contract: OpenAPI schema contracts of the JSON API (mobile client)",
+]
 addopts = "-v --tb=short --cov=src --cov-report=term-missing"
-
-[tool.pytest.ini_options.markers]
-unit = "pure logic tests without external IO (domain, use cases with mocks)"
-integration = "tests exercising real components (DB, routers, repository + session)"
-e2e = "full application flows through HTTP"
 
 [tool.importlinter]
 root_package = "backend"
@@ -72,6 +73,26 @@ type = "layers"
 containers = ["backend"]
 layers = ["presentation", "infrastructure", "application", "domain"]
 
+[[tool.importlinter.contracts]]
+name = "Presentation does not reach Infrastructure"
+type = "forbidden"
+source_modules = ["backend.presentation"]
+forbidden_modules = ["backend.infrastructure"]
+# Проверяются только прямые импорты: единственная косвенная цепочка идёт через
+# backend.events.lifecycle (перекачка lifespan-хуков), а транзит через
+# application/domain уже запрещён контрактом Layer Boundaries.
+allow_indirect_imports = true
+# Baseline: список перечитывается скриптом
+# `uv run python scripts/export_importlinter_baseline.py`. Карта нарушений —
+# docs/01-architecture/importlinter-baseline.md.
+# Исключение composition root: backend.presentation.app_factory -> backend.infrastructure.di.dishka_container.
+# Исключение медиапрокси: ответ проксируемого потока — это HTTP-транспорт (Starlette Request/Response),
+# поэтому порт в application не может его описать без утечки HTTP-типов в прикладной слой.
+ignore_imports = [
+    "backend.presentation.api.v1.watch_route.media_proxy -> backend.infrastructure.external.video.hls_proxy",
+    "backend.presentation.app_factory -> backend.infrastructure.di.dishka_container",
+]
+
 [tool.coverage.run]
 source = ["src"]
 branch = true
@@ -79,3 +100,6 @@ branch = true
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
+# Порог ниже текущего замера (83%) на единицу: он не даёт покрытию молча
+# просесть и оставляет запас на правки, которые временно уменьшают число строк.
+fail_under = 82

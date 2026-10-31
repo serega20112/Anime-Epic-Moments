@@ -1,52 +1,58 @@
+"""Сценарий подписки и отписки от пользователя."""
+
+from __future__ import annotations
+
 from starlette import status
 
+from backend.application.dto import SetUserFollowCommand
 from backend.application.interface.repositories.user_repository import UserRepository
 from backend.application.interface.services.profile_overview_cache import (
-    ProfileOverviewCacheInterface as ProfileOverviewCache,
+    ProfileOverviewCacheInterface,
 )
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
-from backend.application.use_cases.user.result import UserResult
+from backend.application.use_cases.result import UseCaseResult
 
 
 class SetUserFollowUseCase:
-    """Создает или удаляет подписку между пользователями."""
+    """Создаёт или удаляет подписку между пользователями."""
 
     def __init__(
         self,
-        user_repo: UserRepository,
         unit_of_work: UnitOfWorkInterface,
-        profile_overview_cache: ProfileOverviewCache | None = None,
-    ):
-        self.user_repo = user_repo
-        self.profile_overview_cache = profile_overview_cache
-        self.unit_of_work = unit_of_work
+        profile_overview_cache: ProfileOverviewCacheInterface,
+    ) -> None:
+        """Инициализирует сценарий подписки на пользователя.
 
-    async def execute(
-        self,
-        follower_user_id: int,
-        followed_user_id: int,
-        follow: bool,
-    ) -> UserResult:
-        """Set a user follow within a transaction."""
-        async with self.unit_of_work:
-            return await self._execute(follower_user_id, followed_user_id, follow)
+        Args:
+            unit_of_work: Граница транзакции изменения подписки.
+            profile_overview_cache: Кэш обзоров профиля обеих сторон.
+        """
+        self._unit_of_work = unit_of_work
+        self._profile_overview_cache = profile_overview_cache
 
-    async def _execute(
-        self,
-        follower_user_id: int,
-        followed_user_id: int,
-        follow: bool,
-    ) -> UserResult:
-        target_user = await self.user_repo.get_by_id(followed_user_id)
-        if target_user is None:
-            return await UserResult.failure(
-                "Пользователь для подписки не найден", status_code=status.HTTP_404_NOT_FOUND
-            )
-        if follow:
-            result = await self.user_repo.follow(follower_user_id, followed_user_id)
-        else:
-            result = await self.user_repo.unfollow(follower_user_id, followed_user_id)
-        if self.profile_overview_cache is not None:
-            await self.profile_overview_cache.invalidate_overview(int(follower_user_id))
-            await self.profile_overview_cache.invalidate_overview(int(followed_user_id))
-        return await UserResult.success(result)
+    async def execute(self, command: SetUserFollowCommand) -> UseCaseResult:
+        """Создаёт или удаляет подписку внутри транзакции.
+
+        Args:
+            command: Команда подписки с идентификаторами сторон и флагом.
+
+        Returns:
+            UseCaseResult: Результат операции подписки.
+        """
+        async with self._unit_of_work as uow:
+            repository = uow.repository(UserRepository)
+            target_user = await repository.get_by_id(command.followed_user_id)
+            if target_user is None:
+                return UseCaseResult.failure(
+                    "Пользователь для подписки не найден", status_code=status.HTTP_404_NOT_FOUND
+                )
+            if command.follow:
+                result = await repository.follow(command.follower_user_id, command.followed_user_id)
+            else:
+                result = await repository.unfollow(
+                    command.follower_user_id, command.followed_user_id
+                )
+
+        await self._profile_overview_cache.invalidate_overview(int(command.follower_user_id))
+        await self._profile_overview_cache.invalidate_overview(int(command.followed_user_id))
+        return UseCaseResult.success(result)

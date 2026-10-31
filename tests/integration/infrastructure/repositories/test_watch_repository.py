@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 import pytest
+from sqlalchemy import text
 
 from backend.domain import (
     Highlight,
@@ -11,9 +14,10 @@ from backend.domain import (
     ViewingSession,
     WatchSource,
 )
-from backend.infrastructure.repositories.highlight_repository import HighlightRepository
-from backend.infrastructure.repositories.user_repository import UserRepository
-from backend.infrastructure.repositories.watch_repository import WatchRepository
+from backend.domain.clock import utc_now
+from backend.infrastructure.database.repositories.highlight_repository import HighlightRepository
+from backend.infrastructure.database.repositories.user_repository import UserRepository
+from backend.infrastructure.database.repositories.watch_repository import WatchRepository
 
 
 @pytest.mark.integration
@@ -289,8 +293,63 @@ class TestWatchRepository:
         assert [item.anime_id for item in watched_stats] == [7, 8]
         assert watched_stats[0].watched_seconds == 1800.0
         assert watched_stats[1].sessions_count == 1
-        assert len(heatmap) == 1
-        assert heatmap[0].interactions == 2
+        assert len(heatmap) == 7
+        assert heatmap[-1].interactions == 2
+        assert sum(item.interactions for item in heatmap) == 2
+
+    async def test_heatmap_includes_days_without_activity(self, async_db_session):
+        """Регрессия: ряд heatmap обязан содержать все дни окна, включая пустые.
+
+        Раньше `get_viewing_heatmap` возвращал только дни с просмотрами, из-за чего
+        «35 дней» на витрине превращались в произвольное число столбцов, а высота
+        столбца переставала соответствовать конкретному дню.
+        """
+        user = await UserRepository(async_db_session).add(
+            User(email="heatmap@example.com", username="heatmap-user", password_hash="hash")
+        )
+        repo = WatchRepository(async_db_session)
+        translation = await repo.add_translation(
+            Translation(anime_id=7, name="AniLibria", translation_type="voice")
+        )
+        source = await repo.add_source(
+            WatchSource(
+                anime_id=7,
+                episode=1,
+                translation_id=translation.id,
+                provider_name="Kodik",
+                source_name="s1",
+                stream_url="https://example.com/1.m3u8",
+                quality_label="1080",
+            )
+        )
+        await repo.upsert_session(
+            ViewingSession(
+                user_id=user.id,
+                anime_id=7,
+                episode=1,
+                watch_source_id=source.id,
+                position_seconds=600.0,
+                volume=1.0,
+                quality_label="1080",
+                is_paused=False,
+            )
+        )
+        three_days_ago = utc_now() - timedelta(days=3)
+        await async_db_session.execute(
+            text("UPDATE viewing_sessions SET updated_at = :ts WHERE user_id = :uid"),
+            {"ts": three_days_ago, "uid": user.id},
+        )
+
+        heatmap = await repo.get_viewing_heatmap(user.id, days=35)
+
+        today = utc_now().date()
+        assert len(heatmap) == 35
+        assert [item.date for item in heatmap] == [
+            (today - timedelta(days=offset)).isoformat() for offset in range(34, -1, -1)
+        ]
+        assert heatmap[31].interactions == 1
+        assert heatmap[-1].interactions == 0
+        assert sum(item.interactions for item in heatmap) == 1
 
     async def test_adds_sorts_and_likes_anime_discussion_comments(self, async_db_session):
         """Проверяем, что WatchRepository ведет обсуждение аниме, сортирует комментарии и считает лайки."""

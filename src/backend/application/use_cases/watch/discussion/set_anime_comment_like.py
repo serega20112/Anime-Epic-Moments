@@ -1,36 +1,44 @@
+"""Сценарий лайка комментария в обсуждении."""
+
+from __future__ import annotations
+
 from starlette import status
 
 from backend.application.dto import SetAnimeCommentLikeCommand
 from backend.application.interface.repositories.watch_repository import WatchRepository
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
-from backend.application.use_cases.watch.result import WatchResult
+from backend.application.use_cases.result import UseCaseResult
 
 
 class SetAnimeCommentLikeUseCase:
     """Ставит или снимает лайк с комментария в обсуждении аниме."""
 
-    def __init__(
-        self,
-        watch_repo: WatchRepository,
-        unit_of_work: UnitOfWorkInterface,
-    ):
-        self.watch_repo = watch_repo
-        self.unit_of_work = unit_of_work
+    def __init__(self, unit_of_work: UnitOfWorkInterface) -> None:
+        """Инициализирует сценарий установки лайка на комментарий аниме.
 
-    async def execute(self, command: SetAnimeCommentLikeCommand) -> WatchResult:
-        """Set an anime comment like within a transaction."""
-        async with self.unit_of_work:
-            return await self._execute(command)
+        Args:
+            unit_of_work: Граница транзакции изменения лайка.
+        """
+        self._unit_of_work = unit_of_work
 
-    async def _execute(self, command: SetAnimeCommentLikeCommand) -> WatchResult:
-        try:
-            comment = await self.watch_repo.set_anime_comment_like(
-                comment_id=command.comment_id,
-                user_id=command.user_id,
-                liked=command.liked,
-            )
-        except ValueError:
-            return await WatchResult.failure(
-                "comment_not_found", status_code=status.HTTP_404_NOT_FOUND
-            )
-        return await WatchResult.success(comment)
+    async def execute(self, command: SetAnimeCommentLikeCommand) -> UseCaseResult:
+        """Ставит или снимает лайк с комментария аниме внутри транзакции.
+
+        Args:
+            command: Команда установки или снятия лайка с комментария.
+
+        Returns:
+            UseCaseResult: Результат операции с комментарием.
+        """
+        async with self._unit_of_work as uow:
+            try:
+                comment = await uow.repository(WatchRepository).set_anime_comment_like(
+                    comment_id=command.comment_id,
+                    user_id=command.user_id,
+                    liked=command.liked,
+                )
+            except ValueError:
+                return UseCaseResult.failure(
+                    "comment_not_found", status_code=status.HTTP_404_NOT_FOUND
+                )
+        return UseCaseResult.success(comment)

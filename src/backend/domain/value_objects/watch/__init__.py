@@ -1,3 +1,5 @@
+"""Значимые объекты просмотра."""
+
 from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
 from backend.domain.value_objects.watch.page_data import (
     DiaryEntry,

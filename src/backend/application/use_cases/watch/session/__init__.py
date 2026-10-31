@@ -1,3 +1,5 @@
+"""Сценарии сессий просмотра."""
+
 from backend.application.use_cases.watch.session.complete_episode import (
     CompleteEpisodeUseCase,
 )

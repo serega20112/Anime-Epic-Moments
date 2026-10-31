@@ -1,4 +1,4 @@
-"""Abstract token blocklist interface for the domain layer."""
+"""Порт списка отозванных токенов."""
 
 from __future__ import annotations
 
@@ -6,38 +6,19 @@ from abc import ABC, abstractmethod
 
 
 class TokenBlocklistInterface(ABC):
-    """Interface for revoking and checking single-use JWT tokens."""
+    """Отзыв и проверка одноразовых JWT-токенов."""
 
     @abstractmethod
     async def revoke(self, token: str, ttl_seconds: int) -> None:
-        """Mark a token as revoked for the given TTL.
-
-        Args:
-            token: Token to revoke.
-            ttl_seconds: TTL of the blocklist entry.
-        """
+        """Пометить токен отозванным на заданный срок."""
 
     @abstractmethod
     async def consume(self, token: str, ttl_seconds: int) -> bool:
-        """Atomically revoke a token unless it was already revoked.
+        """Атомарно отозвать токен, если он ещё не отозван.
 
-        Only one concurrent caller receives True.
-
-        Args:
-            token: Token to consume.
-            ttl_seconds: TTL of the blocklist entry.
-
-        Returns:
-            bool: True if this call revoked the token, False if already revoked.
+        При одновременных запросах True получает только один вызывающий.
         """
 
     @abstractmethod
     async def is_revoked(self, token: str) -> bool:
-        """Check whether a token is currently revoked.
-
-        Args:
-            token: Token to check.
-
-        Returns:
-            bool: True if the token is revoked.
-        """
+        """Проверить, отозван ли токен сейчас."""

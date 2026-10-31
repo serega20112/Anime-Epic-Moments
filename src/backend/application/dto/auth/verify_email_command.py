@@ -1,4 +1,4 @@
-"""Verify email command."""
+"""Подтверждение адреса почты одноразовым кодом."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class VerifyEmailCommand:
-    """Verify email command.
+    """Команда подтверждения адреса почты.
 
     Attributes:
-        email: Normalized user email.
-        code: Six digit verification code.
+        email: Нормализованный адрес почты.
+        code: Код подтверждения из письма.
     """
 
     email: str

@@ -1,20 +1,30 @@
+"""Значимый объект результата рекомендаций."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
 class RecommendationResult:
-    def __init__(
-        self,
-        anime_id: int,
-        reason: str,
-        similarity_score: float,
-        title: str,
-        description: str,
-        image_url: str | None,
-        genres: list[str] | None = None,
-        watch_url: str | None = None,
-    ):
-        self.anime_id = anime_id
-        self.reason = reason
-        self.similarity_score = similarity_score
-        self.title = title
-        self.description = description
-        self.image_url = image_url
-        self.genres = genres or []
-        self.watch_url = watch_url
+    """Результат подбора рекомендаций с пояснением.
+
+    Attributes:
+        anime_id: Идентификатор тайтла во внешнем каталоге.
+        reason: Пояснение, почему тайтл предложен.
+        similarity_score: Балл близости к запросу или вкусам пользователя.
+        title: Название тайтла.
+        description: Описание тайтла.
+        image_url: Ссылка на обложку либо None.
+        genres: Жанры тайтла.
+        watch_url: Ссылка на страницу просмотра либо None.
+    """
+
+    anime_id: int
+    reason: str
+    similarity_score: float
+    title: str
+    description: str
+    image_url: str | None
+    genres: list[str] = field(default_factory=list)
+    watch_url: str | None = None

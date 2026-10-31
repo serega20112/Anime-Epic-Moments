@@ -1,4 +1,8 @@
+"""Элемент коллекции аниме."""
+
 from datetime import datetime
+
+from backend.domain.clock import utc_now
 
 
 class AnimeCollectionItem:
@@ -16,6 +20,7 @@ class AnimeCollectionItem:
         id: int | None = None,
         original_title: str | None = None,
     ):
+        """Создать элемент коллекции с проверкой полей."""
         self.id = id
         self.collection_id = int(collection_id)
         self.anime_id = int(anime_id)
@@ -23,11 +28,12 @@ class AnimeCollectionItem:
         self.description = str(description or "").strip()
         self.cover_url = str(cover_url).strip() if cover_url else None
         self.genres = [str(item).strip() for item in (genres or []) if str(item).strip()]
-        self.added_at = added_at or datetime.utcnow()
+        self.added_at = added_at or utc_now()
         self.original_title = str(original_title).strip() if original_title else None
         self._validate()
 
     def _validate(self):
+        """Проверить обязательные поля элемента коллекции."""
         if self.anime_id <= 0:
             raise ValueError("anime_id должен быть положительным")
         if not self.title or len(self.title) > 120:

@@ -1,3 +1,5 @@
+"""Порт хранилища коллекций аниме."""
+
 from abc import ABC, abstractmethod
 
 from backend.domain.aggregates.collection.collection import AnimeCollection
@@ -5,6 +7,8 @@ from backend.domain.entities.collection.collection_item import AnimeCollectionIt
 
 
 class CollectionRepository(ABC):
+    """Хранилище коллекций аниме и их элементов."""
+
     @abstractmethod
     async def create_collection(self, collection: AnimeCollection) -> AnimeCollection:
         """Создает коллекцию пользователя."""
@@ -32,3 +36,7 @@ class CollectionRepository(ABC):
     @abstractmethod
     async def get_items(self, collection_id: int) -> list[AnimeCollectionItem]:
         """Возвращает элементы коллекции."""
+
+    @abstractmethod
+    async def get_items_count_map(self, collection_ids: list[int]) -> dict[int, int]:
+        """Возвращает число элементов для каждой коллекции."""

@@ -1,45 +1,31 @@
-"""Reaction use case providers."""
+"""Провайдеры сценариев реакций на серии."""
 
 from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases import (
     GetEpisodeReactionsUseCase,
     SetEpisodeReactionUseCase,
 )
-from backend.infrastructure.repositories.reaction_repository import ReactionRepository
 
 
 class ReactionUseCaseProvider(Provider):
-    """Provide episode reaction use cases."""
+    """Провайдер сценариев реакций на серии."""
 
     @provide(scope=Scope.REQUEST)
     async def get_episode_reactions(
         self,
-        reaction_repository: ReactionRepository,
+        unit_of_work: UnitOfWorkInterface,
     ) -> GetEpisodeReactionsUseCase:
-        """Provide the get episode reactions use case.
-
-        Args:
-            reaction_repository: Reaction repository.
-
-        Returns:
-            GetEpisodeReactionsUseCase: Configured use case.
-        """
-        return GetEpisodeReactionsUseCase(reaction_repository)
+        """Создать сценарий сводки реакций на серию."""
+        return GetEpisodeReactionsUseCase(unit_of_work)
 
     @provide(scope=Scope.REQUEST)
     async def set_episode_reaction(
         self,
-        reaction_repository: ReactionRepository,
+        unit_of_work: UnitOfWorkInterface,
     ) -> SetEpisodeReactionUseCase:
-        """Provide the set episode reaction use case.
-
-        Args:
-            reaction_repository: Reaction repository.
-
-        Returns:
-            SetEpisodeReactionUseCase: Configured use case.
-        """
-        return SetEpisodeReactionUseCase(reaction_repository)
+        """Создать сценарий смены реакции на серию."""
+        return SetEpisodeReactionUseCase(unit_of_work)

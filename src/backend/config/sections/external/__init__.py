@@ -1,0 +1,161 @@
+"""Секция внешних интеграций: ключи, адреса и таймауты провайдеров.
+
+Значения сгруппированы по провайдерам в модулях пакета, а наружу всё отдаёт
+этот фасад: `Settings` и DI-провайдеры зависят от секции целиком, а не от её
+внутренней нарезки. Пустые и плейсхолдерные секреты сводятся к None общим
+хелпером из `_common`, чтобы незаполненный `.env` не выглядел как ключ.
+"""
+
+from __future__ import annotations
+
+from .catalog import (
+    shikimori_api_url,
+    shikimori_enabled,
+    shikimori_token,
+    shikimori_user_agent,
+)
+from .justwatch import (
+    justwatch_api_url,
+    justwatch_locale,
+    justwatch_partner_token,
+)
+from .kodik import (
+    kodik_api_token,
+    kodik_api_url,
+    kodik_tokens_path,
+)
+from .llm import (
+    google_api_key,
+    google_api_url,
+    google_model,
+    hf_api_url,
+    hf_model,
+    hf_provider,
+    hf_token,
+    openrouter_api_key,
+    openrouter_api_url,
+    openrouter_model,
+)
+from .media_proxy import (
+    media_proxy_upstream_proxy,
+)
+from .support import (
+    smtp_from_email,
+    smtp_host,
+    smtp_password,
+    smtp_port,
+    smtp_use_tls,
+    smtp_username,
+    support_email_to,
+    telegram_support_admin_chat_ids,
+    telegram_support_api_url,
+    telegram_support_bot_token,
+)
+from .video_adult import (
+    eporner_base_url,
+    eporner_enabled,
+    eporner_timeout,
+    hanime_base_url,
+    hanime_cf_clearance,
+    hanime_enabled,
+    hanime_proxy,
+    hanime_timeout,
+    hanime_user_agent,
+    hentaigasm_base_url,
+    hentaigasm_enabled,
+    hentaigasm_timeout,
+)
+from .video_ru import (
+    aniboom_base_url,
+    aniboom_enabled,
+    aniboom_timeout,
+    anilibria_api_url,
+    animego_base_url,
+    animego_enabled,
+    animego_timeout,
+    kinobox_base_url,
+    kinobox_enabled,
+    kinobox_timeout,
+    rezka_base_url,
+    rezka_enabled,
+    rezka_timeout,
+    sameband_base_url,
+    sameband_enabled,
+    sameband_timeout,
+    sibnet_base_url,
+    sibnet_enabled,
+    sibnet_timeout,
+)
+from .youtube import (
+    youtube_allowed_channel_ids,
+    youtube_api_key,
+    youtube_api_url,
+)
+
+__all__ = [
+    "google_api_key",
+    "google_api_url",
+    "google_model",
+    "hf_api_url",
+    "hf_model",
+    "hf_provider",
+    "hf_token",
+    "openrouter_api_key",
+    "openrouter_api_url",
+    "openrouter_model",
+    "kodik_api_token",
+    "kodik_api_url",
+    "kodik_tokens_path",
+    "shikimori_api_url",
+    "shikimori_enabled",
+    "shikimori_token",
+    "shikimori_user_agent",
+    "aniboom_base_url",
+    "aniboom_enabled",
+    "aniboom_timeout",
+    "anilibria_api_url",
+    "animego_base_url",
+    "animego_enabled",
+    "animego_timeout",
+    "kinobox_base_url",
+    "kinobox_enabled",
+    "kinobox_timeout",
+    "rezka_base_url",
+    "rezka_enabled",
+    "rezka_timeout",
+    "sameband_base_url",
+    "sameband_enabled",
+    "sameband_timeout",
+    "sibnet_base_url",
+    "sibnet_enabled",
+    "sibnet_timeout",
+    "eporner_base_url",
+    "eporner_enabled",
+    "eporner_timeout",
+    "hanime_base_url",
+    "hanime_cf_clearance",
+    "hanime_enabled",
+    "hanime_proxy",
+    "hanime_timeout",
+    "hanime_user_agent",
+    "hentaigasm_base_url",
+    "hentaigasm_enabled",
+    "hentaigasm_timeout",
+    "media_proxy_upstream_proxy",
+    "youtube_allowed_channel_ids",
+    "youtube_api_key",
+    "youtube_api_url",
+    "justwatch_api_url",
+    "justwatch_locale",
+    "justwatch_partner_token",
+    "smtp_from_email",
+    "smtp_host",
+    "smtp_password",
+    "smtp_port",
+    "smtp_use_tls",
+    "smtp_username",
+    "support_email_to",
+    "telegram_support_admin_chat_ids",
+    "telegram_support_api_url",
+    "telegram_support_bot_token",
+]

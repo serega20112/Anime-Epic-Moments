@@ -1,16 +1,14 @@
-"""Viewing moment entities.
-
-A viewing moment is a temporary draft captured during playback that the user
-can enrich and publish into a full highlight later.
-"""
+"""Сущности моментов просмотра."""
 
 from __future__ import annotations
 
 from datetime import datetime
 
+from backend.domain.clock import utc_now
+
 
 class ViewingMoment:
-    """A temporary draft highlight captured at a playback moment."""
+    """Черновик хайлайта, снятый на моменте воспроизведения."""
 
     def __init__(
         self,
@@ -25,6 +23,7 @@ class ViewingMoment:
         id: int | None = None,
         created_at: datetime | None = None,
     ):
+        """Создать черновик момента с заданными полями."""
         self.id = id
         self.user_id = user_id
         self.anime_id = anime_id
@@ -34,4 +33,4 @@ class ViewingMoment:
         self.caption = caption
         self.sticker = sticker
         self.screenshot_url = screenshot_url
-        self.created_at = created_at or datetime.utcnow()
+        self.created_at = created_at or utc_now()

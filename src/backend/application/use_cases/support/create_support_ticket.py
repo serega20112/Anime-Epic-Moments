@@ -1,131 +1,163 @@
+"""Сценарий создания тикета поддержки."""
+
 from __future__ import annotations
 
 import logging
-import re
-from urllib.parse import urlparse
 
 from starlette import status
 
 from backend.application.dto import CreateSupportTicketCommand
 from backend.application.interface.repositories.support_repository import SupportRepository
 from backend.application.interface.services import (
-    SupportEmailMailerInterface as SupportEmailMailer,
+    SupportEmailMailerInterface,
 )
 from backend.application.interface.services.telegram_support_notifier import (
-    TelegramSupportNotifierInterface as TelegramSupportNotifier,
+    TelegramSupportNotifierInterface,
 )
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases.support.result import CreateSupportTicketResult
-from backend.domain import is_support_channel
 from backend.domain.entities.support.support_ticket import SupportTicket
-
-
-class InvalidSupportTicketError(Exception):
-    """Ошибка валидации входных данных тикета поддержки."""
+from backend.domain.exceptions import DomainError
 
 
 class CreateSupportTicketUseCase:
-    """Создает тикет поддержки и отправляет его через выбранный канал."""
+    """Создаёт тикет поддержки и отправляет его через выбранный канал."""
 
     _logger = logging.getLogger("anime_epic_moments")
 
     def __init__(
         self,
-        support_repo: SupportRepository,
-        telegram_notifier: TelegramSupportNotifier,
-        email_mailer: SupportEmailMailer,
         unit_of_work: UnitOfWorkInterface,
-    ):
-        self.support_repo = support_repo
-        self.telegram_notifier = telegram_notifier
-        self.email_mailer = email_mailer
-        self.unit_of_work = unit_of_work
-
-    async def execute(self, command: CreateSupportTicketCommand) -> CreateSupportTicketResult:
-        """Create a support ticket within a transaction."""
-        async with self.unit_of_work:
-            return await self._execute(command)
-
-    async def _execute(self, command: CreateSupportTicketCommand) -> CreateSupportTicketResult:
-        """Валидирует тикет, сохраняет его и отправляет через один выбранный канал.
+        telegram_notifier: TelegramSupportNotifierInterface,
+        email_mailer: SupportEmailMailerInterface,
+    ) -> None:
+        """Инициализирует сценарий создания тикета поддержки.
 
         Args:
-            command: Create support ticket command.
+            unit_of_work: Граница транзакции Unit of Work.
+            telegram_notifier: Сервис отправки уведомлений в Telegram.
+            email_mailer: Сервис отправки писем по email.
+        """
+        self._unit_of_work = unit_of_work
+        self._telegram_notifier = telegram_notifier
+        self._email_mailer = email_mailer
+
+    async def execute(self, command: CreateSupportTicketCommand) -> CreateSupportTicketResult:
+        """Создать тикет поддержки.
+
+        Порядок работы: сначала тикет сохраняется в собственной транзакции,
+        затем отправляется во внешний канал, затем отдельной транзакцией
+        фиксируется результат доставки. Сетевой вызов никогда не выполняется
+        внутри открытой транзакции, поэтому соединение с базой не удерживается
+        на время отправки в Telegram или SMTP.
+
+        Args:
+            command: Команда создания тикета.
 
         Returns:
-            CreateSupportTicketResult: Outcome with the created ticket or a message.
+            CreateSupportTicketResult: Созданный тикет и текст для показа.
         """
         try:
-            return await self._run(command)
-        except Exception as error:
+            ticket = SupportTicket.create(
+                user_id=command.user_id,
+                email=command.email,
+                username=command.username,
+                subject=command.subject,
+                message=command.message,
+                channel=command.channel,
+                page_url=command.page_url,
+            )
+        except DomainError as error:
+            return CreateSupportTicketResult.failure(
+                str(error),
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            ticket = await self._store(ticket)
+            service_unavailable = await self._deliver(ticket)
+            ticket = await self._store_delivery_outcome(ticket)
+        except DomainError as error:
             self._logger.error(
-                "support_ticket_create_failed user_id=%s error=%s",
+                "support_ticket_persist_failed user_id=%s error=%s",
                 getattr(command, "user_id", None),
                 error,
                 exc_info=True,
             )
-            return await CreateSupportTicketResult.failure(
+            return CreateSupportTicketResult.failure(
                 "Не удалось создать тикет поддержки. Попробуй позже.",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    async def _run(self, command: CreateSupportTicketCommand) -> CreateSupportTicketResult:
-        normalized_email = await self._normalize_email(command.email)
-        normalized_username = await self._normalize_username(command.username)
-        normalized_subject = await self._normalize_subject(command.subject)
-        normalized_message = await self._normalize_message(command.message)
-        normalized_channel = await self._normalize_channel(command.channel)
-        normalized_page_url = await self._normalize_page_url(command.page_url)
-
-        try:
-            await self._validate_email(normalized_email)
-            await self._validate_username(normalized_username)
-            await self._validate_subject(normalized_subject)
-            await self._validate_message(normalized_message)
-            await self._validate_channel(normalized_channel)
-            await self._validate_page_url(normalized_page_url)
-        except InvalidSupportTicketError as error:
-            return await CreateSupportTicketResult.failure(
-                str(error), status_code=status.HTTP_400_BAD_REQUEST
-            )
-
-        ticket = await self.support_repo.add(
-            SupportTicket(
-                user_id=command.user_id,
-                email=normalized_email,
-                username=normalized_username,
-                subject=normalized_subject,
-                message=normalized_message,
-                channel=normalized_channel,
-                page_url=normalized_page_url,
-            )
-        )
-
-        service_unavailable = False
-        try:
-            provider = await self._delivery_provider(normalized_channel)
-            await provider.send_ticket_created(ticket)
-            ticket.mark_delivered()
-        except RuntimeError as error:
-            ticket.mark_delivery_failed(str(error))
-            service_unavailable = True
-
-        ticket = await self.support_repo.update(ticket)
-        return await CreateSupportTicketResult.success(
+        return CreateSupportTicketResult.success(
             data=ticket,
-            message=await self._success_message(ticket, service_unavailable),
+            message=self._success_message(ticket, service_unavailable),
             service_unavailable=service_unavailable,
         )
 
-    async def _success_message(self, ticket: SupportTicket, service_unavailable: bool) -> str:
-        """Build the success flash message from the delivery outcome.
+    async def _store(self, ticket: SupportTicket) -> SupportTicket:
+        """Сохранить тикет в базе.
 
         Args:
-            ticket: Created ticket.
-            service_unavailable: Whether delivery failed due to a down channel.
+            ticket: Тикет для сохранения.
 
         Returns:
-            str: User-facing success message.
+            SupportTicket: Сохранённый тикет с присвоенным идентификатором.
+        """
+        async with self._unit_of_work as uow:
+            return await uow.repository(SupportRepository).add(ticket)
+
+    async def _store_delivery_outcome(self, ticket: SupportTicket) -> SupportTicket:
+        """Зафиксировать результат доставки тикета.
+
+        Args:
+            ticket: Тикет с проставленным статусом доставки.
+
+        Returns:
+            SupportTicket: Сохранённый тикет.
+        """
+        async with self._unit_of_work as uow:
+            return await uow.repository(SupportRepository).update(ticket)
+
+    async def _deliver(self, ticket: SupportTicket) -> bool:
+        """Отправить тикет во внешний канал.
+
+        Args:
+            ticket: Сохранённый тикет.
+
+        Returns:
+            bool: True, если канал временно недоступен.
+        """
+        try:
+            await self._delivery_provider(ticket.channel).send_ticket_created(ticket)
+            ticket.mark_delivered()
+        except RuntimeError as error:
+            ticket.mark_delivery_failed(str(error))
+            return True
+        return False
+
+    def _delivery_provider(self, channel: str):
+        """Вернуть сервис доставки для выбранного канала.
+
+        Args:
+            channel: Канал доставки, уже проверенный доменной политикой.
+
+        Returns:
+            TelegramSupportNotifierInterface | SupportEmailMailerInterface: Сервис доставки.
+        """
+        if channel == "telegram":
+            return self._telegram_notifier
+        return self._email_mailer
+
+    def _success_message(self, ticket: SupportTicket, service_unavailable: bool) -> str:
+        """Собрать текст успешного ответа по результату доставки.
+
+        Args:
+            ticket: Созданный тикет.
+            service_unavailable: Был ли канал временно недоступен.
+
+        Returns:
+            str: Текст для показа пользователю.
         """
         if not service_unavailable:
             return (
@@ -138,75 +170,3 @@ class CreateSupportTicketUseCase:
             if ticket.channel == "telegram"
             else "Тикет сохранен, но email-канал сейчас недоступен. Поддержка сможет забрать его позже."
         )
-
-    async def _normalize_email(self, value: str | None) -> str:
-        """Нормализует email пользователя."""
-        return str(value or "").strip().lower()
-
-    async def _normalize_username(self, value: str | None) -> str:
-        """Нормализует username пользователя."""
-        return " ".join(str(value or "").strip().split())
-
-    async def _normalize_subject(self, value: str | None) -> str:
-        """Нормализует тему тикета."""
-        return " ".join(str(value or "").strip().split())
-
-    async def _normalize_message(self, value: str | None) -> str:
-        """Очищает текст обращения, сохраняя переводы строк."""
-        lines = [line.rstrip() for line in str(value or "").strip().splitlines()]
-        return "\n".join(lines).strip()
-
-    async def _normalize_channel(self, value: str | None) -> str:
-        """Нормализует код канала доставки support-тикета."""
-        return str(value or "").strip().lower()
-
-    async def _normalize_page_url(self, value: str | None) -> str | None:
-        """Нормализует адрес страницы, где возникла проблема."""
-        normalized = str(value or "").strip()
-        return normalized or None
-
-    async def _validate_email(self, value: str) -> None:
-        """Проверяет корректность email пользователя."""
-        if len(value) > 254:
-            raise InvalidSupportTicketError("Email слишком длинный")
-        pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-        if not re.match(pattern, value):
-            raise InvalidSupportTicketError("Некорректный email")
-
-    async def _validate_username(self, value: str) -> None:
-        """Проверяет корректность имени пользователя."""
-        if not value or len(value) > 40:
-            raise InvalidSupportTicketError("Укажите имя или ник длиной до 40 символов")
-
-    async def _validate_subject(self, value: str) -> None:
-        """Проверяет тему тикета."""
-        if not value or len(value) < 4 or len(value) > 120:
-            raise InvalidSupportTicketError("Тема должна быть от 4 до 120 символов")
-
-    async def _validate_message(self, value: str) -> None:
-        """Проверяет текст обращения в поддержку."""
-        if not value or len(value) < 10 or len(value) > 4000:
-            raise InvalidSupportTicketError("Сообщение должно быть от 10 до 4000 символов")
-
-    async def _validate_channel(self, value: str) -> None:
-        """Проверяет допустимость выбранного канала доставки."""
-        if not is_support_channel(value):
-            raise InvalidSupportTicketError("Выберите способ отправки тикета")
-
-    async def _validate_page_url(self, value: str | None) -> None:
-        """Проверяет, что page_url пустой, относительный или http(s)-адрес."""
-        if value is None:
-            return
-        if len(value) > 500:
-            raise InvalidSupportTicketError("Адрес страницы слишком длинный")
-        if value.startswith("/"):
-            return
-        parsed = urlparse(value)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise InvalidSupportTicketError("Укажите корректный адрес страницы")
-
-    async def _delivery_provider(self, channel: str):
-        """Возвращает сервис доставки для выбранного support-канала."""
-        if channel == "telegram":
-            return self.telegram_notifier
-        return self.email_mailer

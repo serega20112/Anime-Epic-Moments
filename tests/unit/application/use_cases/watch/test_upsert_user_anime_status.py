@@ -6,46 +6,55 @@ import pytest
 
 from backend.application.dto import UpsertUserAnimeStatusCommand
 from backend.application.use_cases import UpsertUserAnimeStatusUseCase
+from backend.domain import UserAnimeStatus
+from tests.support.fakes import FakeUnitOfWork
+
+
+def _use_case(repository: AsyncMock) -> tuple:
+    """Собрать сценарий upsert статуса с двойниками репозитория и кэша."""
+    profile_cache = AsyncMock()
+    uow = FakeUnitOfWork(WatchRepository=repository)
+    return UpsertUserAnimeStatusUseCase(uow, profile_cache), uow, repository, profile_cache
 
 
 @pytest.mark.unit
 class TestUpsertUserAnimeStatusUseCase:
-    """Юнит-тесты создания/обновления статуса просмотра аниме."""
+    """Юнит-тесты сохранения статуса просмотра аниме."""
 
-    async def test_persists_domain_object(self):
-        """Что тестируем: передачу корректного UserAnimeStatus в репозиторий.
-        Что передаём: команду со статусом и замоканный кэш.
-        Что ожидаем: результат успешен, статус сохранен, кэш инвалидирован.
+    async def test_saves_status_and_invalidates_profile_cache(self):
+        """Что тестируем: запись статуса и инвалидацию кэша профиля после коммита.
+        Что передаём: команду с статусом и лишними пробелами.
+        Что ожидаем: сущность сохранена, кэш очищен, транзакция зафиксирована.
         """
-        watch_repo = AsyncMock()
-        profile_cache = AsyncMock()
-        watch_repo.upsert_status.return_value = "saved"
-        use_case = UpsertUserAnimeStatusUseCase(watch_repo, AsyncMock(), profile_cache)
+        repository = AsyncMock()
+        repository.upsert_status.side_effect = lambda item: item
+        use_case, uow, _repository, profile_cache = _use_case(repository)
 
         result = await use_case.execute(
-            UpsertUserAnimeStatusCommand(user_id=1, anime_id=9, status="watching")
+            UpsertUserAnimeStatusCommand(user_id=4, anime_id=7, status="  watching ")
         )
 
         assert result.ok is True
-        assert result.data == "saved"
-        status = watch_repo.upsert_status.await_args.args[0]
-        assert status.user_id == 1
-        assert status.anime_id == 9
-        assert status.status == "watching"
-        profile_cache.invalidate_overview.assert_awaited_once_with(1)
+        assert result.data.status == "watching"
+        assert uow.commits == 1
+        saved = repository.upsert_status.await_args.args[0]
+        assert isinstance(saved, UserAnimeStatus)
+        profile_cache.invalidate_overview.assert_awaited_once_with(4)
 
     async def test_rejects_empty_status(self):
         """Что тестируем: отказ при пустом статусе.
-        Что передаём: status из пробелов.
-        Что ожидаем: результат failure со статусом 400, репозиторий не вызывается.
+        Что передаём: статус из пробелов.
+        Что ожидаем: статус 400, репозиторий и кэш не затронуты.
         """
-        watch_repo = AsyncMock()
-        use_case = UpsertUserAnimeStatusUseCase(watch_repo, AsyncMock())
+        repository = AsyncMock()
+        use_case, _uow, _repository, profile_cache = _use_case(repository)
 
         result = await use_case.execute(
-            UpsertUserAnimeStatusCommand(user_id=1, anime_id=9, status="   ")
+            UpsertUserAnimeStatusCommand(user_id=4, anime_id=7, status=" ")
         )
 
         assert result.ok is False
         assert result.status_code == 400
-        watch_repo.upsert_status.assert_not_awaited()
+        assert result.error == "status_required"
+        repository.upsert_status.assert_not_awaited()
+        profile_cache.invalidate_overview.assert_not_awaited()

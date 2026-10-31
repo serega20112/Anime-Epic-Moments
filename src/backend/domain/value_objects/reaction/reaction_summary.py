@@ -1,4 +1,4 @@
-"""Value objects describing episode reaction state."""
+"""Значимые объекты состояния реакций на серию."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from backend.domain.value_objects.reaction.reaction_type import EpisodeReactionT
 
 @dataclass(frozen=True, slots=True)
 class EpisodeReactionCount:
-    """Number of reactions of a single type on an episode."""
+    """Число реакций одного типа на серии."""
 
     reaction_type: EpisodeReactionType
     count: int
@@ -17,16 +17,12 @@ class EpisodeReactionCount:
 
 @dataclass(frozen=True, slots=True)
 class EpisodeReactionSummary:
-    """Aggregated reaction state for an episode and viewer."""
+    """Сводка реакций серии и реакция самого зрителя."""
 
     counts: list[EpisodeReactionCount] = field(default_factory=list)
     user_reaction: EpisodeReactionType | None = None
 
     @classmethod
     def empty(cls) -> EpisodeReactionSummary:
-        """Build a summary with no reactions.
-
-        Returns:
-            EpisodeReactionSummary: Empty summary.
-        """
+        """Собрать сводку без реакций."""
         return cls(counts=[], user_reaction=None)

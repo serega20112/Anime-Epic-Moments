@@ -4,9 +4,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from backend.application.dto import HighlightCommentsQuery
 from backend.application.use_cases.highlight.social.get_highlight_comments import (
     GetHighlightCommentsUseCase,
 )
+from tests.support.fakes import FakeUnitOfWork
 
 
 @pytest.mark.unit
@@ -20,13 +22,13 @@ class TestGetHighlightCommentsUseCase:
     async def test_clamps_limit(self, limit, expected):
         """Что тестируем: ограничение размера выборки комментариев.
         Что передаём: разные значения limit.
-        Что ожидаем: репозиторий вызывается с зажатым limit.
+        Что ожидаем: репозиторий вызван с зажатым limit, комментарии возвращены.
         """
-        repo = AsyncMock()
-        repo.get_comments.return_value = ["comment"]
-        use_case = GetHighlightCommentsUseCase(repo)
+        repository = AsyncMock()
+        repository.get_comments.return_value = ["comment"]
+        use_case = GetHighlightCommentsUseCase(FakeUnitOfWork(HighlightRepository=repository))
 
-        result = await use_case.execute(highlight_id=8, limit=limit)
+        result = await use_case.execute(HighlightCommentsQuery(highlight_id=8, limit=limit))
 
-        assert repo.get_comments.await_args.kwargs == {"highlight_id": 8, "limit": expected}
+        repository.get_comments.assert_awaited_once_with(highlight_id=8, limit=expected)
         assert result == ["comment"]

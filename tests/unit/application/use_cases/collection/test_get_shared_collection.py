@@ -5,11 +5,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from backend.application.dto import GetSharedCollectionQuery
 from backend.application.use_cases.collection.get_shared_collection import (
     GetSharedCollectionUseCase,
 )
 from backend.domain.aggregates.collection.collection import AnimeCollection
 from backend.domain.entities.collection.collection_item import AnimeCollectionItem
+from tests.support.fakes import FakeUnitOfWork
 
 
 @pytest.mark.unit
@@ -28,10 +30,10 @@ class TestGetSharedCollectionUseCase:
             title="Приватная подборка",
             is_public=False,
         )
-        use_case = GetSharedCollectionUseCase(repo)
+        use_case = GetSharedCollectionUseCase(FakeUnitOfWork(CollectionRepository=repo))
 
         with pytest.raises(ValueError):
-            await use_case.execute(3)
+            await use_case.execute(GetSharedCollectionQuery(collection_id=3))
 
         repo.get_items.assert_not_awaited()
 
@@ -56,9 +58,9 @@ class TestGetSharedCollectionUseCase:
                 title="Gintama",
             )
         ]
-        use_case = GetSharedCollectionUseCase(repo)
+        use_case = GetSharedCollectionUseCase(FakeUnitOfWork(CollectionRepository=repo))
 
-        result = await use_case.execute(3)
+        result = await use_case.execute(GetSharedCollectionQuery(collection_id=3))
 
         assert result.collection.title == "Публичная подборка"
         assert result.collection.items_count == 1

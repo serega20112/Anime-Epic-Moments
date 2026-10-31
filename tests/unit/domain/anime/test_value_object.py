@@ -7,10 +7,11 @@ from backend.domain.value_objects.anime.discussion import (
     AnimeDiscussionComment,
 )
 from backend.domain.value_objects.anime.search_result import SearchAnimeByDescriptionResult
+from backend.presentation.api.responses.anime_responses import AnimeSearchResultResponse
 
 
 class TestSearchAnimeByDescriptionResult:
-    """Юнит-тесты value object результата поиска аниме по описанию."""
+    """Юнит-тесты результата поиска аниме по описанию."""
 
     @pytest.mark.unit
     @pytest.mark.parametrize(
@@ -20,16 +21,16 @@ class TestSearchAnimeByDescriptionResult:
             (True, "Подтвердите возраст"),
         ],
     )
-    async def test_to_dict_serializes_payload(
+    async def test_response_model_reads_domain_object(
         self,
         anime_factory,
         requires_age_confirmation,
         message,
     ):
-        """Что тестируем: метод to_dict.
+        """Что тестируем: сериализацию результата поиска в модель ответа.
 
-        Что передаём: карточки найденного аниме и разные age-gate поля (флаг + сообщение).
-        Что ожидаем: словарь содержит title первой карточки и корректные age-gate значения.
+        Что передаём: карточку найденного аниме и разные age-gate поля (флаг + сообщение).
+        Что ожидаем: заголовок первой карточки и корректные age-gate значения в JSON.
         """
         result = SearchAnimeByDescriptionResult(
             items=[anime_factory(external_id="44", title="Result Title")],
@@ -37,9 +38,10 @@ class TestSearchAnimeByDescriptionResult:
             message=message,
         )
 
-        payload = result.to_dict()
+        payload = AnimeSearchResultResponse.model_validate(result).model_dump()
 
         assert payload["items"][0]["title"] == "Result Title"
+        assert payload["items"][0]["external_id"] == "44"
         assert payload["requires_age_confirmation"] is requires_age_confirmation
         assert payload["message"] == message
 

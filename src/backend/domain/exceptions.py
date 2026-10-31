@@ -1,31 +1,39 @@
-"""Base domain exception hierarchy for the application."""
+"""Базовая иерархия доменных исключений приложения."""
 
 from __future__ import annotations
 
 
 class DomainError(Exception):
-    """Base exception for all domain-level errors."""
+    """Базовое исключение доменных ошибок."""
 
 
 class NotFoundError(DomainError):
-    """Raised when a requested resource does not exist."""
+    """Запрошенный объект не найден."""
 
 
 class ValidationError(DomainError):
-    """Raised when input data fails validation."""
+    """Входные данные не прошли проверку."""
 
 
 class AuthenticationError(DomainError):
-    """Raised when authentication fails."""
+    """Не удалось подтвердить личность пользователя."""
 
 
 class AuthorizationError(DomainError):
-    """Raised when the user lacks permission."""
+    """У пользователя нет прав на это действие."""
+
+
+class InvalidTokenError(AuthenticationError):
+    """Токен недействителен, истёк либо имеет другой служебный тип.
+
+    Исключение объявлено в домене, чтобы сценарии и представление ловили
+    отказ разбора токена, не зная библиотеки, которая этот токен кодирует.
+    """
 
 
 class DuplicateError(DomainError):
-    """Raised when attempting to create a duplicate resource."""
+    """Объект с такими данными уже существует."""
 
 
 class ExternalServiceError(DomainError):
-    """Raised when an external API or service call fails."""
+    """Внешний сервис или API вернул ошибку."""

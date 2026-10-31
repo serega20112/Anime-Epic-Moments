@@ -1,264 +1,188 @@
 from __future__ import annotations
 
-from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
 
 from backend.application.dto import WatchPageQuery
-from backend.application.use_cases import GetWatchPageUseCase
-from backend.domain import Highlight, Translation, ViewingSession, WatchSource
-from backend.domain.value_objects.watch.translation_availability import (
-    TranslationEpisodeAvailability,
-)
+from backend.application.use_cases.watch.page.get_watch_page import GetWatchPageUseCase
+from backend.domain import Highlight, Translation, UserAnimeStatus, ViewingSession, WatchSource
+from backend.domain.entities.anime.anime import Anime
+from backend.domain.value_objects.watch.page_data import TranslationEpisodeCount
+from tests.support.fakes import FakeUnitOfWork
+
+
+def _anime(**overrides) -> Anime:
+    """Собрать карточку тайтла из каталога с переопределёнными полями."""
+    fields = {
+        "title": "Gintama",
+        "original_title": "Gintama Kyuu",
+        "cover_url": "https://example.com/cover.jpg",
+        "description": "Описание тайтла",
+        "year": 2011,
+        "rating": 8.9,
+        "genres": ["Comedy"],
+        "episode_count": 12,
+        "external_id": "12345",
+    }
+    fields.update(overrides)
+    return Anime(**fields)
+
+
+def _source(source_id: int, source_name: str) -> WatchSource:
+    """Собрать источник просмотра с указанным идентификатором и именем."""
+    return WatchSource(
+        id=source_id,
+        anime_id=7,
+        episode=2,
+        translation_id=3,
+        provider_name="Kinobox",
+        source_name=source_name,
+        stream_url=f"https://example.com/{source_name}.m3u8",
+        quality_label="720p",
+        source_type="stream",
+    )
+
+
+def _highlight() -> Highlight:
+    """Собрать хайлайт второй серии без собственного заголовка."""
+    highlight = Highlight(
+        user_id=4,
+        anime_id=7,
+        episode=2,
+        start_timestamp=10.0,
+        end_timestamp=25.0,
+    )
+    highlight.id = 21
+    highlight.likes_count = 3
+    return highlight
+
+
+def _use_case(
+    *,
+    sources=None,
+    anime=_anime(),
+    session=None,
+    status=None,
+    user_rating=None,
+    availability=None,
+) -> tuple:
+    """Собрать сценарий страницы просмотра с двойниками зависимостей."""
+    watch_repository = AsyncMock()
+    watch_repository.get_translations.return_value = [
+        Translation(id=3, anime_id=7, name="AniLibria", translation_type="dub")
+    ]
+    watch_repository.get_session.return_value = session
+    watch_repository.get_status.return_value = status
+    watch_repository.get_highlight_contexts.return_value = [
+        SimpleNamespace(highlight_id=21, watch_source_id=11, translation_id=3, title="Финал заезда")
+    ]
+    highlight_repository = AsyncMock()
+    highlight_repository.get_by_anime_episode.return_value = [_highlight()]
+    rating_repository = AsyncMock()
+    rating_repository.get_user_rating.return_value = user_rating
+    anime_api_client = AsyncMock()
+    anime_api_client.get_by_id.return_value = anime
+    sync_service = AsyncMock()
+    sync_service.sync_for_anime.return_value = sources if sources is not None else []
+    sync_service.get_translations_availability.return_value = (
+        availability if availability is not None else []
+    )
+    sync_service.is_enabled.return_value = True
+    sync_service.get_provider_label.return_value = "Kinobox"
+    uow = FakeUnitOfWork(
+        WatchRepository=watch_repository,
+        HighlightRepository=highlight_repository,
+        RatingRepository=rating_repository,
+    )
+    use_case = GetWatchPageUseCase(uow, anime_api_client, sync_service)
+    return use_case, watch_repository, highlight_repository, rating_repository, sync_service
 
 
 @pytest.mark.unit
 class TestGetWatchPageUseCase:
     """Юнит-тесты сборки страницы просмотра аниме."""
 
-    async def test_builds_sorted_sources_and_highlight_cards(self, anime_factory):
-        """Что тестируем: сортировку источников, использование сессии и сборку highlight cards.
-        Что передаём: аниме, источники, озвучки, сессию и хайлайты.
-        Что ожидаем: page с отсортированными источниками и карточками хайлайтов.
+    async def test_builds_page_for_guest_from_local_and_external_data(self):
+        """Что тестируем: сборку страницы гостя из базы, каталога и провайдера.
+        Что передаём: две дорожки-источника, хайлайт с контекстом и карту серий.
+        Что ожидаем: карточки, счётчики озвучек и доступные серии собраны.
         """
-        anime = anime_factory(
-            external_id="185",
-            title="Initial D",
-            description="Street racing",
-            genres=["Action", "Cars"],
-            rating=8.7,
+        record = SimpleNamespace(title="AniLibria", available_episodes=[1, 2, 3], episodes_count=3)
+        use_case, watch_repository, _highlights, rating_repository, _service = _use_case(
+            sources=[_source(11, "kb-1"), _source(12, "kb-2")],
+            availability=[record],
         )
-        watch_repo = AsyncMock()
-        highlight_repo = AsyncMock()
-        anime_api_client = AsyncMock()
-        anime_api_client.get_by_id.return_value = anime
-        sync_service = AsyncMock()
-        sync_service.sync_for_anime.return_value = [
-            WatchSource(
-                id=3,
-                anime_id=185,
-                episode=2,
-                translation_id=2,
-                provider_name="YouTube",
-                source_name="clip",
-                stream_url="https://youtube.example/embed/1",
-                quality_label="YouTube",
-                source_type="embed",
-            ),
-            WatchSource(
-                id=2,
-                anime_id=185,
-                episode=2,
-                translation_id=1,
-                provider_name="Kodik",
-                source_name="main-720",
-                stream_url="https://example.com/720.m3u8",
-                quality_label="720",
-                source_type="stream",
-            ),
-            WatchSource(
-                id=1,
-                anime_id=185,
-                episode=2,
-                translation_id=1,
-                provider_name="Kodik",
-                source_name="main-1080",
-                stream_url="https://example.com/1080.m3u8",
-                quality_label="1080",
-                source_type="stream",
-            ),
+
+        page = await use_case.execute(WatchPageQuery(anime_id=7, episode=2))
+
+        assert page.anime_title == "Gintama"
+        assert page.anime_rating == 8.9
+        assert page.episode_total == 3
+        assert page.translation_episode_counts == [
+            TranslationEpisodeCount(translation_name="AniLibria", available_count=3, is_active=True)
         ]
-        watch_repo.get_translations.return_value = [
-            Translation(id=1, anime_id=185, name="StudioBand", translation_type="voice"),
-            Translation(id=2, anime_id=185, name="Other Team", translation_type="voice"),
-        ]
-        watch_repo.get_session.return_value = ViewingSession(
-            id=10,
-            user_id=1,
-            anime_id=185,
+        assert [item.source_id for item in page.sources] == [11, 12]
+        assert page.selected_source_id == 11
+        assert page.selected_translation_id == 3
+        assert page.highlights[0].title == "Финал заезда"
+        assert page.highlights[0].translation_name == "AniLibria"
+        assert page.highlights[0].provider_name == "Kinobox"
+        assert page.highlights[0].start_timestamp == "00:10"
+        assert page.user_rating is None
+        watch_repository.get_session.assert_not_awaited()
+        rating_repository.get_user_rating.assert_not_awaited()
+
+    async def test_drops_duplicate_sources_and_prefers_session_source(self):
+        """Что тестируем: выбор источника из сессии и снятие точных дублей.
+        Что передаём: сессию с source_id=12 и список с повторяющимся источником.
+        Что ожидаем: активен источник сессии, дубль отброшен, прогресс подставлен.
+        """
+        session = ViewingSession(
+            id=99,
+            user_id=4,
+            anime_id=7,
             episode=2,
-            watch_source_id=1,
-            position_seconds=75.0,
-            volume=0.6,
-            quality_label="1080",
+            watch_source_id=12,
+            position_seconds=77.5,
+            volume=0.5,
+            quality_label="480p",
             is_paused=True,
         )
-        watch_repo.get_status.return_value = SimpleNamespace(status="watching")
-        watch_repo.get_highlight_contexts.return_value = [
-            SimpleNamespace(highlight_id=8, watch_source_id=1, translation_id=1, title="best drift")
-        ]
-        highlight = Highlight(
-            user_id=1,
-            anime_id=185,
-            episode=2,
-            start_timestamp=30.0,
-            end_timestamp=50.0,
-            description="cool scene",
-            emotion="hype",
-            created_at=datetime(2026, 3, 28),
-        )
-        highlight.id = 8
-        highlight_repo.get_by_anime_episode.return_value = [highlight]
-        sync_service.is_enabled.return_value = True
-        sync_service.get_provider_label.return_value = "Kodik + YouTube"
-        use_case = GetWatchPageUseCase(
-            watch_repo,
-            highlight_repo,
-            anime_api_client,
-            sync_service,
-            AsyncMock(),
+        use_case, watch_repository, _highlights, rating_repository, _service = _use_case(
+            sources=[_source(12, "kb-2"), _source(11, "kb-1"), _source(11, "kb-1")],
+            session=session,
+            status=UserAnimeStatus(user_id=4, anime_id=7, status="watching"),
+            user_rating=9,
         )
 
-        page = await use_case.execute(
-            anime_id=185,
-            query=WatchPageQuery(episode=2),
-            user_id=1,
-        )
+        page = await use_case.execute(WatchPageQuery(anime_id=7, episode=2, user_id=4))
 
-        assert [item.source_id for item in page.sources] == [1, 2, 3]
-        assert page.selected_source_id == 1
-        assert page.selected_translation_id == 1
-        assert page.episode_total == 12
-        assert page.episode_options[:3] == [1, 2, 3]
-        assert page.episode_options[-1] == 12
+        watch_repository.get_session.assert_awaited_once_with(user_id=4, anime_id=7, episode=2)
+        rating_repository.get_user_rating.assert_awaited_once_with(user_id=4, anime_id=7)
+        assert [item.source_id for item in page.sources] == [12, 11]
+        assert page.selected_source_id == 12
+        assert page.last_position_seconds == 77.5
+        assert page.saved_volume == 0.5
+        assert page.saved_quality_label == "480p"
         assert page.current_status == "watching"
-        assert page.last_position_seconds == 75.0
-        assert page.preferred_start_seconds == 0.0
-        assert page.saved_volume == 0.6
-        assert page.highlights[0].title == "best drift"
-        assert page.highlights[0].translation_name == "StudioBand"
-        assert page.highlights[0].provider_name == "Kodik"
-        assert page.discovery_provider_name == "Kodik + YouTube"
+        assert page.user_rating == 9
 
-    async def test_hides_unreleased_episodes_for_active_translation(self, anime_factory):
-        """Что тестируем: скрытие невышедших серий выбранной озвучки.
-
-        Что передаём: каталог с episode_count=12, но карта доступности
-        активной озвучки говорит, что вышли только серии 1 и 2.
-        Что ожидаем: episode_total и episode_options отражают реальные
-        доступные серии, а не «фантомные» 12 из каталога.
+    async def test_falls_back_to_catalog_defaults_without_anime_card(self):
+        """Что тестируем: поведение страницы при отсутствии карточки тайтла.
+        Что передаём: каталог вернул None, провайдер не нашёл источников.
+        Что ожидаем: запасной заголовок и описание, пустые источники, серия как итог.
         """
-        anime = anime_factory(
-            external_id="185",
-            title="Initial D",
-            description="Street racing",
-            genres=["Action", "Cars"],
-            rating=8.7,
-        )
-        watch_repo = AsyncMock()
-        watch_repo.get_translations.return_value = [
-            Translation(id=1, anime_id=185, name="StudioBand", translation_type="voice"),
-        ]
-        watch_repo.get_highlight_contexts.return_value = []
-        watch_repo.get_session.return_value = None
-        watch_repo.get_status.return_value = None
-        highlight_repo = AsyncMock()
-        highlight_repo.get_by_anime_episode.return_value = []
-        anime_api_client = AsyncMock()
-        anime_api_client.get_by_id.return_value = anime
-        sync_service = AsyncMock()
-        sync_service.sync_for_anime.return_value = [
-            WatchSource(
-                id=1,
-                anime_id=185,
-                episode=2,
-                translation_id=1,
-                provider_name="Kodik",
-                source_name="main-1080",
-                stream_url="https://example.com/1080.m3u8",
-                quality_label="1080",
-                source_type="stream",
-            ),
-            WatchSource(
-                id=2,
-                anime_id=185,
-                episode=1,
-                translation_id=1,
-                provider_name="Kodik",
-                source_name="main-1080",
-                stream_url="https://example.com/1080.m3u8",
-                quality_label="1080",
-                source_type="stream",
-            ),
-        ]
-        sync_service.get_translations_availability.return_value = [
-            TranslationEpisodeAvailability(
-                translation_id=100,
-                title="StudioBand",
-                translation_type="voice",
-                episodes_count=2,
-                available_episodes=[1, 2],
-            ),
-            TranslationEpisodeAvailability(
-                translation_id=200,
-                title="Other Team",
-                translation_type="voice",
-                episodes_count=8,
-                available_episodes=list(range(1, 9)),
-            ),
-        ]
-        sync_service.is_enabled.return_value = True
-        sync_service.get_provider_label.return_value = "Kodik"
-        use_case = GetWatchPageUseCase(
-            watch_repo,
-            highlight_repo,
-            anime_api_client,
-            sync_service,
-            AsyncMock(),
-        )
+        use_case, _watch, _highlights, _rating, service = _use_case(sources=[], anime=None)
+        service.get_translations_availability.return_value = None
 
-        page = await use_case.execute(
-            anime_id=185,
-            query=WatchPageQuery(episode=2),
-            user_id=1,
-        )
+        page = await use_case.execute(WatchPageQuery(anime_id=7, episode=2))
 
-        assert page.selected_translation_id == 1
-        assert page.episode_total == 2
-        assert page.episode_options == [1, 2]
-        counts = {item.translation_name: item for item in page.translation_episode_counts}
-        assert counts["StudioBand"].available_count == 2
-        assert counts["StudioBand"].is_active is True
-        assert counts["Other Team"].available_count == 8
-
-    async def test_uses_fallbacks_when_anime_and_sources_are_missing(self):
-        """Что тестируем: fallback-данные при отсутствии аниме и источников.
-        Что передаём: неизвестное аниме без источников и сессии.
-        Что ожидаем: page с дефолтными полями.
-        """
-        watch_repo = AsyncMock()
-        watch_repo.get_translations.return_value = []
-        watch_repo.get_highlight_contexts.return_value = []
-        highlight_repo = AsyncMock()
-        highlight_repo.get_by_anime_episode.return_value = []
-        anime_api_client = AsyncMock()
-        anime_api_client.get_by_id.return_value = None
-        sync_service = AsyncMock()
-        sync_service.sync_for_anime.return_value = []
-        sync_service.is_enabled.return_value = False
-        sync_service.get_provider_label.return_value = None
-        use_case = GetWatchPageUseCase(
-            watch_repo,
-            highlight_repo,
-            anime_api_client,
-            sync_service,
-            AsyncMock(),
-        )
-
-        page = await use_case.execute(
-            anime_id=999,
-            query=WatchPageQuery(episode=1, preferred_start_seconds=42.0),
-            user_id=None,
-        )
-
-        assert page.anime_title == "Anime #999"
+        assert page.anime_title == "Anime #7"
         assert page.anime_description == "Описание недоступно"
-        assert page.episode_total == 1
-        assert page.episode_options == [1]
-        assert page.selected_source_id is None
+        assert page.genres == []
         assert page.sources == []
-        assert page.highlights == []
-        assert page.preferred_start_seconds == 42.0
-        assert page.can_discover_sources is False
+        assert page.selected_source_id is None
+        assert page.episode_total == 2
+        assert page.translation_episode_counts == []

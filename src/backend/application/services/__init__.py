@@ -1,4 +1,4 @@
-"""Facade re-exports for backend.application.services."""
+"""Сервисы application, не зависящие от HTTP и базы."""
 
 from __future__ import annotations
 

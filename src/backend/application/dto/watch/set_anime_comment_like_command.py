@@ -1,4 +1,4 @@
-"""Set or remove a like on an anime discussion comment."""
+"""Постановка и снятие лайка с комментария в обсуждении."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class SetAnimeCommentLikeCommand:
-    """Set or remove a like on an anime discussion comment.
+    """Команда изменения лайка комментария.
 
     Attributes:
-        comment_id: Comment identifier.
-        user_id: Acting user identifier.
-        liked: True to like, False to remove like.
+        comment_id: Идентификатор комментария.
+        user_id: Идентификатор действующего пользователя.
+        liked: True — поставить лайк, False — снять.
     """
 
     comment_id: int

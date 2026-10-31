@@ -1,114 +1,115 @@
-"""Use case for authenticating a user with email and password."""
+"""Сценарий аутентификации пользователя по email и паролю."""
 
 from __future__ import annotations
 
-from backend.application.interface.repositories.user_repository import UserRepository
-from backend.application.interface.services import PasswordServiceInterface as PasswordService
+from backend.application.dto import LoginCommand
+from backend.application.interface.services import (
+    AccountLockServiceInterface,
+    PasswordServiceInterface,
+)
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases.auth.result import AuthResult
+from backend.application.use_cases.auth.user_lookup import find_user_by_email
+from backend.domain.policies.user_credentials_policy import normalize_email
 
-_ACCOUNT_LOCKED_MESSAGE = (
+ACCOUNT_LOCKED_MESSAGE = (
     "Аккаунт временно заблокирован из-за множества неудачных попыток входа. Попробуйте позже."
 )
-_INVALID_CREDENTIALS_MESSAGE = "Неверный email или пароль"
-_DUMMY_PASSWORD_HASH = "$2b$12$YkpE4gT/crtJTugOQ0Uh5ObWVyl1NJXIXc/xc4MbchXOi4R2JXns2"
+INVALID_CREDENTIALS_MESSAGE = "Неверный email или пароль"
+DUMMY_PASSWORD_HASH = "$2b$12$YkpE4gT/crtJTugOQ0Uh5ObWVyl1NJXIXc/xc4MbchXOi4R2JXns2"
 
 
-async def _welcome_message(username: str) -> str:
-    """Build the login success flash message.
+def welcome_message(username: str) -> str:
+    """Формирует приветственное сообщение после успешного входа.
 
     Args:
-        username: Authenticated username.
+        username: Имя пользователя.
 
     Returns:
-        str: Welcome message.
+        str: Текст приветствия.
     """
     return f"Добро пожаловать, {username}!"
 
 
 class LoginUserUseCase:
-    """Verify credentials and return the authenticated user aggregate.
+    """Проверяет учётные данные и возвращает аутентифицированного пользователя.
 
-    Enforces account lockout: fully locked accounts are rejected before any
-    credential check, failed attempts are recorded, and a successful login
-    resets the attempt counter.
+    Применяет блокировку аккаунта: полностью заблокированные аккаунты
+    отклоняются до любой проверки учётных данных, неудачные попытки
+    регистрируются, а успешный вход сбрасывает счётчик попыток.
     """
 
     def __init__(
         self,
-        user_repository: UserRepository,
-        password_service: PasswordService,
-        account_lock_service=None,
-    ):
-        """Initialize the use case.
+        unit_of_work: UnitOfWorkInterface,
+        password_service: PasswordServiceInterface,
+        account_lock_service: AccountLockServiceInterface,
+    ) -> None:
+        """Инициализирует сценарий входа.
 
         Args:
-            user_repository: User repository port.
-            password_service: Password hashing/verification service.
-            account_lock_service: Optional account lockout service.
+            unit_of_work: Граница транзакции чтения пользователя.
+            password_service: Сервис хеширования и проверки паролей.
+            account_lock_service: Сервис блокировки аккаунта по числу попыток.
         """
-        self.user_repository = user_repository
-        self.password_service = password_service
-        self.account_lock_service = account_lock_service
+        self._unit_of_work = unit_of_work
+        self._password_service = password_service
+        self._account_lock_service = account_lock_service
 
-    async def execute(self, *, email: str, password: str) -> AuthResult:
-        """Authenticate a user by email and password.
+    async def execute(self, command: LoginCommand) -> AuthResult:
+        """Аутентифицирует пользователя по email и паролю.
 
         Args:
-            email: Normalized user email.
-            password: Plain password.
+            command: Данные формы входа.
 
         Returns:
-            AuthResult: Success with the user or failure with redirect info.
+            AuthResult: Успех с пользователем или неудача с информацией о редиректе.
         """
+        email = normalize_email(command.email)
         locked = await self._ensure_not_locked(email)
         if locked is not None:
             return locked
-        user = await self.user_repository.get_by_email(email)
-        stored_hash = user.password_hash if user else _DUMMY_PASSWORD_HASH
-        password_matches = await self.password_service.verify_password(password, stored_hash)
+        user = await find_user_by_email(self._unit_of_work, email)
+        stored_hash = user.password_hash if user else DUMMY_PASSWORD_HASH
+        password_matches = await self._password_service.verify_password(
+            command.password, stored_hash
+        )
         if not user or not password_matches:
             await self._record_failure(email)
-            return await AuthResult.failure(
-                _INVALID_CREDENTIALS_MESSAGE,
-                "auth.login_page",
-            )
+            return AuthResult.failure(INVALID_CREDENTIALS_MESSAGE, "auth.login_page")
         await self._reset_on_success(email)
-        return await AuthResult.success(
+        return AuthResult.success(
             data=user,
-            message=await _welcome_message(user.username),
+            message=welcome_message(user.username),
             redirect_endpoint="index.index",
         )
 
     async def _ensure_not_locked(self, email: str) -> AuthResult | None:
-        """Return a failure result when an account is locked.
+        """Вернуть отказ, если аккаунт заблокирован.
 
         Args:
-            email: Normalized user email.
+            email: Нормализованный адрес почты.
 
         Returns:
-            AuthResult | None: Failure when locked, else None.
+            AuthResult | None: Результат отказа либо None для разблокированного аккаунта.
         """
-        if self.account_lock_service is None:
-            return None
-        is_locked, _unlock_at = await self.account_lock_service.is_account_locked(email)
+        is_locked, _unlock_at = await self._account_lock_service.is_account_locked(email)
         if is_locked:
-            return await AuthResult.failure(_ACCOUNT_LOCKED_MESSAGE, "auth.login_page")
+            return AuthResult.failure(ACCOUNT_LOCKED_MESSAGE, "auth.login_page")
         return None
 
     async def _record_failure(self, email: str) -> None:
-        """Record a failed login attempt.
+        """Записать неудачную попытку входа.
 
         Args:
-            email: Normalized user email.
+            email: Нормализованный адрес почты.
         """
-        if self.account_lock_service is not None:
-            await self.account_lock_service.record_failed_attempt(email)
+        await self._account_lock_service.record_failed_attempt(email)
 
     async def _reset_on_success(self, email: str) -> None:
-        """Reset the lock state after a successful login.
+        """Сбросить блокировку после успешного входа.
 
         Args:
-            email: Normalized user email.
+            email: Нормализованный адрес почты.
         """
-        if self.account_lock_service is not None:
-            await self.account_lock_service.unlock_account(email)
+        await self._account_lock_service.unlock_account(email)

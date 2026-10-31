@@ -1,4 +1,4 @@
-"""Page-rendering highlight routes: feeds, lists, sharing, and notifications."""
+"""Страничные маршруты хайлайтов: ленты, списки, шеринг и уведомления."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 
+from backend.application.dto import HighlightNotificationsQuery, HighlightSharedQuery
 from backend.application.use_cases import (
     GetFollowingHighlightsUseCase,
     GetHighlightFeedUseCase,
@@ -18,14 +19,10 @@ from backend.application.use_cases import (
     GetSharedHighlightUseCase,
     GetUserHighlightsUseCase,
 )
-from backend.infrastructure.web import render_template
 from backend.presentation.api.helpers import get_current_user
-from backend.presentation.api.requests.highlight_mapper import (
-    map_dashboard_query,
-    map_feed_query,
-    map_list_query,
-)
+from backend.presentation.api.requests.highlight_mapper import map_dashboard_query, map_feed_query
 from backend.presentation.api.v1.highlight_route_helpers import read_limit, redirect_login
+from backend.presentation.web import render_template
 
 highlight_pages_router = APIRouter(route_class=DishkaRoute)
 
@@ -35,24 +32,18 @@ async def get_highlight_feed(
     request: Request,
     use_case: FromDishka[GetHighlightFeedUseCase],
 ):
-    """Render the highlight feed page with optional filters.
+    """Отдать страницу ленты хайлайтов с фильтрами.
 
     Args:
-        request: Incoming HTTP request with query params.
-        use_case: Get highlight feed use case.
+        request: Текущий HTTP-запрос.
+        use_case: Сценарий общей ленты хайлайтов.
 
     Returns:
-        HTMLResponse: Rendered feed template.
+        Response: Отрисованная страница ленты.
     """
     viewer = await get_current_user(request)
-    query = await map_feed_query(request, viewer_user_id=viewer.id if viewer else None)
-    feed = await use_case.execute(
-        viewer_user_id=query.viewer_user_id,
-        anime_id=query.anime_id,
-        category=query.category,
-        include_spoilers=query.include_spoilers,
-        limit=query.limit,
-    )
+    query = map_feed_query(request, viewer_user_id=viewer.id if viewer else None)
+    feed = await use_case.execute(query)
     return await render_template(request, "highlight/feed.html", feed=feed)
 
 
@@ -61,31 +52,20 @@ async def get_following_highlights(
     request: Request,
     use_case: FromDishka[GetFollowingHighlightsUseCase],
 ):
-    """Render highlights from users the current user follows.
+    """Отдать хайлайты пользователей из подписок зрителя.
 
     Args:
-        request: Incoming HTTP request with query params.
-        use_case: Get following highlights use case.
+        request: Текущий HTTP-запрос.
+        use_case: Сценарий ленты хайлайтов подписок.
 
     Returns:
-        RedirectResponse: Login redirect for guests.
-        HTMLResponse: Rendered following highlights template.
+        Response: Страница подписок либо редирект на вход.
     """
     user = await get_current_user(request)
     if not user:
-        return await redirect_login(request)
-    query = await map_dashboard_query(request, viewer_user_id=user.id)
-    page = await use_case.execute(
-        follower_user_id=user.id,
-        anime_id=query.anime_id,
-        emotion=query.emotion,
-        category=query.category,
-        sort_by=query.sort_by,
-        created_date=query.created_date,
-        query=query.query,
-        include_spoilers=query.include_spoilers,
-        limit=query.limit,
-    )
+        return redirect_login(request)
+    query = map_dashboard_query(request, user_id=user.id, viewer_user_id=user.id)
+    page = await use_case.execute(query)
     return await render_template(request, "highlight/following.html", page=page)
 
 
@@ -94,30 +74,25 @@ async def get_saved_highlights(
     request: Request,
     use_case: FromDishka[GetSavedHighlightsUseCase],
 ):
-    """Render highlights saved by the current user.
+    """Отдать сохранённые пользователем хайлайты.
 
     Args:
-        request: Incoming HTTP request with query params.
-        use_case: Get saved highlights use case.
+        request: Текущий HTTP-запрос.
+        use_case: Сценарий сохранённых хайлайтов.
 
     Returns:
-        RedirectResponse: Login redirect for guests.
-        HTMLResponse: Rendered saved highlights template.
+        Response: Страница сохранённых либо редирект на вход.
     """
     user = await get_current_user(request)
     if not user:
-        return await redirect_login(request)
-    query = await map_list_query(request, include_spoilers_default=True)
-    dashboard = await use_case.execute(
+        return redirect_login(request)
+    query = map_dashboard_query(
+        request,
         user_id=user.id,
-        anime_id=query.anime_id,
-        emotion=query.emotion,
-        category=query.category,
-        sort_by=query.sort_by,
-        created_date=query.created_date,
-        query=query.query,
-        include_spoilers=query.include_spoilers,
+        viewer_user_id=user.id,
+        include_spoilers_default=True,
     )
+    dashboard = await use_case.execute(query)
     return await render_template(
         request,
         "highlight/list.html",
@@ -133,30 +108,25 @@ async def get_liked_highlights(
     request: Request,
     use_case: FromDishka[GetLikedHighlightsUseCase],
 ):
-    """Render highlights liked by the current user.
+    """Отдать хайлайты, лайкнутые пользователем.
 
     Args:
-        request: Incoming HTTP request with query params.
-        use_case: Get liked highlights use case.
+        request: Текущий HTTP-запрос.
+        use_case: Сценарий лайкнутых хайлайтов.
 
     Returns:
-        RedirectResponse: Login redirect for guests.
-        HTMLResponse: Rendered liked highlights template.
+        Response: Страница лайкнутых либо редирект на вход.
     """
     user = await get_current_user(request)
     if not user:
-        return await redirect_login(request)
-    query = await map_list_query(request, include_spoilers_default=True)
-    dashboard = await use_case.execute(
+        return redirect_login(request)
+    query = map_dashboard_query(
+        request,
         user_id=user.id,
-        anime_id=query.anime_id,
-        emotion=query.emotion,
-        category=query.category,
-        sort_by=query.sort_by,
-        created_date=query.created_date,
-        query=query.query,
-        include_spoilers=query.include_spoilers,
+        viewer_user_id=user.id,
+        include_spoilers_default=True,
     )
+    dashboard = await use_case.execute(query)
     return await render_template(
         request,
         "highlight/list.html",
@@ -173,20 +143,21 @@ async def get_shared_highlight(
     highlight_id: int,
     use_case: FromDishka[GetSharedHighlightUseCase],
 ):
-    """Render a single highlight for public sharing.
+    """Отдать один хайлайт по публичной ссылке.
 
     Args:
-        request: Incoming HTTP request.
-        highlight_id: Highlight ID from path.
-        use_case: Get shared highlight use case.
+        request: Текущий HTTP-запрос.
+        highlight_id: Идентификатор хайлайта из пути.
+        use_case: Сценарий публичной карточки хайлайта.
 
     Returns:
-        HTMLResponse: Rendered shared highlight template or 404 modal.
+        Response: Страница хайлайта либо модальное окно 404.
     """
     viewer = await get_current_user(request)
     result = await use_case.execute(
-        highlight_id=highlight_id,
-        viewer_user_id=viewer.id if viewer else None,
+        HighlightSharedQuery(
+            highlight_id=highlight_id, viewer_user_id=viewer.id if viewer else None
+        )
     )
     if not result.ok:
         return await render_template(
@@ -209,23 +180,20 @@ async def get_highlight_notifications(
     request: Request,
     use_case: FromDishka[GetHighlightNotificationsUseCase],
 ):
-    """Render highlight notifications for the current user.
+    """Отдать уведомления по хайлайтам пользователя.
 
     Args:
-        request: Incoming HTTP request.
-        use_case: Get highlight notifications use case.
+        request: Текущий HTTP-запрос.
+        use_case: Сценарий уведомлений по хайлайтам.
 
     Returns:
-        RedirectResponse: Login redirect for guests.
-        HTMLResponse: Rendered notifications template.
+        Response: Страница уведомлений либо редирект на вход.
     """
     user = await get_current_user(request)
     if not user:
-        return await redirect_login(request)
-    limit = await read_limit(request, default=20, maximum=100)
+        return redirect_login(request)
     items = await use_case.execute(
-        user_id=user.id,
-        limit=limit,
+        HighlightNotificationsQuery(user_id=user.id, limit=read_limit(request, default=20))
     )
     return await render_template(request, "highlight/notifications.html", items=items)
 
@@ -235,28 +203,18 @@ async def get_public_top_highlights(
     request: Request,
     use_case: FromDishka[GetPublicTopHighlightsUseCase],
 ):
-    """Render the public top highlights dashboard.
+    """Отдать сводку популярных публичных хайлайтов.
 
     Args:
-        request: Incoming HTTP request with query params.
-        use_case: Get public top highlights use case.
+        request: Текущий HTTP-запрос.
+        use_case: Сценарий публичного топа хайлайтов.
 
     Returns:
-        HTMLResponse: Rendered top highlights template.
+        Response: Страница публичного топа.
     """
     viewer = await get_current_user(request)
-    query = await map_dashboard_query(request, viewer_user_id=viewer.id if viewer else None)
-    dashboard = await use_case.execute(
-        limit=query.limit,
-        anime_id=query.anime_id,
-        emotion=query.emotion,
-        category=query.category,
-        sort_by=query.sort_by,
-        created_date=query.created_date,
-        query=query.query,
-        include_spoilers=query.include_spoilers,
-        viewer_user_id=query.viewer_user_id,
-    )
+    query = map_dashboard_query(request, viewer_user_id=viewer.id if viewer else None)
+    dashboard = await use_case.execute(query)
     return await render_template(
         request,
         "highlight/list.html",
@@ -273,29 +231,23 @@ async def get_user_highlights(
     user_id: int,
     use_case: FromDishka[GetUserHighlightsUseCase],
 ):
-    """Render highlights created by a specific user.
+    """Отдать хайлайты конкретного пользователя.
 
     Args:
-        request: Incoming HTTP request with query params.
-        user_id: User ID from path.
-        use_case: Get user highlights use case.
+        request: Текущий HTTP-запрос.
+        user_id: Идентификатор автора хайлайтов из пути.
+        use_case: Сценарий личного дашборда хайлайтов.
 
     Returns:
-        HTMLResponse: Rendered user highlights template.
+        Response: Страница хайлайтов пользователя.
     """
     viewer = await get_current_user(request)
-    query = await map_dashboard_query(request, viewer_user_id=viewer.id if viewer else None)
-    dashboard = await use_case.execute(
+    query = map_dashboard_query(
+        request,
         user_id=user_id,
-        anime_id=query.anime_id,
-        emotion=query.emotion,
-        category=query.category,
-        sort_by=query.sort_by,
-        created_date=query.created_date,
-        query=query.query,
-        include_spoilers=query.include_spoilers,
-        viewer_user_id=query.viewer_user_id,
+        viewer_user_id=viewer.id if viewer else None,
     )
+    dashboard = await use_case.execute(query)
     return await render_template(
         request,
         "highlight/list.html",

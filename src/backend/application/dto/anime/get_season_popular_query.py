@@ -1,4 +1,4 @@
-"""Query parameters for fetching popular anime of a season."""
+"""Параметры запроса популярного аниме за сезон."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class GetSeasonPopularQuery:
-    """Query parameters for fetching popular anime of a season.
+    """Параметры запроса популярного аниме за сезон.
 
     Attributes:
-        year: Season year.
-        season: Season name (winter, spring, summer, fall).
-        limit: Maximum number of results to return.
+        year: Год сезона.
+        season: Название сезона: зима, весна, лето или осень.
+        limit: Максимальное число результатов.
     """
 
     year: int

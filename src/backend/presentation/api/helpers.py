@@ -1,59 +1,42 @@
-"""HTTP request helpers for presentation layer."""
+"""Вспомогательные HTTP-функции слоя presentation.
+
+Здесь только то, что нужно обслуживающему коду: кто текущий пользователь
+запроса и ждёт ли клиент JSON. Разбором тела запросов занимаются схемы Pydantic
+в маршрутах, поэтому угадывать формат содержимого здесь больше нечем.
+Бизнес-правил тут нет и быть не должно.
+"""
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import Request
+
+JSON_CONTENT_TYPE = "application/json"
 
 
 async def get_current_user(request: Request):
-    """Return the current authenticated user.
+    """Вернуть аутентифицированного пользователя запроса.
 
     Args:
-        request: Incoming HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        object | None: Authenticated user or None.
+        object | None: Пользователь сессии либо None для гостя.
     """
     return getattr(request.state, "user", None)
 
 
-async def read_payload(request: Request) -> Any:
-    """Read the request payload as JSON or form data.
+def wants_json(request: Request) -> bool:
+    """Определить, ждёт ли клиент JSON-ответ.
+
+    Используется обработчиками ошибок и middleware, чтобы для AJAX-клиента
+    вернуть машиночитаемое тело, а для обычного браузера — HTML-страницу.
 
     Args:
-        request: Incoming HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        Any: Parsed payload.
-    """
-    content_type = str(request.headers.get("content-type") or "").lower()
-    if "application/json" in content_type:
-        try:
-            return await request.json()
-        except Exception:
-            return {}
-    if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
-        return await request.form()
-    try:
-        return await request.json()
-    except Exception:
-        try:
-            return await request.form()
-        except Exception:
-            return {}
-
-
-async def wants_json(request: Request) -> bool:
-    """Determine if the client expects a JSON response.
-
-    Args:
-        request: Incoming HTTP request.
-
-    Returns:
-        bool: True if client accepts application/json.
+        bool: True, если клиент принимает application/json.
     """
     accept = str(request.headers.get("accept") or "").lower()
     content_type = str(request.headers.get("content-type") or "").lower()
-    return "application/json" in accept or "application/json" in content_type
+    return JSON_CONTENT_TYPE in accept or JSON_CONTENT_TYPE in content_type

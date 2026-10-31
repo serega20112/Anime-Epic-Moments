@@ -1,61 +1,71 @@
+"""Постановка и смена реакции на серию."""
+
 from starlette import status
 
 from backend.application.dto import SetEpisodeReactionCommand
 from backend.application.interface.repositories.reaction_repository import ReactionRepository
-from backend.application.use_cases.reaction.result import ReactionResult
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
+from backend.application.use_cases.result import UseCaseResult
 from backend.domain import EpisodeReaction, EpisodeReactionType
 from backend.domain.value_objects.reaction.reaction_summary import EpisodeReactionSummary
 
 
 class SetEpisodeReactionUseCase:
-    """Sets or removes a user's reaction on an episode."""
+    """Устанавливает или удаляет реакцию пользователя на серию."""
 
-    def __init__(self, reaction_repo: ReactionRepository):
-        self.reaction_repo = reaction_repo
-
-    async def execute(self, command: SetEpisodeReactionCommand) -> ReactionResult:
-        """Apply the reaction and return the updated episode state.
+    def __init__(self, uow: UnitOfWorkInterface) -> None:
+        """Инициализирует сценарий установки реакции.
 
         Args:
-            command: Set episode reaction command.
+            uow: Единица работы, задающая границу транзакции.
+        """
+        self._uow = uow
+
+    async def execute(self, command: SetEpisodeReactionCommand) -> UseCaseResult:
+        """Применяет реакцию и возвращает обновлённое состояние серии.
+
+        Args:
+            command: Команда установки или удаления реакции.
 
         Returns:
-            ReactionResult: Updated reaction summary.
+            UseCaseResult: Результат с обновлённым резюме реакций.
         """
         if command.episode <= 0:
-            return await ReactionResult.failure(
-                "invalid_episode", status_code=status.HTTP_400_BAD_REQUEST
-            )
+            return UseCaseResult.failure("invalid_episode", status_code=status.HTTP_400_BAD_REQUEST)
 
         reaction_type = EpisodeReactionType.from_value(command.reaction_type)
-        if not command.liked:
-            await self.reaction_repo.remove_reaction(
+        if command.liked and reaction_type is None:
+            return UseCaseResult.failure(
+                "invalid_reaction_type", status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        async with self._uow as uow:
+            repo = uow.repository(ReactionRepository)
+            if not command.liked:
+                await repo.remove_reaction(
+                    command.user_id,
+                    command.anime_id,
+                    command.episode,
+                )
+            else:
+                await repo.set_reaction(
+                    EpisodeReaction(
+                        user_id=command.user_id,
+                        anime_id=command.anime_id,
+                        episode=command.episode,
+                        reaction_type=reaction_type,
+                        timestamp=command.timestamp,
+                    )
+                )
+
+            counts = await repo.get_reaction_counts(command.anime_id, command.episode)
+            current = await repo.get_user_reaction(
                 command.user_id,
                 command.anime_id,
                 command.episode,
             )
-        elif reaction_type is None:
-            return await ReactionResult.failure(
-                "invalid_reaction_type", status_code=status.HTTP_400_BAD_REQUEST
-            )
-        else:
-            await self.reaction_repo.set_reaction(
-                EpisodeReaction(
-                    user_id=command.user_id,
-                    anime_id=command.anime_id,
-                    episode=command.episode,
-                    reaction_type=reaction_type,
-                    timestamp=command.timestamp,
-                )
-            )
 
-        counts = await self.reaction_repo.get_reaction_counts(command.anime_id, command.episode)
-        current = await self.reaction_repo.get_user_reaction(
-            command.user_id,
-            command.anime_id,
-            command.episode,
-        )
-        return await ReactionResult.success(
+        return UseCaseResult.success(
             EpisodeReactionSummary(
                 counts=counts,
                 user_reaction=current.reaction_type if current else None,

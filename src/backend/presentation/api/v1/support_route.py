@@ -1,4 +1,4 @@
-"""Support routes: render support page and create support tickets."""
+"""Маршруты страницы поддержки и создания обращений."""
 
 from __future__ import annotations
 
@@ -11,23 +11,33 @@ from fastapi.responses import RedirectResponse
 
 from backend.application.use_cases import CreateSupportTicketUseCase
 from backend.config import Settings
-from backend.infrastructure.security.flask_protection import client_ip, rate_limit
-from backend.infrastructure.security.rate_limit_keys import support_ticket_subject
-from backend.infrastructure.web import flash, render_template
 from backend.presentation.api.helpers import get_current_user
+from backend.presentation.api.rate_limit import client_ip, rate_limit
 from backend.presentation.api.requests.support_form_builder import (
     build_default_support_form,
     build_support_form_data,
 )
 from backend.presentation.api.requests.support_mapper import map_create_support_ticket_command
+from backend.presentation.dependencies.rate_limit_keys import support_ticket_subject
+from backend.presentation.web import flash, render_template
 from backend.utils import log_business_event
 
 support_router = APIRouter(prefix="/support", route_class=DishkaRoute)
-support_bp = support_router
+
+SUPPORT_TEMPLATE = "support/create.html"
+CREATE_FAILURE_MESSAGE = "Не удалось создать тикет поддержки"
+CREATE_SUCCESS_MESSAGE = "Тикет отправлен в поддержку."
 
 
 async def _support_ticket_subject(request: Request) -> str:
-    """Build a composite rate-limit subject for support ticket creation."""
+    """Собрать составной ключ ограничения частоты для создания обращения.
+
+    Args:
+        request: Текущий HTTP-запрос.
+
+    Returns:
+        str: Ключ из адреса клиента и идентификатора автора.
+    """
     return await support_ticket_subject(
         ip_address=await client_ip(request),
         user_id=getattr(await get_current_user(request), "id", None),
@@ -36,13 +46,13 @@ async def _support_ticket_subject(request: Request) -> str:
 
 @support_router.get("", name="support.support_page")
 async def support_page(request: Request):
-    """Render the support ticket creation page.
+    """Отдать страницу создания обращения в поддержку.
 
     Args:
-        request: Current HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        HTMLResponse: Rendered support page template.
+        Response: Отрисованная форма обращения с предзаполнением по умолчанию.
     """
     return await _render_support_page(request)
 
@@ -60,31 +70,30 @@ async def create_support_ticket(
     request: Request,
     use_case: FromDishka[CreateSupportTicketUseCase],
 ):
-    """Create a support ticket from form data.
+    """Создать обращение в поддержку из данных формы.
 
     Args:
-        request: Current HTTP request with form data.
-        use_case: Create support ticket use case.
+        request: Текущий HTTP-запрос с телом HTML-формы.
+        use_case: Сценарий создания обращения.
 
     Returns:
-        RedirectResponse: Redirect to support page after creation.
+        Response: Перенаправление на страницу поддержки либо форма с ошибками.
     """
     user = await get_current_user(request)
     user_id = getattr(user, "id", None)
-    command = await map_create_support_ticket_command(
+    command = map_create_support_ticket_command(
         dict(await request.form()),
         user_id=user_id,
         user_email=getattr(user, "email", None),
         user_username=getattr(user, "username", None),
     )
-
     result = await use_case.execute(command)
 
     if not result.ok:
-        await flash(request, result.error_message or "Не удалось создать тикет поддержки")
+        await flash(request, result.error_message or CREATE_FAILURE_MESSAGE)
         return await _render_support_page(
             request,
-            form_data=await build_support_form_data(
+            form_data=build_support_form_data(
                 command=command,
                 user_email=getattr(user, "email", None),
                 user_username=getattr(user, "username", None),
@@ -93,7 +102,7 @@ async def create_support_ticket(
         )
 
     ticket = result.data
-    await log_business_event(
+    log_business_event(
         event="support_ticket_created",
         user_id=ticket.user_id,
         ip_address=await client_ip(request),
@@ -102,7 +111,7 @@ async def create_support_ticket(
             "delivery_status": ticket.delivery_status,
         },
     )
-    await flash(request, result.message or "Тикет отправлен в поддержку.")
+    await flash(request, result.message or CREATE_SUCCESS_MESSAGE)
     return RedirectResponse(
         url=request.app.url_path_for("support.support_page"),
         status_code=HTTPStatus.SEE_OTHER,
@@ -114,35 +123,35 @@ async def _render_support_page(
     form_data: dict[str, str] | None = None,
     status_code: int = HTTPStatus.OK,
 ):
-    """Render the support page with optional form data.
+    """Отдать страницу поддержки с данными формы.
 
     Args:
-        request: Current HTTP request.
-        form_data: Pre-filled form data for re-display.
-        status_code: HTTP status code for the response.
+        request: Текущий HTTP-запрос.
+        form_data: Поля для повторного показа либо None для предзаполнения по умолчанию.
+        status_code: HTTP-код ответа страницы.
 
     Returns:
-        HTMLResponse: Rendered support page template.
+        Response: Отрисованная форма обращения.
     """
     return await render_template(
         request,
-        "support/create.html",
+        SUPPORT_TEMPLATE,
         support_form=form_data or await _default_form(request),
         status_code=status_code,
     )
 
 
 async def _default_form(request: Request) -> dict[str, str]:
-    """Build default form data for the GET support page.
+    """Собрать данные формы по умолчанию для страницы поддержки.
 
     Args:
-        request: Current HTTP request.
+        request: Текущий HTTP-запрос с параметрами ``channel`` и ``page``.
 
     Returns:
-        dict[str, str]: Normalized default form data.
+        dict[str, str]: Предзаполненные поля формы обращения.
     """
     user = await get_current_user(request)
-    return await build_default_support_form(
+    return build_default_support_form(
         user_email=getattr(user, "email", ""),
         user_username=getattr(user, "username", ""),
         channel_param=request.query_params.get("channel"),

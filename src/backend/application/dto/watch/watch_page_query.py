@@ -1,4 +1,4 @@
-"""Query parameters for building the anime watch page."""
+"""Параметры запроса страницы просмотра аниме."""
 
 from __future__ import annotations
 
@@ -7,16 +7,20 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class WatchPageQuery:
-    """Query parameters for building the anime watch page.
+    """Параметры сборки страницы просмотра.
 
     Attributes:
-        episode: Requested episode number.
-        selected_source_id: Optional pre-selected watch source.
-        preferred_start_seconds: Optional playback start offset in seconds.
-        discussion_sort: Comment sort key ("popular" or "recent").
+        anime_id: Идентификатор аниме.
+        episode: Запрошенный номер серии.
+        selected_source_id: Идентификатор ранее выбранного источника.
+        preferred_start_seconds: Позиция, с которой нужно продолжить просмотр.
+        discussion_sort: Порядок сортировки обсуждения.
+        user_id: Идентификатор зрителя либо None для гостя.
     """
 
+    anime_id: int
     episode: int = 1
     selected_source_id: int | None = None
     preferred_start_seconds: float | None = None
     discussion_sort: str = "popular"
+    user_id: int | None = None

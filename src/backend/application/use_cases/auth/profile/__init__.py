@@ -1,3 +1,5 @@
+"""Сценарии профиля пользователя."""
+
 from backend.application.use_cases.auth.profile.get_profile_overview import (
     GetProfileOverviewUseCase,
 )

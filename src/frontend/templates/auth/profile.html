@@ -87,19 +87,36 @@ endblock %} {% block head %}
     <div style="display: grid; gap: var(--space-6)">
       <section class="side-card">
         <h4>📊 Динамика просмотра серий — 35 дней</h4>
-        <div class="heatmap-chart">
-          {% set max_interactions = sp.heatmap|map(attribute='interactions')|list|max
-          if sp.heatmap and sp.heatmap|map(attribute='interactions')|list|max > 0 else 1 %}
-          {% for cell in sp.heatmap %}
-          <div class="heatmap-col" title="{{ cell.date }}: {{ cell.interactions }} серий">
-            <span
-              class="heatmap-bar"
-              style="--heatmap-h: {{ (cell.interactions / max_interactions * 100)|round|int if cell.interactions else 4 }}%; opacity: {{ 1 if cell.interactions else 0.25 }}"
-            ></span>
-            <label>{{ cell.date[5:10] }}</label>
+        <div class="heatmap">
+          {% set max_interactions = sp.heatmap | map(attribute='interactions') | list | max or 1 %}
+          <div class="heatmap-chart">
+            {% for cell in sp.heatmap %}
+            <div
+              class="heatmap-col{{ ' is-empty' if not cell.interactions }}{{ ' is-today' if loop.last }}"
+              style="--heatmap-h: {{ (cell.interactions / max_interactions * 100) | round | int }}%"
+              title="{{ cell.date }}: {{ cell.interactions }} серий"
+            >
+              <div class="heatmap-plot">
+                <span class="heatmap-count">{{ cell.interactions or '' }}</span>
+                <span class="heatmap-bar"></span>
+              </div>
+            </div>
+            {% endfor %}
           </div>
-          {% endfor %}
+          <div class="heatmap-axis">
+            {% for cell in sp.heatmap %}
+            <div class="heatmap-axis-cell">
+              {% if loop.index0 % 10 == 0 or loop.last %}
+              <span>{{ cell.date[8:10] }}.{{ cell.date[5:7] }}</span>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
         </div>
+        <p class="heatmap-caption">
+          Столбец — день, высота — просмотренные за день серии. Максимум за день:
+          {{ max_interactions }}. Дни без просмотров отмечены тонкими метками.
+        </p>
       </section>
 
       <section class="side-card">

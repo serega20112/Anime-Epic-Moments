@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from backend.application.dto.favorite import RemoveFavoriteCommand
 from backend.application.use_cases.favorite.remove_favorite import RemoveFavoriteUseCase
+from tests.support.fakes import FakeUnitOfWork
 
 
 @pytest.mark.unit
@@ -20,9 +22,13 @@ class TestRemoveFavoriteUseCase:
         repo = AsyncMock()
         recommendation_service = AsyncMock()
         profile_cache = AsyncMock()
-        use_case = RemoveFavoriteUseCase(repo, AsyncMock(), recommendation_service, profile_cache)
+        use_case = RemoveFavoriteUseCase(
+            FakeUnitOfWork(FavoriteRepository=repo),
+            recommendation_service,
+            profile_cache,
+        )
 
-        await use_case.execute(user_id=user_id, anime_id=anime_id)
+        await use_case.execute(RemoveFavoriteCommand(user_id=user_id, anime_id=anime_id))
 
         repo.remove.assert_awaited_once_with(user_id, anime_id)
         recommendation_service.invalidate_user.assert_awaited_once_with(user_id)

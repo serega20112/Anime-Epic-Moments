@@ -1,71 +1,158 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
+from datetime import UTC, datetime, timedelta
 
-from backend.infrastructure.security.csrf_service import CSRFService
+import pytest
+
+from backend.infrastructure.security.csrf_service import CSRFService, CSRFToken
+
+
+def _expired_token() -> CSRFToken:
+    """Создать токен, у которого срок действия уже истёк.
+
+    Returns:
+        CSRFToken: Токен, истёкший минуту назад.
+    """
+    return CSRFToken(value="expired-value", expires_at=datetime.now(UTC) - timedelta(minutes=1))
 
 
 class TestCSRFService:
-    def test_generate_token_stores_state(self):
-        service = CSRFService()
-        state = SimpleNamespace()
-        token = service.generate_token(state)
-        assert token
-        assert state.csrf_token["value"] == token
-        assert "expires_at" in state.csrf_token
+    """Юнит-тесты генерации и проверки CSRF-токенов."""
 
-    def test_get_token_from_state(self):
-        service = CSRFService()
-        state = SimpleNamespace()
-        token = service.generate_token(state)
-        assert service.get_token_from_state(state) == token
+    @pytest.mark.unit
+    def test_generate_token_returns_value_and_expiry(self):
+        """Что тестируем: метод generate_token.
 
-    def test_get_token_absent(self):
+        Что передаём: ничего, сервис не зависит от запроса.
+        Что ожидаем: токен со случайным значением и будущим моментом истечения.
+        """
         service = CSRFService()
-        assert service.get_token_from_state(SimpleNamespace()) is None
 
-    def test_validate_missing_token(self):
+        token = service.generate_token()
+
+        assert token.value
+        assert token.expires_at > datetime.now(UTC)
+        assert not token.is_expired()
+
+    @pytest.mark.unit
+    def test_session_roundtrip_preserves_token(self):
+        """Что тестируем: пару to_session/from_session.
+
+        Что передаём: токен, сериализованный для хранения в сессии.
+        Что ожидаем: восстановленный токен сохраняет значение и момент истечения.
+        """
         service = CSRFService()
-        assert service.validate_token(SimpleNamespace(), "abc") is False
+        token = service.generate_token()
 
-    def test_validate_mismatch(self):
+        restored = CSRFToken.from_session(token.to_session())
+
+        assert restored is not None
+        assert restored.value == token.value
+        assert restored.expires_at == token.expires_at
+
+    @pytest.mark.unit
+    def test_from_session_accepts_legacy_plain_string(self):
+        """Что тестируем: чтение токена, сохранённого до появления срока действия.
+
+        Что передаём: голоую строку вместо словаря.
+        Что ожидаем: токен восстановлен как бессрочный, чтобы старые сессии не падали.
+        """
+        token = CSRFToken.from_session("legacy-token")
+
+        assert token is not None
+        assert token.value == "legacy-token"
+        assert not token.is_expired()
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("raw", [None, "", 42, {"value": "x"}, {"expires_at": "не дата"}])
+    def test_from_session_rejects_damaged_data(self, raw):
+        """Что тестируем: чтение повреждённых данных сессии.
+
+        Что передаём: отсутствие токена, неверный тип и incomplete-словари.
+        Что ожидаем: None вместо исключения, чтобы мидлвар мог выдать новый токен.
+        """
+        assert CSRFToken.from_session(raw) is None
+
+    @pytest.mark.unit
+    def test_is_valid_without_stored_token(self):
+        """Что тестируем: проверку токена, когда в сессии его нет.
+
+        Что передаём: None вместо хранящегося токена.
+        Что ожидаем: False, значения сравнивать не с чем.
+        """
         service = CSRFService()
-        state = SimpleNamespace()
-        service.generate_token(state)
-        assert service.validate_token(state, "wrong") is False
 
-    def test_validate_success(self):
+        assert service.is_valid(None, "abc") is False
+
+    @pytest.mark.unit
+    def test_is_valid_rejects_empty_submission(self):
+        """Что тестируем: проверку формы без поля csrf_token.
+
+        Что передаём: действующий токен и пустое присланное значение.
+        Что ожидаем: False.
+        """
         service = CSRFService()
-        state = SimpleNamespace()
-        token = service.generate_token(state)
-        assert service.validate_token(state, token) is True
+        token = service.generate_token()
 
-    def test_validate_form_csrf_missing(self):
+        assert service.is_valid(token, None) is False
+        assert service.is_valid(token, "") is False
+
+    @pytest.mark.unit
+    def test_is_valid_rejects_mismatch(self):
+        """Что тестируем: проверку присланного значения, не совпадающего с токеном.
+
+        Что передаём: валидный токен и другое значение от клиента.
+        Что ожидаем: False.
+        """
         service = CSRFService()
-        state = SimpleNamespace()
-        service.generate_token(state)
-        assert service.validate_form_csrf(state, {}) is False
+        token = service.generate_token()
 
-    def test_validate_form_csrf_success(self):
+        assert service.is_valid(token, "wrong") is False
+
+    @pytest.mark.unit
+    def test_is_valid_accepts_matching_token(self):
+        """Что тестируем: успешную проверку CSRF-токена.
+
+        Что передаём: токен из сессии и ровно то же значение от клиента.
+        Что ожидаем: True.
+        """
         service = CSRFService()
-        state = SimpleNamespace()
-        token = service.generate_token(state)
-        assert service.validate_form_csrf(state, {"csrf_token": token}) is True
+        token = service.generate_token()
 
-    def test_validate_header_invalid_format(self):
+        assert service.is_valid(token, token.value) is True
+
+    @pytest.mark.unit
+    def test_is_valid_rejects_expired_token(self):
+        """Что тестируем: проверку истёкшего токена.
+
+        Что передаём: токен с моментом истечения в прошлом и то же значение.
+        Что ожидаем: False, срок действия важнее совпадения значений.
+        """
         service = CSRFService()
-        state = SimpleNamespace()
-        service.generate_token(state)
-        assert service.validate_header_csrf(state, "Token abc") is False
 
-    def test_validate_header_success(self):
-        service = CSRFService()
-        state = SimpleNamespace()
-        token = service.generate_token(state)
-        assert service.validate_header_csrf(state, f"Bearer {token}") is True
+        assert service.is_valid(_expired_token(), "expired-value") is False
 
+    @pytest.mark.unit
+    def test_expire_minutes_are_honoured(self):
+        """Что тестируем: параметр token_expire_minutes.
+
+        Что передаём: сервис с нулевым временем жизни токена.
+        Что ожидаем: только что созданный токен уже недействителен.
+        """
+        service = CSRFService(token_expire_minutes=0)
+
+        token = service.generate_token()
+
+        assert token.is_expired() is True
+        assert service.is_valid(token, token.value) is False
+
+    @pytest.mark.unit
     def test_tokens_are_unique(self):
+        """Что тестируем: случайность генерируемых токенов.
+
+        Что передаём: два вызова generate_token подряд.
+        Что ожидаем: значения различаются.
+        """
         service = CSRFService()
-        state1 = SimpleNamespace()
-        state2 = SimpleNamespace()
-        assert service.generate_token(state1) != service.generate_token(state2)
+
+        assert service.generate_token().value != service.generate_token().value

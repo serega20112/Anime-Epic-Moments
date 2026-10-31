@@ -1,4 +1,4 @@
-"""Abstract profile overview cache interface."""
+"""Порт кэша обзора профиля."""
 
 from __future__ import annotations
 
@@ -7,55 +7,24 @@ from typing import Any
 
 
 class ProfileOverviewCacheInterface(ABC):
-    """Interface for caching user profile overviews."""
+    """Кэш обзора профиля и ИИ-описания вкусов."""
 
     @abstractmethod
     async def get_overview(self, user_id: int) -> Any:
-        """Get cached profile overview.
-
-        Args:
-            user_id: The user identifier.
-
-        Returns:
-            Any: Cached ProfileOverview or None.
-        """
+        """Прочитать обзор профиля из кэша."""
 
     @abstractmethod
     async def set_overview(self, user_id: int, overview: Any) -> Any:
-        """Store profile overview in cache.
-
-        Args:
-            user_id: The user identifier.
-            overview: ProfileOverview to cache.
-
-        Returns:
-            Any: The stored overview.
-        """
+        """Положить обзор профиля в кэш."""
 
     @abstractmethod
     async def get_ai_summary(self, user_id: int) -> str | None:
-        """Get cached AI taste summary.
-
-        Args:
-            user_id: The user identifier.
-
-        Returns:
-            str | None: Cached summary or None.
-        """
+        """Прочитать ИИ-описание вкусов из кэша."""
 
     @abstractmethod
     async def set_ai_summary(self, user_id: int, summary: str) -> None:
-        """Store AI taste summary in cache.
-
-        Args:
-            user_id: The user identifier.
-            summary: Summary text to cache.
-        """
+        """Положить ИИ-описание вкусов в кэш."""
 
     @abstractmethod
     async def invalidate(self, user_id: int) -> None:
-        """Invalidate cached data for a user.
-
-        Args:
-            user_id: The user identifier.
-        """
+        """Сбросить закэшированные данные пользователя."""

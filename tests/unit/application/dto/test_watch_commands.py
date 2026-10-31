@@ -4,9 +4,12 @@ import pytest
 
 from backend.application.dto.watch import (
     AddAnimeCommentCommand,
+    AddWatchSourceCommand,
+    AnimeDiscussionQuery,
     CreateWatchHighlightCommand,
     SaveViewingSessionCommand,
     SetAnimeCommentLikeCommand,
+    SyncWatchSourcesQuery,
     UpsertUserAnimeStatusCommand,
     WatchPageQuery,
 )
@@ -91,20 +94,82 @@ class TestSetAnimeCommentLikeCommand:
 
 class TestWatchPageQuery:
     def test_defaults(self):
-        query = WatchPageQuery()
+        query = WatchPageQuery(anime_id=7)
+        assert query.anime_id == 7
         assert query.episode == 1
         assert query.selected_source_id is None
         assert query.preferred_start_seconds is None
         assert query.discussion_sort == "popular"
+        assert query.user_id is None
 
     def test_stores_overrides(self):
         query = WatchPageQuery(
+            anime_id=7,
             episode=3,
             selected_source_id=4,
             preferred_start_seconds=50.0,
             discussion_sort="recent",
+            user_id=9,
         )
         assert query.episode == 3
         assert query.selected_source_id == 4
         assert query.preferred_start_seconds == 50.0
         assert query.discussion_sort == "recent"
+        assert query.user_id == 9
+
+
+class TestAnimeDiscussionQuery:
+    def test_defaults(self):
+        query = AnimeDiscussionQuery(anime_id=7)
+        assert query.anime_id == 7
+        assert query.sort_by == "popular"
+        assert query.viewer_user_id is None
+        assert query.limit == 20
+
+    def test_stores_overrides(self):
+        query = AnimeDiscussionQuery(anime_id=7, sort_by="recent", viewer_user_id=3, limit=5)
+        assert query.sort_by == "recent"
+        assert query.viewer_user_id == 3
+        assert query.limit == 5
+
+
+class TestSyncWatchSourcesQuery:
+    def test_defaults(self):
+        query = SyncWatchSourcesQuery(anime_id=7, episode=2)
+        assert query.force is False
+
+    def test_stores_overrides(self):
+        query = SyncWatchSourcesQuery(anime_id=7, episode=2, force=True)
+        assert query.anime_id == 7
+        assert query.episode == 2
+        assert query.force is True
+
+
+class TestAddWatchSourceCommand:
+    def test_defaults(self):
+        command = AddWatchSourceCommand(
+            anime_id=7,
+            episode=2,
+            translation_name="AniLibria",
+            translation_type="dub",
+            provider_name="Kinobox",
+            source_name="kb-1",
+            stream_url="https://example.com/stream.m3u8",
+            quality_label="1080p",
+        )
+        assert command.language == "ru"
+        assert command.source_type == "stream"
+
+    def test_is_frozen(self):
+        command = AddWatchSourceCommand(
+            anime_id=7,
+            episode=2,
+            translation_name="AniLibria",
+            translation_type="dub",
+            provider_name="Kinobox",
+            source_name="kb-1",
+            stream_url="https://example.com/stream.m3u8",
+            quality_label="1080p",
+        )
+        with pytest.raises(Exception):
+            command.episode = 3

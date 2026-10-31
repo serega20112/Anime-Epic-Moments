@@ -1,76 +1,73 @@
+"""Сценарий добавления аниме в избранное."""
+
 import json
 
+from backend.application.dto.favorite.add_favorite_command import AddFavoriteCommand
 from backend.application.interface.repositories.favorite_repository import FavoriteRepository
 from backend.application.interface.services import (
-    RecommendationServiceInterface as RecommendationService,
+    RecommendationServiceInterface,
 )
 from backend.application.interface.services.profile_overview_cache import (
-    ProfileOverviewCacheInterface as ProfileOverviewCache,
+    ProfileOverviewCacheInterface,
 )
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.domain import Favorite
 
 
 class AddFavoriteUseCase:
+    """Добавляет аниме в избранное пользователя в рамках транзакции."""
+
     def __init__(
         self,
-        repo: FavoriteRepository,
-        unit_of_work: UnitOfWorkInterface,
-        recommendation_service: RecommendationService | None = None,
-        profile_overview_cache: ProfileOverviewCache | None = None,
-    ):
-        self.repo = repo
-        self.recommendation_service = recommendation_service
-        self.profile_overview_cache = profile_overview_cache
-        self.unit_of_work = unit_of_work
+        uow: UnitOfWorkInterface,
+        recommendation_service: RecommendationServiceInterface,
+        profile_overview_cache: ProfileOverviewCacheInterface,
+    ) -> None:
+        """Инициализирует сценарий добавления в избранное.
 
-    async def execute(
-        self,
-        user_id: int,
-        anime_id: int,
-        title: str | None = None,
-        description: str | None = None,
-        cover_url: str | None = None,
-        genres: list[str] | str | None = None,
-        original_title: str | None = None,
-    ) -> Favorite:
-        """Add an anime to favorites within a transaction."""
-        async with self.unit_of_work:
-            return await self._execute(
-                user_id, anime_id, title, description, cover_url, genres, original_title
-            )
+        Args:
+            uow: Единица работы, задающая границу транзакции.
+            recommendation_service: Сервис рекомендаций, сбрасывается после записи.
+            profile_overview_cache: Кэш обзора профиля, сбрасывается после записи.
+        """
+        self._uow = uow
+        self._recommendation_service = recommendation_service
+        self._profile_overview_cache = profile_overview_cache
 
-    async def _execute(
-        self,
-        user_id: int,
-        anime_id: int,
-        title: str | None = None,
-        description: str | None = None,
-        cover_url: str | None = None,
-        genres: list[str] | str | None = None,
-        original_title: str | None = None,
-    ) -> Favorite:
+    async def execute(self, command: AddFavoriteCommand) -> Favorite:
+        """Добавляет аниме в избранное внутри одной транзакции.
+
+        Args:
+            command: Команда с идентификаторами пользователя и аниме.
+
+        Returns:
+            Favorite: Созданная запись избранного.
+        """
         favorite = Favorite(
-            user_id=int(user_id),
-            anime_id=int(anime_id),
-            title=await self._normalize_text(title),
-            description=await self._normalize_text(description),
-            cover_url=await self._normalize_text(cover_url),
-            genres=await self._normalize_genres(genres),
-            original_title=await self._normalize_text(original_title),
+            user_id=int(command.user_id),
+            anime_id=int(command.anime_id),
+            title=self._normalize_text(command.title),
+            description=self._normalize_text(command.description),
+            cover_url=self._normalize_text(command.cover_url),
+            genres=self._normalize_genres(command.genres),
+            original_title=self._normalize_text(command.original_title),
         )
-        result = await self.repo.add(favorite)
-        if self.recommendation_service:
-            await self.recommendation_service.invalidate_user(int(user_id))
-        if self.profile_overview_cache is not None:
-            await self.profile_overview_cache.invalidate_user(int(user_id), include_ai_summary=True)
-        return result
+        async with self._uow as uow:
+            saved = await uow.repository(FavoriteRepository).add(favorite)
+        await self._recommendation_service.invalidate_user(int(command.user_id))
+        await self._profile_overview_cache.invalidate_user(
+            int(command.user_id),
+            include_ai_summary=True,
+        )
+        return saved
 
-    async def _normalize_text(self, value: str | None) -> str | None:
+    def _normalize_text(self, value: str | None) -> str | None:
+        """Обрезать текст и вернуть None для пустой строки."""
         text = str(value or "").strip()
         return text or None
 
-    async def _normalize_genres(self, value: list[str] | str | None) -> list[str]:
+    def _normalize_genres(self, value: list[str] | str | None) -> list[str]:
+        """Привести жанры к списку без пустых значений."""
         if value is None:
             return []
         if isinstance(value, list):

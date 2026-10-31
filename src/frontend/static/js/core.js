@@ -41,7 +41,9 @@
     return fetch(url, options).then(function (response) {
       if (response.status >= 400) {
         return response.json().then(function (data) {
-          var error = new Error((data && data.error) || "Ошибка запроса");
+          var error = new Error(
+            (data && (data.message || data.error)) || "Ошибка запроса",
+          );
           error.status = response.status;
           error.payload = data;
           throw error;

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from backend.domain import User
-from backend.infrastructure.repositories.user_repository import UserRepository
+from backend.infrastructure.database.repositories.user_repository import UserRepository
 
 
 @pytest.mark.integration

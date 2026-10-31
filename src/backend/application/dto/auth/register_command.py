@@ -1,4 +1,4 @@
-"""Registration command requesting an email verification code."""
+"""Регистрация пользователя с подтверждением адреса почты."""
 
 from __future__ import annotations
 
@@ -7,13 +7,13 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class RegisterCommand:
-    """Registration command requesting an email verification code.
+    """Команда регистрации с запросом кода подтверждения.
 
     Attributes:
-        email: Normalized user email.
-        password: Plain password.
-        username: Desired username.
-        theme: UI theme preference.
+        email: Нормализованный адрес почты.
+        password: Пароль в открытом виде.
+        username: Отображаемое имя пользователя.
+        theme: Выбранная тема оформления.
     """
 
     email: str

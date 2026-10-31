@@ -1,4 +1,4 @@
-"""User use case providers."""
+"""Провайдеры сценариев профилей и подписок."""
 
 from __future__ import annotations
 
@@ -10,51 +10,25 @@ from backend.application.use_cases.auth.profile.get_profile_overview import (
     GetProfileOverviewUseCase,
 )
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
-from backend.infrastructure.repositories.collection_repository import CollectionRepository
-from backend.infrastructure.repositories.user_repository import UserRepository
 
 
 class UserUseCaseProvider(Provider):
-    """Provide user and public profile use cases."""
+    """Провайдер сценариев пользователя и публичных профилей."""
 
     @provide(scope=Scope.REQUEST)
     async def set_user_follow(
         self,
-        user_repository: UserRepository,
         unit_of_work: UnitOfWorkInterface,
         profile_overview_cache: ProfileOverviewCache,
     ) -> SetUserFollowUseCase:
-        """Provide the set user follow use case.
-
-        Args:
-            user_repository: User repository.
-            unit_of_work: Transaction boundary.
-            profile_overview_cache: Profile overview cache.
-
-        Returns:
-            SetUserFollowUseCase: Configured use case.
-        """
-        return SetUserFollowUseCase(user_repository, unit_of_work, profile_overview_cache)
+        """Создать сценарий подписки и отписки."""
+        return SetUserFollowUseCase(unit_of_work, profile_overview_cache)
 
     @provide(scope=Scope.REQUEST)
     async def get_public_profile_overview(
         self,
+        unit_of_work: UnitOfWorkInterface,
         get_profile_overview: GetProfileOverviewUseCase,
-        user_repository: UserRepository,
-        collection_repository: CollectionRepository,
     ) -> GetPublicProfileOverviewUseCase:
-        """Provide the get public profile overview use case.
-
-        Args:
-            get_profile_overview: Profile overview use case.
-            user_repository: User repository.
-            collection_repository: Collection repository.
-
-        Returns:
-            GetPublicProfileOverviewUseCase: Configured use case.
-        """
-        return GetPublicProfileOverviewUseCase(
-            get_profile_overview,
-            user_repository,
-            collection_repository,
-        )
+        """Создать сценарий обзора публичного профиля."""
+        return GetPublicProfileOverviewUseCase(unit_of_work, get_profile_overview)

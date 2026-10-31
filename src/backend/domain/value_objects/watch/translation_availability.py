@@ -1,7 +1,9 @@
+"""Доступность серий по озвучкам."""
+
 from dataclasses import dataclass, field
 
 
-@dataclass
+@dataclass(frozen=True)
 class TranslationEpisodeAvailability:
     """Доступность серий у конкретной озвучки одного тайтла.
 

@@ -1,25 +1,50 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 
 from backend.application.services.watch_source_service import WatchSourceSyncService
+from backend.domain.entities.anime.anime import Anime
 from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
-from backend.infrastructure.external.errors import ExternalServiceUnavailableError
+from backend.infrastructure.cache.ttl_cache import TTLCache
+from backend.infrastructure.external._common import ExternalServiceUnavailableError
+from tests.support.fakes import FakeUnitOfWork
+
+
+def _anime(**overrides) -> Anime:
+    """Собрать карточку тайтла с переопределёнными полями."""
+    fields = {"external_id": "12345", "title": "Gintama", "year": 2024, "genres": ["Action"]}
+    fields.update(overrides)
+    return Anime(**fields)
 
 
 @pytest.mark.unit
 class TestWatchSourceSyncService:
     """Юнит-тесты сервиса синхронизации источников для просмотра."""
 
-    async def _service(self, providers, get_sources=None):
+    @staticmethod
+    async def _service(providers, get_sources=None):
+        """Собрать сервис с настоящими in-memory кэшами и двойником репозитория.
+
+        Args:
+            providers: Список провайдеров для сервиса.
+            get_sources: Значение, которое вернёт репозиторий для существующих
+                источников.
+
+        Returns:
+            tuple[WatchSourceSyncService, FakeUnitOfWork, AsyncMock]: Сервис,
+            единица работы вокруг двойника и сам двойник репозитория.
+        """
         watch_repo = AsyncMock()
         watch_repo.get_sources.return_value = get_sources if get_sources is not None else []
-        service = WatchSourceSyncService(watch_repo, providers)
+        service = WatchSourceSyncService(
+            providers,
+            empty_result_cache=TTLCache(ttl_seconds=600, max_entries=32),
+            availability_cache=TTLCache(ttl_seconds=1800, max_entries=32),
+        )
         await service.empty_result_cache.clear()
-        return service, watch_repo
+        return service, FakeUnitOfWork(WatchRepository=watch_repo), watch_repo
 
     @staticmethod
     def _provider(name="AniLibria", *, ephemeral_links=False):
@@ -43,10 +68,10 @@ class TestWatchSourceSyncService:
         provider = Mock()
         provider.is_enabled = AsyncMock(return_value=False)
         provider.search_sources = AsyncMock()
-        service, _watch_repo = await self._service([provider])
+        service, uow, _watch_repo = await self._service([provider])
 
         result = await service.sync_for_anime(
-            anime_id=10, anime=SimpleNamespace(title="Gintama", year=2024), episode=1
+            unit_of_work=uow, anime_id=10, anime=_anime(), episode=1
         )
 
         assert result == []
@@ -59,16 +84,11 @@ class TestWatchSourceSyncService:
         Что ожидаем: при force второе обращение сбрасывает кэш, иначе кэш отсекает запрос.
         """
         provider = self._provider()
-        service, _watch_repo = await self._service([provider])
+        service, uow, _watch_repo = await self._service([provider])
 
+        await service.sync_for_anime(unit_of_work=uow, anime_id=10, anime=_anime(), episode=1)
         await service.sync_for_anime(
-            anime_id=10, anime=SimpleNamespace(title="Mob Psycho 100", year=2024), episode=1
-        )
-        await service.sync_for_anime(
-            anime_id=10,
-            anime=SimpleNamespace(title="Mob Psycho 100", year=2024),
-            episode=1,
-            force=force,
+            unit_of_work=uow, anime_id=10, anime=_anime(), episode=1, force=force
         )
 
         assert (
@@ -83,11 +103,11 @@ class TestWatchSourceSyncService:
         Что ожидаем: поиск не вызывается, возвращается существующий список.
         """
         provider = self._provider()
-        existing = [SimpleNamespace(provider_name="anilibria")]
-        service, _watch_repo = await self._service([provider], get_sources=existing)
+        existing = [Mock(provider_name="anilibria")]
+        service, uow, _watch_repo = await self._service([provider], get_sources=existing)
 
         result = await service.sync_for_anime(
-            anime_id=10, anime=SimpleNamespace(title="Gintama", year=2024), episode=1
+            unit_of_work=uow, anime_id=10, anime=_anime(), episode=1
         )
 
         assert result == existing
@@ -115,12 +135,13 @@ class TestWatchSourceSyncService:
                 )
             ]
         )
-        existing = [SimpleNamespace(provider_name="Eporner")]
-        service, watch_repo = await self._service([provider], get_sources=existing)
+        existing = [Mock(provider_name="Eporner")]
+        service, uow, watch_repo = await self._service([provider], get_sources=existing)
 
         await service.sync_for_anime(
+            unit_of_work=uow,
             anime_id=10,
-            anime=SimpleNamespace(title="Bible Black", year=2021, genres=["Hentai"]),
+            anime=_anime(title="Bible Black", genres=["Hentai"]),
             episode=1,
         )
 
@@ -139,11 +160,12 @@ class TestWatchSourceSyncService:
         до появления свежей ссылки.
         """
         provider = self._provider("Eporner", ephemeral_links=True)
-        service, watch_repo = await self._service([provider], get_sources=[])
+        service, uow, watch_repo = await self._service([provider], get_sources=[])
 
         await service.sync_for_anime(
+            unit_of_work=uow,
             anime_id=10,
-            anime=SimpleNamespace(title="Bible Black", year=2021, genres=["Hentai"]),
+            anime=_anime(title="Bible Black", genres=["Hentai"]),
             episode=1,
         )
 
@@ -156,15 +178,15 @@ class TestWatchSourceSyncService:
         """
         provider = Mock()
         provider.provider_name = "AniLibria"
+        provider.ephemeral_links = False
         provider.is_enabled = AsyncMock(return_value=True)
         provider.search_sources = AsyncMock(
             return_value=[
-                SimpleNamespace(
+                DiscoveredWatchSource(
+                    episode=1,
                     translation_name="Gintama",
                     translation_type="subs",
                     language="russian",
-                    translation_id=0,
-                    episode=1,
                     provider_name="AniLibria",
                     source_name="file.mp4",
                     stream_url="https://example.com/v.mp4",
@@ -173,12 +195,10 @@ class TestWatchSourceSyncService:
                 )
             ]
         )
-        service, watch_repo = await self._service([provider])
-        watch_repo.add_translation.side_effect = lambda _t: SimpleNamespace(id=5)
+        service, uow, watch_repo = await self._service([provider])
+        watch_repo.add_translation.side_effect = lambda _t: _TranslationStub(id=5)
 
-        await service.sync_for_anime(
-            anime_id=10, anime=SimpleNamespace(title="Gintama", year=2024), episode=1
-        )
+        await service.sync_for_anime(unit_of_work=uow, anime_id=10, anime=_anime(), episode=1)
 
         provider.search_sources.assert_awaited_once()
         watch_repo.add_translation.assert_awaited_once()
@@ -191,20 +211,21 @@ class TestWatchSourceSyncService:
         """
         failing = Mock()
         failing.provider_name = "SameBand"
+        failing.ephemeral_links = False
         failing.is_enabled = AsyncMock(return_value=True)
         failing.search_sources = AsyncMock(side_effect=ExternalServiceUnavailableError())
 
         healthy = Mock()
         healthy.provider_name = "AniLibria"
+        healthy.ephemeral_links = False
         healthy.is_enabled = AsyncMock(return_value=True)
         healthy.search_sources = AsyncMock(
             return_value=[
-                SimpleNamespace(
+                DiscoveredWatchSource(
+                    episode=1,
                     translation_name="Gintama",
                     translation_type="voice",
                     language="ru",
-                    translation_id=0,
-                    episode=1,
                     provider_name="AniLibria",
                     source_name="file.mp4",
                     stream_url="https://example.com/v.mp4",
@@ -213,13 +234,50 @@ class TestWatchSourceSyncService:
                 )
             ]
         )
-        service, watch_repo = await self._service([failing, healthy])
-        watch_repo.add_translation.side_effect = lambda _t: SimpleNamespace(id=5)
+        service, uow, watch_repo = await self._service([failing, healthy])
+        watch_repo.add_translation.side_effect = lambda _t: _TranslationStub(id=5)
 
-        await service.sync_for_anime(
-            anime_id=10, anime=SimpleNamespace(title="Gintama", year=2024), episode=1
-        )
+        await service.sync_for_anime(unit_of_work=uow, anime_id=10, anime=_anime(), episode=1)
 
         failing.search_sources.assert_awaited()
         healthy.search_sources.assert_awaited_once()
         watch_repo.add_source.assert_awaited_once()
+
+    async def test_writes_go_through_unit_of_work(self):
+        """Что тестируем: запись источников идёт в транзакцию вызывающего сценария.
+        Что передаём: единицу работы с двойником репозитория и один найденный источник.
+        Что ожидаем: репозиторий запроса не создаётся сервисом напрямую, а
+        добавление происходит через репозиторий, выданный этой единицей работы.
+        """
+        provider = self._provider()
+        provider.search_sources = AsyncMock(
+            return_value=[
+                DiscoveredWatchSource(
+                    episode=1,
+                    translation_name="AniLibria",
+                    translation_type="voice",
+                    language="ru",
+                    provider_name="AniLibria",
+                    source_name="file.mp4",
+                    stream_url="https://example.com/v.mp4",
+                    quality_label="1080p",
+                    source_type="stream",
+                )
+            ]
+        )
+        service, uow, watch_repo = await self._service([provider])
+        watch_repo.add_translation.side_effect = lambda _t: _TranslationStub(id=7)
+
+        await service.sync_for_anime(unit_of_work=uow, anime_id=10, anime=_anime(), episode=1)
+
+        assert not hasattr(service, "watch_repo")
+        assert uow.commits == 0
+        watch_repo.add_source.assert_awaited_once()
+
+
+class _TranslationStub:
+    """Двойник озвучки, возвращаемой репозиторием при создании дорожки."""
+
+    def __init__(self, id: int) -> None:
+        """Создать дорожку с указанным идентификатором."""
+        self.id = id

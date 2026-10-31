@@ -1,23 +1,11 @@
+"""Данные страницы просмотра: источники, дневник и статистика."""
+
 from dataclasses import dataclass, field
 
 
-@dataclass
+@dataclass(frozen=True)
 class DiaryEntry:
-    """An anime entry in the user's diary list.
-
-    Attributes:
-        status: Diary status label.
-        current_episode: Episode reached by the user.
-        rating: Optional personal rating.
-        note: Optional personal note.
-        started_at: When the user started watching.
-        completed_at: When the user finished watching.
-        last_watched_at: Last viewing time.
-        anime_id: Anime identifier.
-        title: Anime title.
-        cover_url: Optional anime cover.
-        episode_count: Optional total episodes.
-    """
+    """Запись аниме в дневнике пользователя."""
 
     status: str
     current_episode: int | None
@@ -32,8 +20,10 @@ class DiaryEntry:
     episode_count: int | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class WatchSourceCard:
+    """Карточка источника просмотра с плеером."""
+
     source_id: int
     translation_id: int
     translation_name: str
@@ -45,8 +35,10 @@ class WatchSourceCard:
     source_type: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class WatchHighlightCard:
+    """Карточка хайлайта на странице просмотра."""
+
     id: int
     title: str
     category: str | None
@@ -60,15 +52,17 @@ class WatchHighlightCard:
     provider_name: str | None
 
 
-@dataclass
+@dataclass(frozen=True)
 class WatchedAnimeStat:
+    """Статистика просмотренного аниме."""
+
     anime_id: int
     watched_seconds: float
     sessions_count: int
     last_watched_at: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class TranslationEpisodeCount:
     """Число вышедших серий у конкретной озвучки одного тайтла.
 
@@ -83,14 +77,18 @@ class TranslationEpisodeCount:
     is_active: bool = False
 
 
-@dataclass
+@dataclass(frozen=True)
 class ViewingHeatmapPoint:
+    """Точка тепловой карты просмотров."""
+
     date: str
     interactions: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class WatchPageData:
+    """Полный набор данных для отрисовки страницы просмотра."""
+
     anime_id: int
     anime_title: str
     anime_cover: str | None

@@ -393,6 +393,23 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--accent-glow-color);
 }
 
+/* Автозаполнение Chrome в тёмной теме выбивает светлую рамку и белую подложку
+   поля — возвращаем поле к его собственной поверхности. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--color-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--button-ghost-bg) inset;
+  caret-color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+input:-webkit-autofill:focus {
+  border-color: var(--color-accent);
+}
+
 select {
   appearance: none;
   -webkit-appearance: none;

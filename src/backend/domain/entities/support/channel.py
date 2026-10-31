@@ -1,4 +1,4 @@
-"""Domain rules for support delivery channels."""
+"""Доменные правила каналов доставки тикетов поддержки."""
 
 from __future__ import annotations
 
@@ -6,29 +6,39 @@ SUPPORT_CHANNELS: frozenset[str] = frozenset({"telegram", "email"})
 DEFAULT_SUPPORT_CHANNEL = "telegram"
 
 
-def normalize_support_channel(value: str | None, *, default: str = DEFAULT_SUPPORT_CHANNEL) -> str:
-    """Normalize and validate a support channel, falling back to a default.
+def parse_support_channel(value: str | None) -> str | None:
+    """Разобрать канал доставки без подстановки значения по умолчанию.
 
     Args:
-        value: Raw channel name.
-        default: Channel used when the value is not a known channel.
+        value: Название канала.
 
     Returns:
-        str: A known channel ("telegram" or "email").
+        str | None: Канал в нижнем регистре либо None, если он неизвестен.
     """
     normalized = str(value or "").strip().lower()
-    if normalized in SUPPORT_CHANNELS:
-        return normalized
-    return default
+    return normalized if normalized in SUPPORT_CHANNELS else None
+
+
+def normalize_support_channel(value: str | None, *, default: str = DEFAULT_SUPPORT_CHANNEL) -> str:
+    """Нормализовать канал поддержки с подстановкой значения по умолчанию.
+
+    Args:
+        value: Название канала.
+        default: Канал, используемый для неизвестного значения.
+
+    Returns:
+        str: Известный канал (``telegram`` или ``email``).
+    """
+    return parse_support_channel(value) or default
 
 
 def is_support_channel(value: str | None) -> bool:
-    """Return whether a value is a known support channel.
+    """Проверить, поддерживается ли канал.
 
     Args:
-        value: Channel name to check.
+        value: Проверяемое название канала.
 
     Returns:
-        bool: True when the channel is supported.
+        bool: True, если канал поддерживается.
     """
-    return str(value or "").strip().lower() in SUPPORT_CHANNELS
+    return parse_support_channel(value) is not None

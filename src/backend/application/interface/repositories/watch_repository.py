@@ -1,3 +1,5 @@
+"""Порт хранилища данных просмотра."""
+
 from abc import ABC, abstractmethod
 
 from backend.domain.entities.watch.highlight_context import HighlightContext
@@ -10,6 +12,8 @@ from backend.domain.value_objects.watch.page_data import ViewingHeatmapPoint, Wa
 
 
 class WatchRepository(ABC):
+    """Хранилище статусов, сессий, источников и обсуждений просмотра."""
+
     @abstractmethod
     async def get_status(self, user_id: int, anime_id: int) -> UserAnimeStatus | None:
         """Возвращает статус просмотра пользователя."""
@@ -29,7 +33,7 @@ class WatchRepository(ABC):
         anime_id: int,
         episode: int,
     ) -> UserAnimeStatus:
-        """Advance the user's anime progress after finishing an episode."""
+        """Продвинуть прогресс пользователя после просмотра серии."""
 
     @abstractmethod
     async def get_translations(self, anime_id: int) -> list[Translation]:

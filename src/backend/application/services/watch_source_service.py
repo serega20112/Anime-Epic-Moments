@@ -1,95 +1,84 @@
+"""Сервис синхронизации источников просмотра из внешних провайдеров."""
+
 import asyncio
 import logging
 import re
 
 from backend.application.interface.repositories.watch_repository import WatchRepository
 from backend.application.interface.services import (
-    WatchSourceProviderInterface as WatchSourceProvider,
+    TTLCacheInterface,
+    WatchSourceProviderInterface,
+    WatchSourceSyncServiceInterface,
 )
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.domain import Translation, WatchSource
-from backend.domain.entities.anime.anime import Anime
+from backend.domain.entities.anime.anime import Anime, has_adult_genres
 from backend.domain.exceptions import ExternalServiceError
 from backend.domain.policies.watch_policy import (
     canonicalize_translation_name,
     get_translation_priority,
+    quality_rank,
 )
 from backend.domain.value_objects.watch.discovery import DiscoveredWatchSource
 from backend.domain.value_objects.watch.translation_availability import (
     TranslationEpisodeAvailability,
 )
-from backend.utils.ttl_cache import TTLCache
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("anime_epic_moments")
 
-_ADULT_GENRE_MARKERS = ("hentai", "ecchi", "adult", "эрот", "sex", "nsfw")
-#: Провайдеры, у которых есть взрослый контент. Остальные (обычные
-#: кинотеки) для хентай-тайтлов бесполезны и только тратят запросы.
-#: Kodik намеренно НЕ включён: в его каталоге хентай-тайлы лежат под
-#: «не-озвучками» ( оригинал/спец-серии), текстовый поиск по названию
-#: постоянно цепляет их и засоряет выдачу. Hanime — профильный hentai-сайт.
 _ADULT_PROVIDER_NAMES = frozenset({"eporner", "hentaigasm", "hanime"})
 
-#: TTL-кэши вынесены на уровень модуля намеренно. Сервис собирается в DI
-#: со scope=REQUEST, то есть пересоздаётся на каждый HTTP-запрос, и кэш в
-#: ``__init__`` жил бы меньше секунды: заявленные 10/30 минут TTL никогда
-#: не достигались бы, и каждый заход на страницу просмотра заново дёргал
-#: внешние сайты (Hentaigasm/Eporner — по 2–4 с на запрос). Модульные
-#: синглтоны живут весь процесс и реально кэшируют. Состояние им
-#: безобидно: это чистый кэш значений, без per-request хвостов.
-_EMPTY_RESULT_CACHE: TTLCache[
-    tuple[str, int, int, int | None, int | None, tuple[str, ...]],
-    bool,
-] = TTLCache(ttl_seconds=600, max_entries=512)
 
-_AVAILABILITY_CACHE: TTLCache[
-    tuple[str, int, int],
-    list[TranslationEpisodeAvailability],
-] = TTLCache(ttl_seconds=1800, max_entries=256)
+class WatchSourceSyncService(WatchSourceSyncServiceInterface):
+    """Синхронизирует источники просмотра из внешнего провайдера в локальное хранилище.
 
+    Кэши приходят извне и живут дольше запроса: сервис собирается в DI со
+    scope=REQUEST, поэтому собственные кэши пересоздавались бы на каждый
+    HTTP-запрос, и ни один TTL никогда не наступил бы.
 
-class WatchSourceSyncService:
-    """Синхронизирует источники просмотра из внешнего провайдера в локальное хранилище."""
+    Собственного репозитория у сервиса нет: запись идёт через единицу работы
+    вызывающего сценария, иначе накопленные изменения остались бы незафиксированными.
+    """
 
-    def __init__(self, watch_repo: WatchRepository, providers: list[WatchSourceProvider]):
-        self.watch_repo = watch_repo
+    def __init__(
+        self,
+        providers: list[WatchSourceProviderInterface],
+        empty_result_cache: TTLCacheInterface,
+        availability_cache: TTLCacheInterface,
+    ) -> None:
+        """Инициализирует сервис синхронизации источников.
+
+        Args:
+            providers: Список провайдеров источников.
+            empty_result_cache: Кэш отметок «источников нет».
+            availability_cache: Кэш карты доступности серий по озвучкам.
+        """
         self.providers = providers
-        # Модульные синглтоны: DI отдаёт сервис со scope=REQUEST, поэтому
-        # кэш в инстансе пересоздавался бы на каждый запрос и не работал.
-        self.empty_result_cache = _EMPTY_RESULT_CACHE
-        self._availability_cache = _AVAILABILITY_CACHE
+        self.empty_result_cache = empty_result_cache
+        self._availability_cache = availability_cache
 
     async def is_enabled(self) -> bool:
+        """Проверить, включён ли провайдер в настройках."""
         for provider in self.providers:
             if await provider.is_enabled():
                 return True
         return False
 
-    @staticmethod
-    def _is_adult(genres: list[str] | None) -> bool:
-        """Определяет, относится ли тайтл ко взрослому (hentai) контенту по жанрам.
-
-        Args:
-            genres: Список жанров тайтла.
-
-        Returns:
-            bool: True для hentai/ecchi/эроt-жанров.
-        """
-        joined = " ".join(genres or []).lower()
-        return any(marker in joined for marker in _ADULT_GENRE_MARKERS)
-
-    def _filtered_providers(self, adult: bool) -> list[WatchSourceProvider]:
+    def _filtered_providers(self, adult: bool) -> list[WatchSourceProviderInterface]:
         """Возвращает список провайдеров для опроса с учётом контента.
 
         Для взрослого контента остаются только профильные провайдеры
         (Eporner, Hentaigasm, Hanime), чтобы не тратить запросы на
         обычные кинотеки, где хентай отсутствует. Для остального — полный
-        список.
+        список. Kodik в список взрослых намеренно не входит: его каталог
+        выдаёт хентай-тайтлы как «не-озвучки» (оригинал и спец-серии), и
+        текстовый поиск по названию постоянно цепляет их и засоряет выдачу.
 
         Args:
             adult: True, если тайтл взрослый (hentai).
 
         Returns:
-            list[WatchSourceProvider]: Провайдеры для опроса.
+            list[WatchSourceProviderInterface]: Провайдеры для опроса.
         """
         if not adult:
             return list(self.providers)
@@ -134,7 +123,7 @@ class WatchSourceSyncService:
             return list(cached)
 
         availability: list[TranslationEpisodeAvailability] = []
-        for provider in self._filtered_providers(self._is_adult(genres)):
+        for provider in self._filtered_providers(has_adult_genres(genres)):
             if not await provider.is_enabled():
                 continue
             try:
@@ -155,38 +144,46 @@ class WatchSourceSyncService:
         return availability
 
     async def get_enabled_provider_names(self) -> list[str]:
+        """Получить имена включённых провайдеров."""
         return [
             provider.provider_name for provider in self.providers if await provider.is_enabled()
         ]
 
     async def get_provider_label(self) -> str | None:
+        """Собрать подпись провайдеров для интерфейса."""
         enabled = await self.get_enabled_provider_names()
         return ", ".join(enabled) if enabled else None
 
     async def sync_for_anime(
         self,
+        unit_of_work: UnitOfWorkInterface,
         anime_id: int,
         anime: Anime | None,
         episode: int,
         force: bool = False,
     ) -> list[WatchSource]:
-        """Подтягивает и сохраняет источники для конкретного аниме и эпизода."""
-        existing = await self.watch_repo.get_sources(anime_id=anime_id, episode=episode)
+        """Подтягивает и сохраняет источники для конкретного аниме и эпизода.
+
+        Args:
+            unit_of_work: Граница транзакции вызывающего сценария.
+            anime_id: Идентификатор тайтла в локальном каталоге.
+            anime: Карточка тайтла из каталога либо None.
+            episode: Номер серии.
+            force: Признак принудительного опроса, сбрасывающего кэш отметок.
+
+        Returns:
+            list[WatchSource]: Источники серии после синхронизации.
+        """
+        watch_repository = unit_of_work.repository(WatchRepository)
+        existing = await watch_repository.get_sources(anime_id=anime_id, episode=episode)
         if not anime or not anime.title or not await self.is_enabled():
             return existing
 
-        adult = self._is_adult(getattr(anime, "genres", None))
-        existing_provider_names = {str(source.provider_name).strip().lower() for source in existing}
-        providers_to_query = [
-            provider
-            for provider in self._filtered_providers(adult)
-            if await provider.is_enabled()
-            and (
-                force
-                or provider.ephemeral_links
-                or provider.provider_name.strip().lower() not in existing_provider_names
-            )
-        ]
+        adult = anime.is_adult
+        providers_to_query = await self._select_providers(existing, adult=adult, force=force)
+        if not providers_to_query:
+            return existing
+
         logger.info(
             "Watch source sync started",
             extra={
@@ -194,32 +191,25 @@ class WatchSourceSyncService:
                 "title": anime.title,
                 "episode": episode,
                 "adult": adult,
-                "genres": list(getattr(anime, "genres", None) or []),
+                "genres": list(anime.genres or []),
                 "queried": [provider.provider_name for provider in providers_to_query],
-                "already_stored": sorted(existing_provider_names),
+                "already_stored": sorted(
+                    str(source.provider_name).strip().lower() for source in existing
+                ),
             },
         )
-        if not providers_to_query:
-            return existing
 
         title_variants = await self._build_title_variants(anime.title)
-        shikimori_id = self._shikimori_id(anime)
-        pending_discoveries: list[
-            tuple[tuple[str, int, int, int | None, int | None, tuple[str, ...]], object]
-        ] = []
-        for provider in providers_to_query:
-            empty_cache_key = (
-                provider.provider_name.strip().lower(),
-                int(anime_id),
-                int(episode),
-                anime.year,
-                shikimori_id,
-                tuple(title_variants),
-            )
-            if not force and await self.empty_result_cache.contains(empty_cache_key):
-                continue
-            pending_discoveries.append((empty_cache_key, provider))
-
+        shikimori_id = anime.mal_id
+        pending_discoveries = await self._plan_discoveries(
+            providers_to_query,
+            anime_id=anime_id,
+            episode=episode,
+            year=anime.year,
+            shikimori_id=shikimori_id,
+            title_variants=title_variants,
+            force=force,
+        )
         if not pending_discoveries:
             return existing
 
@@ -235,9 +225,108 @@ class WatchSourceSyncService:
                 for _empty_cache_key, provider in pending_discoveries
             ]
         )
+        await self._store_discoveries(
+            watch_repository,
+            pending_discoveries,
+            discovered_batches,
+            anime_id=anime_id,
+            episode=episode,
+        )
+        return await watch_repository.get_sources(anime_id=anime_id, episode=episode)
 
+    async def _select_providers(
+        self,
+        existing: list[WatchSource],
+        *,
+        adult: bool,
+        force: bool,
+    ) -> list[WatchSourceProviderInterface]:
+        """Отобирает провайдеры, которые нужно опросить в этом цикле синхронизации.
+
+        Args:
+            existing: Уже сохранённые источники серии.
+            adult: True для взрослого (hentai) контента.
+            force: Признак принудительного опроса всех включённых провайдеров.
+
+        Returns:
+            list[WatchSourceProviderInterface]: Провайдеры для опроса.
+        """
+        existing_provider_names = {str(source.provider_name).strip().lower() for source in existing}
+        return [
+            provider
+            for provider in self._filtered_providers(adult)
+            if await provider.is_enabled()
+            and (
+                force
+                or provider.ephemeral_links
+                or provider.provider_name.strip().lower() not in existing_provider_names
+            )
+        ]
+
+    async def _plan_discoveries(
+        self,
+        providers: list[WatchSourceProviderInterface],
+        *,
+        anime_id: int,
+        episode: int,
+        year: int | None,
+        shikimori_id: int | None,
+        title_variants: list[str],
+        force: bool,
+    ) -> list[tuple[tuple[str, int, int, int | None, int | None, tuple[str, ...]], object]]:
+        """Формирует список опросов с учётом кэша отметок «источников нет».
+
+        Args:
+            providers: Отобранные для опроса провайдеры.
+            anime_id: Идентификатор тайтла в локальном каталоге.
+            episode: Номер серии.
+            year: Год выпуска тайтла.
+            shikimori_id: Внешний id тайтла, если он числовой.
+            title_variants: Варианты названия для внешнего поиска.
+            force: Признак принудительного опроса, игнорирующего кэш.
+
+        Returns:
+            list[tuple[...]]: Пары «ключ кэша, провайдер» для параллельного опроса.
+        """
+        pending: list[
+            tuple[tuple[str, int, int, int | None, int | None, tuple[str, ...]], object]
+        ] = []
+        for provider in providers:
+            empty_cache_key = (
+                provider.provider_name.strip().lower(),
+                int(anime_id),
+                int(episode),
+                year,
+                shikimori_id,
+                tuple(title_variants),
+            )
+            if not force and await self.empty_result_cache.contains(empty_cache_key):
+                continue
+            pending.append((empty_cache_key, provider))
+        return pending
+
+    async def _store_discoveries(
+        self,
+        watch_repository: WatchRepository,
+        pending_discoveries: list[
+            tuple[tuple[str, int, int, int | None, int | None, tuple[str, ...]], object]
+        ],
+        discovered_batches: list[list[DiscoveredWatchSource]],
+        *,
+        anime_id: int,
+        episode: int,
+    ) -> None:
+        """Сохраняет найденные источники и озвучки в транзакции вызывающего сценария.
+
+        Args:
+            watch_repository: Репозиторий просмотра внутри единицы работы.
+            pending_discoveries: Планирование опросов «ключ кэша, провайдер».
+            discovered_batches: Результаты опросов в том же порядке.
+            anime_id: Идентификатор тайтла в локальном каталоге.
+            episode: Номер серии, для которой ищутся источники.
+        """
         translation_cache: dict[tuple[str, str, str | None], Translation] = {}
-        stored_quality_seen: set[tuple[str, str, str | None, str]] = set()
+        stored_quality_seen: set[tuple[str, str, str | None, str, str]] = set()
         for (empty_cache_key, _provider), discovered in zip(
             pending_discoveries,
             discovered_batches,
@@ -257,7 +346,7 @@ class WatchSourceSyncService:
             await self.empty_result_cache.delete(empty_cache_key)
 
             if _provider.ephemeral_links:
-                await self.watch_repo.delete_sources_by_provider(
+                await watch_repository.delete_sources_by_provider(
                     anime_id=anime_id,
                     provider_name=_provider.provider_name,
                     episode=episode,
@@ -281,7 +370,7 @@ class WatchSourceSyncService:
                 stored_quality_seen.add(quality_key)
                 translation = translation_cache.get(translation_key)
                 if translation is None:
-                    translation = await self.watch_repo.add_translation(
+                    translation = await watch_repository.add_translation(
                         Translation(
                             anime_id=anime_id,
                             name=translation_key[0],
@@ -290,7 +379,7 @@ class WatchSourceSyncService:
                         )
                     )
                     translation_cache[translation_key] = translation
-                await self.watch_repo.add_source(
+                await watch_repository.add_source(
                     WatchSource(
                         anime_id=anime_id,
                         episode=item.episode,
@@ -302,8 +391,6 @@ class WatchSourceSyncService:
                         source_type=item.source_type,
                     )
                 )
-
-        return await self.watch_repo.get_sources(anime_id=anime_id, episode=episode)
 
     async def _build_title_variants(self, title: str) -> list[str]:
         """Готовит несколько вариантов названия для внешнего поиска."""
@@ -328,7 +415,7 @@ class WatchSourceSyncService:
 
     async def _discover_sources(
         self,
-        provider: WatchSourceProvider,
+        provider: WatchSourceProviderInterface,
         title_variants: list[str],
         episode: int,
         year: int | None,
@@ -352,6 +439,7 @@ class WatchSourceSyncService:
         """
 
         async def search_variant(title_variant: str) -> list[DiscoveredWatchSource]:
+            """Найти источники по одному варианту названия."""
             try:
                 return await provider.search_sources(
                     title=title_variant,
@@ -390,7 +478,7 @@ class WatchSourceSyncService:
         ranked_items = [
             (
                 item,
-                await self._quality_rank(item.quality_label),
+                quality_rank(item.quality_label),
                 get_translation_priority(item.translation_name),
             )
             for item in discovered
@@ -407,24 +495,3 @@ class WatchSourceSyncService:
                 ),
             )
         ]
-
-    async def _quality_rank(self, value: str | None) -> int:
-        """Преобразует метку качества в число для сортировки по убыванию."""
-        digits = "".join(character for character in str(value or "") if character.isdigit())
-        return int(digits) if digits else 0
-
-    @staticmethod
-    def _shikimori_id(anime) -> int | None:
-        """Извлекает shikimori_id (MAL-id) из external_id, если это число.
-
-        Args:
-            anime: Сущность Anime.
-
-        Returns:
-            int | None: MAL-id или None, если external_id не числовой
-            (например, AniList-id) — тогда строгая адресация невозможна.
-        """
-        external_id = str(getattr(anime, "external_id", "") or "").strip()
-        if not external_id.isdigit():
-            return None
-        return int(external_id)

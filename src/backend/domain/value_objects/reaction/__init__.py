@@ -1,3 +1,5 @@
+"""Значимые объекты реакций."""
+
 from backend.domain.value_objects.reaction.reaction_summary import (
     EpisodeReactionCount,
     EpisodeReactionSummary,

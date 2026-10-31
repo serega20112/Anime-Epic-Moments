@@ -1,3 +1,3 @@
-"""Rating use cases package."""
+"""Сценарии оценок аниме."""
 
 from __future__ import annotations

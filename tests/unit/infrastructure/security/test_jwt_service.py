@@ -3,6 +3,7 @@ from __future__ import annotations
 import jwt
 import pytest
 
+from backend.domain.exceptions import InvalidTokenError
 from backend.infrastructure.security import jwt_service as jwt_service_module
 from backend.infrastructure.security.jwt_service import ALGORITHM, JWTService
 
@@ -42,7 +43,7 @@ def test_jwt_service_creates_and_decodes_refresh_token(monkeypatch):
     ],
 )
 def test_jwt_service_rejects_unexpected_token_type(token_type, decoder, monkeypatch):
-    """Проверяем, что JWTService отклоняет токены неподходящего типа."""
+    """Проверяем, что JWTService отклоняет токены неподходящего типа доменным исключением."""
     monkeypatch.setattr(jwt_service_module.Settings, "secret_key", "test-secret")
     service = JWTService()
     token = jwt.encode(
@@ -51,8 +52,22 @@ def test_jwt_service_rejects_unexpected_token_type(token_type, decoder, monkeypa
         algorithm=ALGORITHM,
     )
 
-    with pytest.raises(jwt.InvalidTokenError):
+    with pytest.raises(InvalidTokenError):
         getattr(service, decoder)(token)
+
+
+@pytest.mark.unit
+def test_jwt_service_translates_library_errors(monkeypatch):
+    """Проверяем, что сбой разбора библиотеки превращается в доменное исключение.
+
+    Сценарии ловят InvalidTokenError, поэтому PyJWT не должен пробиваться выше
+    адаптера: иначе смена библиотеки ломала бы прикладной слой.
+    """
+    monkeypatch.setattr(jwt_service_module.Settings, "secret_key", "test-secret")
+    service = JWTService()
+
+    with pytest.raises(InvalidTokenError):
+        service.decode_token("not-a-token")
 
 
 @pytest.mark.unit

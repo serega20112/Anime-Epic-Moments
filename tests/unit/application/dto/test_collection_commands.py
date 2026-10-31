@@ -5,6 +5,8 @@ import pytest
 from backend.application.dto.collection import (
     AddCollectionItemCommand,
     CreateCollectionCommand,
+    GetSharedCollectionQuery,
+    GetUserCollectionsQuery,
     RemoveCollectionItemCommand,
 )
 
@@ -38,6 +40,7 @@ class TestAddCollectionItemCommand:
         command = AddCollectionItemCommand(
             collection_id=2,
             anime_id=9,
+            user_id=1,
             title="A",
             description="d",
             cover_url="c.png",
@@ -49,19 +52,30 @@ class TestAddCollectionItemCommand:
         assert command.genres == ["Action"]
 
     def test_defaults(self):
-        command = AddCollectionItemCommand(collection_id=2, anime_id=9, title="A")
+        command = AddCollectionItemCommand(collection_id=2, anime_id=9, user_id=1, title="A")
         assert command.description == ""
         assert command.cover_url is None
         assert command.genres == []
 
     def test_genres_are_not_shared(self):
-        first = AddCollectionItemCommand(collection_id=2, anime_id=9, title="A")
-        second = AddCollectionItemCommand(collection_id=2, anime_id=9, title="A")
+        first = AddCollectionItemCommand(collection_id=2, anime_id=9, user_id=1, title="A")
+        second = AddCollectionItemCommand(collection_id=2, anime_id=9, user_id=1, title="A")
         assert first.genres is not second.genres
 
 
 class TestRemoveCollectionItemCommand:
     def test_stores_fields(self):
-        command = RemoveCollectionItemCommand(collection_id=2, anime_id=9)
+        command = RemoveCollectionItemCommand(collection_id=2, anime_id=9, user_id=4)
         assert command.collection_id == 2
         assert command.anime_id == 9
+        assert command.user_id == 4
+
+
+class TestCollectionQueries:
+    def test_user_collections_query_stores_user_id(self):
+        query = GetUserCollectionsQuery(user_id=7)
+        assert query.user_id == 7
+
+    def test_shared_collection_query_stores_collection_id(self):
+        query = GetSharedCollectionQuery(collection_id=5)
+        assert query.collection_id == 5

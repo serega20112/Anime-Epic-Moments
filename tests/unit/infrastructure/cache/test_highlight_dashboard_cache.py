@@ -14,7 +14,8 @@ from backend.infrastructure.cache import (
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 
 
-def _dashboard() -> HighlightDashboard:
+def _dashboard(sort_by: str = "recent") -> HighlightDashboard:
+    """Собрать дашборд хайлайтов с выбранным способом сортировки."""
     return HighlightDashboard(
         items=[
             HighlightCard(
@@ -52,7 +53,7 @@ def _dashboard() -> HighlightDashboard:
         selected_anime_id=None,
         selected_emotion=None,
         selected_category=None,
-        selected_sort="recent",
+        selected_sort=sort_by,
         selected_date=None,
         selected_query=None,
         include_spoilers=False,
@@ -129,10 +130,8 @@ async def test_highlight_dashboard_cache_invalidates_public_dashboards():
 async def test_highlight_dashboard_cache_separates_popular_and_recent_dashboards():
     """Проверяем, что HighlightDashboardCache не смешивает ключи popular и recent для одного набора фильтров."""
     cache = HighlightDashboardCache(store=KeyValueStore(redis_url=None, namespace="test"))
-    popular = _dashboard()
-    recent = _dashboard()
-    popular.selected_sort = "popular"
-    recent.selected_sort = "recent"
+    popular = _dashboard(sort_by="popular")
+    recent = _dashboard(sort_by="recent")
 
     await cache.set_public(
         limit=10,

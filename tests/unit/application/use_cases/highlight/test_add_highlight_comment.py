@@ -9,6 +9,16 @@ from backend.application.dto import AddHighlightCommentCommand
 from backend.application.use_cases.highlight.social.add_highlight_comment import (
     AddHighlightCommentUseCase,
 )
+from tests.support.fakes import FakeUnitOfWork
+
+
+def _use_case(repository: AsyncMock) -> tuple:
+    """Собрать сценарий комментария с двойниками репозитория и кэшей."""
+    dashboard_cache = AsyncMock()
+    profile_cache = AsyncMock()
+    uow = FakeUnitOfWork(HighlightRepository=repository)
+    use_case = AddHighlightCommentUseCase(uow, dashboard_cache, profile_cache)
+    return use_case, uow, dashboard_cache, profile_cache
 
 
 @pytest.mark.unit
@@ -16,15 +26,14 @@ class TestAddHighlightCommentUseCase:
     """Юнит-тесты добавления комментария к хайлайту."""
 
     async def test_validates_content_and_invalidates_cache(self):
-        """Что тестируем: сохранение комментария и инвалидацию публичного кэша.
+        """Что тестируем: сохранение комментария и инвалидацию кэшей.
         Что передаём: существующий хайлайт и валидный контент.
-        Что ожидаем: add_comment вызван, кэш инвалидирован, результат успешен.
+        Что ожидаем: комментарий сохранён, кэши очищены, результат успешен.
         """
-        repo = AsyncMock()
-        repo.get_by_id.return_value = SimpleNamespace(user_id=7)
-        repo.add_comment.return_value = SimpleNamespace(id=1)
-        dashboard_cache = AsyncMock()
-        use_case = AddHighlightCommentUseCase(repo, AsyncMock(), dashboard_cache)
+        repository = AsyncMock()
+        repository.get_by_id.return_value = SimpleNamespace(user_id=7)
+        repository.add_comment.return_value = SimpleNamespace(id=1)
+        use_case, uow, dashboard_cache, profile_cache = _use_case(repository)
 
         result = await use_case.execute(
             AddHighlightCommentCommand(highlight_id=5, user_id=7, content="great scene")
@@ -32,16 +41,20 @@ class TestAddHighlightCommentUseCase:
 
         assert result.ok is True
         assert result.status_code == 201
-        repo.add_comment.assert_awaited_once_with(highlight_id=5, user_id=7, content="great scene")
+        assert uow.commits == 1
+        repository.add_comment.assert_awaited_once_with(
+            highlight_id=5, user_id=7, content="great scene"
+        )
         dashboard_cache.invalidate_public.assert_awaited_once()
+        profile_cache.invalidate_user.assert_awaited_once_with(7)
 
     async def test_rejects_empty_content(self):
         """Что тестируем: отказ при пустом комментарии.
         Что передаём: контент из пробелов.
-        Что ожидаем: результат failure со статусом 400, add_comment не вызывается.
+        Что ожидаем: статус 400, комментарий не сохраняется.
         """
-        repo = AsyncMock()
-        use_case = AddHighlightCommentUseCase(repo, AsyncMock())
+        repository = AsyncMock()
+        use_case, _uow, dashboard_cache, _profile_cache = _use_case(repository)
 
         result = await use_case.execute(
             AddHighlightCommentCommand(highlight_id=5, user_id=7, content="   ")
@@ -49,16 +62,33 @@ class TestAddHighlightCommentUseCase:
 
         assert result.ok is False
         assert result.status_code == 400
-        repo.add_comment.assert_not_awaited()
+        repository.add_comment.assert_not_awaited()
+        dashboard_cache.invalidate_public.assert_not_awaited()
+
+    async def test_rejects_overlong_content(self):
+        """Что тестируем: отказ при слишком длинном комментарии.
+        Что передаём: текст длиной 601 символ.
+        Что ожидаем: статус 400, комментарий не сохраняется.
+        """
+        repository = AsyncMock()
+        use_case, _uow, _dashboard_cache, _profile_cache = _use_case(repository)
+
+        result = await use_case.execute(
+            AddHighlightCommentCommand(highlight_id=5, user_id=7, content="a" * 601)
+        )
+
+        assert result.ok is False
+        assert result.status_code == 400
+        repository.add_comment.assert_not_awaited()
 
     async def test_returns_not_found_when_highlight_missing(self):
         """Что тестируем: обработку отсутствующего хайлайта.
         Что передаём: get_by_id=None.
-        Что ожидаем: результат failure со статусом 404, add_comment не вызывается.
+        Что ожидаем: статус 404, комментарий не сохраняется.
         """
-        repo = AsyncMock()
-        repo.get_by_id.return_value = None
-        use_case = AddHighlightCommentUseCase(repo, AsyncMock())
+        repository = AsyncMock()
+        repository.get_by_id.return_value = None
+        use_case, _uow, dashboard_cache, profile_cache = _use_case(repository)
 
         result = await use_case.execute(
             AddHighlightCommentCommand(highlight_id=999, user_id=7, content="nice")
@@ -66,4 +96,6 @@ class TestAddHighlightCommentUseCase:
 
         assert result.ok is False
         assert result.status_code == 404
-        repo.add_comment.assert_not_awaited()
+        repository.add_comment.assert_not_awaited()
+        dashboard_cache.invalidate_public.assert_not_awaited()
+        profile_cache.invalidate_user.assert_not_awaited()

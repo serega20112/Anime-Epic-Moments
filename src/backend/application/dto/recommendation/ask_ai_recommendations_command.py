@@ -1,4 +1,4 @@
-"""Ask AI recommendations payload."""
+"""Запрос рекомендаций у языковой модели."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class AskAiRecommendationsCommand:
-    """Ask AI recommendations payload.
+    """Команда подбора рекомендаций через ИИ.
 
     Attributes:
-        user_id: User identifier.
-        query: Free-form recommendation request text.
-        limit: Maximum number of recommendations to return.
+        user_id: Идентификатор пользователя.
+        query: Свободный текст запроса рекомендаций.
+        limit: Максимальное число рекомендаций.
     """
 
     user_id: int

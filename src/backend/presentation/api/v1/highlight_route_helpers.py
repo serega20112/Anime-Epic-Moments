@@ -1,4 +1,4 @@
-"""Shared helpers for the highlight route modules."""
+"""Общие помощники маршрутов хайлайтов."""
 
 from __future__ import annotations
 
@@ -7,17 +7,19 @@ from http import HTTPStatus
 from fastapi import Request
 from fastapi.responses import RedirectResponse
 
+MAX_LIMIT = 100
 
-async def read_limit(request: Request, *, default: int, maximum: int) -> int:
-    """Parse and clamp a limit query parameter.
+
+def read_limit(request: Request, *, default: int, maximum: int = MAX_LIMIT) -> int:
+    """Прочитать и ограничить параметр ``limit`` из строки запроса.
 
     Args:
-        request: Incoming HTTP request.
-        default: Default value when missing or invalid.
-        maximum: Maximum allowed value.
+        request: Текущий HTTP-запрос.
+        default: Значение по умолчанию, если параметра нет или он не число.
+        maximum: Максимально допустимое значение.
 
     Returns:
-        int: Clamped limit.
+        int: Ограниченное число записей.
     """
     raw = request.query_params.get("limit")
     try:
@@ -27,14 +29,14 @@ async def read_limit(request: Request, *, default: int, maximum: int) -> int:
     return max(min(parsed, maximum), 1)
 
 
-async def redirect_login(request: Request) -> RedirectResponse:
-    """Build a redirect to the login page.
+def redirect_login(request: Request) -> RedirectResponse:
+    """Собрать редирект на страницу входа.
 
     Args:
-        request: Incoming HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        RedirectResponse: SEE_OTHER redirect to login.
+        RedirectResponse: Редирект 303 на страницу входа.
     """
     return RedirectResponse(
         url=request.app.url_path_for("auth.login_page"),

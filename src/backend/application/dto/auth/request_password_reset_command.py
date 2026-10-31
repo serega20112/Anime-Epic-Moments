@@ -1,4 +1,4 @@
-"""Request password reset command."""
+"""Запрос письма со ссылкой на восстановление пароля."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class RequestPasswordResetCommand:
-    """Request password reset command.
+    """Команда запроса восстановления пароля.
 
     Attributes:
-        email: Normalized user email.
-        base_url: Origin used to build the reset link.
+        email: Нормализованный адрес почты.
+        base_url: Адрес сайта, из которого собирается ссылка в письме.
     """
 
     email: str

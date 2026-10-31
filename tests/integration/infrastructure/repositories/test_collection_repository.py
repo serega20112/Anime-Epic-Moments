@@ -5,8 +5,8 @@ import pytest
 from backend.domain import User
 from backend.domain.aggregates.collection.collection import AnimeCollection
 from backend.domain.entities.collection.collection_item import AnimeCollectionItem
-from backend.infrastructure.repositories.collection_repository import CollectionRepository
-from backend.infrastructure.repositories.user_repository import UserRepository
+from backend.infrastructure.database.repositories.collection_repository import CollectionRepository
+from backend.infrastructure.database.repositories.user_repository import UserRepository
 
 
 @pytest.mark.integration

@@ -1,6 +1,10 @@
+"""Оценка аниме пользователем."""
+
 from __future__ import annotations
 
 from datetime import datetime
+
+from backend.domain.clock import utc_now
 
 
 class UserAnimeRating:
@@ -38,7 +42,7 @@ class UserAnimeRating:
         self.user_id = int(user_id)
         self.anime_id = int(anime_id)
         self.score = int(score)
-        self.rated_at = rated_at or datetime.utcnow()
+        self.rated_at = rated_at or utc_now()
 
     def update_score(self, score: int):
         """Перевыставить оценку с проверкой диапазона.

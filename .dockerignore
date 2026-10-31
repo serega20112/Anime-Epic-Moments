@@ -7,7 +7,6 @@
 node_modules
 package.json
 package-lock.json
-tmp_wheels
 venv
 .venv
 __pycache__
@@ -24,7 +23,6 @@ anime_epic_moments.db
 *.db
 docs
 tests
-requirements
 Dockerfile
 docker-compose*.yml
 README.md

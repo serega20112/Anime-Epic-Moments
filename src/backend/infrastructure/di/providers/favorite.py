@@ -1,4 +1,4 @@
-"""Favorite use case providers."""
+"""Провайдеры сценариев избранного."""
 
 from __future__ import annotations
 
@@ -12,92 +12,44 @@ from backend.application.use_cases.favorite.get_favorite_ids import GetFavoriteI
 from backend.application.use_cases.favorite.remove_favorite import RemoveFavoriteUseCase
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
 from backend.infrastructure.external import AnimeApiClient
-from backend.infrastructure.repositories.favorite_repository import FavoriteRepository
 
 
 class FavoriteUseCaseProvider(Provider):
-    """Provide favorite use cases."""
+    """Провайдер сценариев избранного."""
 
     @provide(scope=Scope.REQUEST)
     async def add_favorite(
         self,
-        favorite_repository: FavoriteRepository,
         unit_of_work: UnitOfWorkInterface,
         recommendation_service: RecommendationService,
         profile_overview_cache: ProfileOverviewCache,
     ) -> AddFavoriteUseCase:
-        """Provide the add favorite use case.
-
-        Args:
-            favorite_repository: Favorite repository.
-            unit_of_work: Transaction boundary.
-            recommendation_service: Recommendation service.
-            profile_overview_cache: Profile overview cache.
-
-        Returns:
-            AddFavoriteUseCase: Configured use case.
-        """
-        return AddFavoriteUseCase(
-            favorite_repository,
-            unit_of_work,
-            recommendation_service,
-            profile_overview_cache,
-        )
+        """Создать сценарий добавления в избранное."""
+        return AddFavoriteUseCase(unit_of_work, recommendation_service, profile_overview_cache)
 
     @provide(scope=Scope.REQUEST)
     async def remove_favorite(
         self,
-        favorite_repository: FavoriteRepository,
         unit_of_work: UnitOfWorkInterface,
         recommendation_service: RecommendationService,
         profile_overview_cache: ProfileOverviewCache,
     ) -> RemoveFavoriteUseCase:
-        """Provide the remove favorite use case.
-
-        Args:
-            favorite_repository: Favorite repository.
-            unit_of_work: Transaction boundary.
-            recommendation_service: Recommendation service.
-            profile_overview_cache: Profile overview cache.
-
-        Returns:
-            RemoveFavoriteUseCase: Configured use case.
-        """
-        return RemoveFavoriteUseCase(
-            favorite_repository,
-            unit_of_work,
-            recommendation_service,
-            profile_overview_cache,
-        )
+        """Создать сценарий удаления из избранного."""
+        return RemoveFavoriteUseCase(unit_of_work, recommendation_service, profile_overview_cache)
 
     @provide(scope=Scope.REQUEST)
     async def get_favorites(
         self,
-        favorite_repository: FavoriteRepository,
+        unit_of_work: UnitOfWorkInterface,
         anime_api_client: AnimeApiClient,
     ) -> GetFavoritesUseCase:
-        """Provide the get favorites use case.
-
-        Args:
-            favorite_repository: Favorite repository.
-            anime_api_client: Anime API client.
-
-        Returns:
-            GetFavoritesUseCase: Configured use case.
-        """
-        return GetFavoritesUseCase(favorite_repository, anime_api_client)
+        """Создать сценарий списка избранного."""
+        return GetFavoritesUseCase(unit_of_work, anime_api_client)
 
     @provide(scope=Scope.REQUEST)
     async def get_favorite_ids(
         self,
-        favorite_repository: FavoriteRepository,
+        unit_of_work: UnitOfWorkInterface,
     ) -> GetFavoriteIdsUseCase:
-        """Provide the get favorite ids use case.
-
-        Args:
-            favorite_repository: Favorite repository.
-
-        Returns:
-            GetFavoriteIdsUseCase: Configured use case.
-        """
-        return GetFavoriteIdsUseCase(favorite_repository)
+        """Создать сценарий списка идентификаторов избранного."""
+        return GetFavoriteIdsUseCase(unit_of_work)

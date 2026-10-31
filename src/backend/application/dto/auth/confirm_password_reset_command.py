@@ -1,4 +1,4 @@
-"""Confirm password reset command."""
+"""Подтверждение сброса пароля одноразовым токеном."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class ConfirmPasswordResetCommand:
-    """Confirm password reset command.
+    """Команда подтверждения сброса пароля.
 
     Attributes:
-        token: Password reset token.
-        password: New plain password.
+        token: Токен из письма для восстановления пароля.
+        password: Новый пароль в открытом виде.
     """
 
     token: str

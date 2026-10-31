@@ -1,4 +1,4 @@
-"""Value object describing a catalog genre selection with configurable semantics."""
+"""Значимый объект выбора жанров каталога с настраиваемой семантикой."""
 
 from __future__ import annotations
 
@@ -25,26 +25,14 @@ _ALIASES: dict[str, str] = {
 
 
 class GenreMatchMode(StrEnum):
-    """How a multi-genre selection is combined when matching a title.
-
-    Attributes:
-        ANY: A title passes when it carries at least one selected genre.
-        ALL: A title passes only when it carries every selected genre.
-    """
+    """Способ объединения нескольких выбранных жанров при отборе."""
 
     ANY = "any"
     ALL = "all"
 
     @classmethod
     def parse(cls, value: object) -> GenreMatchMode:
-        """Parse a raw request value into a match mode.
-
-        Args:
-            value: Raw value, usually a query parameter.
-
-        Returns:
-            GenreMatchMode: Parsed mode, defaulting to ALL for unknown input.
-        """
+        """Разобрать сырое значение запроса в режим совпадения."""
         text = str(value or "").strip().lower()
         if text in {"any", "or", "любое", "хотя бы одно"}:
             return cls.ANY
@@ -52,14 +40,7 @@ class GenreMatchMode(StrEnum):
 
 
 def normalize_genre(value: str | None) -> str:
-    """Normalize a genre name to a comparable lowercase form.
-
-    Args:
-        value: Raw genre name coming from a request or a provider payload.
-
-    Returns:
-        str: Lowercased name with punctuation collapsed to single spaces.
-    """
+    """Привести название жанра к сравнимому виду."""
     text = _NON_ALNUM_RE.sub(" ", str(value or "").strip().lower())
     collapsed = " ".join(text.split())
     return _ALIASES.get(collapsed, collapsed)
@@ -67,17 +48,7 @@ def normalize_genre(value: str | None) -> str:
 
 @dataclass(frozen=True, slots=True)
 class GenreFilter:
-    """Immutable set of genres used to decide whether a title passes.
-
-    The selection is conjunctive by default: a title matches only when it
-    carries every selected genre, which mirrors the reading of "a romantic
-    comedy". Switching the mode to :attr:`GenreMatchMode.ANY` relaxes the
-    selection to a disjunction, where carrying a single genre is enough.
-
-    Attributes:
-        terms: Normalized genre names that take part in the match.
-        mode: Strategy used to combine several terms.
-    """
+    """Неизменяемый набор жанров для проверки прохождения тайтла."""
 
     terms: frozenset[str] = frozenset()
     mode: GenreMatchMode = GenreMatchMode.ALL
@@ -88,15 +59,7 @@ class GenreFilter:
         values: Iterable[str] | None,
         mode: GenreMatchMode = GenreMatchMode.ALL,
     ) -> GenreFilter:
-        """Build a filter from raw genre names.
-
-        Args:
-            values: Raw genre names; empty or missing values are ignored.
-            mode: Strategy used to combine several names.
-
-        Returns:
-            GenreFilter: Filter holding every non-empty normalized term.
-        """
+        """Собрать фильтр из сырых названий жанров."""
         terms = {
             normalized
             for normalized in (normalize_genre(value) for value in values or ())
@@ -109,16 +72,7 @@ class GenreFilter:
         genres: Iterable[str] | None,
         tags: Iterable[str] | None = None,
     ) -> bool:
-        """Check whether a title satisfies the selected genres.
-
-        Args:
-            genres: Genre names reported by the catalog provider.
-            tags: Tag names reported by the catalog provider.
-
-        Returns:
-            bool: True when the filter is empty, or when the provider genres
-                satisfy the configured match mode.
-        """
+        """Проверить, проходит ли тайтл по выбранным жанрам."""
         if not self.terms:
             return True
         available = {
@@ -131,9 +85,5 @@ class GenreFilter:
         return self.terms <= available
 
     def __bool__(self) -> bool:
-        """Report whether the filter narrows the catalog at all.
-
-        Returns:
-            bool: True when at least one genre is selected.
-        """
+        """Сообщить, сужает ли фильтр выдачу каталога."""
         return bool(self.terms)

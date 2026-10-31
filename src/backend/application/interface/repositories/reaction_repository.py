@@ -1,3 +1,5 @@
+"""Порт хранилища реакций на серии."""
+
 from abc import ABC, abstractmethod
 
 from backend.domain.entities.reaction.episode_reaction import EpisodeReaction
@@ -5,6 +7,8 @@ from backend.domain.value_objects.reaction.reaction_summary import EpisodeReacti
 
 
 class ReactionRepository(ABC):
+    """Хранилище реакций на серии."""
+
     @abstractmethod
     async def set_reaction(self, reaction: EpisodeReaction) -> EpisodeReaction:
         """Создает или обновляет реакцию пользователя на эпизод."""

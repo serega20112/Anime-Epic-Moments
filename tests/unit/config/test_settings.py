@@ -3,17 +3,25 @@ from __future__ import annotations
 import importlib
 
 import dotenv
+import pytest
 
 from backend.config import settings as settings_module
 
 
 def test_settings_use_expected_defaults(monkeypatch):
-    """Проверяем, что Settings использует дефолты, когда env-переменные не заданы."""
+    """Проверяем, что Settings использует дефолты, когда env-переменные не заданы.
+
+    Список удаляемых переменных обязан покрывать всё, что дальше проверяется:
+    ``backend.config.settings`` при первом импорте вызывает настоящий
+    ``load_dotenv`` и заполняет процесс окружение значениями локального ``.env``,
+    поэтому не удалённая переменная делает тест зависящим от машины разработчика.
+    """
     with monkeypatch.context() as patch:
         patch.setattr(dotenv, "load_dotenv", lambda *args, **kwargs: None)
         for name in (
             "SECRET_KEY",
             "DATABASE_URL",
+            "DATABASE_AUTO_INIT",
             "POSTGRES_DB",
             "POSTGRES_USER",
             "POSTGRES_PASSWORD",
@@ -66,13 +74,8 @@ def test_settings_require_secret_key_outside_debug(monkeypatch):
         patch.setattr(dotenv, "load_dotenv", lambda *args, **kwargs: None)
         patch.delenv("SECRET_KEY", raising=False)
         patch.delenv("APP_DEBUG", raising=False)
-        try:
+        with pytest.raises(RuntimeError):
             importlib.reload(settings_module)
-        except RuntimeError:
-            assert True
-        else:
-            assert False, "Expected RuntimeError when SECRET_KEY is missing in production"
-            assert False
 
     importlib.reload(settings_module)
 

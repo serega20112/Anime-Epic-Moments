@@ -5,7 +5,7 @@ from backend.application.use_cases.auth.result import AuthResult
 
 class TestAuthResult:
     async def test_success_defaults(self):
-        result = await AuthResult.success(data=7)
+        result = AuthResult.success(data=7)
         assert result.ok is True
         assert result.data == 7
         assert result.message is None
@@ -13,7 +13,7 @@ class TestAuthResult:
         assert result.redirect_email is None
 
     async def test_success_fields(self):
-        result = await AuthResult.success(
+        result = AuthResult.success(
             data="payload",
             message="done",
             redirect_endpoint="home",
@@ -24,7 +24,7 @@ class TestAuthResult:
         assert result.redirect_email == "a@b.com"
 
     async def test_failure(self):
-        result = await AuthResult.failure("boom", "auth.login", "a@b.com")
+        result = AuthResult.failure("boom", "auth.login", "a@b.com")
         assert result.ok is False
         assert result.error_message == "boom"
         assert result.error_endpoint == "auth.login"

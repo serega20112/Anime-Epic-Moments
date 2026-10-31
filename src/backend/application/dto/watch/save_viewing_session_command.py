@@ -1,4 +1,4 @@
-"""Persist the user's viewing session position."""
+"""Сохранение позиции сессии просмотра."""
 
 from __future__ import annotations
 
@@ -7,23 +7,23 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class SaveViewingSessionCommand:
-    """Persist the user's viewing session position.
+    """Команда сохранения состояния плеера.
 
     Attributes:
-        user_id: Acting user identifier.
-        anime_id: Anime identifier.
-        episode: Episode number.
-        watch_source_id: Active watch source identifier.
-        position_seconds: Playback position in seconds.
-        volume: Player volume (0.0 to 1.0).
-        quality_label: Selected quality label.
-        is_paused: Whether playback was paused.
+        user_id: Идентификатор действующего пользователя.
+        anime_id: Идентификатор аниме.
+        episode: Номер серии.
+        watch_source_id: Идентификатор источника воспроизведения.
+        position_seconds: Текущая позиция в секундах.
+        volume: Уровень громкости.
+        quality_label: Выбранное качество.
+        is_paused: Приостановлено ли воспроизведение.
     """
 
     user_id: int
     anime_id: int
-    episode: int
-    watch_source_id: int
+    episode: int | None
+    watch_source_id: int | None
     position_seconds: float = 0.0
     volume: float = 1.0
     quality_label: str = "Auto"

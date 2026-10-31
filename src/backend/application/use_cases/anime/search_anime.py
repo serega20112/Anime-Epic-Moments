@@ -1,35 +1,35 @@
-"""Use case for searching anime by title."""
+"""Сценарий поиска аниме по названию."""
 
 from __future__ import annotations
 
 from backend.application.dto.anime import SearchAnimeQuery
-from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.interface.services import AnimeApiClientInterface
 from backend.domain.entities.anime.anime import Anime
 
 
 class SearchAnimeUseCase:
-    """Search anime by title through the anime API client."""
+    """Сценарий поиска аниме по названию через клиент каталога."""
 
-    def __init__(self, api_client: AnimeApiClient):
-        """Initialize the use case.
+    def __init__(self, api_client: AnimeApiClientInterface) -> None:
+        """Инициализирует сценарий поиска аниме по названию.
 
         Args:
-            api_client: Anime API client.
+            api_client: Клиент API аниме.
         """
-        self.api_client = api_client
+        self._api_client = api_client
 
     async def execute(self, query: SearchAnimeQuery) -> list[Anime]:
-        """Return anime matching the search title.
+        """Вернуть аниме, соответствующие запросу по названию.
 
         Args:
-            query: Search query DTO.
+            query: Запрос поиска.
 
         Returns:
-            list[Anime]: Matching anime list.
+            list[Anime]: Список подходящих аниме.
         """
         if not query.title:
             return []
-        return await self.api_client.search_by_title(
+        return await self._api_client.search_by_title(
             title=query.title,
             limit=query.limit,
             include_adult=query.include_adult,

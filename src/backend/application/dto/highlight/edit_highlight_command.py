@@ -1,4 +1,4 @@
-"""Edit highlight payload."""
+"""Команда редактирования хайлайта."""
 
 from __future__ import annotations
 
@@ -7,21 +7,23 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class EditHighlightCommand:
-    """Edit highlight payload.
+    """Команда редактирования хайлайта.
 
     Attributes:
-        highlight_id: Highlight identifier.
-        episode: Episode number.
-        start_timestamp: Start time in seconds.
-        end_timestamp: End time in seconds.
-        title: Highlight title.
-        category: Optional category.
-        description: Optional description.
-        is_spoiler: Whether the highlight contains spoilers.
-        emotion: Optional emotion label.
+        highlight_id: Идентификатор хайлайта.
+        user_id: Идентификатор автора; только он вправе изменить хайлайт.
+        episode: Номер серии, None оставляет прежний.
+        start_timestamp: Начало момента в секундах.
+        end_timestamp: Конец момента в секундах.
+        title: Название хайлайта.
+        category: Необязательная категория.
+        description: Описание хайлайта.
+        is_spoiler: Содержит ли хайлайт спойлеры.
+        emotion: Необязательная метка эмоции.
     """
 
     highlight_id: int
+    user_id: int
     episode: int | None
     start_timestamp: float
     end_timestamp: float

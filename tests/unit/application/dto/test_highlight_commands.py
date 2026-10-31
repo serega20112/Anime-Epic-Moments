@@ -7,9 +7,12 @@ from backend.application.dto.highlight import (
     CreateHighlightCommand,
     DeleteHighlightCommand,
     EditHighlightCommand,
+    HighlightCommentsQuery,
     HighlightDashboardQuery,
     HighlightFeedQuery,
-    HighlightListQuery,
+    HighlightLikersQuery,
+    HighlightNotificationsQuery,
+    HighlightSharedQuery,
     SetHighlightLikeCommand,
     SetSavedHighlightCommand,
 )
@@ -53,6 +56,7 @@ class TestEditHighlightCommand:
     def test_stores_fields(self):
         command = EditHighlightCommand(
             highlight_id=1,
+            user_id=3,
             episode=2,
             start_timestamp=1.0,
             end_timestamp=2.0,
@@ -63,13 +67,16 @@ class TestEditHighlightCommand:
             emotion="fun",
         )
         assert command.highlight_id == 1
+        assert command.user_id == 3
         assert command.emotion == "fun"
         assert command.is_spoiler is True
 
 
 class TestDeleteHighlightCommand:
     def test_stores_field(self):
-        assert DeleteHighlightCommand(highlight_id=7).highlight_id == 7
+        command = DeleteHighlightCommand(highlight_id=7, user_id=3)
+        assert command.highlight_id == 7
+        assert command.user_id == 3
 
 
 class TestSetHighlightLikeCommand:
@@ -102,6 +109,7 @@ class TestHighlightDashboardQuery:
         assert query.query is None
         assert query.include_spoilers is False
         assert query.limit == 20
+        assert query.user_id is None
         assert query.viewer_user_id is None
 
     def test_stores_overrides(self):
@@ -110,12 +118,10 @@ class TestHighlightDashboardQuery:
         assert query.limit == 5
         assert query.include_spoilers is True
 
-
-class TestHighlightListQuery:
-    def test_defaults(self):
-        query = HighlightListQuery()
-        assert query.include_spoilers is True
-        assert query.sort_by == "recent"
+    def test_stores_owner(self):
+        query = HighlightDashboardQuery(user_id=4, viewer_user_id=7)
+        assert query.user_id == 4
+        assert query.viewer_user_id == 7
 
 
 class TestHighlightFeedQuery:
@@ -124,3 +130,30 @@ class TestHighlightFeedQuery:
         assert query.include_spoilers is False
         assert query.limit == 12
         assert query.viewer_user_id is None
+
+
+class TestHighlightSharedQuery:
+    def test_defaults(self):
+        query = HighlightSharedQuery(highlight_id=3)
+        assert query.highlight_id == 3
+        assert query.viewer_user_id is None
+
+
+class TestHighlightCommentsQuery:
+    def test_defaults(self):
+        query = HighlightCommentsQuery(highlight_id=3)
+        assert query.highlight_id == 3
+        assert query.limit == 20
+
+
+class TestHighlightLikersQuery:
+    def test_defaults(self):
+        query = HighlightLikersQuery(highlight_id=3)
+        assert query.limit == 20
+
+
+class TestHighlightNotificationsQuery:
+    def test_defaults(self):
+        query = HighlightNotificationsQuery(user_id=3, limit=5)
+        assert query.user_id == 3
+        assert query.limit == 5

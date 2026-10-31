@@ -3,8 +3,9 @@ from __future__ import annotations
 import pytest
 
 from backend.domain import Favorite, User
-from backend.infrastructure.repositories.favorite_repository import FavoriteRepository
-from backend.infrastructure.repositories.user_repository import UserRepository
+from backend.infrastructure.database.repositories.favorite_repository import FavoriteRepository
+from backend.infrastructure.database.repositories.user_repository import UserRepository
+from backend.infrastructure.database.serialization import dump_genres, load_genres
 
 
 @pytest.mark.integration
@@ -66,8 +67,10 @@ class TestFavoriteRepository:
     def test_serializes_and_deserializes_genres(
         self, genres, expected_dump, payload, expected_load
     ):
-        """Проверяем, что FavoriteRepository чистит жанры при сериализации и безопасно читает JSON."""
-        repo = FavoriteRepository(None)
-
-        assert repo._dump_genres(genres) == expected_dump
-        assert repo._load_genres(payload) == expected_load
+        """Что тестируем: общий сериализатор жанров, которым пользуется репозиторий.
+        Что передаём: жанры с пустыми значениями, мусор вместо списка и пустоту.
+        Что ожидаем: при записи пустые жанры отсекаются, при чтении мусор даёт
+        пустой список — разбор один для избранного и коллекций.
+        """
+        assert dump_genres(genres) == expected_dump
+        assert load_genres(payload) == expected_load

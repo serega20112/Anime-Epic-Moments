@@ -1,1 +1,1 @@
-"""Reaction use cases module."""
+"""Сценарии реакций на серии."""

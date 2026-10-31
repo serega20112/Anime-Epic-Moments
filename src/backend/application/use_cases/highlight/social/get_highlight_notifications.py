@@ -1,13 +1,36 @@
+"""Сценарий уведомлений о действиях с хайлайтами."""
+
+from __future__ import annotations
+
+from backend.application.dto import HighlightNotificationsQuery
 from backend.application.interface.repositories.highlight_repository import HighlightRepository
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
+from backend.application.use_cases.highlight.social.limits import clamp_limit
+from backend.domain import HighlightActivityItem
 
 
 class GetHighlightNotificationsUseCase:
     """Возвращает простые уведомления по реакциям на хайлайты пользователя."""
 
-    def __init__(self, repo: HighlightRepository):
-        self.repo = repo
+    def __init__(self, unit_of_work: UnitOfWorkInterface) -> None:
+        """Собрать сценарий уведомлений.
 
-    async def execute(self, user_id: int, limit: int = 20):
-        return await self.repo.get_recent_activity(
-            user_id=user_id, limit=max(min(int(limit), 100), 1)
-        )
+        Args:
+            unit_of_work: Граница транзакции чтения активности.
+        """
+        self._unit_of_work = unit_of_work
+
+    async def execute(self, query: HighlightNotificationsQuery) -> list[HighlightActivityItem]:
+        """Вернуть недавнюю активность по хайлайтам пользователя.
+
+        Args:
+            query: Идентификатор владельца хайлайтов и размер выборки.
+
+        Returns:
+            list[HighlightActivityItem]: Последние реакции сообщества.
+        """
+        async with self._unit_of_work as uow:
+            return await uow.repository(HighlightRepository).get_recent_activity(
+                user_id=query.user_id,
+                limit=clamp_limit(query.limit),
+            )

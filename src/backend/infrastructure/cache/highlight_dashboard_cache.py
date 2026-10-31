@@ -1,3 +1,5 @@
+"""Кэш публичных дашбордов хайлайтов."""
+
 from __future__ import annotations
 
 from backend.domain import HighlightDashboard
@@ -12,6 +14,7 @@ class HighlightDashboardCache:
         store: KeyValueStore,
         ttl_seconds: float = 120.0,
     ):
+        """Создать кэш поверх общего хранилища ключей и значений."""
         self.store = store
         self.ttl_seconds = max(int(ttl_seconds), 1)
         self.prefix = "highlight_dashboard:public"
@@ -27,6 +30,7 @@ class HighlightDashboardCache:
         query: str | None,
         include_spoilers: bool,
     ) -> HighlightDashboard | None:
+        """Прочитать публичный дашборд хайлайтов из кэша."""
         return await self.store.get(
             await self._key(
                 limit=limit,
@@ -52,6 +56,7 @@ class HighlightDashboardCache:
         include_spoilers: bool,
         value: HighlightDashboard,
     ) -> HighlightDashboard:
+        """Положить публичный дашборд хайлайтов в кэш."""
         return await self.store.set(
             await self._key(
                 limit=limit,
@@ -68,6 +73,7 @@ class HighlightDashboardCache:
         )
 
     async def invalidate_public(self):
+        """Сбросить все закэшированные публичные дашборды."""
         await self.store.delete_prefix(f"{self.prefix}:")
 
     async def _key(

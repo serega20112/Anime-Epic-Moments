@@ -1,119 +1,73 @@
-"""CSRF protection service using secure random tokens with expiration."""
+"""Реализация CSRF-токенов с ограниченным временем жизни.
+
+Значение и момент истечения описаны портом :class:`CSRFToken`, здесь только
+генерация случайного значения и сверка в постоянном времени.
+"""
 
 from __future__ import annotations
 
 import logging
 import secrets
-from datetime import datetime, timedelta
-from typing import Any
+from datetime import UTC, datetime, timedelta
+
+from backend.application.interface.services.csrf_service import (
+    CSRFServiceInterface,
+    CSRFToken,
+)
 
 logger = logging.getLogger("anime_epic_moments")
 
+TOKEN_LENGTH = 32
+TOKEN_EXPIRE_MINUTES = 30
 
-class CSRFService:
-    """Generates and validates CSRF tokens stored in request state."""
+__all__ = ["CSRFService", "CSRFToken"]
 
-    def __init__(self) -> None:
-        self.token_length: int = 32
-        self.token_expire_minutes: int = 30
 
-    async def generate_token(self, request_state: Any) -> str:
-        """Generate a secure random CSRF token and store it in request state.
+class CSRFService(CSRFServiceInterface):
+    """Генерирует CSRF-токены и проверяет их срок действия.
 
-        Args:
-            request_state: Request state object to store the token.
+    Токен хранится в сессии как пара ``(значение, время истечения)`` в
+    ISO-формате. Такая форма устраняет расхождение типов, из-за которого
+    потребителям приходилось разбирать и словарь, и строку.
+    """
 
-        Returns:
-            str: Generated CSRF token value.
-        """
-        token = secrets.token_urlsafe(self.token_length)
-        request_state.csrf_token = {
-            "value": token,
-            "created_at": datetime.utcnow().isoformat(),
-            "expires_at": (
-                datetime.utcnow() + timedelta(minutes=self.token_expire_minutes)
-            ).isoformat(),
-        }
-        return token
-
-    async def get_token_from_state(self, request_state: Any) -> str | None:
-        """Retrieve the CSRF token value from request state.
+    def __init__(
+        self,
+        token_length: int = TOKEN_LENGTH,
+        token_expire_minutes: int = TOKEN_EXPIRE_MINUTES,
+    ) -> None:
+        """Создать генератор токенов.
 
         Args:
-            request_state: Request state containing the token.
+            token_length: Длина случайной части токена в байтах.
+            token_expire_minutes: Время жизни токена в минутах.
+        """
+        self.token_length = token_length
+        self.token_expire_minutes = token_expire_minutes
+
+    def generate_token(self) -> CSRFToken:
+        """Создать новый токен со временем истечения.
 
         Returns:
-            str | None: Token value or None if not present.
+            CSRFToken: Новый токен.
         """
-        token_data = getattr(request_state, "csrf_token", None)
-        if token_data:
-            return token_data["value"]
-        return None
+        return CSRFToken(
+            value=secrets.token_urlsafe(self.token_length),
+            expires_at=datetime.now(UTC) + timedelta(minutes=self.token_expire_minutes),
+        )
 
-    async def validate_token(self, request_state: Any, token_from_request: str) -> bool:
-        """Validate a CSRF token against the stored token in request state.
-
-        Checks token existence, value match, and expiration.
+    def is_valid(self, token: CSRFToken | None, submitted: str | None) -> bool:
+        """Проверить токен в постоянном времени и по сроку действия.
 
         Args:
-            request_state: Request state with stored token.
-            token_from_request: Token submitted with the request.
+            token: Хранящийся в сессии токен либо None.
+            submitted: Значение, присланное клиентом.
 
         Returns:
-            bool: True if the token is valid and not expired.
+            bool: True, если значения совпадают и срок действия не истёк.
         """
-        token_data = getattr(request_state, "csrf_token", None)
-        if not token_data:
-            logger.warning("csrf_token_missing in request state")
+        if token is None or not submitted:
             return False
-
-        if token_data["value"] != token_from_request:
-            logger.warning("csrf_token_mismatch")
+        if token.is_expired():
             return False
-
-        expires_at = datetime.fromisoformat(token_data["expires_at"])
-        if datetime.utcnow() > expires_at:
-            logger.warning("csrf_token_expired")
-            delattr(request_state, "csrf_token")
-            return False
-
-        return True
-
-    async def validate_form_csrf(self, request_state: Any, form_data: dict[str, Any]) -> bool:
-        """Validate CSRF token from form data.
-
-        Args:
-            request_state: Request state with stored token.
-            form_data: Form data containing csrf_token field.
-
-        Returns:
-            bool: True if token is valid.
-        """
-        form_token = form_data.get("csrf_token")
-        if not form_token:
-            logger.warning("csrf_token_missing_in_form")
-            return False
-
-        return await self.validate_token(request_state, form_token)
-
-    async def validate_header_csrf(self, request_state: Any, authorization_header: str) -> bool:
-        """Validate CSRF token from Authorization header.
-
-        Expects header in format "Bearer <token>".
-
-        Args:
-            request_state: Request state with stored token.
-            authorization_header: Value of Authorization header.
-
-        Returns:
-            bool: True if token is valid.
-        """
-        if not authorization_header or not authorization_header.startswith("Bearer "):
-            logger.warning("csrf_invalid_header_format")
-            return False
-
-        token = authorization_header[7:]
-        return await self.validate_token(request_state, token)
-
-
-csrf_service = CSRFService()
+        return secrets.compare_digest(token.value, submitted)

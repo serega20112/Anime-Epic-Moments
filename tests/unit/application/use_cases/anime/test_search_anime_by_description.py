@@ -9,6 +9,16 @@ from backend.application.use_cases.anime.search_anime_by_description import (
     SearchAnimeByDescriptionUseCase,
 )
 from backend.domain.entities.anime.anime import Anime
+from backend.domain.policies.anime_safety_policy import AnimeSafetyPolicy
+
+
+def _use_case(api_client=None, llm_client=None) -> SearchAnimeByDescriptionUseCase:
+    """Собрать сценарий поиска по описанию с клиентом по умолчанию."""
+    return SearchAnimeByDescriptionUseCase(
+        api_client or AsyncMock(),
+        llm_client or AsyncMock(),
+        AnimeSafetyPolicy(),
+    )
 
 
 @pytest.mark.unit
@@ -20,9 +30,8 @@ class TestSearchAnimeByDescriptionUseCase:
         Что передаём: запрос из пробелов.
         Что ожидаем: пустые items, LLM не вызывается.
         """
-        api_client = AsyncMock()
         llm_client = AsyncMock()
-        use_case = SearchAnimeByDescriptionUseCase(api_client, llm_client)
+        use_case = _use_case(llm_client=llm_client)
 
         result = await use_case.execute(SearchAnimeByDescriptionQuery(description="   "))
 
@@ -34,7 +43,7 @@ class TestSearchAnimeByDescriptionUseCase:
         Что передаём: описание с adult-маркерами и age_rating=16+.
         Что ожидаем: пустые items, requires_age_confirmation=False, сообщение с 18+.
         """
-        use_case = SearchAnimeByDescriptionUseCase(AsyncMock(), AsyncMock())
+        use_case = _use_case()
 
         result = await use_case.execute(
             SearchAnimeByDescriptionQuery(description="ищу hentai comedy", age_rating="16+")
@@ -49,7 +58,7 @@ class TestSearchAnimeByDescriptionUseCase:
         Что передаём: описание с adult-интентом, age_rating=18+, без подтверждения.
         Что ожидаем: requires_age_confirmation=True.
         """
-        use_case = SearchAnimeByDescriptionUseCase(AsyncMock(), AsyncMock())
+        use_case = _use_case()
 
         result = await use_case.execute(
             SearchAnimeByDescriptionQuery(
@@ -78,7 +87,7 @@ class TestSearchAnimeByDescriptionUseCase:
         api_client.search_by_description.side_effect = self._search_by_description_results(
             anime_factory
         )
-        use_case = SearchAnimeByDescriptionUseCase(api_client, llm_client)
+        use_case = _use_case(api_client, llm_client)
 
         result = await use_case.execute(
             SearchAnimeByDescriptionQuery(
@@ -100,7 +109,7 @@ class TestSearchAnimeByDescriptionUseCase:
         Что передаём: список аниме и стратегию сортировки.
         Что ожидаем: упорядоченные названия.
         """
-        use_case = SearchAnimeByDescriptionUseCase(AsyncMock(), AsyncMock())
+        use_case = _use_case()
         items = {
             "rating": [
                 anime_factory(title="Low Rated", rating=7.0),
@@ -112,7 +121,7 @@ class TestSearchAnimeByDescriptionUseCase:
             ],
         }[sort_by]
 
-        ordered = await use_case._sort_results(
+        ordered = use_case._sort_results(
             items=items,
             sort_by=sort_by,
             description="comedy",

@@ -1,11 +1,15 @@
+"""Сводка хайлайтов для панели пользователя."""
+
 from dataclasses import dataclass
 
 from backend.domain.value_objects.highlight.cards import HighlightCard, HighlightStats
 from backend.domain.value_objects.highlight.feed import HighlightAnimeGroup
 
 
-@dataclass
+@dataclass(frozen=True)
 class HighlightDashboard:
+    """Набор хайлайтов и агрегатов для сводной панели."""
+
     items: list[HighlightCard]
     anime_groups: list[HighlightAnimeGroup]
     emotions: list[str]

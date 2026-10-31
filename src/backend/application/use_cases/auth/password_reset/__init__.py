@@ -1,3 +1,5 @@
+"""Сценарии восстановления пароля."""
+
 from backend.application.use_cases.auth.password_reset.request_password_reset import (
     RequestPasswordResetUseCase,
 )

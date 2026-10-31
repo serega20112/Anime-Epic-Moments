@@ -1,4 +1,4 @@
-"""Thin HTTP routes for user profiles and follows."""
+"""Тонкие HTTP-маршруты публичных профилей и подписок."""
 
 from __future__ import annotations
 
@@ -7,32 +7,43 @@ from http import HTTPStatus
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 
+from backend.application.dto import PublicProfileQuery, SetUserFollowCommand
 from backend.application.use_cases import GetPublicProfileOverviewUseCase, SetUserFollowUseCase
-from backend.infrastructure.security.flask_protection import client_ip, rate_limit
-from backend.infrastructure.web import flash, render_template
-from backend.presentation.api.helpers import get_current_user, wants_json
+from backend.presentation.api.helpers import get_current_user
+from backend.presentation.api.rate_limit import client_ip, rate_limit
+from backend.presentation.web import flash, render_template
 
 user_router = APIRouter(prefix="/users", route_class=DishkaRoute)
-user_bp = user_router
+
+NOT_FOUND_TEMPLATE = "errors/500_modal.html"
+PUBLIC_PROFILE_TEMPLATE = "user/public_profile.html"
+FOLLOW_FAILURE_MESSAGE = "Не удалось обновить подписку"
 
 
 async def _follow_subject(request: Request) -> str:
-    """Build a composite rate-limit subject for follow actions."""
+    """Собрать составной ключ ограничения частоты для подписок.
+
+    Args:
+        request: Текущий HTTP-запрос.
+
+    Returns:
+        str: Ключ из адреса клиента и идентификатора зрителя.
+    """
     ip = await client_ip(request)
     user_id = getattr(await get_current_user(request), "id", "guest")
     return f"{ip}::{user_id}"
 
 
 async def _login_redirect(request: Request) -> RedirectResponse:
-    """Build a redirect to the login page.
+    """Собрать перенаправление на страницу входа.
 
     Args:
-        request: Incoming HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        RedirectResponse: SEE_OTHER redirect to login.
+        RedirectResponse: Перенаправление на страницу входа.
     """
     return RedirectResponse(
         url=request.app.url_path_for("auth.login_page"),
@@ -41,14 +52,14 @@ async def _login_redirect(request: Request) -> RedirectResponse:
 
 
 async def _profile_redirect(request: Request, user_id: int) -> RedirectResponse:
-    """Build a redirect back to the public profile page.
+    """Собрать перенаправление назад в публичный профиль.
 
     Args:
-        request: Incoming HTTP request.
-        user_id: Profile user ID.
+        request: Текущий HTTP-запрос.
+        user_id: Идентификатор профиля, куда возвращается зритель.
 
     Returns:
-        RedirectResponse: SEE_OTHER redirect to the profile page.
+        RedirectResponse: Перенаправление на страницу профиля.
     """
     return RedirectResponse(
         url=request.app.url_path_for(
@@ -65,30 +76,25 @@ async def public_profile_page(
     user_id: int,
     use_case: FromDishka[GetPublicProfileOverviewUseCase],
 ):
-    """Render a user's public profile.
+    """Отдать страницу публичного профиля пользователя.
 
     Args:
-        request: Incoming HTTP request.
-        user_id: Profile user ID from path.
-        use_case: Get public profile overview use case.
+        request: Текущий HTTP-запрос.
+        user_id: Идентификатор открываемого профиля.
+        use_case: Сценарий сборки публичного профиля.
 
     Returns:
-        HTMLResponse: Rendered public profile or 404 modal.
+        Response: Страница профиля либо ошибка 404 при отсутствии пользователя.
     """
     viewer = await get_current_user(request)
     result = await use_case.execute(
-        profile_user_id=user_id,
-        viewer_user_id=viewer.id if viewer else None,
+        PublicProfileQuery(profile_user_id=user_id, viewer_user_id=viewer.id if viewer else None)
     )
     if not result.ok:
-        return await render_template(
-            request,
-            "errors/500_modal.html",
-            status_code=HTTPStatus.NOT_FOUND,
-        )
+        return await render_template(request, NOT_FOUND_TEMPLATE, status_code=HTTPStatus.NOT_FOUND)
     return await render_template(
         request,
-        "user/public_profile.html",
+        PUBLIC_PROFILE_TEMPLATE,
         public_profile=result.data,
     )
 
@@ -105,16 +111,15 @@ async def follow_user(
     user_id: int,
     use_case: FromDishka[SetUserFollowUseCase],
 ):
-    """Follow a user.
+    """Подписаться на пользователя.
 
     Args:
-        request: Incoming HTTP request.
-        user_id: Profile user ID from path.
-        use_case: Set user follow use case.
+        request: Текущий HTTP-запрос из формы профиля.
+        user_id: Идентификатор целевого профиля.
+        use_case: Сценарий изменения подписки.
 
     Returns:
-        JSONResponse: Following state or an error.
-        RedirectResponse: Redirect to the profile page.
+        Response: Перенаправление в профиль либо на страницу входа.
     """
     return await _set_follow(request, user_id, follow=True, use_case=use_case)
 
@@ -131,16 +136,15 @@ async def unfollow_user(
     user_id: int,
     use_case: FromDishka[SetUserFollowUseCase],
 ):
-    """Unfollow a user.
+    """Отписаться от пользователя.
 
     Args:
-        request: Incoming HTTP request.
-        user_id: Profile user ID from path.
-        use_case: Set user follow use case.
+        request: Текущий HTTP-запрос из формы профиля.
+        user_id: Идентификатор целевого профиля.
+        use_case: Сценарий изменения подписки.
 
     Returns:
-        JSONResponse: Following state or an error.
-        RedirectResponse: Redirect to the profile page.
+        Response: Перенаправление в профиль либо на страницу входа.
     """
     return await _set_follow(request, user_id, follow=False, use_case=use_case)
 
@@ -152,29 +156,23 @@ async def _set_follow(
     follow: bool,
     use_case: SetUserFollowUseCase,
 ):
-    """Shared follow/unfollow handler.
+    """Общий обработчик подписки и отписки формы публичного профиля.
 
     Args:
-        request: Incoming HTTP request.
-        user_id: Profile user ID.
-        follow: True to follow, False to unfollow.
-        use_case: Set user follow use case.
+        request: Текущий HTTP-запрос.
+        user_id: Идентификатор целевого профиля.
+        follow: True — подписаться, False — отписаться.
+        use_case: Сценарий изменения подписки.
 
     Returns:
-        JSONResponse: Following state or an error.
-        RedirectResponse: Redirect to the profile page.
+        Response: Перенаправление в профиль либо на страницу входа.
     """
     viewer = await get_current_user(request)
     if not viewer:
         return await _login_redirect(request)
     result = await use_case.execute(
-        follower_user_id=viewer.id,
-        followed_user_id=user_id,
-        follow=follow,
+        SetUserFollowCommand(follower_user_id=viewer.id, followed_user_id=user_id, follow=follow)
     )
     if not result.ok:
-        await flash(request, result.error or "Не удалось обновить подписку")
-        return await _profile_redirect(request, user_id)
-    if await wants_json(request):
-        return JSONResponse({"following": result.data})
+        await flash(request, result.error or FOLLOW_FAILURE_MESSAGE)
     return await _profile_redirect(request, user_id)

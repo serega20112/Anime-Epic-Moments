@@ -1,8 +1,12 @@
+"""Найденный источник просмотра до сохранения."""
+
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class DiscoveredWatchSource:
+    """Источник видео, найденный у внешнего провайдера."""
+
     episode: int
     translation_name: str
     translation_type: str

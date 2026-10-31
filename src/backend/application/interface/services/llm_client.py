@@ -1,13 +1,17 @@
-"""Abstract LLM client interface."""
+"""Порт клиента языковой модели."""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 
 class LLMClientInterface(ABC):
-    """Interface for LLM-based AI clients."""
+    """Запросы к языковой модели для поиска и описания вкусов.
+
+    Порт описывает только те обращения, которые действительно нужны сценариям:
+    поиск тайтлов по описанию выполняет каталог, а не модель, и объявление
+    такого метода здесь лишь создавало бы неисполнимый контракт.
+    """
 
     @abstractmethod
     async def build_search_queries_with_meta(
@@ -20,41 +24,30 @@ class LLMClientInterface(ABC):
         age_rating: str = "all",
         allow_adult: bool = False,
     ) -> tuple[list[str], str, str | None]:
-        """Build multiple search queries plus provider mode metadata.
+        """Собрать поисковые запросы вместе с метаданными провайдера.
 
         Args:
-            description: Natural language anime description.
-            genre_hint: Optional genre hint.
-            year_from: Optional start year filter.
-            year_to: Optional end year filter.
-            min_rating: Optional minimum rating.
-            age_rating: Age rating constraint.
-            allow_adult: Whether adult content is allowed.
+            description: Описание тайтла на естественном языке.
+            genre_hint: Подсказка по жанру.
+            year_from: Нижняя граница года выпуска.
+            year_to: Верхняя граница года выпуска.
+            min_rating: Минимальный рейтинг.
+            age_rating: Возрастная граница выдачи.
+            allow_adult: Разрешить adult-контент.
 
         Returns:
-            tuple[list[str], str, str | None]: Queries, mode, and optional error.
+            tuple[list[str], str, str | None]: Запросы, режим работы провайдера
+            и текст ошибки, если ответ не удалось получить.
         """
 
     @abstractmethod
     async def describe_taste_profile(self, profile_data: dict, fallback: str) -> str:
-        """Generate a taste profile description.
+        """Составить описание вкусового профиля.
 
         Args:
-            profile_data: Dictionary of profile attributes.
-            fallback: Fallback text if AI is unavailable.
+            profile_data: Сведённые данные просмотров пользователя.
+            fallback: Текст, возвращаемый при недоступности модели.
 
         Returns:
-            str: Generated or fallback description.
-        """
-
-    @abstractmethod
-    async def search_by_description(self, description: str, limit: int = 5) -> list[Any]:
-        """Search anime by natural language description.
-
-        Args:
-            description: Natural language anime description.
-            limit: Maximum number of results.
-
-        Returns:
-            list[Any]: List of anime data objects.
+            str: Описание вкусов либо ``fallback``.
         """

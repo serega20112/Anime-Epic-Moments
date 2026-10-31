@@ -51,13 +51,12 @@ class TestUserBehaviour:
         assert user.username == "renamed"
 
     @pytest.mark.unit
-    async def test_check_password_is_not_supported_in_domain(self):
-        """Что тестируем: метод check_password.
-
-        Что передаём: любой пароль для проверки в доменной сущности.
-        Что ожидаем: выбрасывается NotImplementedError (проверка вынесена в прикладной слой).
+    async def test_domain_does_not_verify_passwords(self):
+        """Что тестируем: у агрегата нет метода проверки пароля.
+        Что передаём: имя метода, который выглядел как часть контракта.
+        Что ожидаем: атрибута нет — проверка хеша живёт в прикладном слое,
+        а заглушка с NotImplementedError только вводила в заблуждение.
         """
         user = User(email="user@example.com", username="tester", password_hash="hash")
 
-        with pytest.raises(NotImplementedError):
-            user.check_password("plain-password")
+        assert not hasattr(user, "check_password")

@@ -1,21 +1,70 @@
 from __future__ import annotations
 
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 
+import pytest
+
+from backend.application.dto import HighlightDashboardQuery
 from backend.application.use_cases import GetLikedHighlightsUseCase
+from backend.domain import Highlight
+from tests.support.fakes import FakeUnitOfWork
 
 
-def test_get_liked_highlights_use_case_builds_dashboard_for_current_user(monkeypatch):
-    """Проверяем, что GetLikedHighlightsUseCase берет данные из get_liked_by_user и строит дашборд с viewer_user_id и sort_by."""
-    repo = Mock()
-    repo.get_liked_by_user.return_value = ["highlight"]
-    use_case = GetLikedHighlightsUseCase(repo, Mock())
-    monkeypatch.setattr(use_case, "_build_dashboard", lambda **kwargs: kwargs)
+def _use_case(highlights) -> tuple:
+    """Собрать сценарий лайкнутых хайлайтов с двойниками репозиториев."""
+    highlight_repository = AsyncMock()
+    highlight_repository.get_liked_by_user.return_value = highlights
+    highlight_repository.get_engagement_map.return_value = {}
+    user_repository = AsyncMock()
+    user_repository.get_by_ids.return_value = []
+    anime_api_client = AsyncMock()
+    anime_api_client.get_by_id.return_value = None
+    uow = FakeUnitOfWork(
+        HighlightRepository=highlight_repository,
+        UserRepository=user_repository,
+    )
+    use_case = GetLikedHighlightsUseCase(uow, anime_api_client)
+    return use_case, uow, highlight_repository
 
-    result = use_case.execute(user_id=4, category="бой", include_spoilers=False, sort_by="popular")
 
-    repo.get_liked_by_user.assert_called_once_with(4)
-    assert result["category"] == "бой"
-    assert result["viewer_user_id"] == 4
-    assert result["include_spoilers"] is False
-    assert result["sort_by"] == "popular"
+@pytest.mark.unit
+class TestGetLikedHighlightsUseCase:
+    """Юнит-тесты дашборда лайкнутых хайлайтов."""
+
+    async def test_builds_dashboard_for_current_user(self):
+        """Что тестируем: забор лайкнутых хайлайтов владельца дашборда.
+        Что передаём: запрос с user_id=4 и один хайлайт в репозитории.
+        Что ожидаем: выборка по владельцу, карточка собрана, транзакция закрыта.
+        """
+        highlight = Highlight(
+            user_id=4,
+            anime_id=10,
+            episode=1,
+            start_timestamp=1.0,
+            end_timestamp=2.0,
+            category="бой",
+        )
+        highlight.id = 9
+        use_case, uow, repository = _use_case([highlight])
+
+        dashboard = await use_case.execute(
+            HighlightDashboardQuery(user_id=4, viewer_user_id=4, category="бой")
+        )
+
+        repository.get_liked_by_user.assert_awaited_once_with(4)
+        assert uow.commits == 1
+        assert len(dashboard.items) == 1
+        assert dashboard.selected_category == "бой"
+        assert dashboard.items[0].anime_title == "Anime #10"
+
+    async def test_returns_empty_dashboard_without_owner(self):
+        """Что тестируем: поведение запроса без владельца.
+        Что передаём: пустой запрос без user_id и viewer_user_id.
+        Что ожидаем: репозиторий не вызывается, дашборд пуст.
+        """
+        use_case, _uow, repository = _use_case([])
+
+        dashboard = await use_case.execute(HighlightDashboardQuery())
+
+        repository.get_liked_by_user.assert_not_awaited()
+        assert dashboard.items == []

@@ -1,8 +1,8 @@
-"""Result type returned by the create support ticket use case.
+"""Результат сценария обращения в поддержку.
 
-The use case returns a :class:`CreateSupportTicketResult` instead of raising
-domain errors so the presentation layer stays free of error-handling logic and
-only reads the outcome fields to flash a message and pick the HTTP transition.
+Сценарий возвращает :class:`CreateSupportTicketResult` вместо исключений
+домена, чтобы слой представления только читал итог, показывал сообщение
+и выбирал HTTP-переход.
 """
 
 from __future__ import annotations
@@ -13,18 +13,9 @@ from typing import Any
 from starlette import status
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class CreateSupportTicketResult:
-    """Outcome of the create support ticket use case.
-
-    Attributes:
-        ok: Whether the ticket was created.
-        status_code: HTTP status to return.
-        data: Created ticket on success.
-        error_message: Flash message displayed on failure.
-        message: Flash message displayed on success.
-        service_unavailable: Whether delivery failed because the channel is down.
-    """
+    """Итог сценария: обращение в поддержку."""
 
     ok: bool
     status_code: int = status.HTTP_200_OK
@@ -34,21 +25,21 @@ class CreateSupportTicketResult:
     service_unavailable: bool = False
 
     @classmethod
-    async def success(
+    def success(
         cls,
         data: Any,
         message: str | None = None,
         service_unavailable: bool = False,
     ) -> CreateSupportTicketResult:
-        """Build a successful result.
+        """Собрать успешный результат.
 
         Args:
-            data: Created ticket.
-            message: Success flash message.
-            service_unavailable: Whether delivery failed due to a down channel.
+            data: Данные сценария для слоя представления.
+            message: Сообщение для пользователя.
+            service_unavailable: Признак того, что письмо доставлено не было.
 
         Returns:
-            CreateSupportTicketResult: Successful result.
+            CreateSupportTicketResult: Результат с ``ok=True``.
         """
         return cls(
             ok=True,
@@ -59,16 +50,16 @@ class CreateSupportTicketResult:
         )
 
     @classmethod
-    async def failure(
+    def failure(
         cls, error_message: str, status_code: int = status.HTTP_400_BAD_REQUEST
     ) -> CreateSupportTicketResult:
-        """Build a failed result.
+        """Собрать результат с ошибкой.
 
         Args:
-            error_message: Flash message to display.
-            status_code: HTTP status for the response.
+            error_message: Текст ошибки для пользователя.
+            status_code: HTTP-код ответа с ошибкой.
 
         Returns:
-            CreateSupportTicketResult: Failed result.
+            CreateSupportTicketResult: Результат с ``ok=False``.
         """
         return cls(ok=False, status_code=status_code, error_message=error_message)

@@ -1,3 +1,5 @@
+"""Значимые объекты пользователя."""
+
 from backend.domain.value_objects.user.pending_email_verification import (
     PendingEmailVerification,
 )

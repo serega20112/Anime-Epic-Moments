@@ -1,6 +1,5 @@
-from backend.domain.aggregates.highlight.highlight import (
-    Highlight,
-    InvalidHighlightTimeError,
-)
+"""Публичный интерфейс агрегата хайлайта."""
 
-__all__ = ["Highlight", "InvalidHighlightTimeError"]
+from backend.domain.aggregates.highlight.highlight import Highlight
+
+__all__ = ["Highlight"]

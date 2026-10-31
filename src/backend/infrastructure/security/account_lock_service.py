@@ -1,4 +1,4 @@
-"""Account lockout service using Redis-backed KeyValueStore."""
+"""Блокировка аккаунта после неудачных попыток входа."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from backend.application.interface.services import AccountLockServiceInterface
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.security.rate_limiter import RateLimiter
 
@@ -20,7 +21,15 @@ LOCK_DURATION_SECONDS = 1800
 
 @dataclass
 class AccountStatus:
-    """Represents the current lock status of a user account."""
+    """Текущее состояние блокировки аккаунта.
+
+    Attributes:
+        is_locked: Заблокирован ли аккаунт сейчас.
+        unlock_at: Момент автоматической разблокировки.
+        failed_attempts: Сколько неудачных попыток уже учтено.
+        remaining_attempts: Сколько попыток осталось до блокировки.
+        max_attempts: Предел неудачных попыток.
+    """
 
     is_locked: bool
     unlock_at: str | None
@@ -29,26 +38,29 @@ class AccountStatus:
     max_attempts: int = ATTEMPT_LIMIT
 
 
-class AccountLockService:
-    """Account lockout using KeyValueStore (Redis) with in-memory fallback.
+class AccountLockService(AccountLockServiceInterface):
+    """Блокировка аккаунта поверх хранилища ключей и значений.
 
-    Uses RateLimiter for failed-attempt counting and a dedicated lock key
-    in KeyValueStore for temporary account blocking.
+    Неудачные попытки считает ограничитель частоты, а признак блокировки
+    хранится отдельным ключом с ограниченным сроком жизни. Срок блокировки
+    приходит из конфигурации; значение по умолчанию равно константе модуля.
     """
 
-    def __init__(self, store: KeyValueStore) -> None:
+    def __init__(
+        self, store: KeyValueStore, *, lock_duration_seconds: int = LOCK_DURATION_SECONDS
+    ) -> None:
+        """Создать сервис блокировки поверх хранилища ключей и значений.
+
+        Args:
+            store: Хранилище ключей и значений для счётчиков и метки блокировки.
+            lock_duration_seconds: Срок жизни блокировки в секундах.
+        """
         self.store = store
+        self._lock_duration_seconds = int(lock_duration_seconds)
         self._rate_limiter = RateLimiter(store=store)
 
     async def record_failed_attempt(self, email: str) -> AccountStatus:
-        """Record a failed login attempt and lock account if limit exceeded.
-
-        Args:
-            email: User email address.
-
-        Returns:
-            AccountStatus: Current account status after recording the attempt.
-        """
+        """Учесть неудачную попытку входа и заблокировать аккаунт при перерасходе."""
         normalized_email = email.strip().lower()
         decision = await self._rate_limiter.hit(
             scope=ATTEMPT_SCOPE,
@@ -62,7 +74,7 @@ class AccountLockService:
             return AccountStatus(
                 is_locked=True,
                 unlock_at=(
-                    datetime.now(UTC) + timedelta(seconds=LOCK_DURATION_SECONDS)
+                    datetime.now(UTC) + timedelta(seconds=self._lock_duration_seconds)
                 ).isoformat(),
                 failed_attempts=decision.current_count,
                 remaining_attempts=0,
@@ -76,14 +88,7 @@ class AccountLockService:
         )
 
     async def is_account_locked(self, email: str) -> tuple[bool, str | None]:
-        """Check if an account is currently locked.
-
-        Args:
-            email: User email address.
-
-        Returns:
-            tuple[bool, str | None]: (is_locked, unlock_time_iso or None).
-        """
+        """Проверить, заблокирован ли аккаунт сейчас."""
         normalized_email = email.strip().lower()
         lock_key = f"{LOCK_PREFIX}{normalized_email}"
         lock_data = await self.store.get(lock_key)
@@ -96,14 +101,7 @@ class AccountLockService:
         return True, str(lock_data)
 
     async def unlock_account(self, email: str) -> bool:
-        """Manually unlock an account.
-
-        Args:
-            email: User email address.
-
-        Returns:
-            bool: True after successful unlock.
-        """
+        """Снять блокировку аккаунта вручную."""
         normalized_email = email.strip().lower()
         lock_key = f"{LOCK_PREFIX}{normalized_email}"
         await self.store.delete(lock_key)
@@ -111,14 +109,7 @@ class AccountLockService:
         return True
 
     async def get_account_status(self, email: str) -> AccountStatus:
-        """Get detailed account lock status including attempt count.
-
-        Args:
-            email: User email address.
-
-        Returns:
-            AccountStatus: Current account status.
-        """
+        """Вернуть подробное состояние блокировки с числом попыток."""
         normalized_email = email.strip().lower()
         is_locked, unlock_at = await self.is_account_locked(normalized_email)
 
@@ -133,21 +124,17 @@ class AccountLockService:
         )
 
     async def _lock_account(self, email: str) -> None:
-        """Lock an account by setting a lock key with TTL.
-
-        Args:
-            email: Normalized user email address.
-        """
+        """Заблокировать аккаунт, записав ключ блокировки с ограниченным сроком."""
         normalized_email = email.strip().lower()
         lock_key = f"{LOCK_PREFIX}{normalized_email}"
-        unlock_at = (datetime.now(UTC) + timedelta(seconds=LOCK_DURATION_SECONDS)).isoformat()
+        unlock_at = (datetime.now(UTC) + timedelta(seconds=self._lock_duration_seconds)).isoformat()
         await self.store.set(
             lock_key,
             {"unlock_at": unlock_at, "reason": "too_many_failed_attempts"},
-            ttl_seconds=LOCK_DURATION_SECONDS,
+            ttl_seconds=self._lock_duration_seconds,
         )
         logger.warning(
             "account_locked email=%s duration=%ds",
             normalized_email,
-            LOCK_DURATION_SECONDS,
+            self._lock_duration_seconds,
         )

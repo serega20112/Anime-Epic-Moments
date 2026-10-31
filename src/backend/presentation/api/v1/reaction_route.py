@@ -1,71 +1,64 @@
-"""Thin HTTP routes for episode reactions on the anime watch page."""
+"""Тонкие HTTP-маршруты реакций на серии страницы просмотра."""
 
 from __future__ import annotations
 
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Query, Request
 
-from backend.application.dto import (
-    GetEpisodeReactionsQuery,
-    SetEpisodeReactionCommand,
-)
+from backend.application.dto import GetEpisodeReactionsQuery
 from backend.application.use_cases import (
     GetEpisodeReactionsUseCase,
     SetEpisodeReactionUseCase,
 )
-from backend.domain.value_objects.reaction.reaction_type import EpisodeReactionEmoji
-from backend.presentation.api.helpers import get_current_user, read_payload
+from backend.presentation.api.errors import (
+    ErrorResponse,
+    error_from_result,
+    unauthorized_error,
+)
+from backend.presentation.api.helpers import get_current_user
+from backend.presentation.api.requests.reaction_mapper import (
+    map_episode_reactions_response,
+    map_set_episode_reaction_command,
+)
+from backend.presentation.api.requests.reaction_requests import SetEpisodeReactionRequest
+from backend.presentation.api.responses.reaction_responses import EpisodeReactionsResponse
 
 reaction_router = APIRouter(prefix="/watch", route_class=DishkaRoute)
-reaction_bp = reaction_router
+
+DEFAULT_EPISODE = 1
+
+_ERROR_RESPONSES = {
+    "400": {"model": ErrorResponse},
+    "401": {"model": ErrorResponse},
+    "404": {"model": ErrorResponse},
+}
 
 
-async def _reaction_payload(summary) -> dict:
-    """Build the JSON payload for an episode reaction summary.
-
-    Args:
-        summary: Episode reaction summary.
-
-    Returns:
-        dict: Serialized reaction state.
-    """
-    counts = [
-        {
-            "reaction_type": item.reaction_type.value,
-            "emoji": EpisodeReactionEmoji.for_type(item.reaction_type),
-            "count": item.count,
-        }
-        for item in summary.counts
-    ]
-    return {
-        "counts": counts,
-        "user_reaction": summary.user_reaction.value if summary.user_reaction else None,
-    }
-
-
-@reaction_router.get("/{anime_id}/reactions", name="watch.get_episode_reactions")
+@reaction_router.get(
+    "/{anime_id}/reactions",
+    name="watch.get_episode_reactions",
+    response_model=EpisodeReactionsResponse,
+    responses=_ERROR_RESPONSES,
+)
 async def get_episode_reactions(
     request: Request,
     anime_id: int,
     use_case: FromDishka[GetEpisodeReactionsUseCase],
+    episode: int = Query(default=DEFAULT_EPISODE, ge=1),
 ):
-    """Return reaction counts for an episode and the viewer's own reaction.
+    """Вернуть счётчики реакций серии и реакцию зрителя.
 
     Args:
-        request: Incoming HTTP request with the episode query param.
-        anime_id: Anime ID from path.
-        use_case: Get episode reactions use case.
+        request: Текущий HTTP-запрос.
+        anime_id: Идентификатор аниме из пути.
+        use_case: Сценарий чтения реакций серии.
+        episode: Номер серии из параметра запроса.
 
     Returns:
-        JSONResponse: Reaction state or an error.
+        EpisodeReactionsResponse | Response: Сводка реакций либо тело ошибки.
     """
     user = await get_current_user(request)
-    try:
-        episode = int(request.query_params.get("episode") or 1)
-    except (TypeError, ValueError):
-        episode = 0
     result = await use_case.execute(
         GetEpisodeReactionsQuery(
             anime_id=anime_id,
@@ -74,47 +67,39 @@ async def get_episode_reactions(
         )
     )
     if not result.ok:
-        return JSONResponse({"error": result.error}, status_code=result.status_code)
-    return await _reaction_payload(result.data)
+        return error_from_result(result)
+    return map_episode_reactions_response(result.data)
 
 
-@reaction_router.post("/{anime_id}/reactions", name="watch.set_episode_reaction")
+@reaction_router.post(
+    "/{anime_id}/reactions",
+    name="watch.set_episode_reaction",
+    response_model=EpisodeReactionsResponse,
+    responses=_ERROR_RESPONSES,
+)
 async def set_episode_reaction(
     request: Request,
     anime_id: int,
+    body: SetEpisodeReactionRequest,
     use_case: FromDishka[SetEpisodeReactionUseCase],
 ):
-    """Set or remove a reaction on an episode.
+    """Поставить или снять реакцию на серию.
 
     Args:
-        request: Incoming HTTP request with JSON payload.
-        anime_id: Anime ID from path.
-        use_case: Set episode reaction use case.
+        request: Текущий HTTP-запрос.
+        anime_id: Идентификатор аниме из пути.
+        body: Проверенное тело реакции.
+        use_case: Сценарий изменения реакции на серии.
 
     Returns:
-        JSONResponse: Updated reaction state or an error.
+        EpisodeReactionsResponse | Response: Обновлённая сводка либо тело ошибки.
     """
     user = await get_current_user(request)
     if not user:
-        return JSONResponse({"error": "auth_required"}, status_code=401)
-    payload = await read_payload(request)
-    try:
-        episode = int(payload.get("episode") or 1)
-    except (TypeError, ValueError):
-        episode = 0
-    try:
-        timestamp = float(payload.get("timestamp") or 0.0)
-    except (TypeError, ValueError):
-        timestamp = 0.0
-    command = SetEpisodeReactionCommand(
-        user_id=user.id,
-        anime_id=anime_id,
-        episode=episode,
-        reaction_type=str(payload.get("reaction") or "").strip(),
-        timestamp=timestamp,
-        liked=request.method == "POST",
+        return unauthorized_error()
+    result = await use_case.execute(
+        map_set_episode_reaction_command(body, user_id=user.id, anime_id=anime_id)
     )
-    result = await use_case.execute(command)
     if not result.ok:
-        return JSONResponse({"error": result.error}, status_code=result.status_code)
-    return await _reaction_payload(result.data)
+        return error_from_result(result)
+    return map_episode_reactions_response(result.data)

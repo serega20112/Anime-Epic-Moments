@@ -1,4 +1,4 @@
-"""Query parameters for searching anime by natural language description."""
+"""Параметры запроса поиска аниме по описанию на естественном языке."""
 
 from __future__ import annotations
 
@@ -7,18 +7,18 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class SearchAnimeByDescriptionQuery:
-    """Query parameters for searching anime by natural language description.
+    """Параметры поиска аниме по свободному описанию.
 
     Attributes:
-        description: Free-form description text.
-        genre_hint: Optional genre hint to narrow the search.
-        year_from: Optional lower bound for release year.
-        year_to: Optional upper bound for release year.
-        min_rating: Optional minimum rating threshold.
-        age_rating: Age rating filter (all, 6+, 12+, 16+, 18+).
-        adult_confirmed: Whether the user confirmed adult content access.
-        sort_by: Sorting strategy (match, rating, year).
-        limit: Maximum number of results to return.
+        description: Текст описания от пользователя.
+        genre_hint: Подсказка по жанру, сужающая поиск.
+        year_from: Нижняя граница года выхода.
+        year_to: Верхняя граница года выхода.
+        min_rating: Минимальный рейтинг результата.
+        age_rating: Возрастное ограничение выдачи.
+        adult_confirmed: Подтвердил ли пользователь показ взрослого контента.
+        sort_by: Поле сортировки результатов.
+        limit: Максимальное число результатов.
     """
 
     description: str

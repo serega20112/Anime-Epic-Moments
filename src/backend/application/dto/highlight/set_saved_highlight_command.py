@@ -1,4 +1,4 @@
-"""Save or unsave a highlight payload."""
+"""Сохранение хайлайта и удаление его из сохранённых."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class SetSavedHighlightCommand:
-    """Save or unsave a highlight payload.
+    """Команда изменения отметки «сохранён».
 
     Attributes:
-        highlight_id: Highlight identifier.
-        user_id: Acting user identifier.
-        saved: True to save, False to remove from saved.
+        highlight_id: Идентификатор хайлайта.
+        user_id: Идентификатор действующего пользователя.
+        saved: True — сохранить, False — убрать из сохранённых.
     """
 
     highlight_id: int

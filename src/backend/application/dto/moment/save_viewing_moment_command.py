@@ -1,4 +1,4 @@
-"""Create or update a draft viewing moment."""
+"""Создание и обновление черновика момента просмотра."""
 
 from __future__ import annotations
 
@@ -7,18 +7,18 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class SaveViewingMomentCommand:
-    """Create or update a draft viewing moment.
+    """Команда сохранения черновика момента.
 
     Attributes:
-        user_id: Owner user identifier.
-        anime_id: Anime identifier.
-        episode: Episode number.
-        timestamp: Playback position in seconds.
-        watch_source_id: Optional active watch source.
-        caption: Optional caption for the moment.
-        sticker: Optional sticker label.
-        screenshot_url: Optional screenshot URL.
-        moment_id: Existing moment identifier when updating.
+        user_id: Идентификатор владельца черновика.
+        anime_id: Идентификатор аниме.
+        episode: Номер серии.
+        timestamp: Отметка момента в секундах.
+        watch_source_id: Идентификатор источника воспроизведения.
+        caption: Подпись к моменту.
+        sticker: Идентификатор наклейки.
+        screenshot_url: Ссылка на сохранённый кадр.
+        moment_id: Идентификатор обновляемого черновика, если он уже есть.
     """
 
     user_id: int

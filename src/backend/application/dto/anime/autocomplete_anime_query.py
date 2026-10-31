@@ -1,4 +1,4 @@
-"""Query parameters for anime title autocomplete."""
+"""Параметры запроса автодополнения названий аниме."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class AutocompleteAnimeQuery:
-    """Query parameters for anime title autocomplete.
+    """Параметры запроса автодополнения названий аниме.
 
     Attributes:
-        query: Partial title text to complete.
-        limit: Maximum number of suggestions to return.
-        include_adult: Whether to include adult/hentai content.
+        query: Частично введённое название.
+        limit: Максимальное число подсказок.
+        include_adult: Учитывать ли взрослый контент.
     """
 
     query: str

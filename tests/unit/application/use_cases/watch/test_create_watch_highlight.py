@@ -6,80 +6,107 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.dto import CreateWatchHighlightCommand
+from backend.application.use_cases.result import UseCaseResult
 from backend.application.use_cases.watch.highlight.create_watch_highlight import (
     CreateWatchHighlightUseCase,
 )
+from backend.domain import HighlightContext
+from tests.support.fakes import FakeUnitOfWork
+
+
+def _command(**overrides) -> CreateWatchHighlightCommand:
+    """Собрать команду хайлайта из плеера с переопределёнными полями."""
+    fields = {
+        "user_id": 4,
+        "anime_id": 7,
+        "episode": 2,
+        "title": "Финал заезда",
+        "category": "гонки",
+        "start_timestamp": 10.0,
+        "end_timestamp": 25.0,
+        "description": "обгон на последнем повороте",
+        "is_spoiler": False,
+        "emotion": "hype",
+        "watch_source_id": 11,
+        "translation_id": 3,
+        "original_title": "Gintama",
+    }
+    fields.update(overrides)
+    return CreateWatchHighlightCommand(**fields)
+
+
+def _use_case(create_result: UseCaseResult, repository: AsyncMock) -> tuple:
+    """Собрать сценарий с заданным результатом создания хайлайта."""
+    create_highlight = AsyncMock()
+    create_highlight.execute.return_value = create_result
+    uow = FakeUnitOfWork(WatchRepository=repository)
+    return CreateWatchHighlightUseCase(uow, create_highlight), uow, create_highlight
 
 
 @pytest.mark.unit
 class TestCreateWatchHighlightUseCase:
-    """Юнит-тесты создания хайлайта с playback context."""
+    """Юнит-тесты создания хайлайта из плеера."""
 
     async def test_creates_highlight_and_context(self):
-        """Что тестируем: создание хайлайта и сохранение playback context.
-        Что передаём: команду со всеми полями и замоканный create_highlight.
-        Что ожидаем: хайлайт создан, контекст сохранен со ссылкой на него.
+        """Что тестируем: создание хайлайта и сохранение контекста плеера.
+        Что передаём: полную команду и успешный результат вложенного сценария.
+        Что ожидаем: контекст привязан к идентификатору хайлайта, статус 201.
         """
-        create_highlight_use_case = AsyncMock()
-        create_highlight_use_case.execute.return_value = SimpleNamespace(
-            ok=True, data=SimpleNamespace(id=33, error=None, status_code=201)
-        )
-        watch_repo = AsyncMock()
-        use_case = CreateWatchHighlightUseCase(create_highlight_use_case, watch_repo, AsyncMock())
+        repository = AsyncMock()
+        created = UseCaseResult(ok=True, status_code=201, data=SimpleNamespace(id=55))
+        use_case, uow, create_highlight = _use_case(created, repository)
 
-        result = await use_case.execute(
-            CreateWatchHighlightCommand(
-                user_id=1,
-                anime_id=7,
-                episode=2,
-                title="best scene",
-                category="бой",
-                start_timestamp=10.0,
-                end_timestamp=20.0,
-                description="great",
-                is_spoiler=False,
-                emotion="hype",
-                watch_source_id=5,
-                translation_id=6,
-            )
-        )
+        result = await use_case.execute(_command())
 
         assert result.ok is True
         assert result.status_code == 201
-        assert result.data.id == 33
-        create_highlight_use_case.execute.assert_awaited_once()
-        context = watch_repo.add_highlight_context.await_args.args[0]
-        assert context.highlight_id == 33
-        assert context.watch_source_id == 5
-        assert context.translation_id == 6
-        assert context.title == "best scene"
+        assert result.data.id == 55
+        assert uow.commits == 1
+        create_highlight.execute.assert_awaited_once()
+        context = repository.add_highlight_context.await_args.args[0]
+        assert isinstance(context, HighlightContext)
+        assert context.highlight_id == 55
+        assert context.watch_source_id == 11
+        assert context.original_title == "Gintama"
 
-    async def test_rejects_invalid_payload(self):
-        """Что тестируем: отказ при неполном payload.
-        Что передаём: команду без episode и watch_source_id.
-        Что ожидаем: результат failure со статусом 400, create_highlight не вызывается.
+    async def test_propagates_highlight_failure(self):
+        """Что тестируем: проброс отказа вложенного сценария создания хайлайта.
+        Что передаём: результат failure со статусом 403.
+        Что ожидаем: тот же статус и код, контекст не сохраняется.
         """
-        create_highlight_use_case = AsyncMock()
-        watch_repo = AsyncMock()
-        use_case = CreateWatchHighlightUseCase(create_highlight_use_case, watch_repo, AsyncMock())
+        repository = AsyncMock()
+        failure = UseCaseResult(ok=False, status_code=403, error="quota_exceeded")
+        use_case, _uow, _create_highlight = _use_case(failure, repository)
 
-        result = await use_case.execute(
-            CreateWatchHighlightCommand(
-                user_id=1,
-                anime_id=7,
-                episode=None,
-                title="best scene",
-                category="бой",
-                start_timestamp=None,
-                end_timestamp=None,
-                description="great",
-                is_spoiler=False,
-                emotion="hype",
-                watch_source_id=None,
-                translation_id=None,
-            )
-        )
+        result = await use_case.execute(_command())
+
+        assert result.ok is False
+        assert result.status_code == 403
+        assert result.error == "quota_exceeded"
+        repository.add_highlight_context.assert_not_awaited()
+
+    @pytest.mark.parametrize(
+        "overrides",
+        [
+            {"episode": None},
+            {"watch_source_id": None},
+            {"translation_id": None},
+            {"start_timestamp": None},
+            {"end_timestamp": None},
+        ],
+    )
+    async def test_rejects_incomplete_payload(self, overrides):
+        """Что тестируем: отказ при неполном наборе полей плеера.
+        Что передаём: команду с отсутствующим обязательным полем.
+        Что ожидаем: статус 400, вложенный сценарий не вызывается.
+        """
+        repository = AsyncMock()
+        created = UseCaseResult(ok=True, status_code=201, data=SimpleNamespace(id=55))
+        use_case, _uow, create_highlight = _use_case(created, repository)
+
+        result = await use_case.execute(_command(**overrides))
 
         assert result.ok is False
         assert result.status_code == 400
-        create_highlight_use_case.execute.assert_not_awaited()
+        assert result.error == "invalid_payload"
+        create_highlight.execute.assert_not_awaited()

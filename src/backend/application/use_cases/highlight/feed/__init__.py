@@ -1,3 +1,5 @@
+"""Сценарии лент хайлайтов."""
+
 from backend.application.use_cases.highlight.feed.get_highlight_feed import GetHighlightFeedUseCase
 from backend.application.use_cases.highlight.feed.get_liked_highlights import (
     GetLikedHighlightsUseCase,

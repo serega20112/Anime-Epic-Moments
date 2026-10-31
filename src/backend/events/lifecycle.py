@@ -1,4 +1,4 @@
-"""Application lifecycle (startup/shutdown) via FastAPI lifespan."""
+"""Жизненный цикл приложения: запуск и остановка через lifespan FastAPI."""
 
 from __future__ import annotations
 
@@ -9,35 +9,28 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from backend.config import Settings
-from backend.infrastructure.files.database import init_db, verify_schema
+from backend.infrastructure.database.session import init_db, verify_schema
 from backend.utils import setup_logging
 
 logger = logging.getLogger("anime_epic_moments")
 
 
-async def _resolve_log_level(level_name: str) -> int:
-    """Resolve a logging level name to its numeric value.
+def _resolve_log_level(level_name: str) -> int:
+    """Преобразовать имя уровня логирования в числовое значение.
 
     Args:
-        level_name: Logging level name (e.g. INFO, DEBUG).
+        level_name: Имя уровня из конфигурации.
 
     Returns:
-        int: Numeric logging level value.
+        int: Числовой уровень; при неизвестном имени возвращается INFO.
     """
     return getattr(logging, str(level_name).upper(), logging.INFO)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Run application startup and shutdown tasks.
-
-    Args:
-        app: FastAPI application instance.
-
-    Yields:
-        None: The lifespan body.
-    """
-    await setup_logging(level=await _resolve_log_level(Settings.log_level))
+    """Выполнить задачи запуска и остановки приложения."""
+    setup_logging(level=_resolve_log_level(Settings.log_level), fmt=Settings.log_format)
     if Settings.database_auto_init:
         await init_db()
     else:

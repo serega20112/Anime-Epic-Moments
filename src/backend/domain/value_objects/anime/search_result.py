@@ -1,22 +1,22 @@
+"""Результат поиска аниме с пояснением совпадения."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
 from backend.domain.entities.anime.anime import Anime
 
 
+@dataclass(frozen=True, slots=True)
 class SearchAnimeByDescriptionResult:
-    """Результат поиска аниме по описанию с метаданными age-gate."""
+    """Результат поиска аниме по описанию с метаданными age-gate.
 
-    def __init__(
-        self,
-        items: list[Anime],
-        requires_age_confirmation: bool = False,
-        message: str | None = None,
-    ):
-        self.items = items
-        self.requires_age_confirmation = requires_age_confirmation
-        self.message = message
+    Attributes:
+        items: Найденные карточки тайтлов.
+        requires_age_confirmation: Нужен ли клик по «мне есть 18».
+        message: Текст-предупреждение для клиента либо None.
+    """
 
-    def to_dict(self) -> dict:
-        return {
-            "items": [vars(item) for item in self.items],
-            "requires_age_confirmation": self.requires_age_confirmation,
-            "message": self.message,
-        }
+    items: list[Anime] = field(default_factory=list)
+    requires_age_confirmation: bool = False
+    message: str | None = None

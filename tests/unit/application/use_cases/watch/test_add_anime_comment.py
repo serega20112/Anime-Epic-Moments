@@ -5,46 +5,55 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.dto import AddAnimeCommentCommand
-from backend.application.use_cases.watch.discussion.add_anime_comment import AddAnimeCommentUseCase
+from backend.application.use_cases.watch.discussion.add_anime_comment import (
+    AddAnimeCommentUseCase,
+)
+from tests.support.fakes import FakeUnitOfWork
+
+
+def _use_case(repository: AsyncMock) -> tuple:
+    """Собрать сценарий комментария с двойником репозитория просмотра."""
+    uow = FakeUnitOfWork(WatchRepository=repository)
+    return AddAnimeCommentUseCase(uow), uow, repository
 
 
 @pytest.mark.unit
 class TestAddAnimeCommentUseCase:
-    """Юнит-тесты добавления комментария к обсуждению аниме."""
+    """Юнит-тесты добавления комментария в обсуждение аниме."""
 
-    @pytest.mark.parametrize("content", ["", "x", "x" * 601])
-    async def test_rejects_invalid_content(self, content):
-        """Что тестируем: валидацию длины комментария.
-        Что передаём: пустой, слишком короткий и слишком длинный контент.
-        Что ожидаем: результат failure со статусом 400, репозиторий не вызывается.
+    async def test_saves_normalized_comment(self):
+        """Что тестируем: сохранение комментария с обрезкой пробелов.
+        Что передаём: валидный текст с лишними пробелами.
+        Что ожидаем: комментарий сохранён зажатым по длине, статус 201.
         """
-        repo = AsyncMock()
-        use_case = AddAnimeCommentUseCase(repo, AsyncMock())
+        repository = AsyncMock()
+        repository.add_anime_comment.return_value = {"id": 1}
+        use_case, uow, _repository = _use_case(repository)
 
         result = await use_case.execute(
-            AddAnimeCommentCommand(anime_id=7, user_id=4, content=content)
-        )
-
-        assert result.ok is False
-        assert result.status_code == 400
-        repo.add_anime_comment.assert_not_awaited()
-
-    async def test_delegates_to_repository(self):
-        """Что тестируем: передачу нормализованного комментария в репозиторий.
-        Что передаём: контент с лишними пробелами.
-        Что ожидаем: результат успешен, репозиторий вызван с обрезанным контентом.
-        """
-        repo = AsyncMock()
-        repo.add_anime_comment.return_value = "comment"
-        use_case = AddAnimeCommentUseCase(repo, AsyncMock())
-
-        result = await use_case.execute(
-            AddAnimeCommentCommand(anime_id=7, user_id=4, content="  Отличный эпизод  ")
+            AddAnimeCommentCommand(anime_id=7, user_id=3, content="  первая серия  ")
         )
 
         assert result.ok is True
         assert result.status_code == 201
-        assert result.data == "comment"
-        repo.add_anime_comment.assert_awaited_once_with(
-            anime_id=7, user_id=4, content="Отличный эпизод"
+        assert uow.commits == 1
+        repository.add_anime_comment.assert_awaited_once_with(
+            anime_id=7, user_id=3, content="первая серия"
         )
+
+    @pytest.mark.parametrize("content", ["", "   ", "a", "a" * 601])
+    async def test_rejects_invalid_length(self, content):
+        """Что тестируем: границы допустимой длины комментария.
+        Что передаём: пустой, односимвольный и слишком длинный текст.
+        Что ожидаем: статус 400, комментарий не сохраняется.
+        """
+        repository = AsyncMock()
+        use_case, _uow, _repository = _use_case(repository)
+
+        result = await use_case.execute(
+            AddAnimeCommentCommand(anime_id=7, user_id=3, content=content)
+        )
+
+        assert result.ok is False
+        assert result.status_code == 400
+        repository.add_anime_comment.assert_not_awaited()

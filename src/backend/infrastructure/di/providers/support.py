@@ -1,4 +1,4 @@
-"""Support use case providers."""
+"""Провайдеры сценариев поддержки."""
 
 from __future__ import annotations
 
@@ -6,35 +6,23 @@ from dishka import Provider, Scope, provide
 
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases import CreateSupportTicketUseCase
-from backend.infrastructure.external import SupportEmailMailer, TelegramSupportNotifier
-from backend.infrastructure.repositories.support_repository import SupportRepository
+from backend.infrastructure.notifications import TelegramSupportNotifier
+from backend.infrastructure.notifications.email import SupportEmailMailer
 
 
 class SupportUseCaseProvider(Provider):
-    """Provide support use cases."""
+    """Провайдер сценариев поддержки."""
 
     @provide(scope=Scope.REQUEST)
     async def create_support_ticket(
         self,
-        support_repository: SupportRepository,
+        unit_of_work: UnitOfWorkInterface,
         telegram_support_notifier: TelegramSupportNotifier,
         support_email_mailer: SupportEmailMailer,
-        unit_of_work: UnitOfWorkInterface,
     ) -> CreateSupportTicketUseCase:
-        """Provide the create support ticket use case.
-
-        Args:
-            support_repository: Support repository.
-            telegram_support_notifier: Telegram notifier.
-            support_email_mailer: Support email mailer.
-            unit_of_work: Transaction boundary.
-
-        Returns:
-            CreateSupportTicketUseCase: Configured use case.
-        """
+        """Создать сценарий обращения в поддержку."""
         return CreateSupportTicketUseCase(
-            support_repository,
+            unit_of_work,
             telegram_support_notifier,
             support_email_mailer,
-            unit_of_work,
         )

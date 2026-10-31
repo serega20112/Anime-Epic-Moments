@@ -9,6 +9,7 @@ from backend.application.dto import AskAiRecommendationsCommand
 from backend.application.use_cases.recommendation.ask_ai_recommendations import (
     AskAiRecommendationsUseCase,
 )
+from tests.support.fakes import FakeUnitOfWork
 
 
 @pytest.mark.unit
@@ -17,7 +18,7 @@ class TestAskAiRecommendationsUseCase:
 
     async def test_returns_ranked_items_from_ai_queries(self):
         """Что тестируем: преобразование запроса в рекомендации и исключение избранного.
-        Что передаём: favorite_repo с одним favorite и side_effect на api_client.
+        Что передаём: двойник UoW с favorite-репозиторием и side_effect на api_client.
         Что ожидаем: recommendations отсортированы, без дублей и без favorite.
         """
         favorite_repo = AsyncMock()
@@ -64,7 +65,9 @@ class TestAskAiRecommendationsUseCase:
             "hf_llm_text",
             None,
         )
-        use_case = AskAiRecommendationsUseCase(favorite_repo, anime_api_client, hf_client)
+        use_case = AskAiRecommendationsUseCase(
+            FakeUnitOfWork(FavoriteRepository=favorite_repo), anime_api_client, hf_client
+        )
 
         result = await use_case.execute(
             AskAiRecommendationsCommand(user_id=7, query="что-то как Naruto, но темнее", limit=3)
@@ -82,7 +85,9 @@ class TestAskAiRecommendationsUseCase:
         Что ожидаем: результат failure со статусом 400.
         """
         favorite_repo = AsyncMock()
-        use_case = AskAiRecommendationsUseCase(favorite_repo, AsyncMock(), AsyncMock())
+        use_case = AskAiRecommendationsUseCase(
+            FakeUnitOfWork(FavoriteRepository=favorite_repo), AsyncMock(), AsyncMock()
+        )
 
         result = await use_case.execute(
             AskAiRecommendationsCommand(user_id=7, query="   ", limit=3)
@@ -130,7 +135,9 @@ class TestAskAiRecommendationsUseCase:
             "hf_llm_text",
             None,
         )
-        use_case = AskAiRecommendationsUseCase(favorite_repo, anime_api_client, hf_client)
+        use_case = AskAiRecommendationsUseCase(
+            FakeUnitOfWork(FavoriteRepository=favorite_repo), anime_api_client, hf_client
+        )
 
         result = await use_case.execute(
             AskAiRecommendationsCommand(user_id=9, query="аниме про котиков", limit=3)

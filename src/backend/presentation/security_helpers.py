@@ -1,98 +1,164 @@
-"""Request-scoped security helpers used by the application middleware.
-
-These helpers are extracted from the app factory so the factory stays a thin
-composition point and the request/CSRF/origin/size logic can be reasoned about
-and tested in isolation.
-"""
+"""Помощники безопасности уровня запроса для middleware приложения."""
 
 from __future__ import annotations
 
 import logging
-import secrets
 from http import HTTPStatus
 from urllib.parse import urlparse
 
-import jwt
 from fastapi import Request
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import PlainTextResponse
 
-from backend.config import Settings
-from backend.infrastructure.repositories.user_repository import UserRepository
-from backend.infrastructure.security.csrf_service import csrf_service
-from backend.infrastructure.security.jwt_service import JWTService
-from backend.infrastructure.security.token_blocklist import TokenBlocklist
+from backend.application.interface.repositories.user_repository import UserRepository
+from backend.application.interface.services import (
+    CSRFServiceInterface,
+    CSRFToken,
+    JWTServiceInterface,
+    TokenBlocklistInterface,
+)
+from backend.application.policies import CookiePolicy, RequestPolicy
+from backend.domain.exceptions import InvalidTokenError
+from backend.presentation.api.errors import (
+    ERROR_REQUEST_TOO_LARGE,
+    error_response,
+    expects_json,
+)
+from backend.presentation.api.version import API_PREFIX
+from backend.presentation.dependencies.container import (
+    ContainerUnavailableError,
+    resolve,
+)
 from backend.utils.logging import user_id_var
 
 logger = logging.getLogger("anime_epic_moments")
 
+BEARER_PREFIX = "bearer"
+ACCESS_TOKEN_COOKIE = "access_token"
+AUTH_TOKEN_SOURCE_STATE = "auth_token_source"
+TOKEN_SOURCE_BEARER = "bearer"
+TOKEN_SOURCE_COOKIE = "cookie"
+STATIC_PATH_PREFIX = "/static/"
+MEDIA_PROXY_PATH = "/watch/proxy"
+API_AUTH_TOKEN_PREFIX = f"{API_PREFIX}/auth/token"
+CSRF_EXEMPT_PATHS = frozenset({MEDIA_PROXY_PATH})
 
-async def load_user(request: Request):
-    """Load user from access token cookie and attach to request state.
+
+def extract_bearer_token(request: Request) -> str | None:
+    """Вернуть токен из заголовка ``Authorization`` либо None.
 
     Args:
-        request: Current HTTP request.
+        request: Текущий HTTP-запрос.
+
+    Returns:
+        str | None: Значение Bearer-токена, если заголовок заявлен корректно.
     """
-    token = request.cookies.get("access_token")
+    header = str(request.headers.get("authorization") or "").strip()
+    if not header.lower().startswith(f"{BEARER_PREFIX} "):
+        return None
+    return header[len(BEARER_PREFIX) :].strip() or None
+
+
+def is_bearer_request(request: Request) -> bool:
+    """Проверить, что запрос идёт от API-клиента с Bearer-токеном.
+
+    Args:
+        request: Текущий HTTP-запрос.
+
+    Returns:
+        bool: True, если заголовок ``Authorization`` содержит Bearer-токен.
+    """
+    return extract_bearer_token(request) is not None
+
+
+def resolve_access_token(request: Request) -> tuple[str, str]:
+    """Выбрать access-токен из заголовка или cookie — единственная точка разбора.
+
+    Обе схемы аутентификации проходят через один код, чтобы проверка токена,
+    список отозванных и отказ различались только источником значения.
+
+    Args:
+        request: Текущий HTTP-запрос.
+
+    Returns:
+        tuple[str, str]: Пара (значение токена, имя источника) либо пустая строка
+            токена, если ни один источник не заполнен.
+    """
+    bearer_token = extract_bearer_token(request)
+    if bearer_token is not None:
+        return bearer_token, TOKEN_SOURCE_BEARER
+    cookie_token = str(request.cookies.get(ACCESS_TOKEN_COOKIE) or "").strip()
+    return cookie_token, TOKEN_SOURCE_COOKIE
+
+
+async def load_user(request: Request):
+    """Загрузить пользователя по access-токену и положить в состояние запроса.
+
+    Токен берётся из заголовка ``Authorization: Bearer`` либо из cookie — обе
+    схемы проходят через один код проверки и через один список отозванных.
+
+    Args:
+        request: Текущий HTTP-запрос.
+    """
+    token, token_source = resolve_access_token(request)
+    setattr(request.state, AUTH_TOKEN_SOURCE_STATE, token_source)
     if not token:
         return
 
     try:
-        dishka_container = request.state.dishka_container
-        token_blocklist = await dishka_container.get(TokenBlocklist)
+        token_blocklist = await resolve(request, TokenBlocklistInterface)
         if token_blocklist is not None and await token_blocklist.is_revoked(token):
-            logger.info("revoked_access_token_used path=%s", request.url.path)
-            request.state.clear_access_token_cookie = True
+            logger.info(
+                "revoked_access_token_used path=%s source=%s", request.url.path, token_source
+            )
+            if token_source == TOKEN_SOURCE_COOKIE:
+                request.state.clear_access_token_cookie = True
             return
-        jwt_service = await dishka_container.get(JWTService)
+        jwt_service = await resolve(request, JWTServiceInterface)
         user_id = await jwt_service.decode_token(token)
-        user_repository = await dishka_container.get(UserRepository)
-        request.state.user = await user_repository.get_by_id(user_id)
+        user_repository = await resolve(request, UserRepository)
+        user = await user_repository.get_by_id(user_id)
+        if user is None:
+            logger.info("access_token_user_missing user_id=%s", user_id)
+            if token_source == TOKEN_SOURCE_COOKIE:
+                request.state.clear_access_token_cookie = True
+            return
+        request.state.user = user
         user_id_var.set(str(user_id))
-    except jwt.InvalidTokenError as error:
+    except InvalidTokenError as error:
         logger.info(
             "access_token_rejected reason=%s path=%s",
             error.__class__.__name__,
             request.url.path,
         )
-        request.state.clear_access_token_cookie = True
+        if token_source == TOKEN_SOURCE_COOKIE:
+            request.state.clear_access_token_cookie = True
         request.state.user = None
-    except Exception:
-        logger.warning("access_token_decode_failed path=%s", request.url.path, exc_info=True)
+    except ContainerUnavailableError:
+        logger.exception("security_dependencies_unavailable path=%s", request.url.path)
+        request.state.auth_dependency_error = True
         request.state.user = None
 
 
 async def request_too_large(request: Request) -> bool:
-    """Check if the request payload exceeds the maximum allowed size.
-
-    Args:
-        request: Current HTTP request.
-
-    Returns:
-        bool: True if payload exceeds max_request_bytes.
-    """
+    """Проверить, превышает ли заявленный размер тела запроса предел."""
     content_length = request.headers.get("content-length")
     if not content_length:
         return False
+    policy = await resolve(request, RequestPolicy)
     try:
-        return int(content_length) > Settings.max_request_bytes
+        return int(content_length) > policy.max_request_bytes
     except ValueError:
         return False
 
 
 async def request_too_large_response(request: Request):
-    """Return a 413 Payload Too Large response.
-
-    Args:
-        request: Current HTTP request.
-
-    Returns:
-        JSONResponse or PlainTextResponse: 413 error response.
-    """
+    """Вернуть ответ 413 «тело запроса слишком велико»."""
     logger.warning("request_too_large path=%s", request.url.path)
-    if await wants_json(request):
-        return JSONResponse(
-            {"error": "request_too_large"},
-            status_code=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+    if expects_json(request):
+        return error_response(
+            ERROR_REQUEST_TOO_LARGE,
+            "Тело запроса слишком велико",
+            HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
         )
     return PlainTextResponse(
         "Payload too large",
@@ -100,29 +166,8 @@ async def request_too_large_response(request: Request):
     )
 
 
-async def wants_json(request: Request) -> bool:
-    """Determine if the client expects a JSON response.
-
-    Args:
-        request: Current HTTP request.
-
-    Returns:
-        bool: True if client accepts application/json.
-    """
-    accept = str(request.headers.get("accept") or "").lower()
-    content_type = str(request.headers.get("content-type") or "").lower()
-    return "application/json" in accept or "application/json" in content_type
-
-
 async def is_cross_origin_write_request(request: Request) -> bool:
-    """Check if request is a cross-origin write operation.
-
-    Args:
-        request: Current HTTP request.
-
-    Returns:
-        bool: True if request origin is not in allowed list.
-    """
+    """Проверить, что запрос на изменение пришёл с чужого источника."""
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return False
     source = await extract_request_origin(request)
@@ -132,14 +177,7 @@ async def is_cross_origin_write_request(request: Request) -> bool:
 
 
 async def extract_request_origin(request: Request) -> str | None:
-    """Extract normalized origin URL from request headers.
-
-    Args:
-        request: Current HTTP request.
-
-    Returns:
-        str | None: Normalized origin or None if not found.
-    """
+    """Извлечь нормализованный источник запроса из заголовков."""
     source = request.headers.get("Origin") or request.headers.get("Referer")
     if not source:
         return None
@@ -150,14 +188,7 @@ async def extract_request_origin(request: Request) -> str | None:
 
 
 async def normalize_origin(value: str | None) -> str | None:
-    """Normalize an origin URL string.
-
-    Args:
-        value: Raw origin URL.
-
-    Returns:
-        str | None: Normalized origin or None.
-    """
+    """Нормализовать строку источника запроса."""
     parsed = urlparse(str(value or "").strip())
     if not parsed.scheme or not parsed.netloc:
         return None
@@ -165,132 +196,159 @@ async def normalize_origin(value: str | None) -> str | None:
 
 
 async def get_allowed_origins(request: Request) -> set[str]:
-    """Build set of allowed origins from settings and request context.
+    """Собрать белый список origin из конфигурации приложения.
+
+    Заголовок ``Host`` намеренно не учитывается: он контролируется клиентом,
+    и добавление производного origin превращало бы проверку в тавтологию.
 
     Args:
-        request: Current HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        set[str]: Allowed origin URLs.
+        set[str]: Разрешённые origin.
     """
-    host_url = f"{request.url.scheme}://{request.url.netloc}/"
-    candidates = [
-        await normalize_origin(host_url),
-        await normalize_origin(Settings.app_base_url),
-    ]
-    for item in Settings.app_allowed_origins:
-        candidates.append(await normalize_origin(item))
-    return {origin for origin in candidates if origin}
+    policy = await resolve(request, RequestPolicy)
+    candidates = {await normalize_origin(policy.base_url)}
+    candidates.update(
+        origin
+        for origin in [await normalize_origin(item) for item in policy.allowed_origins]
+        if origin
+    )
+    return candidates
 
 
 async def is_static_request(request: Request) -> bool:
-    """Check if request targets static files.
+    """Проверить, что запрос адресован статическим файлам.
 
     Args:
-        request: Current HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        bool: True if path starts with /static/.
+        bool: True для путей из хранилища статики.
     """
-    return request.url.path.startswith("/static/")
+    return request.url.path.startswith(STATIC_PATH_PREFIX)
 
 
 async def is_scope_free_request(request: Request) -> bool:
-    """Check if request does not require user session scope.
+    """Проверить, что запросу не нужна область пользовательской сессии.
 
     Args:
-        request: Current HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        bool: True for static files or watch proxy.
+        bool: True для статики и проксируемого медиапотока.
     """
     if await is_static_request(request):
         return True
-    return request.url.path == "/watch/proxy"
+    return request.url.path == MEDIA_PROXY_PATH
 
 
 async def is_csrf_exempt(request: Request) -> bool:
-    """Check if request is exempt from CSRF validation.
+    """Проверить, что запрос освобождён от проверки CSRF.
 
-    Auth routes are exempt because they are protected by Origin check.
+    Освобождения три, и все они обоснованы письменно (задача S3.3):
+    статика не меняет состояние; прокси медиапотока читает чужой HLS по
+    разовому адресу и не трогает пользовательские данные; выпуск, продление и
+    отзыв токенов работают без куки-сессии, а у Bearer-клиента токена CSRF ещё
+    нет — защита от подделки запросов для них не имеет смысла.
 
     Args:
-        request: Current HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        bool: True if CSRF validation should be skipped.
+        bool: True, если проверка CSRF не выполняется.
     """
     path = request.url.path
-    return any(path.startswith(prefix) for prefix in ("/auth", "/static", "/watch/proxy"))
+    return (
+        path.startswith(STATIC_PATH_PREFIX)
+        or path.startswith(API_AUTH_TOKEN_PREFIX)
+        or path in CSRF_EXEMPT_PATHS
+    )
 
 
 async def prepare_csrf_token(request: Request) -> None:
-    """Create or load a session-persisted CSRF token for the request.
-
-    Stores the token in the session so the value rendered into a form during
-    a GET matches the one validated on a subsequent POST.
-
-    Args:
-        request: Current HTTP request.
-    """
+    """Создать или достать из сессии CSRF-токен для запроса."""
     session = request.scope.get("session")
     if not isinstance(session, dict):
         return
-    stored = session.get("csrf_token")
-    if isinstance(stored, str):
-        request.state.csrf_token = stored
-        return
-    token = await csrf_service.generate_token(request.state)
-    session["csrf_token"] = token
+    token = await session_csrf_token(request, session)
+    if token is None:
+        csrf_service = await resolve(request, CSRFServiceInterface)
+        token = csrf_service.generate_token()
+        session["csrf_token"] = token.to_session()
+    request.state.csrf_token = token.value
 
 
 async def validate_csrf(request: Request) -> bool:
-    """Validate a session CSRF token submitted via header or form field.
+    """Проверить CSRF-токен из заголовка или поля формы.
 
-    JSON clients are protected by the Origin check in
-    :func:`is_cross_origin_write_request` and only need a matching header token.
-    Form submissions must include the csrf_token field rendered by the template.
-
-    The request body is cached via ``body()`` before parsing the form. Starlette
-    ``BaseHTTPMiddleware`` replays the body downstream only when the middleware
-    called ``body()``; calling ``form()`` directly consumes the stream and the
-    route below receives an empty form, losing every submitted field.
+    Запросы с ``Authorization: Bearer`` освобождаются от проверки: такой токен
+    хранится у мобильного клиента и не подставляется браузером автоматически,
+    поэтому межсайтовая подделка запросов к ним неприменима.
 
     Args:
-        request: Current HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        bool: True if CSRF validation passes.
+        bool: True для Bearer-запроса либо при совпадении токена с токеном сессии.
     """
-    session = request.scope.get("session")
-    session_token = session.get("csrf_token") if isinstance(session, dict) else None
-    if header_token := request.headers.get("X-CSRF-Token"):
-        return bool(session_token) and secrets.compare_digest(header_token, session_token)
-    if await wants_json(request):
+    if is_bearer_request(request):
         return True
+    session = request.scope.get("session")
+    session_token = await session_csrf_token(request, session)
+    csrf_service = await resolve(request, CSRFServiceInterface)
+    if header_token := request.headers.get("X-CSRF-Token"):
+        return csrf_service.is_valid(session_token, header_token)
     await request.body()
     form = await request.form()
     form_token = form.get("csrf_token")
-    if isinstance(form_token, str) and session_token:
-        return secrets.compare_digest(form_token, session_token)
-    return False
+    return csrf_service.is_valid(session_token, form_token if isinstance(form_token, str) else None)
 
 
-async def apply_security_headers(response):
-    """Apply security-related HTTP headers to the response.
-
-    Includes CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy.
+async def session_csrf_token(request: Request, session: object) -> CSRFToken | None:
+    """Прочитать токен CSRF из сессии, удалив просроченный.
 
     Args:
-        response: HTTP response to add headers to.
+        request: Текущий HTTP-запрос.
+        session: Объект сессии запроса.
+
+    Returns:
+        CSRFToken | None: Действительный токен либо None.
+    """
+    if not isinstance(session, dict):
+        return None
+    token = CSRFToken.from_session(session.get("csrf_token"))
+    if token is not None and token.is_expired():
+        logger.info("csrf_token_expired path=%s", request.url.path)
+        session.pop("csrf_token", None)
+        return None
+    return token
+
+
+async def apply_security_headers(request: Request, response):
+    """Проставить заголовки безопасности HTTP.
+
+    Включает CSP, HSTS, `X-Frame-Options`, `X-Content-Type-Options`,
+    `Referrer-Policy`.
+
+    ``script-src`` не содержит ``'unsafe-eval'``: собственный JS приложения не
+    использует ``eval`` и ``new Function``, а сторонние скрипты из сети не
+    подключаются. ``'unsafe-inline'`` пока остаётся из-за одного inline-блока
+    в ``highlight/list.html`` и атрибутов ``style=``; план перехода на nonce
+    описан в ``docs/01-architecture/security.md``.
+
+    Args:
+        request: Текущий HTTP-запрос — нужен для политики HSTS.
+        response: HTTP-ответ, которому добавляются заголовки.
     """
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("Referrer-Policy", "same-origin")
-    if Settings.cookie_secure:
+    policy = await resolve(request, RequestPolicy)
+    if policy.cookie_secure:
         response.headers.setdefault(
             "Strict-Transport-Security",
-            f"max-age={Settings.hsts_max_age}; includeSubDomains",
+            f"max-age={policy.hsts_max_age}; includeSubDomains",
         )
     response.headers.setdefault(
         "Content-Security-Policy",
@@ -298,7 +356,7 @@ async def apply_security_headers(response):
         "img-src 'self' data: https: blob:; "
         "style-src 'self' 'unsafe-inline' https:; "
         "style-src-elem 'self' 'unsafe-inline' https:; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "script-src 'self' 'unsafe-inline'; "
         "connect-src 'self' https:; "
         "media-src 'self' https: blob:; "
         "worker-src 'self' blob:; "
@@ -310,19 +368,21 @@ async def apply_security_headers(response):
     )
 
 
-async def clear_cookie(response, cookie_name: str):
-    """Delete a cookie by name with proper security attributes.
+async def clear_cookie(request: Request, response, cookie_name: str):
+    """Удалить cookie по имени с корректными атрибутами безопасности.
 
     Args:
-        response: HTTP response to delete cookie from.
-        cookie_name: Name of the cookie to clear.
+        request: Текущий HTTP-запрос — нужен для политики cookie.
+        response: HTTP-ответ, из которого удаляется cookie.
+        cookie_name: Имя удаляемого cookie.
     """
+    policy = await resolve(request, CookiePolicy)
     cookie_kwargs = {
         "httponly": True,
-        "secure": Settings.cookie_secure,
-        "samesite": Settings.cookie_samesite,
+        "secure": policy.secure,
+        "samesite": policy.samesite,
         "path": "/",
     }
-    if Settings.cookie_domain:
-        cookie_kwargs["domain"] = Settings.cookie_domain
+    if policy.domain:
+        cookie_kwargs["domain"] = policy.domain
     response.delete_cookie(cookie_name, **cookie_kwargs)

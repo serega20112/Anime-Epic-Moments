@@ -1,3 +1,5 @@
+"""Хеширование и проверка паролей."""
+
 import asyncio
 
 import bcrypt

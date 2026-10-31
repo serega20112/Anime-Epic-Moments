@@ -5,9 +5,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from backend.application.dto import GetUserCollectionsQuery
 from backend.application.use_cases.collection.get_user_collections import GetUserCollectionsUseCase
 from backend.domain.aggregates.collection.collection import AnimeCollection
 from backend.domain.entities.collection.collection_item import AnimeCollectionItem
+from tests.support.fakes import FakeUnitOfWork
 
 
 @pytest.mark.unit
@@ -38,10 +40,11 @@ class TestGetUserCollectionsUseCase:
                 genres=["Comedy"],
             )
         ]
-        use_case = GetUserCollectionsUseCase(repo)
+        use_case = GetUserCollectionsUseCase(FakeUnitOfWork(CollectionRepository=repo))
 
-        result = await use_case.execute(4)
+        result = await use_case.execute(GetUserCollectionsQuery(user_id=4))
 
         assert result[0].collection.title == "Лучшие боевики"
         assert result[0].collection.items_count == 1
         assert result[0].items[0].watch_url == "/watch/7?episode=1"
+        repo.get_user_collections.assert_awaited_once_with(4)

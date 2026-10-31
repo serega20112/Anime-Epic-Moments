@@ -1,3 +1,5 @@
+"""Правила статусов просмотра, приоритета озвучек и ранжирования источников."""
+
 import re
 
 ANIME_STATUS_VALUES: tuple[str, ...] = (
@@ -120,3 +122,37 @@ def canonicalize_translation_name(value: str | None) -> str:
         if any(alias in normalized for alias in aliases):
             return label
     return str(value or "").strip() or "Unknown"
+
+
+SOURCE_TYPE_PRIORITIES: dict[str, int] = {
+    "stream": 0,
+    "embed": 1,
+    "external": 2,
+}
+UNKNOWN_SOURCE_TYPE_PRIORITY = 3
+
+
+def quality_rank(value: str | None) -> int:
+    """Преобразует метку качества в числовой ранг для сортировки по убыванию.
+
+    Args:
+        value: Метка качества (``720p``, ``auto``).
+
+    Returns:
+        int: Числовой ранг; 0, если цифр в метке нет.
+    """
+    digits = "".join(character for character in str(value or "") if character.isdigit())
+    return int(digits) if digits else 0
+
+
+def source_type_priority(value: str | None) -> int:
+    """Возвращает приоритет типа источника для выбора варианта по умолчанию.
+
+    Args:
+        value: Тип источника (``stream``, ``embed``, ``external``).
+
+    Returns:
+        int: Чем меньше число, тем выше приоритет.
+    """
+    normalized = str(value or "").strip().lower()
+    return SOURCE_TYPE_PRIORITIES.get(normalized, UNKNOWN_SOURCE_TYPE_PRIORITY)

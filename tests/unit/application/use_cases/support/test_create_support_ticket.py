@@ -8,33 +8,45 @@ from backend.application.dto import CreateSupportTicketCommand
 from backend.application.use_cases.support.create_support_ticket import (
     CreateSupportTicketUseCase,
 )
+from tests.support.fakes import FakeUnitOfWork
+
+
+def _ticket_repository() -> AsyncMock:
+    """Собрать двойник репозитория тикетов с сохранением и обновлением."""
+    repo = AsyncMock()
+    repo.add.side_effect = lambda ticket: _with_id(ticket, 7)
+    repo.update.side_effect = lambda ticket: ticket
+    return repo
+
+
+def _with_id(ticket, ticket_id):
+    ticket.id = ticket_id
+    return ticket
+
+
+def _use_case(repo=None, telegram=None, email=None) -> CreateSupportTicketUseCase:
+    """Собрать сценарий поддержки с двойниками транзакции и каналов доставки."""
+    return CreateSupportTicketUseCase(
+        FakeUnitOfWork(SupportRepository=repo or AsyncMock()),
+        telegram or AsyncMock(),
+        email or AsyncMock(),
+    )
 
 
 @pytest.mark.unit
 class TestCreateSupportTicketUseCase:
     """Юнит-тесты сценария создания тикета поддержки."""
 
-    def _use_case(self, repo=None, telegram=None, email=None):
-        support_repo = repo or AsyncMock()
-        return CreateSupportTicketUseCase(
-            support_repo=support_repo,
-            telegram_notifier=telegram or AsyncMock(),
-            email_mailer=email or AsyncMock(),
-            unit_of_work=AsyncMock(),
-        ), support_repo
-
     @pytest.mark.parametrize("channel", ["telegram", "email"])
     async def test_saves_ticket_and_sends_only_to_selected_channel(self, channel):
         """Что тестируем: доставку тикета строго через выбранный канал.
-        Что передаём: команду с channel и замоканный репозиторий.
+        Что передаём: команду с channel и двойник репозитория.
         Что ожидаем: тикет сохранен, помечен доставленным, только нужный канал вызван.
         """
         telegram = AsyncMock()
         email_mailer = AsyncMock()
-        repo = AsyncMock()
-        repo.add.side_effect = lambda ticket: self._with_id(ticket, 7)
-        repo.update.side_effect = lambda ticket: ticket
-        use_case = CreateSupportTicketUseCase(repo, telegram, email_mailer, AsyncMock())
+        repo = _ticket_repository()
+        use_case = _use_case(repo=repo, telegram=telegram, email=email_mailer)
 
         result = await use_case.execute(
             CreateSupportTicketCommand(
@@ -72,9 +84,9 @@ class TestCreateSupportTicketUseCase:
         telegram.send_ticket_created.side_effect = RuntimeError("telegram down")
         email_mailer = AsyncMock()
         repo = AsyncMock()
-        repo.add.side_effect = lambda ticket: self._with_id(ticket, 8)
+        repo.add.side_effect = lambda ticket: _with_id(ticket, 8)
         repo.update.side_effect = lambda ticket: ticket
-        use_case = CreateSupportTicketUseCase(repo, telegram, email_mailer, AsyncMock())
+        use_case = _use_case(repo=repo, telegram=telegram, email=email_mailer)
 
         result = await use_case.execute(
             CreateSupportTicketCommand(
@@ -108,7 +120,7 @@ class TestCreateSupportTicketUseCase:
         Что ожидаем: результат failure со статусом 400, repo.add не вызывается.
         """
         repo = AsyncMock()
-        use_case = self._use_case(repo=repo)[0]
+        use_case = _use_case(repo=repo)
 
         result = await use_case.execute(
             CreateSupportTicketCommand(
@@ -140,7 +152,7 @@ class TestCreateSupportTicketUseCase:
         Что ожидаем: результат failure со статусом 400 и repo не вызывается.
         """
         repo = AsyncMock()
-        use_case = self._use_case(repo=repo)[0]
+        use_case = _use_case(repo=repo)
 
         result = await use_case.execute(
             CreateSupportTicketCommand(
@@ -156,7 +168,3 @@ class TestCreateSupportTicketUseCase:
         assert result.ok is False
         assert result.status_code == 400
         repo.add.assert_not_awaited()
-
-    def _with_id(self, ticket, ticket_id):
-        ticket.id = ticket_id
-        return ticket

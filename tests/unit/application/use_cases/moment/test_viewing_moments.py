@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.application.dto import (
+    DeleteViewingMomentCommand,
+    GetUserViewingMomentsQuery,
     PublishViewingMomentCommand,
     SaveViewingMomentCommand,
 )
@@ -15,6 +17,7 @@ from backend.application.use_cases import (
     SaveViewingMomentUseCase,
 )
 from backend.domain import ViewingMoment
+from tests.support.fakes import FakeUnitOfWork
 
 
 @pytest.mark.unit
@@ -28,7 +31,7 @@ class TestSaveViewingMomentUseCase:
         """
         moment_repo = AsyncMock()
         moment_repo.save_moment.return_value = SimpleMoment(id=1, user_id=1)
-        use_case = SaveViewingMomentUseCase(moment_repo, AsyncMock())
+        use_case = SaveViewingMomentUseCase(FakeUnitOfWork(MomentRepository=moment_repo))
 
         result = await use_case.execute(
             SaveViewingMomentCommand(user_id=1, anime_id=9, episode=2, timestamp=12.5)
@@ -46,7 +49,7 @@ class TestSaveViewingMomentUseCase:
         Что ожидаем: failure со статусом 400.
         """
         moment_repo = AsyncMock()
-        use_case = SaveViewingMomentUseCase(moment_repo, AsyncMock())
+        use_case = SaveViewingMomentUseCase(FakeUnitOfWork(MomentRepository=moment_repo))
 
         result = await use_case.execute(
             SaveViewingMomentCommand(user_id=1, anime_id=9, episode=0, timestamp=1.0)
@@ -77,7 +80,9 @@ class TestPublishViewingMomentUseCase:
         )
         create_highlight = AsyncMock()
         create_highlight.execute.return_value = SimpleResult(ok=True, data=SimpleMoment(id=99))
-        use_case = PublishViewingMomentUseCase(moment_repo, create_highlight, AsyncMock())
+        use_case = PublishViewingMomentUseCase(
+            FakeUnitOfWork(MomentRepository=moment_repo), create_highlight
+        )
 
         result = await use_case.execute(
             PublishViewingMomentCommand(user_id=1, moment_id=5, is_spoiler=False)
@@ -101,7 +106,9 @@ class TestPublishViewingMomentUseCase:
         moment_repo = AsyncMock()
         moment_repo.get_moment.return_value = None
         create_highlight = AsyncMock()
-        use_case = PublishViewingMomentUseCase(moment_repo, create_highlight, AsyncMock())
+        use_case = PublishViewingMomentUseCase(
+            FakeUnitOfWork(MomentRepository=moment_repo), create_highlight
+        )
 
         result = await use_case.execute(
             PublishViewingMomentCommand(user_id=1, moment_id=404, is_spoiler=False)
@@ -123,9 +130,9 @@ class TestGetUserViewingMomentsUseCase:
         """
         moment_repo = AsyncMock()
         moment_repo.get_moments_by_user.return_value = [SimpleMoment(id=1), SimpleMoment(id=2)]
-        use_case = GetUserViewingMomentsUseCase(moment_repo)
+        use_case = GetUserViewingMomentsUseCase(FakeUnitOfWork(MomentRepository=moment_repo))
 
-        result = await use_case.execute(1)
+        result = await use_case.execute(GetUserViewingMomentsQuery(user_id=1))
 
         assert result.ok is True
         assert len(result.data) == 2
@@ -143,9 +150,9 @@ class TestDeleteViewingMomentUseCase:
         """
         moment_repo = AsyncMock()
         moment_repo.delete_moment.return_value = True
-        use_case = DeleteViewingMomentUseCase(moment_repo, AsyncMock())
+        use_case = DeleteViewingMomentUseCase(FakeUnitOfWork(MomentRepository=moment_repo))
 
-        result = await use_case.execute(5, 1)
+        result = await use_case.execute(DeleteViewingMomentCommand(moment_id=5, user_id=1))
 
         assert result.ok is True
         moment_repo.delete_moment.assert_awaited_once_with(5, 1)
@@ -157,9 +164,9 @@ class TestDeleteViewingMomentUseCase:
         """
         moment_repo = AsyncMock()
         moment_repo.delete_moment.return_value = False
-        use_case = DeleteViewingMomentUseCase(moment_repo, AsyncMock())
+        use_case = DeleteViewingMomentUseCase(FakeUnitOfWork(MomentRepository=moment_repo))
 
-        result = await use_case.execute(404, 1)
+        result = await use_case.execute(DeleteViewingMomentCommand(moment_id=404, user_id=1))
 
         assert result.ok is False
         assert result.status_code == 404

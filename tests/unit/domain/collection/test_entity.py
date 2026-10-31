@@ -4,6 +4,7 @@ import pytest
 
 from backend.domain.aggregates.collection.collection import AnimeCollection
 from backend.domain.entities.collection.collection_item import AnimeCollectionItem
+from backend.domain.exceptions import ValidationError
 
 
 class TestAnimeCollection:
@@ -40,9 +41,9 @@ class TestAnimeCollection:
         """Что тестируем: валидацию AnimeCollection.
 
         Что передаём: пустое название и превышающие лимит длины название и описание.
-        Что ожидаем: выбрасывается ValueError.
+        Что ожидаем: выбрасывается доменное ValidationError.
         """
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             AnimeCollection(user_id=4, title=title, description=description)
 
 

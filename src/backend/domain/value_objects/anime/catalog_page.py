@@ -1,4 +1,4 @@
-"""Value object carrying one page of catalog results with pagination metadata."""
+"""Значимый объект страницы каталога с метаданными пагинации."""
 
 from __future__ import annotations
 
@@ -11,16 +11,7 @@ from backend.domain.entities.anime.anime import Anime
 
 @dataclass(frozen=True, slots=True)
 class CatalogPage:
-    """A slice of catalog results together with the pagination state.
-
-    Attributes:
-        items: Anime belonging to the requested page.
-        page: One-based page number that was served.
-        per_page: Page size used to compute the slice.
-        total: Number of items known to be available in the catalog window.
-        total_is_exact: Whether ``total`` is the definitive catalog size
-            rather than the size of the scanned window.
-    """
+    """Часть выдачи каталога вместе с состоянием пагинации."""
 
     items: tuple[Anime, ...]
     page: int
@@ -38,18 +29,7 @@ class CatalogPage:
         total: int,
         total_is_exact: bool = True,
     ) -> CatalogPage:
-        """Create a page, normalizing the page number and total.
-
-        Args:
-            items: Anime belonging to the requested page.
-            page: One-based page number.
-            per_page: Page size.
-            total: Number of available items.
-            total_is_exact: Whether the total is definitive.
-
-        Returns:
-            CatalogPage: Normalized page value object.
-        """
+        """Собрать страницу с нормализацией номера и общего числа."""
         return cls(
             items=tuple(items),
             page=max(1, int(page)),
@@ -60,10 +40,10 @@ class CatalogPage:
 
     @property
     def total_pages(self) -> int:
-        """Number of pages the catalog can be split into.
+        """Число страниц, на которые делится каталог.
 
         Returns:
-            int: Total page count, at least one.
+            int: Общее число страниц, минимум одна.
         """
         if self.total <= 0:
             return 1
@@ -71,26 +51,22 @@ class CatalogPage:
 
     @property
     def has_next(self) -> bool:
-        """Whether a page after the current one exists.
+        """Есть ли страница после текущей.
 
         Returns:
-            bool: True when the current page is not the last one.
+            bool: True, если текущая страница не последняя.
         """
         return self.page < self.total_pages
 
     @property
     def has_previous(self) -> bool:
-        """Whether a page before the current one exists.
+        """Есть ли страница перед текущей.
 
         Returns:
-            bool: True when the current page is not the first one.
+            bool: True, если текущая страница не первая.
         """
         return self.page > 1
 
     def __len__(self) -> int:
-        """Return the number of items on the page.
-
-        Returns:
-            int: Item count of the current page.
-        """
+        """Вернуть число элементов на странице."""
         return len(self.items)

@@ -1,4 +1,4 @@
-"""Thin HTTP route for the home page."""
+"""Маршрут главной страницы."""
 
 from __future__ import annotations
 
@@ -6,25 +6,25 @@ from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
 
+from backend.application.dto.anime import HomePageQuery
 from backend.application.use_cases.anime.get_home_page import GetHomePageUseCase
-from backend.infrastructure.web import render_template
+from backend.presentation.web import render_template
 
 index_router = APIRouter(route_class=DishkaRoute)
-index_bp = index_router
 
 
 @index_router.get("/", name="index.index")
 async def index(request: Request, use_case: FromDishka[GetHomePageUseCase]):
-    """Render the home page with the current anime season context.
+    """Отрисовать главную страницу с сезоном текущего года.
 
     Args:
-        request: Incoming HTTP request.
-        use_case: Home page use case.
+        request: Текущий HTTP-запрос.
+        use_case: Сценарий получения данных главной страницы.
 
     Returns:
-        HTMLResponse: Rendered home page template.
+        HTMLResponse: Готовая страница с популярным и рекомендациями.
     """
-    current_season = await use_case.execute()
+    current_season = await use_case.execute(HomePageQuery())
     return await render_template(
         request,
         "index.html",

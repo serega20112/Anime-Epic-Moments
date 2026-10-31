@@ -1,32 +1,46 @@
-"""Abstract recommendation service interface."""
+"""Порт сервиса рекомендаций."""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
+from backend.domain.value_objects.recommendation.recommendation_result import (
+    RecommendationResult,
+)
 
 
 class RecommendationServiceInterface(ABC):
-    """Interface for generating anime recommendations."""
+    """Подбор рекомендаций аниме по вкусу пользователя.
+
+    Границу транзакции передаёт вызывающий сценарий: сервис читает избранное и
+    хайлайты через репозитории единицы работы и не заводит собственных.
+    """
 
     @abstractmethod
-    async def generate_recommendations(self, user_id: int) -> list[Any]:
-        """Generate recommendations for a user.
+    async def generate(
+        self,
+        unit_of_work: UnitOfWorkInterface,
+        user_id: int,
+        limit: int = 5,
+        force_refresh: bool = False,
+    ) -> list[RecommendationResult]:
+        """Подобрать рекомендации для пользователя.
 
         Args:
-            user_id: The user identifier.
+            unit_of_work: Граница транзакции чтения данных вкуса.
+            user_id: Идентификатор пользователя.
+            limit: Максимальное число рекомендаций.
+            force_refresh: Признак сброса кэша и пересчёта подборки.
 
         Returns:
-            list[Any]: List of recommendation objects.
+            list[RecommendationResult]: Рекомендации в порядке убывания похожести.
         """
 
     @abstractmethod
-    async def refresh_recommendations(self, user_id: int) -> list[Any]:
-        """Refresh recommendations for a user.
+    async def invalidate_user(self, user_id: int) -> None:
+        """Сбросить кэш рекомендаций пользователя.
 
         Args:
-            user_id: The user identifier.
-
-        Returns:
-            list[Any]: List of refreshed recommendation objects.
+            user_id: Идентификатор пользователя.
         """

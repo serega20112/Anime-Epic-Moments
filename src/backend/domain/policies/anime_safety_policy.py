@@ -1,3 +1,5 @@
+"""Правила возрастных ограничений и безопасной выдачи каталога."""
+
 import re
 
 from backend.domain.entities.anime.anime import Anime

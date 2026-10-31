@@ -10,10 +10,11 @@ select = [
     "N",  # pep8-naming
     "D",  # pydocstyle
     "UP", # pyupgrade
+    "ERA", # разкомментированный код: объяснения живут в докстринге (см. docs/04-dev-guide/conventions.md)
 ]
 ignore = [
     "D100", # Missing docstring in public module — too verbose
-    "D101", # Missing docstring in public class — legacy debt, новые классы пишутся с docstring (см. docs/styleguide.md)
+    "D101", # Missing docstring in public class — legacy debt, новые классы пишутся с docstring (см. docs/04-dev-guide/conventions.md)
     "D102", # Missing docstring in public method — legacy debt, новые методы пишутся с docstring
     "D103", # Missing docstring in public function — legacy debt, новые функции пишутся с docstring
     "D104", # Missing docstring in public package

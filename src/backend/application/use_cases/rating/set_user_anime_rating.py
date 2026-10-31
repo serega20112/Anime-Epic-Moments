@@ -1,8 +1,13 @@
+"""Сценарий выставления оценки аниме."""
+
 from __future__ import annotations
 
+from backend.application.dto.rating.set_user_anime_rating_command import (
+    SetUserAnimeRatingCommand,
+)
 from backend.application.interface.repositories.rating_repository import RatingRepository
 from backend.application.interface.services.profile_overview_cache import (
-    ProfileOverviewCacheInterface as ProfileOverviewCache,
+    ProfileOverviewCacheInterface,
 )
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.domain import UserAnimeRating
@@ -13,29 +18,33 @@ class SetUserAnimeRatingUseCase:
 
     def __init__(
         self,
-        rating_repo: RatingRepository,
-        unit_of_work: UnitOfWorkInterface,
-        profile_overview_cache: ProfileOverviewCache | None = None,
-    ):
-        """Initialize the use case.
+        uow: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCacheInterface,
+    ) -> None:
+        """Собрать сценарий выставления оценки.
 
         Args:
-            rating_repo: Rating repository port.
-            unit_of_work: Transaction boundary.
-            profile_overview_cache: Optional profile cache.
+            uow: Единица работы, задающая границу транзакции.
+            profile_overview_cache: Кэш обзора профиля, сбрасывается после записи.
         """
-        self.rating_repo = rating_repo
-        self.unit_of_work = unit_of_work
-        self.profile_overview_cache = profile_overview_cache
+        self._uow = uow
+        self._profile_overview_cache = profile_overview_cache
 
-    async def execute(self, user_id: int, anime_id: int, score: int) -> UserAnimeRating:
-        """Persist a rating within a transaction."""
-        async with self.unit_of_work:
-            return await self._execute(user_id, anime_id, score)
+    async def execute(self, command: SetUserAnimeRatingCommand) -> UserAnimeRating:
+        """Сохранить оценку в границах одной транзакции.
 
-    async def _execute(self, user_id: int, anime_id: int, score: int) -> UserAnimeRating:
-        rating = UserAnimeRating(user_id=user_id, anime_id=anime_id, score=score)
-        result = await self.rating_repo.upsert(rating)
-        if self.profile_overview_cache is not None:
-            await self.profile_overview_cache.invalidate_overview(int(user_id))
-        return result
+        Args:
+            command: Команда с оценкой пользователя.
+
+        Returns:
+            UserAnimeRating: Сохранённая оценка.
+        """
+        rating = UserAnimeRating(
+            user_id=command.user_id,
+            anime_id=command.anime_id,
+            score=command.score,
+        )
+        async with self._uow as uow:
+            saved = await uow.repository(RatingRepository).upsert(rating)
+        await self._profile_overview_cache.invalidate_overview(int(command.user_id))
+        return saved

@@ -1,1 +1,1 @@
-"""Pure payload-to-domain mapping helpers for external anime providers."""
+"""Отображение ответов внешних провайдеров в доменные объекты."""

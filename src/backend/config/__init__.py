@@ -1,8 +1,4 @@
-"""Application configuration package.
-
-Re-exports the settings singleton so consumers can use
-``from backend.config import Settings``.
-"""
+"""Конфигурация приложения из переменных окружения."""
 
 from backend.config.settings import Settings
 

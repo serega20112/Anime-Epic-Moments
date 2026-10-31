@@ -4,9 +4,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from backend.application.dto import HighlightLikersQuery
 from backend.application.use_cases.highlight.social.get_highlight_likers import (
     GetHighlightLikersUseCase,
 )
+from tests.support.fakes import FakeUnitOfWork
 
 
 @pytest.mark.unit
@@ -20,13 +22,13 @@ class TestGetHighlightLikersUseCase:
     async def test_clamps_limit(self, limit, expected):
         """Что тестируем: ограничение размера выборки лайкнувших.
         Что передаём: разные значения limit.
-        Что ожидаем: репозиторий вызывается с зажатым limit.
+        Что ожидаем: репозиторий вызван с зажатым limit, список возвращён.
         """
-        repo = AsyncMock()
-        repo.get_likers.return_value = ["liker"]
-        use_case = GetHighlightLikersUseCase(repo)
+        repository = AsyncMock()
+        repository.get_likers.return_value = ["liker"]
+        use_case = GetHighlightLikersUseCase(FakeUnitOfWork(HighlightRepository=repository))
 
-        result = await use_case.execute(highlight_id=8, limit=limit)
+        result = await use_case.execute(HighlightLikersQuery(highlight_id=8, limit=limit))
 
-        assert repo.get_likers.await_args.kwargs == {"highlight_id": 8, "limit": expected}
+        repository.get_likers.assert_awaited_once_with(highlight_id=8, limit=expected)
         assert result == ["liker"]

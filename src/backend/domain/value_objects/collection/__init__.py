@@ -1,3 +1,5 @@
+"""Значимые объекты коллекций."""
+
 from backend.domain.value_objects.collection.cards import (
     CollectionCard,
     CollectionDetails,

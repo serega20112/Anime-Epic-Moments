@@ -1,4 +1,4 @@
-"""Add a highlight comment payload."""
+"""Добавление комментария к хайлайту."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class AddHighlightCommentCommand:
-    """Add a highlight comment payload.
+    """Команда добавления комментария к хайлайту.
 
     Attributes:
-        highlight_id: Highlight identifier.
-        user_id: Author identifier.
-        content: Comment text.
+        highlight_id: Идентификатор хайлайта.
+        user_id: Идентификатор автора комментария.
+        content: Текст комментария.
     """
 
     highlight_id: int

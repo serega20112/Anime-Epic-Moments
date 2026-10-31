@@ -1,10 +1,10 @@
-"""Collection use case providers."""
+"""Провайдеры сценариев коллекций."""
 
 from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
-from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
+from backend.application.interface.services import AnimeApiClientInterface
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases import (
     AddCollectionItemUseCase,
@@ -15,93 +15,45 @@ from backend.application.use_cases.collection.create_collection import CreateCol
 from backend.application.use_cases.collection.get_shared_collection import (
     GetSharedCollectionUseCase,
 )
-from backend.infrastructure.repositories.collection_repository import CollectionRepository
 
 
 class CollectionUseCaseProvider(Provider):
-    """Provide collection use cases."""
+    """Провайдер сценариев коллекций."""
 
     @provide(scope=Scope.REQUEST)
-    async def create_collection(
-        self,
-        collection_repository: CollectionRepository,
-        unit_of_work: UnitOfWorkInterface,
-    ) -> CreateCollectionUseCase:
-        """Provide the create collection use case.
-
-        Args:
-            collection_repository: Collection repository.
-            unit_of_work: Transaction boundary.
-
-        Returns:
-            CreateCollectionUseCase: Configured use case.
-        """
-        return CreateCollectionUseCase(collection_repository, unit_of_work)
+    async def create_collection(self, unit_of_work: UnitOfWorkInterface) -> CreateCollectionUseCase:
+        """Создать сценарий создания коллекции."""
+        return CreateCollectionUseCase(unit_of_work)
 
     @provide(scope=Scope.REQUEST)
     async def add_collection_item(
         self,
-        collection_repository: CollectionRepository,
         unit_of_work: UnitOfWorkInterface,
-        anime_api_client: AnimeApiClient,
+        anime_api_client: AnimeApiClientInterface,
     ) -> AddCollectionItemUseCase:
-        """Provide the add collection item use case.
-
-        Args:
-            collection_repository: Collection repository.
-            unit_of_work: Transaction boundary.
-            anime_api_client: External anime data client for snapshots.
-
-        Returns:
-            AddCollectionItemUseCase: Configured use case.
-        """
-        return AddCollectionItemUseCase(
-            collection_repository, unit_of_work, anime_api_client=anime_api_client
-        )
+        """Создать сценарий добавления аниме в коллекцию."""
+        return AddCollectionItemUseCase(unit_of_work, anime_api_client)
 
     @provide(scope=Scope.REQUEST)
     async def remove_collection_item(
         self,
-        collection_repository: CollectionRepository,
         unit_of_work: UnitOfWorkInterface,
     ) -> RemoveCollectionItemUseCase:
-        """Provide the remove collection item use case.
-
-        Args:
-            collection_repository: Collection repository.
-            unit_of_work: Transaction boundary.
-
-        Returns:
-            RemoveCollectionItemUseCase: Configured use case.
-        """
-        return RemoveCollectionItemUseCase(collection_repository, unit_of_work)
+        """Создать сценарий удаления аниме из коллекции."""
+        return RemoveCollectionItemUseCase(unit_of_work)
 
     @provide(scope=Scope.REQUEST)
     async def get_user_collections(
         self,
-        collection_repository: CollectionRepository,
+        unit_of_work: UnitOfWorkInterface,
     ) -> GetUserCollectionsUseCase:
-        """Provide the get user collections use case.
-
-        Args:
-            collection_repository: Collection repository.
-
-        Returns:
-            GetUserCollectionsUseCase: Configured use case.
-        """
-        return GetUserCollectionsUseCase(collection_repository)
+        """Создать сценарий списка коллекций пользователя."""
+        return GetUserCollectionsUseCase(unit_of_work)
 
     @provide(scope=Scope.REQUEST)
     async def get_shared_collection(
         self,
-        collection_repository: CollectionRepository,
+        unit_of_work: UnitOfWorkInterface,
     ) -> GetSharedCollectionUseCase:
-        """Provide the get shared collection use case.
-
-        Args:
-            collection_repository: Collection repository.
-
-        Returns:
-            GetSharedCollectionUseCase: Configured use case.
-        """
-        return GetSharedCollectionUseCase(collection_repository)
+        """Создать сценарий чтения коллекции по ссылке."""
+        return GetSharedCollectionUseCase(unit_of_work)

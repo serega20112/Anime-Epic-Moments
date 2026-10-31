@@ -1,4 +1,4 @@
-"""Composition facade for highlight routes: pages, items, and social interactions."""
+"""Сборка маршрутов хайлайтов из страниц, карточек и социальных действий."""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ from backend.presentation.api.v1.highlight_pages_route import highlight_pages_ro
 from backend.presentation.api.v1.highlight_social_route import highlight_social_router
 
 highlight_router = APIRouter(prefix="/highlights", route_class=DishkaRoute)
-highlight_bp = highlight_router
 
 highlight_router.include_router(highlight_pages_router)
 highlight_router.include_router(highlight_items_router)

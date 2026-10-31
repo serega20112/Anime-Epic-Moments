@@ -1,4 +1,4 @@
-"""Upsert the user's watch status for an anime."""
+"""Создание и обновление статуса просмотра аниме."""
 
 from __future__ import annotations
 
@@ -7,17 +7,17 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class UpsertUserAnimeStatusCommand:
-    """Upsert the user's watch status for an anime.
+    """Команда сохранения статуса просмотра.
 
     Attributes:
-        user_id: Acting user identifier.
-        anime_id: Anime identifier.
-        status: Watch status label.
-        current_episode: Episode reached by the user.
-        rating: Optional personal rating.
-        note: Optional personal note.
-        started_at: Optional ISO start date.
-        completed_at: Optional ISO completion date.
+        user_id: Идентификатор действующего пользователя.
+        anime_id: Идентификатор аниме.
+        status: Статус просмотра.
+        current_episode: Текущая серия.
+        rating: Оценка пользователя.
+        note: Заметка к статусу.
+        started_at: Дата начала просмотра.
+        completed_at: Дата завершения просмотра.
     """
 
     user_id: int

@@ -1,4 +1,4 @@
-"""Result of browsing the anime catalog as one page with filter facets."""
+"""Страница каталога аниме вместе со счётчиками для панели фильтров."""
 
 from __future__ import annotations
 
@@ -10,17 +10,15 @@ from backend.domain.value_objects.anime.genre_facet import GenreFacet
 
 @dataclass(frozen=True, slots=True)
 class AnimeCatalogResult:
-    """One page of catalog results plus the metadata the UI needs.
+    """Одна страница каталога вместе с метаданными для интерфейса.
 
     Attributes:
-        items: Anime belonging to the requested page.
-        page: One-based number of the served page.
-        per_page: Page size used to build the slice.
-        total: Number of titles available for the current filters.
-        total_is_exact: Whether ``total`` is definitive or limited by the
-            size of the scanned provider window.
-        genre_facets: Genres observed in the scanned results, most frequent
-            first.
+        items: Аниме, попавшие на запрошенную страницу.
+        page: Номер поданной страницы, начиная с единицы.
+        per_page: Размер страницы, использованный при выборке.
+        total: Общее число записей, удовлетворяющих фильтру.
+        total_is_exact: True, если ``total`` подсчитан точно, а не оценочно.
+        genre_facets: Счётчики по жанрам для панели фильтров.
     """
 
     items: tuple[Anime, ...] = field(default_factory=tuple)
@@ -32,10 +30,10 @@ class AnimeCatalogResult:
 
     @property
     def total_pages(self) -> int:
-        """Number of pages available for the current filters.
+        """Сколько всего страниц даёт текущий фильтр.
 
         Returns:
-            int: Total page count, at least one.
+            int: Число страниц, не меньше одной.
         """
         if self.total <= 0:
             return 1
@@ -43,36 +41,18 @@ class AnimeCatalogResult:
 
     @property
     def has_next(self) -> bool:
-        """Whether a page after the current one exists.
+        """Есть ли страница после текущей.
 
         Returns:
-            bool: True when the current page is not the last one.
+            bool: True, если текущая страница не последняя.
         """
         return self.page < self.total_pages
 
     @property
     def has_previous(self) -> bool:
-        """Whether a page before the current one exists.
+        """Есть ли страница перед текущей.
 
         Returns:
-            bool: True when the current page is not the first one.
+            bool: True, если текущая страница не первая.
         """
         return self.page > 1
-
-    def to_dict(self) -> dict[str, object]:
-        """Convert the result into a JSON-serializable mapping.
-
-        Returns:
-            dict[str, object]: Payload consumed by the catalog UI.
-        """
-        return {
-            "items": [vars(anime) for anime in self.items],
-            "page": self.page,
-            "per_page": self.per_page,
-            "total": self.total,
-            "total_pages": self.total_pages,
-            "has_next": self.has_next,
-            "has_previous": self.has_previous,
-            "total_is_exact": self.total_is_exact,
-            "genre_facets": [facet.to_dict() for facet in self.genre_facets],
-        }

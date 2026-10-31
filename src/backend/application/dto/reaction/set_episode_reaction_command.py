@@ -1,4 +1,4 @@
-"""Set or remove a reaction on an episode moment."""
+"""Постановка и снятие реакции на моменте серии."""
 
 from __future__ import annotations
 
@@ -7,15 +7,15 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class SetEpisodeReactionCommand:
-    """Set or remove a reaction on an episode moment.
+    """Команда изменения реакции на серии.
 
     Attributes:
-        user_id: Acting user identifier.
-        anime_id: Anime identifier.
-        episode: Episode number.
-        reaction_type: Reaction label, ignored when removing.
-        timestamp: Playback position in seconds.
-        liked: True to set the reaction, False to remove it.
+        user_id: Идентификатор действующего пользователя.
+        anime_id: Идентификатор аниме.
+        episode: Номер серии.
+        reaction_type: Тип реакции.
+        timestamp: Отметка момента в секундах.
+        liked: True — поставить реакцию, False — снять.
     """
 
     user_id: int

@@ -1,4 +1,4 @@
-"""Thin HTTP routes for anime collection management."""
+"""Тонкие HTTP-маршруты управления коллекциями аниме."""
 
 from __future__ import annotations
 
@@ -8,8 +8,16 @@ from http import HTTPStatus
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.responses import RedirectResponse, Response
 
+from backend.application.dto import (
+    AddCollectionItemCommand,
+    GetFavoritesQuery,
+    GetSharedCollectionQuery,
+    GetUserCollectionsQuery,
+    RemoveCollectionItemCommand,
+)
+from backend.application.interface.services import ImageStorageError, ImageStoragePort
 from backend.application.use_cases import (
     AddCollectionItemUseCase,
     CreateCollectionUseCase,
@@ -21,17 +29,23 @@ from backend.application.use_cases.collection.add_collection_item import Collect
 from backend.application.use_cases.collection.get_shared_collection import (
     GetSharedCollectionUseCase,
 )
-from backend.infrastructure.files.uploads import UploadValidationError, save_image
-from backend.infrastructure.web import flash, render_template
-from backend.presentation.api.helpers import get_current_user, read_payload, wants_json
+from backend.presentation.api.errors import ErrorResponse, unauthorized_error
+from backend.presentation.api.helpers import get_current_user
 from backend.presentation.api.requests.collection_mapper import (
-    map_add_collection_item_command,
     map_create_collection_command,
-    map_remove_collection_item_command,
 )
+from backend.presentation.api.requests.collection_requests import (
+    AddCollectionItemRequest,
+    RemoveCollectionItemRequest,
+)
+from backend.presentation.api.requests.form_models import read_form_model
+from backend.presentation.api.responses.collection_responses import (
+    CollectionSummaryResponse,
+    MyCollectionsResponse,
+)
+from backend.presentation.web import flash, render_template
 
 collection_router = APIRouter(prefix="/collections", route_class=DishkaRoute)
-collection_bp = collection_router
 
 
 @collection_router.get("", name="collection.collections_page")
@@ -40,22 +54,21 @@ async def collections_page(
     collections_use_case: FromDishka[GetUserCollectionsUseCase],
     favorites_use_case: FromDishka[GetFavoritesUseCase],
 ):
-    """Render the user's collections and favorites page.
+    """Отдать страницу коллекций и избранного пользователя.
 
     Args:
-        request: Incoming HTTP request.
-        collections_use_case: Get user collections use case.
-        favorites_use_case: Get favorites use case.
+        request: Текущий HTTP-запрос.
+        collections_use_case: Сценарий списка коллекций.
+        favorites_use_case: Сценарий списка избранного.
 
     Returns:
-        RedirectResponse: Login redirect for guests.
-        HTMLResponse: Rendered collections list template.
+        Response: Страница коллекций либо редирект гостя на вход.
     """
     user = await get_current_user(request)
     if not user:
-        return await redirect_login(request)
-    collections = await collections_use_case.execute(user.id)
-    favorites = await favorites_use_case.execute(user.id)
+        return redirect_login(request)
+    collections = await collections_use_case.execute(GetUserCollectionsQuery(user_id=user.id))
+    favorites = await favorites_use_case.execute(GetFavoritesQuery(user_id=user.id))
     return await render_template(
         request,
         "collection/list.html",
@@ -65,19 +78,24 @@ async def collections_page(
 
 
 @collection_router.post("", name="collection.create_collection")
-async def create_collection(request: Request, use_case: FromDishka[CreateCollectionUseCase]):
-    """Create a new collection from form data.
+async def create_collection(
+    request: Request,
+    use_case: FromDishka[CreateCollectionUseCase],
+    storage: FromDishka[ImageStoragePort],
+):
+    """Создаёт коллекцию по данным формы.
 
-    The cover is taken from an uploaded file when present, otherwise from the
-    ``cover_url`` field. Uploaded files are stored under ``/static/uploads``.
+    Обложка берётся из загруженного файла, если он есть, иначе из поля
+    ``cover_url``; загруженные файлы хранит порт хранилища изображений.
 
     Args:
-        request: Incoming HTTP request with form data.
-        use_case: Create collection use case.
+        request: Текущий HTTP-запрос с формой.
+        use_case: Сценарий создания коллекции.
+        storage: Хранилище загруженной обложки.
 
     Returns:
-        Response: 401 for guests.
-        RedirectResponse: Redirect to the collections page.
+        Response: 401 для гостя.
+        RedirectResponse: Редирект на страницу коллекций.
     """
     user = await get_current_user(request)
     if not user:
@@ -87,65 +105,56 @@ async def create_collection(request: Request, use_case: FromDishka[CreateCollect
     cover_file = form.get("cover_file")
     if cover_file is not None and getattr(cover_file, "filename", None):
         try:
-            cover_url = await save_image(cover_file, "covers")
-        except UploadValidationError as error:
+            cover_url = await storage.save(cover_file, "covers")
+        except ImageStorageError as error:
             await flash(request, str(error))
-            return await redirect_collections(request)
-    command = await map_create_collection_command(form, user_id=user.id)
-    command = replace(command, cover_url=cover_url)
+            return redirect_collections(request)
+    command = replace(map_create_collection_command(form, user_id=user.id), cover_url=cover_url)
     try:
         await use_case.execute(command)
     except ValueError as error:
         await flash(request, str(error))
-        return await redirect_collections(request)
-    return await redirect_collections(request)
+    return redirect_collections(request)
 
 
-@collection_router.post("/{collection_id}/items", name="collection.add_collection_item")
+@collection_router.post(
+    "/{collection_id}/items",
+    name="collection.add_collection_item",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.BAD_REQUEST: {"model": ErrorResponse},
+        HTTPStatus.FORBIDDEN: {"model": ErrorResponse},
+        HTTPStatus.UNAUTHORIZED: {"model": ErrorResponse},
+    },
+)
 async def add_collection_item(
     request: Request,
     collection_id: int,
+    body: AddCollectionItemRequest,
     use_case: FromDishka[AddCollectionItemUseCase],
 ):
-    """Add an anime item to a collection.
-
-    Accepts both JSON payloads (picker UI) and classic form posts. Snapshot
-    fields are optional: when only the anime id is sent the use case resolves
-    the snapshot server-side. Only the collection owner may add items.
+    """Добавляет аниме в коллекцию владельца сессии.
 
     Args:
-        request: Incoming HTTP request with JSON or form data.
-        collection_id: Collection ID from path.
-        use_case: Add collection item use case.
+        request: Текущий HTTP-запрос.
+        collection_id: Идентификатор коллекции из пути.
+        body: Тело запроса с идентификатором аниме.
+        use_case: Сценарий добавления элемента коллекции.
 
     Returns:
-        Response: 401 for guests.
-        JSONResponse: 201 on success, 403/400 on access or validation errors.
-        RedirectResponse: Redirect to the collections page for form posts.
+        Response: 201 при успехе, 401/403/400 через общий обработчик ошибок.
     """
     user = await get_current_user(request)
     if not user:
-        return Response(status_code=HTTPStatus.UNAUTHORIZED)
-    command = await map_add_collection_item_command(
-        await read_payload(request),
-        collection_id=collection_id,
-        user_id=user.id,
+        return unauthorized_error()
+    await use_case.execute(
+        AddCollectionItemCommand(
+            collection_id=collection_id,
+            anime_id=body.anime_id,
+            user_id=user.id,
+        )
     )
-    try:
-        await use_case.execute(command)
-    except CollectionAccessError as error:
-        if await wants_json(request):
-            return JSONResponse({"error": str(error)}, status_code=HTTPStatus.FORBIDDEN)
-        await flash(request, str(error))
-        return await redirect_collections(request)
-    except ValueError as error:
-        if await wants_json(request):
-            return JSONResponse({"error": str(error)}, status_code=HTTPStatus.BAD_REQUEST)
-        await flash(request, str(error))
-        return await redirect_collections(request)
-    if await wants_json(request):
-        return JSONResponse({"status": "added"}, status_code=HTTPStatus.CREATED)
-    return await redirect_collections(request)
+    return Response(status_code=HTTPStatus.CREATED)
 
 
 @collection_router.post(
@@ -157,52 +166,65 @@ async def remove_collection_item(
     collection_id: int,
     use_case: FromDishka[RemoveCollectionItemUseCase],
 ):
-    """Remove an anime item from a collection.
+    """Убирает аниме из коллекции.
 
     Args:
-        request: Incoming HTTP request with form data.
-        collection_id: Collection ID from path.
-        use_case: Remove collection item use case.
+        request: Текущий HTTP-запрос с формой.
+        collection_id: Идентификатор коллекции из пути.
+        use_case: Сценарий удаления элемента коллекции.
 
     Returns:
-        Response: 401 for guests.
-        RedirectResponse: Redirect to the collections page.
+        Response: 401 для гостя.
+        RedirectResponse: Редирект на страницу коллекций.
     """
     user = await get_current_user(request)
     if not user:
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
-    command = await map_remove_collection_item_command(
-        await request.form(), collection_id=collection_id
-    )
-    await use_case.execute(command)
-    return await redirect_collections(request)
+    body = await read_form_model(request, RemoveCollectionItemRequest)
+    if body is None:
+        await flash(request, "Не указано аниме для удаления")
+        return redirect_collections(request)
+    try:
+        await use_case.execute(
+            RemoveCollectionItemCommand(
+                collection_id=collection_id,
+                anime_id=body.anime_id,
+                user_id=user.id,
+            )
+        )
+    except CollectionAccessError as error:
+        await flash(request, str(error))
+    return redirect_collections(request)
 
 
-@collection_router.get("/api/mine", name="collection.my_collections_api")
+@collection_router.get(
+    "/api/mine",
+    name="collection.my_collections_api",
+    response_model=MyCollectionsResponse,
+    responses={HTTPStatus.UNAUTHORIZED: {"model": ErrorResponse}},
+)
 async def my_collections_api(
     request: Request,
     use_case: FromDishka[GetUserCollectionsUseCase],
 ):
-    """Return the current user's collections as JSON for the picker UI.
+    """Отдать коллекции пользователя в JSON для выбора в интерфейсе.
 
     Args:
-        request: Incoming HTTP request.
-        use_case: Get user collections use case.
+        request: Текущий HTTP-запрос.
+        use_case: Сценарий списка коллекций.
 
     Returns:
-        Response: 401 for guests.
-        JSONResponse: Collection id/title pairs.
+        MyCollectionsResponse: Краткие карточки коллекций пользователя сессии.
     """
     user = await get_current_user(request)
     if not user:
-        return JSONResponse({"error": "unauthorized"}, status_code=HTTPStatus.UNAUTHORIZED)
-    details = await use_case.execute(user.id)
-    return JSONResponse(
-        {
-            "collections": [
-                {"id": item.collection.id, "title": item.collection.title} for item in details
-            ]
-        }
+        return unauthorized_error()
+    details = await use_case.execute(GetUserCollectionsQuery(user_id=user.id))
+    return MyCollectionsResponse(
+        collections=[
+            CollectionSummaryResponse(id=item.collection.id, title=item.collection.title)
+            for item in details
+        ]
     )
 
 
@@ -212,28 +234,28 @@ async def shared_collection_page(
     collection_id: int,
     use_case: FromDishka[GetSharedCollectionUseCase],
 ):
-    """Render a shared collection page.
+    """Отдать страницу коллекции по ссылке.
 
     Args:
-        request: Incoming HTTP request.
-        collection_id: Collection ID from path.
-        use_case: Get shared collection use case.
+        request: Текущий HTTP-запрос.
+        collection_id: Идентификатор публичной коллекции.
+        use_case: Сценарий чтения общей коллекции.
 
     Returns:
-        HTMLResponse: Rendered shared collection template.
+        HTMLResponse: Отрисованный шаблон публичной коллекции.
     """
-    details = await use_case.execute(collection_id)
+    details = await use_case.execute(GetSharedCollectionQuery(collection_id=collection_id))
     return await render_template(request, "collection/share.html", collection=details)
 
 
-async def redirect_login(request: Request) -> RedirectResponse:
-    """Build a redirect to the login page.
+def redirect_login(request: Request) -> RedirectResponse:
+    """Собрать перенаправление на страницу входа.
 
     Args:
-        request: Incoming HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        RedirectResponse: SEE_OTHER redirect to login.
+        RedirectResponse: 303 на страницу входа.
     """
     return RedirectResponse(
         url=request.app.url_path_for("auth.login_page"),
@@ -241,14 +263,14 @@ async def redirect_login(request: Request) -> RedirectResponse:
     )
 
 
-async def redirect_collections(request: Request) -> RedirectResponse:
-    """Build a redirect to the collections page.
+def redirect_collections(request: Request) -> RedirectResponse:
+    """Собрать перенаправление на страницу коллекций.
 
     Args:
-        request: Incoming HTTP request.
+        request: Текущий HTTP-запрос.
 
     Returns:
-        RedirectResponse: SEE_OTHER redirect to the collections page.
+        RedirectResponse: 303 на страницу коллекций.
     """
     return RedirectResponse(
         url=request.app.url_path_for("collection.collections_page"),

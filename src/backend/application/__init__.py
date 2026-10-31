@@ -1,1 +1,1 @@
-"""Package init."""
+"""Слой application: сценарии, порты и DTO."""

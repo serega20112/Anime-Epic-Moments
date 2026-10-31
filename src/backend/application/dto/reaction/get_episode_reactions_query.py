@@ -1,4 +1,4 @@
-"""Query parameters for reading an episode's reaction state."""
+"""Параметры запроса состояния реакций на серию."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class GetEpisodeReactionsQuery:
-    """Query parameters for reading an episode's reaction state.
+    """Параметры чтения реакций на серии.
 
     Attributes:
-        anime_id: Anime identifier.
-        episode: Episode number.
-        user_id: Optional viewer for their own reaction.
+        anime_id: Идентификатор аниме.
+        episode: Номер серии.
+        user_id: Идентификатор зрителя для отметки его реакции.
     """
 
     anime_id: int

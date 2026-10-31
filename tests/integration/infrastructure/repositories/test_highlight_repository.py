@@ -5,9 +5,9 @@ from datetime import datetime
 import pytest
 
 from backend.domain import Highlight, User
-from backend.infrastructure.models import HighlightModel
-from backend.infrastructure.repositories.highlight_repository import HighlightRepository
-from backend.infrastructure.repositories.user_repository import UserRepository
+from backend.infrastructure.database.models import HighlightModel
+from backend.infrastructure.database.repositories.highlight_repository import HighlightRepository
+from backend.infrastructure.database.repositories.user_repository import UserRepository
 
 
 @pytest.mark.integration

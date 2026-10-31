@@ -1,136 +1,112 @@
-# Anime Epic Moments
+# Anime Epic Moments (AEM)
 
-Anime Epic Moments — приложение для поиска аниме, просмотра (с выбором озвучки), сохранения избранного, создания
-хайлайтов и персональных рекомендаций на основе действий пользователя.
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.116-009688?logo=fastapi&logoColor=white)
+![Dishka](https://img.shields.io/badge/DI-Dishka-6B4FBB)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0_async-D71F00?logo=sqlalchemy&logoColor=white)
+![Ruff](https://img.shields.io/badge/lint-Ruff-D7FF64?logo=ruff&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-Backend — FastAPI + dishka (DI), организован по DDD: тонкий presentation-слой, явные use case, домен без зависимостей
-от фреймворков. Данные: PostgreSQL + Redis, миграции Alembic. Поиск по описанию — LLM (Google Gemini с fallback на
-Hugging Face). Видео — Kodik и AniLibria через media-proxy с allowlist хостингов CDN.
+**AEM** (Anime Epic Moments) — веб-платформа для аниме: каталог тайтлов, умный
+поиск по описанию на естественном языке, хайлайты (моменты серий) с публичной
+лентой, коллекции, избранное, оценки и персональные рекомендации.
 
-## Быстрый старт
+AEM не хранит и не раздаёт видеофайлы: платформа агрегирует **источники
+просмотра** (озвучки и качества) от внешних провайдеров и проксирует HLS-поток
+через собственный медиа-прокси.
 
-### Локальный запуск
+## Быстрый старт (Docker)
 
-Требования: установленный [uv](https://docs.astral.sh/uv/) (установка:
+Требуется Docker с плагином Compose.
 
-```powershell
-irm https://astral.sh/uv/install.ps1 | iex
+```bash
+git clone https://github.com/serega20112/Anime-Epic-Moments.git
+cd Anime-Epic-Moments
+cp .env.example .env
+docker compose up -d
 ```
 
-).
+Контейнер `app` при старте сам применяет миграции Alembic, после чего поднимает
+`gunicorn` с воркерами `uvicorn`.
 
-1. Установи зависимости (создаст `.venv` и заберёт `uv.lock`):
+| Что | Адрес |
+| --- | --- |
+| Приложение | http://localhost:5000 |
+| Swagger UI | http://localhost:5000/docs |
+| ReDoc | http://localhost:5000/redoc |
+| Живость процесса | http://localhost:5000/health |
+| Готовность зависимостей | http://localhost:5000/ready |
+| Redis GUI (Redis Commander) | http://localhost:8081 |
 
-```powershell
+Порт приложения задаётся переменной `APP_PORT` (по умолчанию `5000`), порт Redis
+GUI — `REDIS_COMMANDER_PORT` (по умолчанию `8081`). Перед выкатом в интернет
+обязательно смените `SECRET_KEY` в `.env`: вне режима отладки приложение не
+стартует без него.
+
+## Локальный старт (нативный uv)
+
+Требуются Python 3.12, [uv](https://docs.astral.sh/uv/) и Docker (только для
+PostgreSQL и Redis).
+
+```bash
 uv sync
+cp .env.example .env
+docker compose up -d postgres redis
+uv run alembic -c migrations/alembic.ini upgrade head
+uv run uvicorn backend.main:app --app-dir src --reload --port 5000
 ```
 
-2. Создай локальный `.env` на основе примера и заполни секреты и параметры PostgreSQL:
+`--app-dir src` добавляет каталог `src` в путь импорта, поэтому запуск не зависит
+от переменных оболочки конкретной ОС. То же касается остальных команд ниже.
 
-```powershell
-Copy-Item .env.example .env
-```
+## Проверки перед коммитом
 
-3. Примени миграции базы данных:
+| Проверка | Команда |
+| --- | --- |
+| Линтер и формат | `uv run ruff check src tests migrations` |
+| Форматирование | `uv run ruff format --check src tests migrations` |
+| Границы слоёв | `uv run python scripts/check_imports.py` |
+| Докстринги и комментарии | `uv run python scripts/check_style.py` |
+| Контракт OpenAPI | `uv run python scripts/export_openapi.py --check` |
+| Тесты с покрытием | `uv run pytest` |
+| Соответствие `uv.lock` | `uv lock --check` |
 
-```powershell
-uv run alembic -c build/alembic/alembic.ini upgrade head
-```
-
-4. Запусти приложение:
-
-```powershell
-$env:PYTHONPATH = "src"
-uv run python -m backend.main
-```
-
-### Запуск в Docker
-
-```powershell
-docker compose -f docker-compose.yml up --build
-```
-
-`docker compose` поднимает `app`, `postgres`, `redis` и Redis GUI. По умолчанию Docker-запуск использует
-`DATABASE_AUTO_INIT=1`, когда в `build/alembic/versions` нет revision-файлов.
-
-Redis GUI после старта доступен в браузере:
-
-```text
-http://localhost:8081
-```
-
-## Миграции базы данных
-
-Создать новую миграцию:
-
-```powershell
-uv run alembic -c build/alembic/alembic.ini revision --autogenerate -m "описание изменения"
-```
-
-Применить миграции:
-
-```powershell
-uv run alembic -c build/alembic/alembic.ini upgrade head
-```
-
-## Тесты
-
-```powershell
-uv run pytest
-```
-
-Линт, формат и границы слоёв — см. [docs/styleguide.md](docs/styleguide.md).
-
-## Структура проекта
-
-```text
-Dockerfile, docker-compose.yml   Контейнеризация и локальная оркестрация (app, postgres, redis)
-scripts/entrypoint.sh            Bootstrap: миграции + запуск gunicorn в контейнере
-build/                          Alembic-миграции и PostgreSQL/Redis runtime-скрипты
-docs/                       Документация и стайлгайд
-src/backend/                Backend-слои: presentation, application, domain, infrastructure, config
-src/frontend/               Шаблоны, статические файлы и frontend-скрипты
-tests/                      unit/ и integration/ тесты (зеркалят src/backend)
-pyproject.toml + uv.lock    Зависимости (uv) и конфиги ruff/pytest/import-linter
-ruff.toml                   Конфиг линта
-```
+Те же проверки выполняет CI в `.github/workflows/ci.yml`. Стандарты тестирования —
+уровни, нейминг, фикстуры и изоляция — зафиксированы в
+[docs/05-testing](docs/05-testing/01-testing-strategy.md).
 
 ## Карта документации
 
-- Хаб документации: [docs/README.md](docs/README.md)
-- **Стайлгайд по работе с проектом и репозиторием: [docs/styleguide.md](docs/styleguide.md)**
-- Онбординг: [docs/onboarding.md](docs/onboarding.md)
-- Конвенции разработки: [docs/conventions.md](docs/conventions.md)
-- Обзор архитектуры: [docs/architecture/overview.md](docs/architecture/overview.md)
-- Доменная модель: [docs/domain/core.md](docs/domain/core.md)
-- API и маршруты: [docs/api/endpoints.md](docs/api/endpoints.md)
+Документация живёт в каталоге [docs/](docs/README.md). Точка входа — навигатор
+[`docs/README.md`](docs/README.md), ниже — короткий маршрут по разделам.
 
-Примечание: API каталога (`GET /anime/api/catalog`) теперь поддерживает дополнительный параметр `has_dub` (например `has_dub=1`) — когда установлен, возвращаются только тайтлы с доступной озвучкой/переводом. Параметр `genre` понимает список через запятую (например `genre=Adventure,Comedy`), также поддерживаются `year_from` и `year_to` для фильтра по диапазону годов.
-- База данных и миграции: [docs/database/schema.md](docs/database/schema.md)
-- Безопасность: [docs/security/security.md](docs/security/security.md)
-- Деплой и Docker: [docs/deployment/overview.md](docs/deployment/overview.md)
-- Тестовая стратегия: [docs/testing/strategy.md](docs/testing/strategy.md)
-- Глоссарий: [docs/glossary.md](docs/glossary.md)
-- Пользовательские сценарии: [docs/use-cases.md](docs/use-cases.md)
+| Блок | Для кого | Что внутри |
+| --- | --- | --- |
+| [00-foundation](docs/00-foundation/) | Продукт, заказчик, интеграторы | [Глоссарий](docs/00-foundation/glossary.md) (единый язык AEM), [Видение продукта](docs/00-foundation/product-vision.md) |
+| [01-architecture](docs/01-architecture/) | Разработчики, архитектор | [Обзор и C4](docs/01-architecture/overview.md), [Слои и правила](docs/01-architecture/layers-and-rules.md), [Модель предметной области](docs/01-architecture/domain-model.md), [Поток запроса](docs/01-architecture/data-flow.md), [DI на Dishka](docs/01-architecture/di-dishka.md), [Модель данных](docs/01-architecture/data-model.md), [Безопасность](docs/01-architecture/security.md) |
+| [02-integrations-and-services](docs/02-integrations-and-services/) | Разработчики интеграций | [Провайдеры источников](docs/02-integrations-and-services/providers.md), [Умный поиск и LLM](docs/02-integrations-and-services/llm-search.md), [Медиа-прокси](docs/02-integrations-and-services/media-proxy.md) |
+| [03-ops](docs/03-ops/) | DevOps, дежурный | [Переменные окружения](docs/03-ops/env-reference.md), [Развёртывание](docs/03-ops/deployment.md), [Сопровождение](docs/03-ops/maintenance.md) |
+| [04-dev-guide](docs/04-dev-guide/) | Новый разработчик | [Онбординг](docs/04-dev-guide/onboarding.md), [Как добавить фичу](docs/04-dev-guide/feature-workflow.md), [Соглашения](docs/04-dev-guide/conventions.md) |
+| [05-testing](docs/05-testing/) | Все, кто пишет и ревьюит тесты | [Стратегия](docs/05-testing/01-testing-strategy.md), [Unit](docs/05-testing/02-unit-testing.md), [Integration](docs/05-testing/03-integration-testing.md), [E2E](docs/05-testing/04-e2e-testing.md), [Фикстуры и изоляция](docs/05-testing/05-fixtures-and-isolation.md) |
+| [06-adr](docs/06-adr/) | Архитектор, ревьюер | Решения: [Clean Architecture](docs/06-adr/0001-clean-architecture.md), [Dishka](docs/06-adr/0002-dishka-di.md), [uv](docs/06-adr/0003-uv-package-manager.md), [LLM-fallback](docs/06-adr/0004-llm-fallback-resilience.md), [Раскладка infrastructure](docs/06-adr/0005-infrastructure-packages.md) |
 
-## Ключевые точки входа в коде
+## Структура репозитория
 
-- Точка входа и uvicorn: `src/backend/main.py`
-- App factory (FastAPI): `src/backend/presentation/app_factory.py` / `create_app`
-- Граф зависимостей (dishka): `src/backend/infrastructure/di/`
-- Runtime-настройки: `src/backend/config/` (`Settings`)
-- SQLAlchemy-модели: `src/backend/infrastructure/models/` (фасад — `__init__.py`, по папке на зону)
-- HTTP-маршруты: `src/backend/presentation/api/v1/`
-- Use cases: `src/backend/application/use_cases/`
-- Внешние провайдеры (LLM, Kodik, AniLibria, YouTube): `src/backend/infrastructure/external/`
-- Медиа-прокси: `src/backend/infrastructure/media_proxy/`
-- Тесты: `tests/`
+```text
+src/backend/
+├── domain/          чистое ядро: сущности, value objects, политики, исключения
+├── application/     сценарии (use cases), порты, DTO, прикладные сервисы
+├── infrastructure/  адаптеры: SQLAlchemy, Redis, внешние API, DI на Dishka
+├── presentation/    FastAPI-роуты, схемы запросов и ответов, Jinja2-страницы
+├── config/          Settings и секции переменных окружения
+└── events/          lifespan приложения
+src/frontend/        HTML-шаблоны и статика
+migrations/          Alembic (alembic.ini, env.py, versions/)
+scripts/             гейты качества и генераторы артефактов
+tests/               unit, integration, support-фикстуры
+```
 
-## Почему репозиторий устроен так
+## Лицензия
 
-- Presentation-слой тонкий: HTTP-запросы переводятся в вызовы use case, никакой бизнес-логики на уровне роутов.
-- Use cases оркестрируют бизнес-действия; домен описывает продуктовые сущности и правила, не зная про FastAPI/SQLAlchemy.
-- Infrastructure владеет побочными эффектами: БД, внешние API, кэш, безопасность, DI.
-- Границы слоёв проверяются import-linter (`Layer Boundaries`), гейты — ruff + pytest в CI.
-- Зависимости управляются через uv: `pyproject.toml` + зафиксированный `uv.lock`.
-- Docker-артефакты — в корне (`Dockerfile`, `docker-compose.yml`, `scripts/entrypoint.sh`); Alembic-миграции — в `build/`.
+Проект распространяется по лицензии MIT — см. [LICENSE](LICENSE).

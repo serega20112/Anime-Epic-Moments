@@ -1,6 +1,6 @@
-"""Database connection settings.
+"""Настройки подключения к базе данных.
 
-The project is fully async: only async driver URLs are produced here.
+Проект полностью асинхронный: здесь собираются только URL с async-драйвером.
 """
 
 from __future__ import annotations
@@ -9,11 +9,7 @@ import os
 
 
 def build_default_database_url() -> str:
-    """Build a default PostgreSQL async URL from individual environment variables.
-
-    Returns:
-        str: Database URL with the asyncpg driver scheme.
-    """
+    """Собрать URL PostgreSQL по отдельным переменным окружения."""
     user = os.getenv("POSTGRES_USER", "anime_epic_moments")
     password = os.getenv("POSTGRES_PASSWORD", "anime_epic_moments")
     host = os.getenv("POSTGRES_HOST", "localhost")
@@ -23,13 +19,13 @@ def build_default_database_url() -> str:
 
 
 def normalize_database_url(value: str | None) -> str:
-    """Normalize a database URL to the async driver scheme.
+    """Привести URL базы к схеме асинхронного драйвера.
 
     Args:
-        value: Raw database URL from the environment.
+        value: Сырой URL из окружения.
 
     Returns:
-        str: Normalized async database URL.
+        str: URL с async-драйвером.
     """
     raw_value = str(value or "").strip()
     if not raw_value:
@@ -50,18 +46,10 @@ def normalize_database_url(value: str | None) -> str:
 
 
 def database_url() -> str:
-    """Return the async database URL.
-
-    Returns:
-        str: Normalized async database URL.
-    """
+    """Вернуть URL базы данных с асинхронным драйвером."""
     return normalize_database_url(os.getenv("DATABASE_URL"))
 
 
 def database_auto_init() -> bool:
-    """Return whether the database schema should be initialized automatically.
-
-    Returns:
-        bool: True when DATABASE_AUTO_INIT is enabled.
-    """
+    """Вернуть, инициализировать ли схему базы автоматически при старте."""
     return os.getenv("DATABASE_AUTO_INIT", "0") == "1"

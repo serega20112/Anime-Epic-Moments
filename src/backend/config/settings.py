@@ -1,8 +1,8 @@
-"""Application configuration assembled from environment variable sections.
+"""Настройки приложения, собранные из секций переменных окружения.
 
-All values are read at class-body evaluation time by calling pure loader
-functions from :mod:`backend.config.sections`, so re-importing this module
-recomputes them from the current environment.
+Значения читаются на этапе вычисления тела класса вызовом чистых
+загрузчиков из :mod:`backend.config.sections`, поэтому повторный импорт
+модуля пересчитывает их по текущему окружению.
 """
 
 from __future__ import annotations
@@ -11,7 +11,16 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from backend.config.sections import auth, database, external, redis_, security, server, validation
+from backend.config.sections import (
+    auth,
+    database,
+    external,
+    features,
+    redis_,
+    security,
+    server,
+    validation,
+)
 from backend.config.sections.security import secret_key
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -19,7 +28,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 
 class Settings:
-    """Application settings loaded from environment variables."""
+    """Настройки приложения, загруженные из переменных окружения."""
 
     secret_key: str = secret_key()
     database_url: str = database.database_url()
@@ -110,16 +119,20 @@ class Settings:
     auth_password_reset_attempts_limit: int = auth.auth_password_reset_attempts_limit()
     auth_verify_email_attempts_limit: int = auth.auth_verify_email_attempts_limit()
     auth_verify_email_resend_limit: int = auth.auth_verify_email_resend_limit()
+    auth_api_refresh_attempts_limit: int = auth.auth_api_refresh_attempts_limit()
     auth_window_seconds: int = auth.auth_window_seconds()
     support_ticket_rate_limit: int = validation.support_ticket_rate_limit()
     highlight_comment_rate_limit: int = validation.highlight_comment_rate_limit()
     highlight_rate_window_seconds: int = validation.highlight_rate_window_seconds()
     log_level: str = server.log_level()
+    log_format: str = server.log_format()
     account_lock_duration_seconds: int = auth.account_lock_duration_seconds()
     hsts_max_age: int = security.hsts_max_age()
+    trusted_proxies: list[str] = security.trusted_proxies()
     csrf_token_name: str = security.csrf_token_name()
     anime_query_limit_max: int = validation.anime_query_limit_max()
     anime_title_max_length: int = validation.anime_title_max_length()
     anime_description_max_length: int = validation.anime_description_max_length()
     anime_genre_hint_max_length: int = validation.anime_genre_hint_max_length()
     anime_autocomplete_limit_max: int = validation.anime_autocomplete_limit_max()
+    feature_manual_source_creation: bool = features.feature_manual_source_creation()

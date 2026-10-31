@@ -1,4 +1,4 @@
-"""Resend verification code command."""
+"""Повторная отправка кода подтверждения адреса почты."""
 
 from __future__ import annotations
 
@@ -7,10 +7,10 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class ResendVerificationCommand:
-    """Resend verification code command.
+    """Команда повторной отправки кода подтверждения.
 
     Attributes:
-        email: Normalized user email.
+        email: Нормализованный адрес почты.
     """
 
     email: str

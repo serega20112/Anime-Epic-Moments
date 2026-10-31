@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 
 from backend.domain import User, ViewingMoment
-from backend.infrastructure.repositories.moment_repository import MomentRepository
-from backend.infrastructure.repositories.user_repository import UserRepository
+from backend.infrastructure.database.repositories.moment_repository import MomentRepository
+from backend.infrastructure.database.repositories.user_repository import UserRepository
 
 
 @pytest.mark.integration

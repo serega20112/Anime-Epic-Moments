@@ -1,4 +1,4 @@
-"""Query parameters for browsing anime by Anixart-style filters."""
+"""Параметры запроса каталога аниме с фильтрами в стиле Anixart."""
 
 from __future__ import annotations
 
@@ -9,22 +9,21 @@ from backend.domain.value_objects.anime.genre_filter import GenreMatchMode
 
 @dataclass(frozen=True, slots=True)
 class FilterAnimeCatalogQuery:
-    """Query parameters for browsing anime by Anixart-style filters.
+    """Набор фильтров и настроек выдачи для страницы каталога.
 
     Attributes:
-        genres: Genre or tag names to filter by; empty means all genres.
-        genre_mode: Strategy used to combine several selected genres.
-        media_type: Format filter (tv, movie, ova, ona, special) or empty.
-        status: Status filter (airing, complete, upcoming) or empty.
-        has_dub: When True only titles with an available voice-over are
-            returned; None means the dubbing availability is not considered.
-        year_from: Optional lower bound release year.
-        year_to: Optional upper bound release year.
-        min_score: Optional minimum normalized rating (0-10).
-        sort: Sorting strategy (rating, popularity, newest, title).
-        order: Sorting direction (asc, desc).
-        page: One-based page number to return.
-        per_page: Number of items per page.
+        genres: Выбранные жанры; пустое значение означает «все жанры».
+        genre_mode: Правило объединения жанров: все сразу или любой из них.
+        media_type: Тип произведения (сериал, фильм и так далее).
+        status: Статус выхода аниме.
+        has_dub: True — только с озвучкой, False — только без неё, None — не важно.
+        year_from: Нижняя граница года выхода.
+        year_to: Верхняя граница года выхода.
+        min_score: Минимальный рейтинг от нуля до десяти.
+        sort: Поле сортировки.
+        order: Направление сортировки.
+        page: Номер запрошенной страницы.
+        per_page: Размер страницы.
     """
 
     genres: tuple[str, ...] = field(default_factory=tuple)

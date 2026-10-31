@@ -1,4 +1,4 @@
-"""Abstract Telegram support notifier interface."""
+"""Порт уведомлений поддержки в Telegram."""
 
 from __future__ import annotations
 
@@ -7,12 +7,8 @@ from typing import Any
 
 
 class TelegramSupportNotifierInterface(ABC):
-    """Interface for sending Telegram support notifications."""
+    """Уведомления об обращениях в Telegram."""
 
     @abstractmethod
     async def notify(self, ticket_data: dict[str, Any]) -> None:
-        """Send a Telegram notification about a support ticket.
-
-        Args:
-            ticket_data: Dictionary with ticket information.
-        """
+        """Отправить уведомление об обращении в Telegram."""

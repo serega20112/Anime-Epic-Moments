@@ -1,3 +1,5 @@
+"""Сценарии подтверждения адреса почты."""
+
 from backend.application.use_cases.auth.verification.request_email_verification import (
     RequestEmailVerificationUseCase,
 )

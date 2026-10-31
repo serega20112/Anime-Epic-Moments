@@ -1,83 +1,92 @@
-from secrets import randbelow
+"""Сценарий запроса кода подтверждения адреса почты."""
 
-from backend.application.interface.repositories.user_repository import UserRepository
+from __future__ import annotations
+
+from backend.application.dto import RegisterCommand
 from backend.application.interface.services import (
-    EmailVerificationMailerInterface as EmailVerificationMailer,
+    EmailVerificationMailerInterface,
+    EmailVerificationStoreInterface,
+    PasswordServiceInterface,
 )
-from backend.application.interface.services import (
-    EmailVerificationStoreInterface as EmailVerificationStore,
-)
-from backend.application.interface.services import PasswordServiceInterface as PasswordService
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases.auth.result import AuthResult
+from backend.application.use_cases.auth.user_lookup import find_user_by_email
 from backend.domain import PendingEmailVerification
+from backend.domain.policies.email_verification_policy import (
+    generate_verification_code,
+    normalize_theme,
+)
+from backend.domain.policies.user_credentials_policy import normalize_email
 
 
 class RequestEmailVerificationUseCase:
-    """Создает pending-регистрацию и отправляет код подтверждения email."""
+    """Создаёт pending-регистрацию и отправляет код подтверждения email."""
 
     def __init__(
         self,
-        user_repo: UserRepository,
-        password_service: PasswordService,
-        verification_store: EmailVerificationStore,
-        mailer: EmailVerificationMailer,
-    ):
-        self.user_repo = user_repo
-        self.password_service = password_service
-        self.verification_store = verification_store
-        self.mailer = mailer
-
-    async def execute(
-        self,
-        email: str,
-        password: str,
-        username: str,
-        theme: str = "neon",
-    ) -> AuthResult:
-        """Start registration by requesting an email verification code.
+        unit_of_work: UnitOfWorkInterface,
+        password_service: PasswordServiceInterface,
+        verification_store: EmailVerificationStoreInterface,
+        mailer: EmailVerificationMailerInterface,
+    ) -> None:
+        """Инициализирует сценарий запроса кода подтверждения.
 
         Args:
-            email: Normalized user email.
-            password: Plain password.
-            username: Desired username.
-            theme: Preferred visual theme.
+            unit_of_work: Граница транзакции проверки занятого email.
+            password_service: Сервис хеширования паролей.
+            verification_store: Хранилище кодов подтверждения.
+            mailer: Сервис отправки почты.
+        """
+        self._unit_of_work = unit_of_work
+        self._password_service = password_service
+        self._verification_store = verification_store
+        self._mailer = mailer
+
+    async def execute(self, command: RegisterCommand) -> AuthResult:
+        """Начинает регистрацию, запрашивая код подтверждения email.
+
+        Args:
+            command: Команда регистрации с почтой, паролем, именем и темой.
 
         Returns:
-            AuthResult: Success with pending verification or failure redirect.
+            AuthResult: Success с pending-записью или failure с редиректом.
         """
-        normalized_email = str(email or "").strip().lower()
-        normalized_username = str(username or "").strip()
-        if await self.user_repo.get_by_email(normalized_email):
-            return await AuthResult.failure(
-                f"Пользователь с email {normalized_email} уже существует",
+        email = normalize_email(command.email)
+        if await self._email_taken(email):
+            return AuthResult.failure(
+                f"Пользователь с email {email} уже существует",
                 "auth.register_page",
             )
 
         payload = PendingEmailVerification(
-            email=normalized_email,
-            username=normalized_username,
-            password_hash=await self.password_service.hash_password(password),
-            code=await self._generate_code(),
-            theme=await self._normalize_theme(theme),
+            email=email,
+            username=str(command.username or "").strip(),
+            password_hash=await self._password_service.hash_password(command.password),
+            code=generate_verification_code(),
+            theme=normalize_theme(command.theme),
         )
-        await self.verification_store.save(payload)
-        await self.mailer.send_verification_code(
+        await self._verification_store.save(payload)
+        await self._mailer.send_verification_code(
             payload.email,
             payload.code,
             theme=payload.theme,
         )
-        return await AuthResult.success(
-            data=normalized_email,
+        return AuthResult.success(
+            data=email,
             message=(
                 "Мы отправили код подтверждения на почту. Введи его, чтобы завершить регистрацию."
             ),
             redirect_endpoint="auth.verify_email_page",
-            redirect_email=normalized_email,
+            redirect_email=email,
         )
 
-    async def _generate_code(self) -> str:
-        return f"{randbelow(1000000):06d}"
+    async def _email_taken(self, email: str) -> bool:
+        """Проверить, занят ли адрес почты существующим аккаунтом.
 
-    async def _normalize_theme(self, value: str | None) -> str:
-        normalized = str(value or "").strip().lower()
-        return normalized if normalized in {"neon", "dark", "light", "rose"} else "neon"
+        Args:
+            email: Нормализованный адрес почты.
+
+        Returns:
+            bool: True, если пользователь с таким адресом уже зарегистрирован.
+        """
+        return await find_user_by_email(self._unit_of_work, email) is not None

@@ -1,4 +1,4 @@
-"""Update profile command."""
+"""Изменение профиля пользователя."""
 
 from __future__ import annotations
 
@@ -7,15 +7,15 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class UpdateProfileCommand:
-    """Update profile command.
+    """Команда изменения профиля.
 
     Attributes:
-        user_id: Identifier of the authenticated user.
-        username: Desired username.
-        avatar_url: Optional avatar URL.
-        status: Optional status text shown under the username.
-        show_watch_activity: Whether the viewing dynamics are public.
-        show_recent_episodes: Whether recent episodes are public.
+        user_id: Идентификатор вошедшего пользователя.
+        username: Желаемое отображаемое имя.
+        avatar_url: Ссылка на аватар.
+        status: Текстовый статус профиля.
+        show_watch_activity: Показывать ли активность просмотра в профиле.
+        show_recent_episodes: Показывать ли недавно просмотренные серии.
     """
 
     user_id: int

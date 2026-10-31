@@ -1,17 +1,16 @@
-from secrets import randbelow
+"""Повторная отправка кода подтверждения почты."""
 
+from __future__ import annotations
+
+from backend.application.dto import ResendVerificationCommand
 from backend.application.interface.services import (
-    EmailVerificationMailerInterface as EmailVerificationMailer,
-)
-from backend.application.interface.services import (
-    EmailVerificationStoreInterface as EmailVerificationStore,
+    EmailVerificationMailerInterface,
+    EmailVerificationStoreInterface,
 )
 from backend.application.use_cases.auth.result import AuthResult
 from backend.domain import PendingEmailVerification
-
-
-class PendingEmailVerificationNotFoundError(Exception):
-    """Raised when no pending registration exists for an email."""
+from backend.domain.policies.email_verification_policy import generate_verification_code
+from backend.domain.policies.user_credentials_policy import normalize_email
 
 
 class ResendEmailVerificationUseCase:
@@ -19,54 +18,51 @@ class ResendEmailVerificationUseCase:
 
     def __init__(
         self,
-        verification_store: EmailVerificationStore,
-        mailer: EmailVerificationMailer,
-    ):
-        """Initialize the use case.
+        verification_store: EmailVerificationStoreInterface,
+        mailer: EmailVerificationMailerInterface,
+    ) -> None:
+        """Инициализирует сценарий перевыпуска кода подтверждения.
 
         Args:
-            verification_store: Verification code store.
-            mailer: Email verification mailer.
+            verification_store: Хранилище кодов подтверждения.
+            mailer: Сервис отправки почты.
         """
-        self.verification_store = verification_store
-        self.mailer = mailer
+        self._verification_store = verification_store
+        self._mailer = mailer
 
-    async def execute(self, email: str) -> AuthResult:
-        """Regenerate and resend a verification code.
+    async def execute(self, command: ResendVerificationCommand) -> AuthResult:
+        """Перевыпускает и отправляет код подтверждения заново.
 
         Args:
-            email: Normalized user email.
+            command: Команда повторной отправки с адресом почты.
 
         Returns:
-            AuthResult: Success with the email or failure redirect.
+            AuthResult: Success с email или failure с редиректом.
         """
-        normalized_email = str(email or "").strip().lower()
-        payload = await self.verification_store.get(normalized_email)
+        email = normalize_email(command.email)
+        payload = await self._verification_store.get(email)
         if payload is None:
-            return await AuthResult.failure(
+            return AuthResult.failure(
                 "Не найдена ожидающая регистрация для этого email.",
                 "auth.verify_email_page",
-                redirect_email=normalized_email,
+                redirect_email=email,
             )
         refreshed = PendingEmailVerification(
             email=payload.email,
             username=payload.username,
             password_hash=payload.password_hash,
-            code=await self._generate_code(),
+            code=generate_verification_code(),
             theme=payload.theme,
         )
-        await self.verification_store.save(refreshed)
-        await self.mailer.send_verification_code(
+        await self._verification_store.save(refreshed)
+        await self._mailer.send_verification_code(
             refreshed.email,
             refreshed.code,
             theme=refreshed.theme,
         )
-        return await AuthResult.success(
-            data=normalized_email,
+        return AuthResult.success(
+            data=email,
             message="Новый код подтверждения отправлен.",
             redirect_endpoint="auth.verify_email_page",
-            redirect_email=normalized_email,
+            redirect_email=email,
         )
-
-    async def _generate_code(self) -> str:
-        return f"{randbelow(1000000):06d}"

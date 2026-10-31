@@ -1,16 +1,20 @@
-"""Use case for browsing anime through Anixart-style filters."""
+"""Сценарий просмотра каталога аниме с фильтрами в стиле Anixart."""
 
 from __future__ import annotations
 
 import asyncio
+import logging
+from collections.abc import Sequence
 
 from backend.application.dto.anime import AnimeCatalogResult, FilterAnimeCatalogQuery
 from backend.application.interface.repositories.watch_repository import WatchRepository
-from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
 from backend.application.interface.services import (
-    WatchSourceSyncServiceInterface as WatchSourceSyncService,
+    AnimeApiClientInterface,
+    WatchSourceSyncServiceInterface,
 )
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.domain.entities.anime.anime import Anime
+from backend.domain.exceptions import ExternalServiceError
 from backend.domain.value_objects.anime.genre_facet import GenreFacet
 from backend.domain.value_objects.anime.genre_filter import (
     GenreFilter,
@@ -18,52 +22,74 @@ from backend.domain.value_objects.anime.genre_filter import (
     normalize_genre,
 )
 
-MAX_PER_PAGE = 100
 DEFAULT_PER_PAGE = 25
 ALLOWED_PER_PAGE = (10, 25, 50, 100)
 FACET_LIMIT = 60
 DUB_FETCH_MULTIPLIER = 4
 WINDOW_LIMIT = 400
 
+logger = logging.getLogger("anime_epic_moments")
+
+
+def build_facets(animes: Sequence[Anime]) -> tuple[GenreFacet, ...]:
+    """Посчитать жанры по просмотренным тайтлам, начиная с самых частых.
+
+    Args:
+        animes: Тайтлы, отданные провайдером в окне выборки.
+
+    Returns:
+        tuple[GenreFacet, ...]: Жанры с числом вхождений, от частых к редким.
+    """
+    counters: dict[str, int] = {}
+    labels: dict[str, str] = {}
+    for anime in animes:
+        for genre in getattr(anime, "genres", None) or ():
+            label = str(genre).strip()
+            key = normalize_genre(label)
+            if not key:
+                continue
+            counters[key] = counters.get(key, 0) + 1
+            labels.setdefault(key, label)
+    ordered = sorted(counters.items(), key=lambda item: (-item[1], item[0]))
+    return tuple(GenreFacet(name=labels[key], count=count) for key, count in ordered[:FACET_LIMIT])
+
 
 class FilterAnimeCatalogUseCase:
-    """Browse anime by genre, format, status, year, rating and sort.
+    """Фильтрует каталог аниме в стиле Anixart.
 
-    Provider APIs narrow the catalog with OR semantics only, so the exact
-    genre semantics requested by the user (all selected genres, or any of
-    them) are enforced here with :class:`GenreFilter`. Titles can also be
-    restricted to those that actually have a voice-over, which is resolved
-    from the local translations table first and from the provider
-    availability map afterwards.
+    Провайдеры сужают каталог только по ИЛИ-семантике, поэтому точные смыслы
+    выбора жанров (все выбранные или любой из них) применяются здесь через
+    :class:`GenreFilter`. Список можно ограничить тайтлами с озвучкой: сначала
+    это проверяется по локальной таблице переводов, а затем по карте
+    доступности провайдера.
     """
 
     def __init__(
         self,
-        api_client: AnimeApiClient,
-        watch_repository: WatchRepository,
-        watch_source_sync_service: WatchSourceSyncService,
-    ):
-        """Initialize the use case.
+        unit_of_work: UnitOfWorkInterface,
+        api_client: AnimeApiClientInterface,
+        watch_source_sync_service: WatchSourceSyncServiceInterface,
+    ) -> None:
+        """Инициализирует сценарий фильтрации каталога аниме.
 
         Args:
-            api_client: Anime API client.
-            watch_repository: Watch repository for local translation lookup.
-            watch_source_sync_service: Watch source sync service for
-                availability checks.
+            unit_of_work: Граница транзакции чтения локальных переводов.
+            api_client: Клиент API аниме.
+            watch_source_sync_service: Сервис доступности озвучек у провайдеров.
         """
-        self.api_client = api_client
-        self.watch_repository = watch_repository
-        self.watch_source_sync_service = watch_source_sync_service
+        self._unit_of_work = unit_of_work
+        self._api_client = api_client
+        self._watch_source_sync_service = watch_source_sync_service
 
     async def execute(self, query: FilterAnimeCatalogQuery) -> AnimeCatalogResult:
-        """Return one page of anime matching the requested filters.
+        """Возвращает страницу каталога по запрошенным фильтрам.
 
         Args:
-            query: Filter query DTO.
+            query: Фильтры, сортировка и номер страницы.
 
         Returns:
-            AnimeCatalogResult: Requested page, pagination metadata and the
-                genre facets observed in the scanned results.
+            AnimeCatalogResult: Запрошенная страница, метаданные пагинации и
+                жанры, встреченные в просмотренной выдаче.
         """
         per_page = self._per_page(query.per_page)
         genre_filter = GenreFilter.from_values(query.genres, query.genre_mode)
@@ -72,7 +98,7 @@ class FilterAnimeCatalogUseCase:
         if needs_window:
             return await self._execute_over_window(query, genre_filter, per_page)
 
-        page = await self.api_client.filter_catalog(
+        page = await self._api_client.filter_catalog(
             genres=query.genres,
             media_type=query.media_type,
             status=query.status,
@@ -91,7 +117,7 @@ class FilterAnimeCatalogUseCase:
             per_page=page.per_page,
             total=page.total,
             total_is_exact=True,
-            genre_facets=_build_facets(page.items),
+            genre_facets=build_facets(page.items),
         )
 
     async def _execute_over_window(
@@ -100,21 +126,21 @@ class FilterAnimeCatalogUseCase:
         genre_filter: GenreFilter,
         per_page: int,
     ) -> AnimeCatalogResult:
-        """Filter a bounded provider window and slice the requested page.
+        """Сузить увеличенное окно провайдера локальными фильтрами.
 
-        Providers cannot express conjunctive genre matching or dubbing
-        availability, so a wider window is fetched once and narrowed locally.
+        Провайдеры не умеют конъюнкцию жанров и признак озвучки, поэтому широкое
+        окно читается один раз и сужается на месте.
 
         Args:
-            query: Filter query DTO.
-            genre_filter: Exact genre semantics to enforce.
-            per_page: Normalized page size.
+            query: Фильтры и номер страницы.
+            genre_filter: Точный смысл совпадения по жанрам.
+            per_page: Приведённый размер страницы.
 
         Returns:
-            AnimeCatalogResult: Requested page of the narrowed window.
+            AnimeCatalogResult: Запрошенная страница суженного окна.
         """
         window = self._window_size(query.page, per_page, query.has_dub is True)
-        provider_page = await self.api_client.filter_catalog(
+        provider_page = await self._api_client.filter_catalog(
             genres=query.genres,
             media_type=query.media_type,
             status=query.status,
@@ -133,25 +159,24 @@ class FilterAnimeCatalogUseCase:
             candidates = await self._keep_dubbed(candidates)
 
         start = (max(1, query.page) - 1) * per_page
-        items = candidates[start : start + per_page]
         return AnimeCatalogResult(
-            items=tuple(items),
+            items=tuple(candidates[start : start + per_page]),
             page=max(1, query.page),
             per_page=per_page,
             total=len(candidates),
             total_is_exact=len(scanned) < window,
-            genre_facets=_build_facets(scanned),
+            genre_facets=build_facets(scanned),
         )
 
     @staticmethod
     def _per_page(value: int) -> int:
-        """Normalize the requested page size.
+        """Привести запрошенный размер страницы к ближайшему допустимому.
 
         Args:
-            value: Requested page size.
+            value: Значение размера страницы из запроса.
 
         Returns:
-            int: One of the supported page sizes.
+            int: Размер из разрешённого набора либо значение по умолчанию.
         """
         try:
             requested = int(value)
@@ -163,111 +188,104 @@ class FilterAnimeCatalogUseCase:
 
     @staticmethod
     def _window_size(page: int, per_page: int, needs_dub: bool) -> int:
-        """Compute how many provider items must be scanned to serve a page.
+        """Посчитать, сколько записей провайдера нужно просмотреть ради страницы.
 
         Args:
-            page: Requested page number.
-            per_page: Normalized page size.
-            needs_dub: Whether dubbing availability narrows the results.
+            page: Запрошенный номер страницы.
+            per_page: Приведённый размер страницы.
+            needs_dub: Нужна ли фильтрация по наличию озвучки.
 
         Returns:
-            int: Number of items to request from the provider.
+            int: Размер окна выборки провайдера в пределах безопасного лимита.
         """
         required = max(1, page) * per_page
         if needs_dub:
             required *= DUB_FETCH_MULTIPLIER
         return min(WINDOW_LIMIT, max(per_page, required))
 
-    async def _keep_dubbed(self, candidates: list[Anime]) -> list[Anime]:
-        """Keep only titles that have at least one available translation.
+    async def _keep_dubbed(self, candidates: Sequence[Anime]) -> list[Anime]:
+        """Оставить только тайтлы, у которых есть хотя бы одна озвучка.
 
         Args:
-            candidates: Titles scanned from the provider.
+            candidates: Тайтлы, прошедшие жанровый фильтр.
 
         Returns:
-            list[Anime]: Titles with a voice-over, in the original order.
+            list[Anime]: Тайтлы с подтверждённой доступностью озвучки.
         """
-        flags = await asyncio.gather(*[self._has_translation(anime) for anime in candidates])
-        return [anime for anime, has_translation in zip(candidates, flags) if has_translation]
+        flags = await self._local_dub_flags(candidates)
+        unresolved = [anime for anime, dubbed in zip(candidates, flags, strict=True) if not dubbed]
+        remote_flags = await asyncio.gather(
+            *(self._has_provider_translation(anime) for anime in unresolved)
+        )
+        merged = list(flags)
+        positions = [index for index, dubbed in enumerate(flags) if not dubbed]
+        for position, dubbed in zip(positions, remote_flags, strict=True):
+            merged[position] = dubbed
+        return [anime for anime, dubbed in zip(candidates, merged, strict=True) if dubbed]
 
-    async def _has_translation(self, anime: Anime) -> bool:
-        """Check whether an anime has at least one available translation.
+    async def _local_dub_flags(self, candidates: Sequence[Anime]) -> list[bool]:
+        """Проверить наличие озвучки в локальной базе одной транзакцией.
+
+        Захват широкий намеренно: это вспомогательная проверка доступности, и
+        сбой базы не должен ронять выдачу каталога целиком. Случай не
+        проглатывается: он уходит в лог уровнем ERROR со stack trace, чтобы баг
+        кода не выглядел штатной пустой озвучкой.
 
         Args:
-            anime: Anime entity.
+            candidates: Тайтлы для проверки.
 
         Returns:
-            bool: True when the anime has a voice-over.
+            list[bool]: Признаки озвучки в том же порядке, что и тайтлы.
         """
-        anime_id = self._anime_id(anime)
-        if anime_id is not None:
-            try:
-                local_translations = await self.watch_repository.get_translations(anime_id)
-                if local_translations:
-                    return True
-            except Exception:
-                pass
+        flags: list[bool] = []
+        async with self._unit_of_work as uow:
+            repository = uow.repository(WatchRepository)
+            for anime in candidates:
+                anime_id = anime.mal_id
+                if anime_id is None:
+                    flags.append(False)
+                    continue
+                try:
+                    translations = await repository.get_translations(anime_id=anime_id)
+                except Exception:
+                    logger.exception(
+                        "catalog_local_translation_lookup_failed anime_id=%s", anime_id
+                    )
+                    translations = []
+                flags.append(bool(translations))
+        return flags
 
+    async def _has_provider_translation(self, anime: Anime) -> bool:
+        """Проверить озвучку тайтла по карте доступности провайдера.
+
+        Штатный сбой провайдера (`ExternalServiceError`) — это деградация на
+        warning: озвучка просто не подтверждена. Любой другой исключительный
+        случай уходит в лог со stack trace, чтобы баг кода не прятался за
+        пустой выдачей каталога.
+
+        Args:
+            anime: Тайтл без локально найденных переводов.
+
+        Returns:
+            bool: True, если провайдер сообщает хотя бы об одной озвучке.
+        """
         if not anime.title:
             return False
         try:
-            availability = await self.watch_source_sync_service.get_translations_availability(
+            availability = await self._watch_source_sync_service.get_translations_availability(
                 title=anime.title,
                 year=anime.year,
-                shikimori_id=self._shikimori_id(anime),
+                shikimori_id=anime.mal_id,
                 genres=anime.genres,
             )
             return bool(availability)
-        except Exception:
+        except ExternalServiceError as error:
+            logger.warning(
+                "catalog_provider_availability_lookup_failed title=%s reason=%s",
+                anime.title,
+                error.__class__.__name__,
+            )
             return False
-
-    @staticmethod
-    def _anime_id(anime: Anime) -> int | None:
-        """Extract the numeric anime id used in the local database.
-
-        Args:
-            anime: Anime entity.
-
-        Returns:
-            int | None: Numeric external id or None.
-        """
-        external_id = str(getattr(anime, "external_id", "") or "").strip()
-        if not external_id.isdigit():
-            return None
-        return int(external_id)
-
-    @staticmethod
-    def _shikimori_id(anime: Anime) -> int | None:
-        """Extract shikimori_id (MAL-id) from external_id, if it is numeric.
-
-        Args:
-            anime: Anime entity.
-
-        Returns:
-            int | None: MAL-id or None when external_id is not numeric.
-        """
-        return FilterAnimeCatalogUseCase._anime_id(anime)
-
-
-def _build_facets(animes) -> tuple[GenreFacet, ...]:
-    """Count genres across the scanned titles, most frequent first.
-
-    Args:
-        animes: Titles returned by the provider.
-
-    Returns:
-        tuple[GenreFacet, ...]: Genres present in the results, capped to keep
-            the filter panel compact.
-    """
-    counters: dict[str, int] = {}
-    labels: dict[str, str] = {}
-    for anime in animes:
-        for genre in getattr(anime, "genres", None) or ():
-            label = str(genre).strip()
-            key = normalize_genre(label)
-            if not key or key in counters:
-                continue
-            counters[key] = counters.get(key, 0) + 1
-            labels[key] = label
-    ordered = sorted(counters.items(), key=lambda item: (-item[1], item[0]))
-    return tuple(GenreFacet(name=labels[key], count=count) for key, count in ordered[:FACET_LIMIT])
+        except Exception:
+            logger.exception("catalog_provider_availability_lookup_failed title=%s", anime.title)
+            return False

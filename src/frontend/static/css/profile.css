@@ -335,38 +335,110 @@
 /* ---------- Динамика просмотра (heatmap) ---------- */
 .heatmap-chart {
   display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 92px;
-  padding-top: 4px;
+  align-items: stretch;
+  gap: 3px;
+  height: 132px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .heatmap-col {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 4px;
+}
+
+.heatmap-plot {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
 }
 
 .heatmap-bar {
-  height: var(--heatmap-h, 12px);
-  border-radius: var(--radius-sm);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--heatmap-h, 4%);
+  min-height: 4px;
+  border-radius: 4px 4px 2px 2px;
   background: var(--button-primary-bg);
-  opacity: 0.85;
-  transition: opacity var(--transition-fast);
+  opacity: 0.9;
+  transition:
+    opacity var(--transition-fast),
+    filter var(--transition-fast);
+}
+
+.heatmap-count {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--heatmap-h, 4%) + 4px);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.heatmap-col.is-empty .heatmap-bar {
+  background: var(--color-border);
+  opacity: 0.55;
+}
+
+.heatmap-col.is-today .heatmap-bar {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 65%, transparent);
 }
 
 .heatmap-col:hover .heatmap-bar {
   opacity: 1;
+  filter: brightness(1.18);
 }
 
-.heatmap-col label {
+/* Ось дней — отдельным рядом под схемой: подписи редкие (каждый 10-й день),
+   поэтому не спорят с тонкими столбцами и не режут график на читаемые блоки. */
+.heatmap-axis {
+  display: flex;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.heatmap-axis-cell {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 13px;
+}
+
+.heatmap-axis-cell span {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 9px;
+  line-height: 1;
   color: var(--color-text-faint);
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.heatmap-axis-cell:first-child span {
+  left: 0;
+  transform: none;
+}
+
+.heatmap-axis-cell:last-child span {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.heatmap-caption {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
 }
 
 /* ---------- Просмотрено недавно ---------- */

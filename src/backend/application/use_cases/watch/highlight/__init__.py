@@ -1,3 +1,5 @@
+"""Сценарии хайлайтов, созданных в плеере."""
+
 from backend.application.use_cases.watch.highlight.create_watch_highlight import (
     CreateWatchHighlightUseCase,
 )

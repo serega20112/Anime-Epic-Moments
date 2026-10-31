@@ -1,4 +1,4 @@
-"""Record that the user finished watching an episode."""
+"""Продвижение прогресса после просмотра серии."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class CompleteEpisodeCommand:
-    """Advance the user's progress after finishing an episode.
+    """Команда отметки просмотренной серии.
 
     Attributes:
-        user_id: Acting user identifier.
-        anime_id: Anime identifier.
-        episode: Episode number that was finished.
+        user_id: Идентификатор действующего пользователя.
+        anime_id: Идентификатор аниме.
+        episode: Номер просмотренной серии.
     """
 
     user_id: int
     anime_id: int
-    episode: int
+    episode: int | None

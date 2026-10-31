@@ -1,4 +1,4 @@
-"""Abstract support email mailer interface."""
+"""Порт отправки писем поддержки."""
 
 from __future__ import annotations
 
@@ -7,12 +7,8 @@ from typing import Any
 
 
 class SupportEmailMailerInterface(ABC):
-    """Interface for sending support ticket emails."""
+    """Отправка писем об обращениях в поддержку."""
 
     @abstractmethod
     async def send(self, ticket_data: dict[str, Any]) -> None:
-        """Send a support ticket email.
-
-        Args:
-            ticket_data: Dictionary with ticket information.
-        """
+        """Отправить письмо об обращении."""

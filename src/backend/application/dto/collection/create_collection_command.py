@@ -1,4 +1,4 @@
-"""Create collection form payload."""
+"""Создание коллекции аниме."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class CreateCollectionCommand:
-    """Create collection form payload.
+    """Команда создания коллекции.
 
     Attributes:
-        user_id: Owner user identifier.
-        title: Collection title.
-        description: Optional collection description.
-        cover_url: Optional public URL of the collection cover image.
-        is_public: Whether the collection is publicly visible.
+        user_id: Идентификатор владельца коллекции.
+        title: Название коллекции.
+        description: Описание коллекции.
+        is_public: Доступна ли коллекция другим пользователям.
+        cover_url: Ссылка на обложку коллекции.
     """
 
     user_id: int

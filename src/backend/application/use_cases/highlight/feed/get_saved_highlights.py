@@ -1,42 +1,32 @@
+"""Сценарий дашборда сохранённых хайлайтов."""
+
+from __future__ import annotations
+
+from backend.application.dto import HighlightDashboardQuery
 from backend.application.interface.repositories.highlight_repository import HighlightRepository
-from backend.application.interface.repositories.user_repository import UserRepository
-from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
 from backend.application.use_cases.highlight.feed.get_user_highlights import (
     GetUserHighlightsUseCase,
 )
+from backend.domain import Highlight
 
 
 class GetSavedHighlightsUseCase(GetUserHighlightsUseCase):
-    """Возвращает дашборд сохраненных пользователем хайлайтов."""
+    """Возвращает дашборд сохранённых пользователем хайлайтов."""
 
-    def __init__(
+    async def _load(
         self,
-        repo: HighlightRepository,
-        anime_api_client: AnimeApiClient,
-        user_repo: UserRepository | None = None,
-    ):
-        super().__init__(repo, anime_api_client, user_repo=user_repo)
+        repository: HighlightRepository,
+        query: HighlightDashboardQuery,
+    ) -> list[Highlight]:
+        """Загрузить хайлайты, сохранённые владельцем дашборда.
 
-    async def execute(
-        self,
-        user_id: int,
-        anime_id: int | None = None,
-        emotion: str | None = None,
-        category: str | None = None,
-        sort_by: str = "recent",
-        created_date: str | None = None,
-        query: str | None = None,
-        include_spoilers: bool = True,
-    ):
-        highlights = await self.repo.get_saved_by_user(user_id)
-        return await self._build_dashboard(
-            highlights=highlights,
-            anime_id=anime_id,
-            emotion=emotion,
-            category=category,
-            sort_by=sort_by,
-            created_date=created_date,
-            query=query,
-            include_spoilers=include_spoilers,
-            viewer_user_id=user_id,
-        )
+        Args:
+            repository: Репозиторий хайлайтов текущей транзакции.
+            query: Параметры дашборда с идентификатором владельца.
+
+        Returns:
+            list[Highlight]: Сохранённые хайлайты либо пустой список без владельца.
+        """
+        if query.user_id is None:
+            return []
+        return await repository.get_saved_by_user(query.user_id)

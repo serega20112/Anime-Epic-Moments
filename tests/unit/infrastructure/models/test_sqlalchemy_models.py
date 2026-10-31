@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.infrastructure.models import (
+from backend.infrastructure.database.models import (
     AnimeCollectionItemModel,
     AnimeCollectionModel,
     AnimeDiscussionCommentModel,

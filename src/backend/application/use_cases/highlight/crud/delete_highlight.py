@@ -1,64 +1,77 @@
+"""Удаление хайлайта владельцем."""
+
+from __future__ import annotations
+
 from starlette import status
 
 from backend.application.dto import DeleteHighlightCommand
 from backend.application.interface.repositories.highlight_repository import HighlightRepository
 from backend.application.interface.services import (
-    HighlightDashboardCacheInterface as HighlightDashboardCache,
-)
-from backend.application.interface.services import (
-    RecommendationServiceInterface as RecommendationService,
+    HighlightDashboardCacheInterface,
+    RecommendationServiceInterface,
 )
 from backend.application.interface.services.profile_overview_cache import (
-    ProfileOverviewCacheInterface as ProfileOverviewCache,
+    ProfileOverviewCacheInterface,
 )
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
-from backend.application.use_cases.highlight.result import HighlightResult
+from backend.application.use_cases.result import UseCaseResult
 
 
 class DeleteHighlightUseCase:
-    """Use case для удаления Highlight"""
+    """Удаляет хайлайт только его автором в рамках транзакции."""
 
     def __init__(
         self,
-        repo: HighlightRepository,
         unit_of_work: UnitOfWorkInterface,
-        recommendation_service: RecommendationService | None = None,
-        highlight_dashboard_cache: HighlightDashboardCache | None = None,
-        profile_overview_cache: ProfileOverviewCache | None = None,
-    ):
-        self.repo = repo
-        self.recommendation_service = recommendation_service
-        self.highlight_dashboard_cache = highlight_dashboard_cache
-        self.profile_overview_cache = profile_overview_cache
-        self.unit_of_work = unit_of_work
-
-    async def execute(self, command: DeleteHighlightCommand) -> HighlightResult:
-        """Delete a highlight within a transaction."""
-        async with self.unit_of_work:
-            return await self._execute(command)
-
-    async def _execute(self, command: DeleteHighlightCommand) -> HighlightResult:
-        """Delete a highlight.
+        recommendation_service: RecommendationServiceInterface,
+        highlight_dashboard_cache: HighlightDashboardCacheInterface,
+        profile_overview_cache: ProfileOverviewCacheInterface,
+    ) -> None:
+        """Инициализирует сценарий удаления хайлайта.
 
         Args:
-            command: Delete highlight command.
+            unit_of_work: Граница транзакции удаления хайлайта.
+            recommendation_service: Сервис рекомендаций для сброса подборок.
+            highlight_dashboard_cache: Кэш публичного дашборда хайлайтов.
+            profile_overview_cache: Кэш обзора профиля автора.
+        """
+        self._unit_of_work = unit_of_work
+        self._recommendation_service = recommendation_service
+        self._highlight_dashboard_cache = highlight_dashboard_cache
+        self._profile_overview_cache = profile_overview_cache
+
+    async def execute(self, command: DeleteHighlightCommand) -> UseCaseResult:
+        """Удаляет хайлайт в рамках одной транзакции.
+
+        Args:
+            command: Команда удаления.
 
         Returns:
-            HighlightResult: Result of the deletion.
+            UseCaseResult: Результат удаления либо код ошибки.
         """
-        highlight = await self.repo.get_by_id(command.highlight_id)
-        if not highlight:
-            return await HighlightResult.failure(
-                "highlight_not_found", status_code=status.HTTP_404_NOT_FOUND
-            )
-        await self.repo.delete(command.highlight_id)
-        if self.recommendation_service and highlight.user_id is not None:
-            await self.recommendation_service.invalidate_user(int(highlight.user_id))
-        if self.highlight_dashboard_cache is not None:
-            await self.highlight_dashboard_cache.invalidate_public()
-        if self.profile_overview_cache is not None and highlight.user_id is not None:
-            await self.profile_overview_cache.invalidate_user(
-                int(highlight.user_id),
-                include_ai_summary=True,
-            )
-        return await HighlightResult.success(status_code=status.HTTP_204_NO_CONTENT)
+        async with self._unit_of_work as uow:
+            repository = uow.repository(HighlightRepository)
+            highlight = await repository.get_by_id(command.highlight_id)
+            if highlight is None:
+                return UseCaseResult.failure(
+                    "highlight_not_found", status_code=status.HTTP_404_NOT_FOUND
+                )
+            if not highlight.is_owned_by(command.user_id):
+                return UseCaseResult.failure(
+                    "highlight_forbidden", status_code=status.HTTP_403_FORBIDDEN
+                )
+            await repository.delete(command.highlight_id)
+        await self._invalidate_caches(highlight.user_id)
+        return UseCaseResult.success(status_code=status.HTTP_204_NO_CONTENT)
+
+    async def _invalidate_caches(self, user_id: int | None) -> None:
+        """Сбросить кэши, зависящие от удалённого хайлайта.
+
+        Args:
+            user_id: Идентификатор автора хайлайта.
+        """
+        await self._highlight_dashboard_cache.invalidate_public()
+        if user_id is None:
+            return
+        await self._recommendation_service.invalidate_user(int(user_id))
+        await self._profile_overview_cache.invalidate_user(int(user_id), include_ai_summary=True)

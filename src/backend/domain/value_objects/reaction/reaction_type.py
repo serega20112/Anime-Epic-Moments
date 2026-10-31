@@ -4,7 +4,7 @@ from enum import StrEnum
 
 
 class EpisodeReactionType(StrEnum):
-    """Reaction types a user can attach to a specific episode moment."""
+    """Типы реакций, которые пользователь ставит моменту серии."""
 
     FIRE = "fire"
     LOVE = "love"
@@ -16,14 +16,7 @@ class EpisodeReactionType(StrEnum):
 
     @classmethod
     def from_value(cls, value: str | None) -> "EpisodeReactionType | None":
-        """Resolve a reaction type from a raw string.
-
-        Args:
-            value: Raw reaction label.
-
-        Returns:
-            EpisodeReactionType | None: The matching type or None when unknown.
-        """
+        """Определить тип реакции по сырой строке."""
         if not value:
             return None
         try:

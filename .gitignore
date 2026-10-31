@@ -21,8 +21,3 @@ tmp_wheels/
 .coverage
 .coverage.*
 htmlcov/
-
-build/alembic/alembic/
-build/alembic/versions/__pycache__/
-build/load/results/
-build/load/users.csv

@@ -4,6 +4,7 @@ import asyncio
 import functools
 import importlib
 import inspect
+import os
 import re
 import sys
 from pathlib import Path
@@ -19,7 +20,7 @@ from sqlalchemy.pool import StaticPool
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_ROOT = PROJECT_ROOT / "src" / "frontend"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -96,24 +97,31 @@ _ASYNC_COMPAT_INSTANCE_HELPERS = {
 _HYBRID_MODULE_PREFIXES = (
     "backend.application.use_cases.",
     "backend.application.services.",
-    "backend.infrastructure.repositories.",
+    "backend.infrastructure.database.",
     "backend.infrastructure.cache.",
     "backend.infrastructure.security.",
     "backend.infrastructure.external.",
-    "backend.infrastructure.files.",
+    "backend.infrastructure.notifications.",
 )
 
 
 def _collect_async_method_names():
+    """Собрать имена асинхронных методов боевого кода для sync-обёрток тестов.
+
+    Обходятся реальные каталоги слоёв: use case'ы, application-сервисы и те части
+    infrastructure, которые вызываются из тестов через старый синхронный API.
+
+    Returns:
+        set[str]: Имена методов, которые нужно уметь дождаться.
+    """
     async_method_pattern = re.compile(r"async def\s+([A-Za-z_][A-Za-z0-9_]*)")
     source_roots = (
-        PROJECT_ROOT / "src" / "backend" / "use_case",
-        PROJECT_ROOT / "src" / "backend" / "services",
-        PROJECT_ROOT / "src" / "backend" / "infrastructure" / "repositories",
+        PROJECT_ROOT / "src" / "backend" / "application" / "use_cases",
+        PROJECT_ROOT / "src" / "backend" / "application" / "services",
+        PROJECT_ROOT / "src" / "backend" / "infrastructure" / "database",
         PROJECT_ROOT / "src" / "backend" / "infrastructure" / "cache",
         PROJECT_ROOT / "src" / "backend" / "infrastructure" / "security",
         PROJECT_ROOT / "src" / "backend" / "infrastructure" / "external",
-        PROJECT_ROOT / "src" / "backend" / "infrastructure" / "files",
     )
     names = set(_ASYNC_COMPAT_METHOD_NAMES)
     for root in source_roots:
@@ -502,7 +510,7 @@ def run_async():
 @pytest.fixture
 def db_session():
     """Создает изолированную sync SQLAlchemy-сессию в памяти для repository-тестов."""
-    from backend.infrastructure.files.database import Base
+    from backend.infrastructure.database.session import Base
 
     engine = create_engine(
         "sqlite://",
@@ -520,18 +528,42 @@ def db_session():
         engine.dispose()
 
 
+ASYNC_SQLITE_TEST_URL = "sqlite+aiosqlite://"
+
+
+def _make_async_test_engine():
+    """Создать async engine для тестовой базы данных.
+
+    По умолчанию поднимается in-memory sqlite: тесты изолированы и не требуют сервера.
+    Переменная окружения `TEST_DATABASE_URL` переключает фикстуры на настоящий сервер
+    (например `postgresql+asyncpg://user:pass@localhost:5432/anime_epic_moments_test`), чтобы
+    репозитории были проверены на диалекте боевой базы. Для серверной базы берётся маленький
+    фиксированный пул, потому что sqlite-специфичные `StaticPool` и `check_same_thread` там
+    неприменимы.
+
+    Returns:
+        AsyncEngine: движок, к которому фикстуры привязывают сессии и схему.
+    """
+    from sqlalchemy.ext.asyncio import create_async_engine
+
+    url = os.getenv("TEST_DATABASE_URL", ASYNC_SQLITE_TEST_URL)
+    if url.startswith("sqlite"):
+        return create_async_engine(
+            url,
+            poolclass=StaticPool,
+            connect_args={"check_same_thread": False},
+        )
+    return create_async_engine(url, pool_size=5, max_overflow=0)
+
+
 @pytest.fixture
 async def async_db_session_factory():
-    """Создает async SQLAlchemy engine и sessionmaker на общей in-memory базе."""
-    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+    """Создает async SQLAlchemy engine и sessionmaker на тестовой базе."""
+    from sqlalchemy.ext.asyncio import async_sessionmaker
 
-    from backend.infrastructure.files.database import Base
+    from backend.infrastructure.database.session import Base
 
-    engine = create_async_engine(
-        "sqlite+aiosqlite://",
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False},
-    )
+    engine = _make_async_test_engine()
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
     session_local = async_sessionmaker(bind=engine, expire_on_commit=False)
@@ -543,16 +575,12 @@ async def async_db_session_factory():
 
 @pytest.fixture
 async def async_db_session():
-    """Создает изолированную async SQLAlchemy-сессию в памяти для async repository-тестов."""
-    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+    """Создает изолированную async SQLAlchemy-сессию на тестовой базе для repository-тестов."""
+    from sqlalchemy.ext.asyncio import async_sessionmaker
 
-    from backend.infrastructure.files.database import Base
+    from backend.infrastructure.database.session import Base
 
-    engine = create_async_engine(
-        "sqlite+aiosqlite://",
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False},
-    )
+    engine = _make_async_test_engine()
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
     session_local = async_sessionmaker(bind=engine, expire_on_commit=False)

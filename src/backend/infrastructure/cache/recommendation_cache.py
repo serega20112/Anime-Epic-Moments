@@ -1,3 +1,5 @@
+"""Кэш рекомендаций пользователя."""
+
 from __future__ import annotations
 
 from backend.domain import RecommendationResult
@@ -12,16 +14,19 @@ class RecommendationCache:
         store: KeyValueStore | None = None,
         ttl_seconds: float = 180.0,
     ):
+        """Создать кэш рекомендаций, при необходимости с собственным хранилищем."""
         self.store = store or KeyValueStore(redis_url=None, namespace="recommendation")
         self.ttl_seconds = max(int(ttl_seconds), 1)
         self.prefix = "recommendation"
 
     async def get(self, user_id: int, limit: int) -> list[RecommendationResult] | None:
+        """Прочитать рекомендации из кэша."""
         return await self.store.get(await self._key(user_id=user_id, limit=limit))
 
     async def set(
         self, user_id: int, limit: int, value: list[RecommendationResult]
     ) -> list[RecommendationResult]:
+        """Положить рекомендации в кэш."""
         return await self.store.set(
             await self._key(user_id=user_id, limit=limit),
             list(value),
@@ -29,10 +34,12 @@ class RecommendationCache:
         )
 
     async def invalidate_user(self, user_id: int):
+        """Сбросить рекомендации пользователя во всех вариантах запроса."""
         target_user_id = int(user_id)
         await self.store.delete_prefix(f"{self.prefix}:{target_user_id}:")
 
     async def clear(self):
+        """Удалить из кэша все рекомендации."""
         await self.store.delete_prefix(f"{self.prefix}:")
 
     async def _key(self, user_id: int, limit: int) -> str:

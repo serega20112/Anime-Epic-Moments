@@ -1,33 +1,48 @@
-"""Transaction boundary abstraction for the application layer."""
+"""Порт границы транзакции для слоя application."""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from types import TracebackType
+from typing import TypeVar
+
+T = TypeVar("T")
 
 
 class UnitOfWorkInterface(ABC):
-    """Boundary that demarcates and persists a unit of work.
+    """Граница единицы работы: выдаёт репозитории и фиксирует изменения.
 
-    Concrete adapters own the underlying transaction (for example a database
-    session). Use cases rely on this abstraction so transaction handling stays
-    in the application layer instead of leaking into repositories.
+    Конкретный адаптер владеет транзакцией (например, сессией базы).
+    Сценарии входят в контекст, берут репозитории через :meth:`repository`
+    и не управляют транзакцией напрямую.
     """
+
+    def __init__(self) -> None:
+        """Создать границу единицы работы с нулевой вложенностью."""
+        self._depth = 0
+
+    @abstractmethod
+    def repository(self, repository_type: type[T]) -> T:
+        """Вернуть репозиторий, работающий в этой транзакции.
+
+        Args:
+            repository_type: Порт репозитория, объявленный в application.
+
+        Returns:
+            Экземпляр репозитория, привязанный к текущей транзакции.
+        """
 
     @abstractmethod
     async def commit(self) -> None:
-        """Persist all pending changes atomically."""
+        """Зафиксировать все накопленные изменения атомарно."""
 
     @abstractmethod
     async def rollback(self) -> None:
-        """Discard all pending changes."""
+        """Отменить все накопленные изменения."""
 
     async def __aenter__(self) -> UnitOfWorkInterface:
-        """Enter the unit of work context.
-
-        Returns:
-            UnitOfWorkInterface: Self for use in ``async with``.
-        """
+        """Войти в контекст единицы работы."""
+        self._depth += 1
         return self
 
     async def __aexit__(
@@ -36,16 +51,10 @@ class UnitOfWorkInterface(ABC):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> bool:
-        """Commit on success and roll back on failure.
-
-        Args:
-            exc_type: Raised exception type or None.
-            exc_val: Raised exception value or None.
-            exc_tb: Raised exception traceback or None.
-
-        Returns:
-            bool: False so exceptions propagate.
-        """
+        """Зафиксировать при успехе и откатить при ошибке внешнего уровня."""
+        self._depth = max(self._depth - 1, 0)
+        if self._depth > 0:
+            return False
         if exc_type is None:
             await self.commit()
         else:

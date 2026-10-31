@@ -1,4 +1,4 @@
-"""Security and authentication token settings."""
+"""Настройки безопасности и сроков жизни токенов."""
 
 from __future__ import annotations
 
@@ -7,29 +7,29 @@ import secrets
 
 
 def _as_bool(value: str) -> bool:
-    """Return True when the raw value equals the literal "1".
+    """Проверить, что сырое значение равно литералу ``1``.
 
     Args:
-        value: Raw string to evaluate.
+        value: Сырая строка окружения.
 
     Returns:
-        bool: True for the literal "1".
+        bool: True, если строка равна ``1``.
     """
     return value == "1"
 
 
 def secret_key() -> str:
-    """Return the application secret key.
+    """Вернуть секретный ключ приложения.
 
-    A value must be supplied explicitly in production (APP_DEBUG=0). In debug
-    mode a random key is generated per process, which is fine for local
-    development but never stable across restarts.
+    В продакшене (``APP_DEBUG=0``) ключ обязателен. В режиме отладки генерируется
+    случайный ключ на процесс: этого достаточно локально, но значение не переживает
+    перезапуск.
 
     Returns:
-        str: Secret key used for signing and CSRF.
+        str: Ключ подписи токенов и CSRF.
 
     Raises:
-        RuntimeError: When no SECRET_KEY is set outside debug mode.
+        RuntimeError: Если вне отладки переменная ``SECRET_KEY`` не задана.
     """
     value = os.getenv("SECRET_KEY")
     if value:
@@ -40,72 +40,54 @@ def secret_key() -> str:
 
 
 def app_debug() -> bool:
-    """Return whether debug mode is enabled.
-
-    Returns:
-        bool: True when APP_DEBUG is enabled.
-    """
+    """Вернуть, включён ли режим отладки."""
     return os.getenv("APP_DEBUG", "0") == "1"
 
 
 def csrf_token_name() -> str:
-    """Return the CSRF token field name.
-
-    Returns:
-        str: CSRF token name.
-    """
+    """Вернуть имя поля с CSRF-токеном."""
     return os.getenv("CSRF_TOKEN_NAME", "csrf_token")
 
 
 def cookie_secure() -> bool:
-    """Return whether cookies are marked Secure.
-
-    Returns:
-        bool: True when COOKIE_SECURE is enabled.
-    """
+    """Вернуть, помечаются ли cookie флагом Secure."""
     return _as_bool(os.getenv("COOKIE_SECURE", "0"))
 
 
 def cookie_samesite() -> str:
-    """Return the SameSite policy for cookies.
-
-    Returns:
-        str: SameSite value.
-    """
+    """Вернуть политику SameSite для cookie."""
     return os.getenv("COOKIE_SAMESITE", "Lax")
 
 
 def cookie_domain() -> str | None:
-    """Return the cookie domain.
-
-    Returns:
-        str | None: Cookie domain or None.
-    """
+    """Вернуть домен cookie или None, если он не задан."""
     return os.getenv("COOKIE_DOMAIN") or None
 
 
 def access_token_expire_minutes() -> int:
-    """Return the access token lifetime in minutes.
-
-    Returns:
-        int: Access token lifetime.
-    """
+    """Вернуть срок жизни access-токена в минутах."""
     return int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 
 def refresh_token_expire_days() -> int:
-    """Return the refresh token lifetime in days.
-
-    Returns:
-        int: Refresh token lifetime.
-    """
+    """Вернуть срок жизни refresh-токена в днях."""
     return int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
 
 
 def hsts_max_age() -> int:
-    """Return the HSTS max-age in seconds.
+    """Вернуть HSTS max-age в секундах."""
+    return int(os.getenv("HSTS_MAX_AGE", "63072000"))
+
+
+def trusted_proxies() -> list[str]:
+    """Вернуть список доверенных адресов обратного прокси.
+
+    ``X-Forwarded-For`` учитывается, только если непосредственный пир сокета входит
+    в один из этих IP-адресов или CIDR-сетей. Пустой список означает, что заголовок
+    игнорируется всегда.
 
     Returns:
-        int: HSTS max-age.
+        list[str]: IP-адреса и сети доверенных прокси.
     """
-    return int(os.getenv("HSTS_MAX_AGE", "63072000"))
+    raw = os.getenv("TRUSTED_PROXIES", "")
+    return [item.strip() for item in raw.split(",") if item.strip()]

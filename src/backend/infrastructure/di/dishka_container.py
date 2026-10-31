@@ -1,4 +1,4 @@
-"""Dishka container setup for the application."""
+"""Сборка контейнера зависимостей dishka для приложения."""
 
 from __future__ import annotations
 
@@ -22,11 +22,7 @@ from backend.infrastructure.di.providers import (
 
 
 def build_dishka_container() -> AsyncContainer:
-    """Build the application Dishka container.
-
-    Returns:
-        AsyncContainer: Configured Dishka container.
-    """
+    """Собрать контейнер зависимостей приложения."""
     return make_async_container(
         AppProvider(),
         RequestProvider(),

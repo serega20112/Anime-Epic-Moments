@@ -1,50 +1,78 @@
-"""Use case for rotating auth tokens from a refresh token."""
+"""Сценарий продления сессии с ротацией токенов."""
 
 from __future__ import annotations
 
-import jwt
-
-from backend.application.interface.services.jwt_service import JWTServiceInterface as JWTService
+from backend.application.dto import RefreshSessionCommand
+from backend.application.interface.repositories.user_repository import UserRepository
+from backend.application.interface.services.jwt_service import JWTServiceInterface
 from backend.application.interface.services.token_blocklist import TokenBlocklistInterface
+from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases.auth.result import AuthResult
+from backend.domain import User
+from backend.domain.exceptions import InvalidTokenError
+
+USER_MISSING_MESSAGE = "Пользователь не найден"
+REFRESH_FAILURE_ENDPOINT = "auth.refresh_session"
 
 
 class RefreshSessionUseCase:
-    """Validate a refresh token and return the owning user id.
+    """Проверить refresh-токен и вернуть владельца с новой парой токенов.
 
-    The use case rejects missing, revoked, or malformed refresh tokens and
-    atomically consumes the old token so it cannot be reused even under
-    concurrent requests, preparing a fresh pair of JWTs to be issued by the
-    presentation layer.
+    Пустые, отозванные и повреждённые токены отклоняются, а использованный
+    refresh-токен сразу попадает в список отозванных, поэтому повторный обмен
+    того же значения невозможен.
     """
 
-    def __init__(self, jwt_service: JWTService, token_blocklist: TokenBlocklistInterface):
-        """Initialize the use case.
+    def __init__(
+        self,
+        jwt_service: JWTServiceInterface,
+        token_blocklist: TokenBlocklistInterface,
+        unit_of_work: UnitOfWorkInterface,
+    ) -> None:
+        """Собрать сценарий продления сессии.
 
         Args:
-            jwt_service: JWT service.
-            token_blocklist: Token blocklist.
+            jwt_service: Сервис разбора JWT-токенов.
+            token_blocklist: Хранилище отозванных токенов.
+            unit_of_work: Граница транзакции чтения пользователя.
         """
-        self.jwt_service = jwt_service
-        self.token_blocklist = token_blocklist
+        self._jwt_service = jwt_service
+        self._token_blocklist = token_blocklist
+        self._unit_of_work = unit_of_work
 
-    async def execute(self, refresh_token: str) -> AuthResult:
-        """Rotate a refresh token.
+    async def execute(self, command: RefreshSessionCommand) -> AuthResult:
+        """Обменять refresh-токен на новую пару токенов.
 
         Args:
-            refresh_token: Current refresh token.
+            command: Команда продления со значением refresh-токена.
 
         Returns:
-            AuthResult: Success with the user id or failure.
+            AuthResult: Аутентифицированный пользователь либо отказ.
         """
-        token = str(refresh_token or "").strip()
+        token = str(command.refresh_token or "").strip()
         if not token:
-            return await AuthResult.failure("auth_required", "auth.refresh_session")
+            return AuthResult.failure("auth_required", REFRESH_FAILURE_ENDPOINT)
         try:
-            user_id = await self.jwt_service.decode_refresh_token(token)
-        except jwt.PyJWTError:
-            return await AuthResult.failure("invalid_token", "auth.refresh_session")
-        ttl_seconds = await self.jwt_service.get_token_ttl_seconds(token, expected_type="refresh")
-        if not await self.token_blocklist.consume(token, ttl_seconds):
-            return await AuthResult.failure("invalid_token", "auth.refresh_session")
-        return await AuthResult.success(data=user_id)
+            user_id = await self._jwt_service.decode_refresh_token(token)
+        except InvalidTokenError:
+            return AuthResult.failure("invalid_token", REFRESH_FAILURE_ENDPOINT)
+        ttl_seconds = await self._jwt_service.get_token_ttl_seconds(token, expected_type="refresh")
+        if not await self._token_blocklist.consume(token, ttl_seconds):
+            return AuthResult.failure("invalid_token", REFRESH_FAILURE_ENDPOINT)
+        user = await self._load_user(user_id)
+        if user is None:
+            return AuthResult.failure(USER_MISSING_MESSAGE, REFRESH_FAILURE_ENDPOINT)
+        return AuthResult.success(data=user)
+
+    async def _load_user(self, user_id: int) -> User | None:
+        """Прочитать владельца токена, чтобы не продлевать удалённый аккаунт.
+
+        Args:
+            user_id: Идентификатор пользователя из refresh-токена.
+
+        Returns:
+            User | None: Найденный пользователь либо None.
+        """
+        async with self._unit_of_work as uow:
+            repository = uow.repository(UserRepository)
+            return await repository.get_by_id(user_id)

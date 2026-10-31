@@ -1,31 +1,54 @@
-"""Thin HTTP routes for anime recommendations."""
+"""Тонкие HTTP-маршруты рекомендаций аниме."""
 
 from __future__ import annotations
 
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, Request
 
+from backend.application.dto import RecommendationsQuery
 from backend.application.use_cases import (
     AskAiRecommendationsUseCase,
     GenerateRecommendationsUseCase,
     RefreshRecommendationsUseCase,
 )
-from backend.infrastructure.security.flask_protection import client_ip, rate_limit
-from backend.presentation.api.helpers import read_payload
+from backend.application.use_cases.result import UseCaseResult
+from backend.presentation.api.errors import ErrorResponse, error_from_result
+from backend.presentation.api.rate_limit import client_ip, rate_limit
 from backend.presentation.api.requests.recommendation_mapper import map_ask_ai_command
+from backend.presentation.api.requests.recommendation_requests import AskAiRecommendationsRequest
+from backend.presentation.api.responses.recommendation_responses import RecommendationItemResponse
+from backend.presentation.api.version import API_PREFIX
+from backend.presentation.dependencies.auth import require_self
 
-recommendation_router = APIRouter(prefix="/api/v1/recommendations", route_class=DishkaRoute)
-recommendation_bp = recommendation_router
+recommendation_router = APIRouter(prefix=f"{API_PREFIX}/recommendations", route_class=DishkaRoute)
+
+ERROR_RESPONSES = {
+    "400": {"model": ErrorResponse},
+    "401": {"model": ErrorResponse},
+    "403": {"model": ErrorResponse},
+    "429": {"model": ErrorResponse},
+}
 
 
 async def _recommendation_key(request: Request) -> str:
-    """Build a composite rate-limit subject: IP + target user id."""
+    """Собрать составной ключ ограничения частоты: IP и целевой пользователь.
+
+    Args:
+        request: Текущий HTTP-запрос.
+
+    Returns:
+        str: Ключ из адреса клиента и идентификатора пользователя из пути.
+    """
     return f"{await client_ip(request)}::{request.path_params.get('user_id')}"
 
 
-@recommendation_router.post("/generate/{user_id}", name="recommendation.generate_recommendations")
+@recommendation_router.post(
+    "/generate/{user_id}",
+    name="recommendation.generate_recommendations",
+    response_model=list[RecommendationItemResponse],
+    responses=ERROR_RESPONSES,
+)
 @rate_limit(
     scope="recommendation_generate",
     limit=20,
@@ -36,22 +59,31 @@ async def generate_recommendations(
     request: Request,
     user_id: int,
     use_case: FromDishka[GenerateRecommendationsUseCase],
-):
-    """Generate personalized recommendations for a user.
+    session_user_id: int = Depends(require_self),
+) -> list:
+    """Генерирует персональные рекомендации пользователя сессии.
 
     Args:
-        request: Incoming HTTP request.
-        user_id: User ID from path.
-        use_case: Generate recommendations use case.
+        request: Текущий HTTP-запрос, нужный ограничителю частоты.
+        user_id: Идентификатор пользователя из пути.
+        use_case: Сценарий генерации рекомендаций.
+        session_user_id: Идентификатор пользователя сессии.
 
     Returns:
-        JSONResponse: Serialized recommendation results.
+        list: Сериализованные рекомендации.
+
+    Raises:
+        HTTPException: 401 для анонимного запроса, 403 при чужом ``user_id``.
     """
-    results = await use_case.execute(user_id=user_id)
-    return JSONResponse(content=[vars(item) for item in results])
+    return await use_case.execute(RecommendationsQuery(user_id=session_user_id))
 
 
-@recommendation_router.post("/refresh/{user_id}", name="recommendation.refresh_recommendations")
+@recommendation_router.post(
+    "/refresh/{user_id}",
+    name="recommendation.refresh_recommendations",
+    response_model=list[RecommendationItemResponse],
+    responses=ERROR_RESPONSES,
+)
 @rate_limit(
     scope="recommendation_refresh",
     limit=10,
@@ -62,22 +94,31 @@ async def refresh_recommendations(
     request: Request,
     user_id: int,
     use_case: FromDishka[RefreshRecommendationsUseCase],
-):
-    """Refresh recommendations for a user.
+    session_user_id: int = Depends(require_self),
+) -> list:
+    """Обновляет рекомендации пользователя сессии.
 
     Args:
-        request: Incoming HTTP request.
-        user_id: User ID from path.
-        use_case: Refresh recommendations use case.
+        request: Текущий HTTP-запрос, нужный ограничителю частоты.
+        user_id: Идентификатор пользователя из пути.
+        use_case: Сценарий обновления рекомендаций.
+        session_user_id: Идентификатор пользователя сессии.
 
     Returns:
-        JSONResponse: Serialized refreshed recommendations.
+        list: Сериализованные обновлённые рекомендации.
+
+    Raises:
+        HTTPException: 401 для анонимного запроса, 403 при чужом ``user_id``.
     """
-    results = await use_case.execute(user_id=user_id)
-    return JSONResponse(content=[vars(item) for item in results])
+    return await use_case.execute(RecommendationsQuery(user_id=session_user_id))
 
 
-@recommendation_router.post("/ask/{user_id}", name="recommendation.ask_ai_recommendations")
+@recommendation_router.post(
+    "/ask/{user_id}",
+    name="recommendation.ask_ai_recommendations",
+    response_model=list[RecommendationItemResponse],
+    responses=ERROR_RESPONSES,
+)
 @rate_limit(
     scope="recommendation_ask_ai",
     limit=20,
@@ -87,23 +128,32 @@ async def refresh_recommendations(
 async def ask_ai_recommendations(
     request: Request,
     user_id: int,
+    body: AskAiRecommendationsRequest,
     use_case: FromDishka[AskAiRecommendationsUseCase],
+    session_user_id: int = Depends(require_self),
 ):
-    """Recommend anime from a free-form AI query.
+    """Подбирает аниме по свободному текстовому запросу к LLM.
+
+    Сценарий платный: обращение к модели допускается только от имени
+    пользователя сессии, иначе чужой ``user_id`` в пути позволял бы тратить
+    квоту владельца и получать подбор по его избранному.
 
     Args:
-        request: Incoming HTTP request.
-        user_id: User ID from path.
-        use_case: Ask AI recommendations use case.
+        request: Текущий HTTP-запрос, нужный ограничителю частоты.
+        user_id: Идентификатор пользователя из пути.
+        body: Проверенное тело запроса к ИИ.
+        use_case: Сценарий AI-рекомендаций.
+        session_user_id: Идентификатор пользователя сессии.
 
     Returns:
-        JSONResponse: Serialized recommendations or an error payload.
+        list | Response: Рекомендации либо тело ошибки сценария.
+
+    Raises:
+        HTTPException: 401 для анонимного запроса, 403 при чужом ``user_id``.
     """
-    command = await map_ask_ai_command(await read_payload(request), user_id=user_id)
-    result = await use_case.execute(command)
-    if not result.ok:
-        return JSONResponse({"error": result.error}, status_code=result.status_code)
-    return JSONResponse(
-        content=[vars(item) for item in result.data],
-        status_code=result.status_code,
+    result: UseCaseResult = await use_case.execute(
+        map_ask_ai_command(body, user_id=session_user_id)
     )
+    if not result.ok:
+        return error_from_result(result)
+    return result.data

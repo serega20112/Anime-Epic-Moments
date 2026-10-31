@@ -1,4 +1,4 @@
-"""Remove anime item from a collection form payload."""
+"""Команда удаления аниме из коллекции."""
 
 from __future__ import annotations
 
@@ -7,12 +7,14 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class RemoveCollectionItemCommand:
-    """Remove anime item from a collection form payload.
+    """Команда удаления аниме из коллекции.
 
     Attributes:
-        collection_id: Target collection identifier.
-        anime_id: Anime identifier to remove.
+        collection_id: Идентификатор коллекции.
+        anime_id: Идентификатор удаляемого аниме.
+        user_id: Идентификатор пользователя; только он вправе менять состав.
     """
 
     collection_id: int
     anime_id: int
+    user_id: int

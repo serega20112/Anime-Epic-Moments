@@ -1,10 +1,14 @@
+"""Страница ленты хайлайтов."""
+
 from dataclasses import dataclass, field
 
 from backend.domain.value_objects.highlight.cards import HighlightCard
 
 
-@dataclass
+@dataclass(frozen=True)
 class HighlightFeedPage:
+    """Страница ленты хайлайтов с метаданными пагинации."""
+
     items: list[HighlightCard]
     popular_items: list[HighlightCard]
     recent_items: list[HighlightCard]
@@ -19,8 +23,10 @@ class HighlightFeedPage:
     recent_activity: list = field(default_factory=list)
 
 
-@dataclass
+@dataclass(frozen=True)
 class HighlightAnimeGroup:
+    """Группа хайлайтов одного аниме в ленте."""
+
     anime_id: int
     anime_title: str
     count: int

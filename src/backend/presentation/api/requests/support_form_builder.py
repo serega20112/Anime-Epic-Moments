@@ -1,102 +1,75 @@
-"""Form data builders for the support page."""
+"""Сборщики данных формы для страницы поддержки."""
 
 from __future__ import annotations
 
-from typing import Any
-
 from backend.application.dto import CreateSupportTicketCommand
 from backend.domain import normalize_support_channel
+from backend.domain.policies.user_credentials_policy import normalize_email, normalize_username
 
-_PAGE_URL_MAX_LENGTH = 500
+PAGE_URL_MAX_LENGTH = 500
 
 
-async def build_support_form_data(
+def build_support_form_data(
     *,
     command: CreateSupportTicketCommand,
     user_email: str | None = None,
     user_username: str | None = None,
 ) -> dict[str, str]:
-    """Build pre-filled form data from a command for re-display.
+    """Собрать заполненные данные формы из команды для повторного показа.
 
     Args:
-        command: Command with submitted values.
-        user_email: Authenticated user email fallback.
-        user_username: Authenticated user username fallback.
+        command: Команда, которая не прошла валидацию.
+        user_email: Почта автора из сессии, если пользователь войдён.
+        user_username: Имя автора из сессии, если пользователь войдён.
 
     Returns:
-        dict[str, str]: Normalized form data for re-rendering.
+        dict[str, str]: Поля формы для повторной отрисовки.
     """
     return {
-        "email": (await _normalize_email(user_email) if user_email else command.email),
-        "username": (
-            await _normalize_username(user_username) if user_username else command.username
-        ),
+        "email": normalize_email(user_email) if user_email else command.email,
+        "username": normalize_username(user_username) if user_username else command.username,
         "subject": str(command.subject or "").strip(),
         "message": str(command.message or "").strip(),
         "channel": command.channel,
-        "page_url": await _normalize_page_url(command.page_url),
+        "page_url": normalize_page_url(command.page_url),
     }
 
 
-async def build_default_support_form(
+def build_default_support_form(
     *,
     user_email: str | None = None,
     user_username: str | None = None,
-    channel_param: Any = None,
-    page_param: Any = None,
+    channel_param: object = None,
+    page_param: object = None,
 ) -> dict[str, str]:
-    """Build default form data from the current user and query params.
+    """Собрать данные формы по умолчанию из текущего пользователя и параметров запроса.
 
     Args:
-        user_email: Authenticated user email.
-        user_username: Authenticated user username.
-        channel_param: Raw channel query parameter.
-        page_param: Raw page query parameter.
+        user_email: Почта пользователя сессии либо None для гостя.
+        user_username: Имя пользователя сессии либо None для гостя.
+        channel_param: Значение параметра ``channel`` из адреса страницы.
+        page_param: Значение параметра ``page`` из адреса страницы.
 
     Returns:
-        dict[str, str]: Normalized form data.
+        dict[str, str]: Предзаполненные поля формы обращения.
     """
     return {
-        "email": await _normalize_email(user_email),
-        "username": await _normalize_username(user_username),
+        "email": normalize_email(user_email),
+        "username": normalize_username(user_username),
         "subject": "",
         "message": "",
         "channel": normalize_support_channel(channel_param),
-        "page_url": await _normalize_page_url(page_param),
+        "page_url": normalize_page_url(page_param),
     }
 
 
-async def _normalize_email(value: str | None) -> str:
-    """Normalize an email address.
+def normalize_page_url(value: object) -> str:
+    """Нормализовать адрес страницы с обрезкой до допустимой длины.
 
     Args:
-        value: Raw email string.
+        value: Сырое значение адреса страницы.
 
     Returns:
-        str: Normalized email.
+        str: Адрес страницы без пробелов и не длиннее лимита.
     """
-    return str(value or "").strip().lower()
-
-
-async def _normalize_username(value: str | None) -> str:
-    """Normalize a username by collapsing whitespace.
-
-    Args:
-        value: Raw username string.
-
-    Returns:
-        str: Normalized username.
-    """
-    return " ".join(str(value or "").strip().split())
-
-
-async def _normalize_page_url(value: Any) -> str:
-    """Normalize a page URL, truncating to the allowed length.
-
-    Args:
-        value: Raw page URL value.
-
-    Returns:
-        str: Normalized page URL.
-    """
-    return str(value or "").strip()[:_PAGE_URL_MAX_LENGTH]
+    return str(value or "").strip()[:PAGE_URL_MAX_LENGTH]

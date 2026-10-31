@@ -1,29 +1,37 @@
-"""Facade re-exports for backend.infrastructure.external."""
+"""Фасад внешних интеграций: клиенты провайдеров данных и видео-источников.
+
+Переэкспортирует только то, что действительно является внешней интеграцией. Почтовые
+и Telegram-отправители живут в `backend.infrastructure.notifications`, а порты
+интерфейсов — в `backend.application.interface.services`: выставлять их отсюда означало
+бы смешать разные ответственности в одном пространстве имён.
+"""
 
 from __future__ import annotations
 
-from backend.infrastructure.external.aniboom_provider import AniBoomProvider
-from backend.infrastructure.external.anilibria_client import AniLibriaClient
-from backend.infrastructure.external.anime_api_client import AnimeApiClient
-from backend.infrastructure.external.animego_provider import AnimeGoProvider
-from backend.infrastructure.external.eporner_provider import EpornerProvider
-from backend.infrastructure.external.hanime_provider import HanimeProvider
-from backend.infrastructure.external.hdrezka_provider import HDRezkaProvider
-from backend.infrastructure.external.hentaigasm_provider import HentaigasmProvider
-from backend.infrastructure.external.justwatch_client import JustWatchClient
-from backend.infrastructure.external.kinobox_provider import KinoboxProvider
-from backend.infrastructure.external.kodik_client import KodikClient
-from backend.infrastructure.external.password_reset_mailer import PasswordResetMailer
-from backend.infrastructure.external.sameband_provider import SamebandProvider
-from backend.infrastructure.external.shikimori_client import ShikimoriClient
-from backend.infrastructure.external.sibnet_provider import SibnetProvider
-from backend.infrastructure.external.support_email_mailer import SupportEmailMailer
-from backend.infrastructure.external.telegram_support_notifier import TelegramSupportNotifier
-from backend.infrastructure.external.watch_source_provider import WatchSourceProvider
+from backend.infrastructure.external.catalog import AnimeApiClient, ShikimoriClient
+from backend.infrastructure.external.video import (
+    JustWatchClient,
+    YouTubeClient,
+)
+from backend.infrastructure.external.video.adult import (
+    EpornerProvider,
+    HanimeProvider,
+    HentaigasmProvider,
+)
+from backend.infrastructure.external.video.kodik import KodikClient
+from backend.infrastructure.external.video.ru import (
+    AniBoomProvider,
+    AniLibriaClient,
+    AnimeGoProvider,
+    HDRezkaProvider,
+    KinoboxProvider,
+    SamebandProvider,
+    SibnetProvider,
+)
 
 __all__ = [
-    "AniLibriaClient",
     "AniBoomProvider",
+    "AniLibriaClient",
     "AnimeApiClient",
     "AnimeGoProvider",
     "EpornerProvider",
@@ -33,11 +41,8 @@ __all__ = [
     "JustWatchClient",
     "KinoboxProvider",
     "KodikClient",
-    "PasswordResetMailer",
     "SamebandProvider",
-    "SibnetProvider",
     "ShikimoriClient",
-    "SupportEmailMailer",
-    "TelegramSupportNotifier",
-    "WatchSourceProvider",
+    "SibnetProvider",
+    "YouTubeClient",
 ]

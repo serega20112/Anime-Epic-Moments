@@ -1,3 +1,5 @@
+"""Сценарии лайков, сохранений и комментариев хайлайтов."""
+
 from backend.application.use_cases.highlight.social.add_highlight_comment import (
     AddHighlightCommentUseCase,
 )

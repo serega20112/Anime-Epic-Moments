@@ -1,15 +1,19 @@
-"""Data transfer objects for application layer commands and queries."""
+"""Объекты передачи данных команд и запросов."""
 
 from backend.application.dto.anime import (
     AutocompleteAnimeQuery,
     FilterAnimeCatalogQuery,
     GetSeasonPopularQuery,
+    HomePageQuery,
     SearchAnimeByDescriptionQuery,
     SearchAnimeQuery,
 )
 from backend.application.dto.auth import (
     ConfirmPasswordResetCommand,
     LoginCommand,
+    LogoutCommand,
+    ProfileOverviewQuery,
+    RefreshSessionCommand,
     RegisterCommand,
     RequestPasswordResetCommand,
     ResendVerificationCommand,
@@ -19,35 +23,56 @@ from backend.application.dto.auth import (
 from backend.application.dto.collection import (
     AddCollectionItemCommand,
     CreateCollectionCommand,
+    GetSharedCollectionQuery,
+    GetUserCollectionsQuery,
     RemoveCollectionItemCommand,
+)
+from backend.application.dto.favorite import (
+    AddFavoriteCommand,
+    GetFavoriteIdsQuery,
+    GetFavoritesQuery,
+    RemoveFavoriteCommand,
 )
 from backend.application.dto.highlight import (
     AddHighlightCommentCommand,
     CreateHighlightCommand,
     DeleteHighlightCommand,
     EditHighlightCommand,
+    HighlightCommentsQuery,
     HighlightDashboardQuery,
     HighlightFeedQuery,
-    HighlightListQuery,
+    HighlightLikersQuery,
+    HighlightNotificationsQuery,
+    HighlightSharedQuery,
     SetHighlightLikeCommand,
     SetSavedHighlightCommand,
 )
 from backend.application.dto.moment import (
+    DeleteViewingMomentCommand,
+    GetUserViewingMomentsQuery,
     PublishViewingMomentCommand,
     SaveViewingMomentCommand,
 )
+from backend.application.dto.rating import GetUserRatingsQuery, SetUserAnimeRatingCommand
 from backend.application.dto.reaction import (
     GetEpisodeReactionsQuery,
     SetEpisodeReactionCommand,
 )
-from backend.application.dto.recommendation import AskAiRecommendationsCommand
+from backend.application.dto.recommendation import (
+    AskAiRecommendationsCommand,
+    RecommendationsQuery,
+)
 from backend.application.dto.support import CreateSupportTicketCommand
+from backend.application.dto.user import PublicProfileQuery, SetUserFollowCommand
 from backend.application.dto.watch import (
     AddAnimeCommentCommand,
+    AddWatchSourceCommand,
+    AnimeDiscussionQuery,
     CompleteEpisodeCommand,
     CreateWatchHighlightCommand,
     SaveViewingSessionCommand,
     SetAnimeCommentLikeCommand,
+    SyncWatchSourcesQuery,
     UpsertUserAnimeStatusCommand,
     WatchPageQuery,
 )
@@ -55,7 +80,10 @@ from backend.application.dto.watch import (
 __all__ = [
     "AddAnimeCommentCommand",
     "AddCollectionItemCommand",
+    "AddFavoriteCommand",
     "AddHighlightCommentCommand",
+    "AddWatchSourceCommand",
+    "AnimeDiscussionQuery",
     "AskAiRecommendationsCommand",
     "AutocompleteAnimeQuery",
     "ConfirmPasswordResetCommand",
@@ -65,17 +93,34 @@ __all__ = [
     "CreateSupportTicketCommand",
     "CreateWatchHighlightCommand",
     "DeleteHighlightCommand",
+    "DeleteViewingMomentCommand",
     "EditHighlightCommand",
     "FilterAnimeCatalogQuery",
     "GetEpisodeReactionsQuery",
+    "GetFavoriteIdsQuery",
+    "GetFavoritesQuery",
     "GetSeasonPopularQuery",
+    "GetSharedCollectionQuery",
+    "GetUserCollectionsQuery",
+    "GetUserRatingsQuery",
+    "GetUserViewingMomentsQuery",
+    "HomePageQuery",
+    "HighlightCommentsQuery",
     "HighlightDashboardQuery",
     "HighlightFeedQuery",
-    "HighlightListQuery",
+    "HighlightLikersQuery",
+    "HighlightNotificationsQuery",
+    "HighlightSharedQuery",
     "LoginCommand",
+    "LogoutCommand",
+    "ProfileOverviewQuery",
     "PublishViewingMomentCommand",
+    "PublicProfileQuery",
+    "RecommendationsQuery",
+    "RefreshSessionCommand",
     "RegisterCommand",
     "RemoveCollectionItemCommand",
+    "RemoveFavoriteCommand",
     "RequestPasswordResetCommand",
     "ResendVerificationCommand",
     "SaveViewingSessionCommand",
@@ -86,6 +131,9 @@ __all__ = [
     "SetEpisodeReactionCommand",
     "SetHighlightLikeCommand",
     "SetSavedHighlightCommand",
+    "SetUserAnimeRatingCommand",
+    "SetUserFollowCommand",
+    "SyncWatchSourcesQuery",
     "UpdateProfileCommand",
     "UpsertUserAnimeStatusCommand",
     "VerifyEmailCommand",

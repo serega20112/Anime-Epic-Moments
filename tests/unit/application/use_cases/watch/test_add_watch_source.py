@@ -4,52 +4,67 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from backend.application.dto import AddWatchSourceCommand
 from backend.application.use_cases import AddWatchSourceUseCase
 from backend.domain import Translation, WatchSource
+from tests.support.fakes import FakeUnitOfWork
+
+
+def _command(**overrides) -> AddWatchSourceCommand:
+    """Собрать команду добавления источника с переопределёнными полями."""
+    fields = {
+        "anime_id": 7,
+        "episode": 2,
+        "translation_name": "AniLibria",
+        "translation_type": "dub",
+        "provider_name": "Kinobox",
+        "source_name": "kinobox-1080",
+        "stream_url": "https://example.com/stream.m3u8",
+        "quality_label": "1080p",
+    }
+    fields.update(overrides)
+    return AddWatchSourceCommand(**fields)
 
 
 @pytest.mark.unit
 class TestAddWatchSourceUseCase:
-    """Юнит-тесты добавления озвучки и источника просмотра."""
+    """Юнит-тесты ручного добавления источника просмотра."""
 
     async def test_creates_translation_then_source(self):
-        """Что тестируем: сначала создается перевод, затем источник просмотра.
-        Что передаём: параметры озвучки и источника.
-        Что ожидаем: перевод и источник созданы, источник ссылается на перевод.
+        """Что тестируем: последовательное создание озвучки и источника.
+        Что передаём: команду нового источника с языком по умолчанию.
+        Что ожидаем: озвучка сохранена, источник ссылается на её идентификатор.
         """
-        watch_repo = AsyncMock()
-        watch_repo.add_translation.return_value = Translation(
-            id=9,
-            anime_id=7,
-            name="AniLibria",
-            translation_type="voice",
+        repository = AsyncMock()
+        repository.add_source.side_effect = lambda item: item
+        repository.add_translation.return_value = Translation(
+            id=3, anime_id=7, name="AniLibria", translation_type="dub"
         )
-        watch_repo.add_source.return_value = WatchSource(
-            id=15,
-            anime_id=7,
-            episode=2,
-            translation_id=9,
-            provider_name="Kodik",
-            source_name="s1",
-            stream_url="https://example.com/stream.m3u8",
-            quality_label="1080",
-        )
-        use_case = AddWatchSourceUseCase(watch_repo, AsyncMock())
+        uow = FakeUnitOfWork(WatchRepository=repository)
+        use_case = AddWatchSourceUseCase(uow)
 
-        result = await use_case.execute(
-            anime_id=7,
-            episode=2,
-            translation_name="AniLibria",
-            translation_type="voice",
-            provider_name="Kodik",
-            source_name="s1",
-            stream_url="https://example.com/stream.m3u8",
-            quality_label="1080",
-        )
+        source = await use_case.execute(_command())
 
-        assert result.id == 15
-        translation = watch_repo.add_translation.await_args.args[0]
-        source = watch_repo.add_source.await_args.args[0]
-        assert translation.name == "AniLibria"
-        assert source.translation_id == 9
-        assert source.provider_name == "Kodik"
+        assert uow.commits == 1
+        assert isinstance(source, WatchSource)
+        assert source.translation_id == 3
+        assert source.provider_name == "Kinobox"
+        saved_translation = repository.add_translation.await_args.args[0]
+        assert saved_translation.language == "ru"
+
+    async def test_uses_zero_when_translation_unsaved(self):
+        """Что тестируем: поведение при отсутствии идентификатора у озвучки.
+        Что передаём: озвучку без идентификатора.
+        Что ожидаем: источник создан с translation_id=0.
+        """
+        repository = AsyncMock()
+        repository.add_translation.return_value = Translation(
+            anime_id=7, name="AniLibria", translation_type="dub", id=None
+        )
+        repository.add_source.side_effect = lambda item: item
+        use_case = AddWatchSourceUseCase(FakeUnitOfWork(WatchRepository=repository))
+
+        source = await use_case.execute(_command(language="en", source_type="cdn"))
+
+        assert source.translation_id == 0
+        assert source.source_type == "cdn"

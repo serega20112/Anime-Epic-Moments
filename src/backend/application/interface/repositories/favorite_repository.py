@@ -1,9 +1,13 @@
+"""Порт хранилища избранного."""
+
 from abc import ABC, abstractmethod
 
 from backend.domain.entities.favorite.favorite import Favorite
 
 
 class FavoriteRepository(ABC):
+    """Хранилище избранного пользователя."""
+
     @abstractmethod
     async def add(self, favorite: Favorite) -> Favorite:
         """Добавляет аниме в избранное"""

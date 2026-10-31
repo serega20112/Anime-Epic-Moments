@@ -1,3 +1,5 @@
+"""Порт хранилища хайлайтов."""
+
 from abc import ABC, abstractmethod
 
 from backend.domain.aggregates.highlight.highlight import Highlight
@@ -13,6 +15,8 @@ from backend.domain.value_objects.highlight.profile_summary import (
 
 
 class HighlightRepository(ABC):
+    """Хранилище хайлайтов, лайков, сохранений и комментариев."""
+
     @abstractmethod
     async def add(self, highlight: Highlight) -> Highlight:
         """Сохраняет новый хайлайт и возвращает с id"""

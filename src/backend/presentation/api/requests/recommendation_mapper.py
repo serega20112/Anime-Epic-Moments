@@ -1,67 +1,45 @@
-"""Request mappers for recommendation commands."""
+"""Преобразователи запросов для команд рекомендаций."""
 
 from __future__ import annotations
 
-from typing import Any
-
 from backend.application.dto import AskAiRecommendationsCommand
+from backend.presentation.api.requests.recommendation_requests import (
+    AskAiRecommendationsRequest,
+)
 
-_ASK_LIMIT_DEFAULT = 6
-_ASK_LIMIT_MIN = 1
-_ASK_LIMIT_MAX = 10
+ASK_LIMIT_DEFAULT = 6
+ASK_LIMIT_MIN = 1
+ASK_LIMIT_MAX = 10
 
 
-async def map_ask_ai_command(
-    payload: dict[str, Any] | None, *, user_id: int
+def map_ask_ai_command(
+    body: AskAiRecommendationsRequest, *, user_id: int
 ) -> AskAiRecommendationsCommand:
-    """Build an ask AI command from a JSON payload.
-
-    The query value is normalized (trimmed) here but empty/invalid queries are
-    rejected inside the use case, which owns the validation.
+    """Собрать команду запроса к ИИ из проверенного тела.
 
     Args:
-        payload: Decoded JSON payload.
-        user_id: Acting user identifier.
+        body: Проверенное тело запроса рекомендаций.
+        user_id: Идентификатор пользователя сессии.
 
     Returns:
-        AskAiRecommendationsCommand: Command with clamped limit.
+        AskAiRecommendationsCommand: Команда с нормализованным запросом и лимитом.
     """
-    query = str((payload or {}).get("query") or "").strip()
-    limit = await _clamp_limit(
-        await _to_int((payload or {}).get("limit")), default=_ASK_LIMIT_DEFAULT
-    )
     return AskAiRecommendationsCommand(
         user_id=user_id,
-        query=query,
-        limit=limit,
+        query=str(body.query or "").strip(),
+        limit=_clamp_limit(body.limit),
     )
 
 
-async def _clamp_limit(value: int | None, *, default: int) -> int:
-    """Clamp a limit to the allowed range.
+def _clamp_limit(value: int | None) -> int:
+    """Ограничить размер выдачи допустимым диапазоном.
 
     Args:
-        value: Parsed value or None when invalid.
-        default: Default returned when the value is None.
+        value: Запрошенное число рекомендаций либо None.
 
     Returns:
-        int: Clamped limit within allowed bounds.
+        int: Число рекомендаций внутри диапазона.
     """
     if value is None:
-        return default
-    return max(_ASK_LIMIT_MIN, min(value, _ASK_LIMIT_MAX))
-
-
-async def _to_int(value: Any) -> int | None:
-    """Convert a value to an int, returning None on failure.
-
-    Args:
-        value: Raw value from the payload.
-
-    Returns:
-        int | None: Parsed integer or None.
-    """
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
+        return ASK_LIMIT_DEFAULT
+    return max(ASK_LIMIT_MIN, min(value, ASK_LIMIT_MAX))

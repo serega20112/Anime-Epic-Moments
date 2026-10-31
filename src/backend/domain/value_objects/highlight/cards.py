@@ -1,8 +1,12 @@
+"""Карточки хайлайтов, комментариев и вовлечённости."""
+
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class HighlightCard:
+    """Карточка хайлайта для лент и списков."""
+
     id: int
     anime_id: int
     anime_title: str
@@ -31,22 +35,28 @@ class HighlightCard:
     anime_original_title: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class HighlightStats:
+    """Счётчики лайков, комментариев и сохранений хайлайта."""
+
     total_highlights: int
     top_anime_title: str
     average_duration_seconds: float
 
 
-@dataclass
+@dataclass(frozen=True)
 class HighlightLikeUser:
+    """Пользователь, поставивший лайк хайлайту."""
+
     user_id: int
     username: str
     created_at: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class HighlightCommentItem:
+    """Комментарий к хайлайту в списке."""
+
     id: int
     user_id: int
     username: str
@@ -54,8 +64,10 @@ class HighlightCommentItem:
     created_at: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class HighlightEngagement:
+    """Сводка реакций пользователя на хайлайты."""
+
     comments_count: int = 0
     is_liked: bool = False
     is_saved: bool = False

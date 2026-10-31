@@ -1,12 +1,21 @@
+"""Порты внешних сервисов: почта, токены, каталог, ограничители."""
+
+from backend.application.interface.services.account_lock import AccountLockServiceInterface
 from backend.application.interface.services.anime_api_client import AnimeApiClientInterface
+from backend.application.interface.services.csrf_service import CSRFServiceInterface, CSRFToken
 from backend.application.interface.services.email_verification_mailer import (
     EmailVerificationMailerInterface,
 )
 from backend.application.interface.services.email_verification_store import (
     EmailVerificationStoreInterface,
 )
+from backend.application.interface.services.health_check import HealthCheckPort, HealthStatus
 from backend.application.interface.services.highlight_dashboard_cache import (
     HighlightDashboardCacheInterface,
+)
+from backend.application.interface.services.image_storage import (
+    ImageStorageError,
+    ImageStoragePort,
 )
 from backend.application.interface.services.jwt_service import JWTServiceInterface
 from backend.application.interface.services.llm_client import LLMClientInterface
@@ -16,6 +25,10 @@ from backend.application.interface.services.password_reset_mailer import (
 from backend.application.interface.services.password_service import PasswordServiceInterface
 from backend.application.interface.services.profile_overview_cache import (
     ProfileOverviewCacheInterface,
+)
+from backend.application.interface.services.rate_limiter import (
+    RateLimitDecision,
+    RateLimiterInterface,
 )
 from backend.application.interface.services.recommendation_cache import RecommendationCacheInterface
 from backend.application.interface.services.recommendation_service import (
@@ -35,10 +48,17 @@ from backend.application.interface.services.watch_source_service import (
 )
 
 __all__ = [
+    "AccountLockServiceInterface",
     "AnimeApiClientInterface",
+    "CSRFServiceInterface",
+    "CSRFToken",
     "EmailVerificationMailerInterface",
     "EmailVerificationStoreInterface",
     "HighlightDashboardCacheInterface",
+    "HealthCheckPort",
+    "HealthStatus",
+    "ImageStorageError",
+    "ImageStoragePort",
     "JWTServiceInterface",
     "LLMClientInterface",
     "PasswordResetMailerInterface",
@@ -46,6 +66,8 @@ __all__ = [
     "ProfileOverviewCacheInterface",
     "RecommendationCacheInterface",
     "RecommendationServiceInterface",
+    "RateLimitDecision",
+    "RateLimiterInterface",
     "SupportEmailMailerInterface",
     "TelegramSupportNotifierInterface",
     "TokenBlocklistInterface",

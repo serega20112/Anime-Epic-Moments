@@ -1,4 +1,4 @@
-"""Create highlight payload."""
+"""Создание хайлайта из формы."""
 
 from __future__ import annotations
 
@@ -7,20 +7,20 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class CreateHighlightCommand:
-    """Create highlight payload.
+    """Команда создания хайлайта.
 
     Attributes:
-        user_id: Owner user identifier or None for guests.
-        anime_id: Anime identifier.
-        episode: Episode number.
-        start_timestamp: Start time in seconds.
-        end_timestamp: End time in seconds.
-        title: Highlight title.
-        category: Optional category.
-        description: Optional description.
-        is_spoiler: Whether the highlight contains spoilers.
-        emotion: Optional emotion label.
-        highlights_this_hour: Count of highlights created this hour.
+        user_id: Идентификатор владельца либо None для гостя.
+        anime_id: Идентификатор аниме.
+        episode: Номер серии.
+        start_timestamp: Начало фрагмента в секундах.
+        end_timestamp: Конец фрагмента в секундах.
+        title: Заголовок хайлайта.
+        category: Категория хайлайта.
+        description: Описание хайлайта.
+        is_spoiler: Помечен ли хайлайт как спойлер.
+        emotion: Эмоция, выбранная автором.
+        highlights_this_hour: Сколько хайлайтов пользователь уже создал за час.
     """
 
     user_id: int | None

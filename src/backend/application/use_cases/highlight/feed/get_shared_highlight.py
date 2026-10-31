@@ -1,49 +1,46 @@
+"""Сценарий публичной карточки одного хайлайта."""
+
+from __future__ import annotations
+
 from starlette import status
 
+from backend.application.dto import HighlightDashboardQuery, HighlightSharedQuery
 from backend.application.interface.repositories.highlight_repository import HighlightRepository
-from backend.application.interface.repositories.user_repository import UserRepository
-from backend.application.interface.services import AnimeApiClientInterface as AnimeApiClient
-from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases.highlight.feed.get_user_highlights import (
     GetUserHighlightsUseCase,
 )
-from backend.application.use_cases.highlight.result import HighlightResult
+from backend.application.use_cases.result import UseCaseResult
 
 
 class GetSharedHighlightUseCase(GetUserHighlightsUseCase):
-    """Возвращает публичную карточку одного хайлайта и увеличивает счетчик просмотров."""
+    """Возвращает публичную карточку одного хайлайта и увеличивает счётчик просмотров."""
 
-    def __init__(
-        self,
-        repo: HighlightRepository,
-        anime_api_client: AnimeApiClient,
-        unit_of_work: UnitOfWorkInterface,
-        user_repo: UserRepository | None = None,
-    ):
-        super().__init__(repo, anime_api_client, user_repo=user_repo)
-        self.unit_of_work = unit_of_work
+    async def execute(self, query: HighlightSharedQuery) -> UseCaseResult:
+        """Возвращает общий хайлайт внутри транзакции.
 
-    async def execute(self, highlight_id: int, viewer_user_id: int | None = None):
-        """Return a shared highlight within a transaction."""
-        async with self.unit_of_work:
-            return await self._execute(highlight_id, viewer_user_id)
+        Args:
+            query: Идентификатор хайлайта и зритель для отметок лайков.
 
-    async def _execute(self, highlight_id: int, viewer_user_id: int | None = None):
-        highlight = await self.repo.get_by_id(highlight_id)
-        if not highlight:
-            return await HighlightResult.failure(
-                "highlight_not_found", status_code=status.HTTP_404_NOT_FOUND
+        Returns:
+            UseCaseResult: Результат с карточкой хайлайта.
+        """
+        async with self._unit_of_work as uow:
+            repository = uow.repository(HighlightRepository)
+            highlight = await repository.get_by_id(query.highlight_id)
+            if highlight is None:
+                return UseCaseResult.failure(
+                    "highlight_not_found", status_code=status.HTTP_404_NOT_FOUND
+                )
+            await repository.increment_views(query.highlight_id)
+            engagement_map = await repository.get_engagement_map(
+                [query.highlight_id],
+                viewer_user_id=query.viewer_user_id,
             )
-        await self.repo.increment_views(highlight_id)
+            owner_map = await self._load_owners(uow, [highlight])
         dashboard = await self._build_dashboard(
-            highlights=[highlight],
-            anime_id=None,
-            emotion=None,
-            category=None,
-            sort_by="recent",
-            created_date=None,
-            query=None,
-            include_spoilers=True,
-            viewer_user_id=viewer_user_id,
+            [highlight],
+            HighlightDashboardQuery(include_spoilers=True, viewer_user_id=query.viewer_user_id),
+            engagement_map,
+            owner_map,
         )
-        return await HighlightResult.success(dashboard)
+        return UseCaseResult.success(dashboard)

@@ -1,4 +1,4 @@
-"""Dishka provider registry for all application dependencies."""
+"""Провайдеры зависимостей для контейнера dishka."""
 
 from backend.infrastructure.di.providers.anime import AnimeUseCaseProvider
 from backend.infrastructure.di.providers.app import AppProvider

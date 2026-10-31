@@ -1,60 +1,63 @@
+"""Сценарий постановки и снятия лайка хайлайту."""
+
+from __future__ import annotations
+
 from starlette import status
 
 from backend.application.dto import SetHighlightLikeCommand
 from backend.application.interface.repositories.highlight_repository import HighlightRepository
 from backend.application.interface.services import (
-    HighlightDashboardCacheInterface as HighlightDashboardCache,
+    HighlightDashboardCacheInterface,
 )
 from backend.application.interface.services.profile_overview_cache import (
-    ProfileOverviewCacheInterface as ProfileOverviewCache,
+    ProfileOverviewCacheInterface,
 )
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
-from backend.application.use_cases.highlight.result import HighlightResult
+from backend.application.use_cases.result import UseCaseResult
 
 
 class SetHighlightLikeUseCase:
-    """Ставит или снимает лайк с хайлайта."""
+    """Ставит или снимает лайк с хайлайта в рамках транзакции."""
 
     def __init__(
         self,
-        repo: HighlightRepository,
         unit_of_work: UnitOfWorkInterface,
-        highlight_dashboard_cache: HighlightDashboardCache | None = None,
-        profile_overview_cache: ProfileOverviewCache | None = None,
-    ):
-        self.repo = repo
-        self.highlight_dashboard_cache = highlight_dashboard_cache
-        self.profile_overview_cache = profile_overview_cache
-        self.unit_of_work = unit_of_work
-
-    async def execute(self, command: SetHighlightLikeCommand) -> HighlightResult:
-        """Set a highlight like within a transaction."""
-        async with self.unit_of_work:
-            return await self._execute(command)
-
-    async def _execute(self, command: SetHighlightLikeCommand) -> HighlightResult:
-        """Set or remove a highlight like.
+        highlight_dashboard_cache: HighlightDashboardCacheInterface,
+        profile_overview_cache: ProfileOverviewCacheInterface,
+    ) -> None:
+        """Инициализирует сценарий установки лайка на хайлайт.
 
         Args:
-            command: Set like command.
+            unit_of_work: Граница транзакции изменения лайка.
+            highlight_dashboard_cache: Кэш публичного дашборда хайлайтов.
+            profile_overview_cache: Кэш обзоров профиля зрителя и автора.
+        """
+        self._unit_of_work = unit_of_work
+        self._highlight_dashboard_cache = highlight_dashboard_cache
+        self._profile_overview_cache = profile_overview_cache
+
+    async def execute(self, command: SetHighlightLikeCommand) -> UseCaseResult:
+        """Ставит или снимает лайк с хайлайта в рамках транзакции.
+
+        Args:
+            command: Команда установки или снятия лайка.
 
         Returns:
-            HighlightResult: Result with the updated highlight.
+            UseCaseResult: Результат с обновлённым хайлайтом.
         """
-        highlight = await self.repo.get_by_id(command.highlight_id)
-        if not highlight:
-            return await HighlightResult.failure(
-                "highlight_not_found", status_code=status.HTTP_404_NOT_FOUND
+        async with self._unit_of_work as uow:
+            repository = uow.repository(HighlightRepository)
+            if await repository.get_by_id(command.highlight_id) is None:
+                return UseCaseResult.failure(
+                    "highlight_not_found", status_code=status.HTTP_404_NOT_FOUND
+                )
+            highlight = await repository.set_like(
+                highlight_id=command.highlight_id,
+                user_id=command.user_id,
+                liked=command.liked,
             )
-        highlight = await self.repo.set_like(
-            highlight_id=command.highlight_id,
-            user_id=command.user_id,
-            liked=command.liked,
-        )
-        if self.highlight_dashboard_cache is not None:
-            await self.highlight_dashboard_cache.invalidate_public()
-        if self.profile_overview_cache is not None:
-            await self.profile_overview_cache.invalidate_overview(command.user_id)
-            if highlight.user_id is not None and int(highlight.user_id) != int(command.user_id):
-                await self.profile_overview_cache.invalidate_overview(int(highlight.user_id))
-        return await HighlightResult.success(highlight)
+        await self._highlight_dashboard_cache.invalidate_public()
+        await self._profile_overview_cache.invalidate_overview(command.user_id)
+        if highlight.user_id is not None and int(highlight.user_id) != int(command.user_id):
+            await self._profile_overview_cache.invalidate_overview(int(highlight.user_id))
+        return UseCaseResult.success(highlight)

@@ -1,31 +1,39 @@
+"""Удаление черновика момента просмотра."""
+
 from starlette import status
 
+from backend.application.dto.moment.delete_viewing_moment_command import (
+    DeleteViewingMomentCommand,
+)
 from backend.application.interface.repositories.moment_repository import MomentRepository
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
-from backend.application.use_cases.moment.result import MomentResult
+from backend.application.use_cases.result import UseCaseResult
 
 
 class DeleteViewingMomentUseCase:
-    """Deletes a draft viewing moment of the user."""
+    """Удаляет черновик момента просмотра пользователя."""
 
-    def __init__(self, moment_repo: MomentRepository, unit_of_work: UnitOfWorkInterface):
-        self.moment_repo = moment_repo
-        self.unit_of_work = unit_of_work
-
-    async def execute(self, moment_id: int, user_id: int) -> MomentResult:
-        """Delete the moment within a transaction.
+    def __init__(self, uow: UnitOfWorkInterface) -> None:
+        """Инициализирует сценарий удаления момента просмотра.
 
         Args:
-            moment_id: Moment identifier.
-            user_id: Owner user identifier.
+            uow: Единица работы, через которую берётся репозиторий.
+        """
+        self._uow = uow
+
+    async def execute(self, command: DeleteViewingMomentCommand) -> UseCaseResult:
+        """Удаляет момент просмотра внутри транзакции.
+
+        Args:
+            command: Команда удаления черновика.
 
         Returns:
-            MomentResult: Result of the deletion.
+            UseCaseResult: Результат удаления.
         """
-        async with self.unit_of_work:
-            deleted = await self.moment_repo.delete_moment(moment_id, user_id)
-            if not deleted:
-                return await MomentResult.failure(
-                    "moment_not_found", status_code=status.HTTP_404_NOT_FOUND
-                )
-            return await MomentResult.success({"deleted": True})
+        async with self._uow as uow:
+            deleted = await uow.repository(MomentRepository).delete_moment(
+                command.moment_id, command.user_id
+            )
+        if not deleted:
+            return UseCaseResult.failure("moment_not_found", status_code=status.HTTP_404_NOT_FOUND)
+        return UseCaseResult.success({"deleted": True})

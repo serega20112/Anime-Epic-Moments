@@ -1,4 +1,4 @@
-"""Add anime item to a collection form payload."""
+"""Добавление аниме в существующую коллекцию."""
 
 from __future__ import annotations
 
@@ -7,22 +7,22 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True, slots=True)
 class AddCollectionItemCommand:
-    """Add anime item to a collection form payload.
+    """Команда добавления аниме в коллекцию.
 
     Attributes:
-        user_id: Acting user identifier, used for the ownership check.
-        collection_id: Target collection identifier.
-        anime_id: Anime identifier to add.
-        title: Anime title snapshot.
-        description: Optional item description.
-        cover_url: Optional anime cover URL.
-        genres: Anime genres list.
-        original_title: Original (non-Russian) anime title.
+        collection_id: Идентификатор коллекции.
+        anime_id: Идентификатор добавляемого аниме.
+        user_id: Идентификатор действующего пользователя для проверки владения.
+        title: Название аниме для снимка карточки.
+        description: Описание аниме для снимка карточки.
+        cover_url: Ссылка на обложку для снимка карточки.
+        genres: Жанры аниме для снимка карточки.
+        original_title: Оригинальное название аниме.
     """
 
     collection_id: int
     anime_id: int
-    user_id: int | None = None
+    user_id: int
     title: str = ""
     description: str = ""
     cover_url: str | None = None

@@ -1,4 +1,4 @@
-"""Facade re-exports for backend.utils."""
+"""Вспомогательные утилиты: логирование и TTL-кэш."""
 
 from __future__ import annotations
 

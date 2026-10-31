@@ -1,4 +1,4 @@
-"""Query parameters for searching anime by title."""
+"""Параметры запроса поиска аниме по названию."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class SearchAnimeQuery:
-    """Query parameters for searching anime by title.
+    """Параметры поиска аниме по названию.
 
     Attributes:
-        title: Search title text.
-        limit: Maximum number of results to return.
-        include_adult: Whether to include adult/hentai content.
+        title: Искомое название.
+        limit: Максимальное число результатов.
+        include_adult: Учитывать ли взрослый контент.
     """
 
     title: str

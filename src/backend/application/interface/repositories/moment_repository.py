@@ -1,9 +1,13 @@
+"""Порт хранилища черновиков моментов просмотра."""
+
 from abc import ABC, abstractmethod
 
 from backend.domain.entities.moment.viewing_moment import ViewingMoment
 
 
 class MomentRepository(ABC):
+    """Хранилище черновиков моментов просмотра."""
+
     @abstractmethod
     async def save_moment(self, moment: ViewingMoment) -> ViewingMoment:
         """Создает или обновляет черновой момент просмотра."""

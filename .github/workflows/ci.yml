@@ -22,14 +22,83 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Check uv.lock against pyproject.toml
+        run: uv lock --check
+
       - name: Lint with Ruff
-        run: uv run ruff check src tests
+        run: uv run ruff check src tests migrations
 
       - name: Check formatting with Ruff
-        run: uv run ruff format --check src tests
+        run: uv run ruff format --check src tests migrations
 
       - name: Check import boundaries
-        run: PYTHONPATH=src uv run lint-imports
+        run: uv run python scripts/check_imports.py
+
+      - name: Check docstring and comment standard
+        run: uv run python scripts/check_style.py
+
+      - name: Check OpenAPI contract is up to date
+        run: uv run python scripts/export_openapi.py --check
 
       - name: Run tests with pytest
-        run: uv run pytest -q --no-cov
+        run: uv run pytest -q
+
+  migrations:
+    name: Database migrations (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: anime_epic_moments_db
+          POSTGRES_USER: anime_epic_moments_user
+          POSTGRES_PASSWORD: anime_epic_moments_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U anime_epic_moments_user -d anime_epic_moments_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql+asyncpg://anime_epic_moments_user:anime_epic_moments_password@localhost:5432/anime_epic_moments_db
+      DATABASE_AUTO_INIT: "0"
+      REDIS_ENABLED: "0"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Apply migrations on an empty database
+        run: uv run alembic -c migrations/alembic.ini upgrade head
+
+      - name: Fail on schema drift between models and database
+        run: uv run alembic -c migrations/alembic.ini check
+
+      - name: Roll back to base and apply again
+        run: |
+          uv run alembic -c migrations/alembic.ini downgrade base
+          uv run alembic -c migrations/alembic.ini upgrade head
+
+      - name: Verify the application starts against migrated database
+        run: |
+          PYTHONPATH=src uv run python -c "import backend.main; print(len(backend.main.app.routes), 'routes loaded')"
+
+      - name: Create a separate test database
+        env:
+          PGPASSWORD: anime_epic_moments_password
+        run: >-
+          psql -h localhost -U anime_epic_moments_user -d postgres
+          -c 'CREATE DATABASE anime_epic_moments_test;'
+
+      - name: Run repository integration tests on PostgreSQL
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://anime_epic_moments_user:anime_epic_moments_password@localhost:5432/anime_epic_moments_test
+        run: uv run pytest tests/integration -q --no-cov

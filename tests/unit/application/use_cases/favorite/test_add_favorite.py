@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from backend.application.dto.favorite import AddFavoriteCommand
 from backend.application.use_cases.favorite.add_favorite import AddFavoriteUseCase
+from tests.support.fakes import FakeUnitOfWork
 
 
 @pytest.mark.parametrize(
@@ -21,18 +23,24 @@ async def test_add_favorite_use_case_normalizes_payload_and_invalidates_cache(
 ):
     """Проверяем, что add_favorite нормализует snapshot-данные и сбрасывает рекомендации."""
     repo = AsyncMock()
+    repo.add.side_effect = lambda favorite: favorite
     recommendation_service = AsyncMock()
     profile_cache = AsyncMock()
-    use_case = AddFavoriteUseCase(repo, AsyncMock(), recommendation_service, profile_cache)
-    repo.add.side_effect = lambda favorite: favorite
+    use_case = AddFavoriteUseCase(
+        FakeUnitOfWork(FavoriteRepository=repo),
+        recommendation_service,
+        profile_cache,
+    )
 
     result = await use_case.execute(
-        user_id="5",
-        anime_id="10",
-        title="  Initial D  ",
-        description="  street racing  ",
-        cover_url="  https://example.com/cover.jpg  ",
-        genres=genres_input,
+        AddFavoriteCommand(
+            user_id=5,
+            anime_id=10,
+            title="  Initial D  ",
+            description="  street racing  ",
+            cover_url="  https://example.com/cover.jpg  ",
+            genres=genres_input,
+        )
     )
 
     assert result.user_id == 5

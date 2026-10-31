@@ -1,3 +1,5 @@
+"""Порт хранения обращений в поддержку."""
+
 from abc import ABC, abstractmethod
 
 from backend.domain.entities.support.support_ticket import SupportTicket

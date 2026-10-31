@@ -1,4 +1,4 @@
-"""Publish a draft viewing moment as a highlight."""
+"""Публикация черновика момента просмотра как хайлайта."""
 
 from __future__ import annotations
 
@@ -7,16 +7,16 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class PublishViewingMomentCommand:
-    """Publish a draft viewing moment as a highlight.
+    """Команда публикации черновика момента.
 
     Attributes:
-        user_id: Owner user identifier.
-        moment_id: Moment identifier to publish.
-        is_spoiler: Whether the highlight contains spoilers.
-        title: Optional title override.
-        category: Optional category override.
-        emotion: Optional emotion label.
-        description: Optional description.
+        user_id: Идентификатор владельца черновика.
+        moment_id: Идентификатор публикуемого момента.
+        is_spoiler: Помечен ли хайлайт как спойлер.
+        title: Заголовок публикуемого хайлайта.
+        category: Категория хайлайта.
+        emotion: Эмоция, выбранная автором.
+        description: Описание хайлайта.
     """
 
     user_id: int

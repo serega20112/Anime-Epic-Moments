@@ -1,8 +1,4 @@
-"""Build application-layer command and query DTOs from highlight HTTP requests.
-
-All JSON parsing, normalization and validation live here so that route
-handlers stay thin and only orchestrate use case execution.
-"""
+"""Сборка команд и запросов application из HTTP-запросов хайлайтов."""
 
 from __future__ import annotations
 
@@ -15,265 +11,290 @@ from backend.application.dto import (
     EditHighlightCommand,
     HighlightDashboardQuery,
     HighlightFeedQuery,
-    HighlightListQuery,
     SetHighlightLikeCommand,
     SetSavedHighlightCommand,
 )
+from backend.presentation.api.requests.highlight_requests import (
+    TITLE_MAX_LENGTH,
+    AddHighlightCommentRequest,
+    CreateHighlightRequest,
+    EditHighlightRequest,
+)
 
-TITLE_MAX_LENGTH = 120
 DESCRIPTION_MAX_LENGTH = 600
+CATEGORY_MAX_LENGTH = 60
+EMOTION_MAX_LENGTH = 40
+SORT_MAX_LENGTH = 20
+DATE_MAX_LENGTH = 10
+SEARCH_MAX_LENGTH = 200
 
 
-async def map_create_highlight_command(
-    payload, *, user_id: int | None
-) -> CreateHighlightCommand | None:
-    """Build a create highlight command from a JSON payload.
+def map_create_highlight_command(
+    body: CreateHighlightRequest,
+    *,
+    user_id: int | None,
+    highlights_this_hour: int,
+) -> CreateHighlightCommand:
+    """Собрать команду создания хайлайта из валидированного тела.
+
+    Идентификатор автора и счётчик добавлений приходят с сервера: значения из
+    тела запроса игнорируются, иначе клиент смог бы подделать автора и обойти
+    гостевую квоту.
 
     Args:
-        payload: Decoded JSON payload.
-        user_id: Owner user identifier or None for guests.
+        body: Разобранное и проверенное тело запроса.
+        user_id: Идентификатор автора либо None для гостя.
+        highlights_this_hour: Серверный счётчик добавлений за текущее окно.
 
     Returns:
-        CreateHighlightCommand | None: Validated command or None on invalid input.
+        CreateHighlightCommand: Команда создания хайлайта.
     """
-    payload = payload or {}
-    anime_id = await _to_int(payload.get("anime_id"))
-    episode = await _to_int(payload.get("episode"))
-    start_timestamp = await _safe_to_seconds(payload.get("start_timestamp"))
-    end_timestamp = await _safe_to_seconds(payload.get("end_timestamp"))
-    if anime_id is None or episode is None or start_timestamp is None or end_timestamp is None:
-        return None
     return CreateHighlightCommand(
-        user_id=await _to_int(payload.get("user_id"), fallback=user_id),
-        anime_id=anime_id,
-        episode=episode,
-        start_timestamp=start_timestamp,
-        end_timestamp=end_timestamp,
-        title=await _trim(payload.get("title"), TITLE_MAX_LENGTH),
-        category=await _optional(payload.get("category")),
-        description=await _trim(payload.get("description"), DESCRIPTION_MAX_LENGTH),
-        is_spoiler=await _to_bool(payload.get("is_spoiler"), default=False),
-        emotion=await _optional(payload.get("emotion")),
-        highlights_this_hour=await _to_int(payload.get("highlights_this_hour")) or 0,
+        user_id=user_id,
+        anime_id=body.anime_id,
+        episode=body.episode,
+        start_timestamp=body.start_timestamp,
+        end_timestamp=body.end_timestamp,
+        title=_trim(body.title, TITLE_MAX_LENGTH),
+        category=_optional(body.category, CATEGORY_MAX_LENGTH),
+        description=_trim(body.description, DESCRIPTION_MAX_LENGTH),
+        is_spoiler=body.is_spoiler,
+        emotion=_optional(body.emotion, EMOTION_MAX_LENGTH),
+        highlights_this_hour=highlights_this_hour,
     )
 
 
-async def map_edit_highlight_command(payload, *, highlight_id: int) -> EditHighlightCommand:
-    """Build an edit highlight command from a JSON payload.
+def map_edit_highlight_command(
+    body: EditHighlightRequest,
+    *,
+    highlight_id: int,
+    user_id: int,
+) -> EditHighlightCommand:
+    """Собрать команду правки хайлайта из валидированного тела.
 
     Args:
-        payload: Decoded JSON payload.
-        highlight_id: Highlight identifier.
+        body: Разобранное и проверенное тело запроса.
+        highlight_id: Идентификатор хайлайта из пути.
+        user_id: Идентификатор автора хайлайта.
 
     Returns:
-        EditHighlightCommand: Validated edit command.
+        EditHighlightCommand: Команда редактирования хайлайта.
     """
-    payload = payload or {}
     return EditHighlightCommand(
         highlight_id=highlight_id,
-        episode=await _to_int(payload.get("episode")),
-        start_timestamp=await _to_seconds(payload.get("start_timestamp")),
-        end_timestamp=await _to_seconds(payload.get("end_timestamp")),
-        title=await _trim(payload.get("title"), TITLE_MAX_LENGTH),
-        category=await _optional(payload.get("category")),
-        description=await _trim(payload.get("description"), DESCRIPTION_MAX_LENGTH),
-        is_spoiler=await _to_bool(payload.get("is_spoiler"), default=False),
-        emotion=await _optional(payload.get("emotion")),
+        user_id=user_id,
+        episode=body.episode,
+        start_timestamp=body.start_timestamp,
+        end_timestamp=body.end_timestamp,
+        title=_trim(body.title, TITLE_MAX_LENGTH),
+        category=_optional(body.category, CATEGORY_MAX_LENGTH),
+        description=_trim(body.description, DESCRIPTION_MAX_LENGTH),
+        is_spoiler=body.is_spoiler,
+        emotion=_optional(body.emotion, EMOTION_MAX_LENGTH),
     )
 
 
-async def map_delete_highlight_command(*, highlight_id: int) -> DeleteHighlightCommand:
-    """Build a delete highlight command.
+def map_delete_highlight_command(*, highlight_id: int, user_id: int) -> DeleteHighlightCommand:
+    """Собрать команду удаления хайлайта.
 
     Args:
-        highlight_id: Highlight identifier.
+        highlight_id: Идентификатор хайлайта из пути.
+        user_id: Идентификатор автора хайлайта.
 
     Returns:
-        DeleteHighlightCommand: Valid delete command.
+        DeleteHighlightCommand: Команда удаления хайлайта.
     """
-    return DeleteHighlightCommand(highlight_id=highlight_id)
+    return DeleteHighlightCommand(highlight_id=highlight_id, user_id=user_id)
 
 
-async def map_set_like_command(
-    request: Request, *, highlight_id: int, user_id: int
+def map_set_like_command(
+    *,
+    highlight_id: int,
+    user_id: int,
+    liked: bool,
 ) -> SetHighlightLikeCommand:
-    """Build a set like command from the request method.
+    """Собрать команду лайка по методу запроса.
 
     Args:
-        request: Incoming HTTP request.
-        highlight_id: Highlight identifier.
-        user_id: Acting user identifier.
+        highlight_id: Идентификатор хайлайта из пути.
+        user_id: Идентификатор действующего пользователя.
+        liked: True — поставить лайк, False — снять.
 
     Returns:
-        SetHighlightLikeCommand: Valid command.
+        SetHighlightLikeCommand: Команда изменения лайка.
     """
-    return SetHighlightLikeCommand(
-        highlight_id=highlight_id,
-        user_id=user_id,
-        liked=request.method == "POST",
-    )
+    return SetHighlightLikeCommand(highlight_id=highlight_id, user_id=user_id, liked=liked)
 
 
-async def map_set_saved_command(
-    request: Request, *, highlight_id: int, user_id: int
+def map_set_saved_command(
+    *,
+    highlight_id: int,
+    user_id: int,
+    saved: bool,
 ) -> SetSavedHighlightCommand:
-    """Build a set saved command from the request method.
+    """Собрать команду сохранения по методу запроса.
 
     Args:
-        request: Incoming HTTP request.
-        highlight_id: Highlight identifier.
-        user_id: Acting user identifier.
+        highlight_id: Идентификатор хайлайта из пути.
+        user_id: Идентификатор действующего пользователя.
+        saved: True — сохранить, False — убрать из сохранённых.
 
     Returns:
-        SetSavedHighlightCommand: Valid command.
+        SetSavedHighlightCommand: Команда изменения отметки сохранения.
     """
-    return SetSavedHighlightCommand(
-        highlight_id=highlight_id,
-        user_id=user_id,
-        saved=request.method == "POST",
-    )
+    return SetSavedHighlightCommand(highlight_id=highlight_id, user_id=user_id, saved=saved)
 
 
-async def map_add_comment_command(
-    payload, *, highlight_id: int, user_id: int
+def map_add_comment_command(
+    body: AddHighlightCommentRequest,
+    *,
+    highlight_id: int,
+    user_id: int,
 ) -> AddHighlightCommentCommand:
-    """Build an add comment command from a JSON payload.
+    """Собрать команду добавления комментария из валидированного тела.
 
     Args:
-        payload: Decoded JSON payload.
-        highlight_id: Highlight identifier.
-        user_id: Author identifier.
+        body: Разобранное и проверенное тело запроса.
+        highlight_id: Идентификатор хайлайта из пути.
+        user_id: Идентификатор автора комментария.
 
     Returns:
-        AddHighlightCommentCommand: Validated comment command.
+        AddHighlightCommentCommand: Команда добавления комментария.
     """
     return AddHighlightCommentCommand(
         highlight_id=highlight_id,
         user_id=user_id,
-        content=await _trim((payload or {}).get("content"), DESCRIPTION_MAX_LENGTH),
+        content=_trim(body.content, DESCRIPTION_MAX_LENGTH),
     )
 
 
-async def map_dashboard_query(
+def map_dashboard_query(
     request: Request,
     *,
-    viewer_user_id: int | None,
+    user_id: int | None = None,
+    viewer_user_id: int | None = None,
+    include_spoilers_default: bool = False,
 ) -> HighlightDashboardQuery:
-    """Build a dashboard query from request query parameters.
+    """Собрать запрос сводки по параметрам строки запроса.
 
     Args:
-        request: Incoming HTTP request.
-        viewer_user_id: Optional viewer identifier.
+        request: Текущий HTTP-запрос.
+        user_id: Владелец личного дашборда либо None для публичных сводок.
+        viewer_user_id: Идентификатор зрителя для отметок лайков и сохранений.
+        include_spoilers_default: Показывать ли спойлеры при отсутствующем флаге запроса.
 
     Returns:
-        HighlightDashboardQuery: Validated query.
+        HighlightDashboardQuery: Параметры дашборда.
     """
+    params = request.query_params
     return HighlightDashboardQuery(
-        anime_id=await _to_int(request.query_params.get("anime_id")),
-        emotion=await _optional(request.query_params.get("emotion")),
-        category=await _optional(request.query_params.get("category")),
-        sort_by=await _optional(request.query_params.get("sort")) or "recent",
-        created_date=await _optional(request.query_params.get("date")),
-        query=await _optional(request.query_params.get("query")),
-        include_spoilers=not await _to_bool(
-            request.query_params.get("hide_spoilers"), default=True
+        anime_id=_to_int(params.get("anime_id")),
+        emotion=_optional(params.get("emotion"), EMOTION_MAX_LENGTH),
+        category=_optional(params.get("category"), CATEGORY_MAX_LENGTH),
+        sort_by=_optional(params.get("sort"), SORT_MAX_LENGTH) or "recent",
+        created_date=_optional(params.get("date"), DATE_MAX_LENGTH),
+        query=_optional(params.get("query"), SEARCH_MAX_LENGTH),
+        include_spoilers=not _to_bool(
+            params.get("hide_spoilers"), default=not include_spoilers_default
         ),
-        limit=await _clamp_int(
-            request.query_params.get("limit"), default=20, minimum=1, maximum=24
-        ),
+        limit=_clamp_int(params.get("limit"), default=20, minimum=1, maximum=24),
+        user_id=user_id,
         viewer_user_id=viewer_user_id,
     )
 
 
-async def map_list_query(request: Request, *, include_spoilers_default: bool) -> HighlightListQuery:
-    """Build a saved/liked list query from request query parameters.
+def map_feed_query(request: Request, *, viewer_user_id: int | None) -> HighlightFeedQuery:
+    """Собрать запрос социальной ленты по параметрам строки запроса.
 
     Args:
-        request: Incoming HTTP request.
-        include_spoilers_default: Default include spoilers value.
+        request: Текущий HTTP-запрос.
+        viewer_user_id: Идентификатор зрителя для персональных секций.
 
     Returns:
-        HighlightListQuery: Validated query.
+        HighlightFeedQuery: Параметры ленты.
     """
-    return HighlightListQuery(
-        anime_id=await _to_int(request.query_params.get("anime_id")),
-        emotion=await _optional(request.query_params.get("emotion")),
-        category=await _optional(request.query_params.get("category")),
-        sort_by=await _optional(request.query_params.get("sort")) or "recent",
-        created_date=await _optional(request.query_params.get("date")),
-        query=await _optional(request.query_params.get("query")),
-        include_spoilers=not await _to_bool(
-            request.query_params.get("hide_spoilers"), default=not include_spoilers_default
-        ),
-    )
-
-
-async def map_feed_query(request: Request, *, viewer_user_id: int | None) -> HighlightFeedQuery:
-    """Build a social feed query from request query parameters.
-
-    Args:
-        request: Incoming HTTP request.
-        viewer_user_id: Optional viewer identifier.
-
-    Returns:
-        HighlightFeedQuery: Validated query.
-    """
+    params = request.query_params
     return HighlightFeedQuery(
-        anime_id=await _to_int(request.query_params.get("anime_id")),
-        category=await _optional(request.query_params.get("category")),
-        include_spoilers=not await _to_bool(
-            request.query_params.get("hide_spoilers"), default=False
-        ),
-        limit=await _clamp_int(
-            request.query_params.get("limit"), default=12, minimum=1, maximum=24
-        ),
+        anime_id=_to_int(params.get("anime_id")),
+        category=_optional(params.get("category"), CATEGORY_MAX_LENGTH),
+        include_spoilers=not _to_bool(params.get("hide_spoilers"), default=False),
+        limit=_clamp_int(params.get("limit"), default=12, minimum=1, maximum=24),
         viewer_user_id=viewer_user_id,
     )
 
 
-async def _trim(value, max_length: int) -> str:
+def _trim(value: object, max_length: int) -> str:
+    """Очистить строку от пробелов и обрезать по длине.
+
+    Args:
+        value: Исходное значение любого типа.
+        max_length: Максимальная длина результата.
+
+    Returns:
+        str: Обрезанная строка либо пустая строка.
+    """
     return str(value or "").strip()[:max_length]
 
 
-async def _optional(value) -> str | None:
-    cleaned = str(value or "").strip()
+def _optional(value: object, max_length: int) -> str | None:
+    """Вернуть необязательное значение либо None.
+
+    Args:
+        value: Исходное значение любого типа.
+        max_length: Максимальная длина результата.
+
+    Returns:
+        str | None: Непустая строка после обрезки либо None.
+    """
+    cleaned = _trim(value, max_length)
     return cleaned or None
 
 
-async def _to_bool(value, *, default: bool) -> bool:
+def _to_bool(value: object, *, default: bool) -> bool:
+    """Преобразовать значение в булево.
+
+    Args:
+        value: Исходное значение любого типа.
+        default: Значение при пустом или отсутствующем входе.
+
+    Returns:
+        bool: Истина для «1», «true», «yes» и «on».
+    """
     if value in (None, ""):
         return default
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
-async def _to_int(value, *, fallback=None) -> int | None:
+def _to_int(value: object) -> int | None:
+    """Преобразовать значение в целое число либо None.
+
+    Args:
+        value: Исходное значение любого типа.
+
+    Returns:
+        int | None: Число либо None при невозможном разборе.
+    """
     if value in (None, ""):
-        return fallback
+        return None
     try:
-        return int(value)
+        return int(str(value))
     except (TypeError, ValueError):
-        return fallback
+        return None
 
 
-async def _clamp_int(value, *, default: int, minimum: int, maximum: int) -> int:
-    parsed = await _to_int(value)
+def _clamp_int(value: object, *, default: int, minimum: int, maximum: int) -> int:
+    """Ограничить целое число допустимым диапазоном.
+
+    Args:
+        value: Исходное значение любого типа.
+        default: Значение при невозможном разборе.
+        minimum: Нижняя граница результата.
+        maximum: Верхняя граница результата.
+
+    Returns:
+        int: Число в диапазоне от нижней до верхней границы.
+    """
+    parsed = _to_int(value)
     if parsed is None:
         return default
     return max(min(parsed, maximum), minimum)
-
-
-async def _to_seconds(value) -> float:
-    if isinstance(value, (int, float)):
-        return float(value)
-    text = str(value or "").strip()
-    if ":" in text:
-        minutes, seconds = text.split(":", 1)
-        return float(int(minutes) * 60 + int(seconds))
-    return float(text)
-
-
-async def _safe_to_seconds(value) -> float | None:
-    try:
-        return await _to_seconds(value)
-    except (TypeError, ValueError):
-        return None

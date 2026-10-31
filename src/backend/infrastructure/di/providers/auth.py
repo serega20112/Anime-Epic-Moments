@@ -1,10 +1,11 @@
-"""Auth use case providers."""
+"""Провайдеры сценариев аутентификации и аккаунта."""
 
 from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
+from backend.application.policies import PasswordResetPolicy
 from backend.application.use_cases import (
     LogoutUserUseCase,
     RefreshSessionUseCase,
@@ -18,9 +19,10 @@ from backend.application.use_cases import (
 from backend.application.use_cases.auth.login_register.login_user import LoginUserUseCase
 from backend.application.use_cases.auth.password_reset.reset_password import ResetPasswordUseCase
 from backend.infrastructure.cache.profile_overview_cache import ProfileOverviewCache
-from backend.infrastructure.external import PasswordResetMailer
-from backend.infrastructure.external.email_verification_mailer import EmailVerificationMailer
-from backend.infrastructure.repositories.user_repository import UserRepository
+from backend.infrastructure.notifications.email import (
+    EmailVerificationMailer,
+    PasswordResetMailer,
+)
 from backend.infrastructure.security.account_lock_service import AccountLockService
 from backend.infrastructure.security.email_verification_store import EmailVerificationStore
 from backend.infrastructure.security.jwt_service import JWTService
@@ -29,48 +31,28 @@ from backend.infrastructure.security.token_blocklist import TokenBlocklist
 
 
 class AuthUseCaseProvider(Provider):
-    """Provide authentication and account use cases."""
+    """Провайдер сценариев входа, регистрации и аккаунта."""
 
     @provide(scope=Scope.REQUEST)
     async def register_user(
         self,
-        user_repository: UserRepository,
-        password_service: PasswordService,
         unit_of_work: UnitOfWorkInterface,
+        password_service: PasswordService,
     ) -> RegisterUserUseCase:
-        """Provide the register user use case.
-
-        Args:
-            user_repository: User repository.
-            password_service: Password service.
-            unit_of_work: Transaction boundary.
-
-        Returns:
-            RegisterUserUseCase: Configured use case.
-        """
-        return RegisterUserUseCase(user_repository, password_service, unit_of_work)
+        """Создать сценарий регистрации пользователя."""
+        return RegisterUserUseCase(unit_of_work, password_service)
 
     @provide(scope=Scope.REQUEST)
     async def request_email_verification(
         self,
-        user_repository: UserRepository,
+        unit_of_work: UnitOfWorkInterface,
         password_service: PasswordService,
         email_verification_store: EmailVerificationStore,
         email_verification_mailer: EmailVerificationMailer,
     ) -> RequestEmailVerificationUseCase:
-        """Provide the request email verification use case.
-
-        Args:
-            user_repository: User repository.
-            password_service: Password service.
-            email_verification_store: Verification store.
-            email_verification_mailer: Verification mailer.
-
-        Returns:
-            RequestEmailVerificationUseCase: Configured use case.
-        """
+        """Создать сценарий запроса подтверждения почты."""
         return RequestEmailVerificationUseCase(
-            user_repository,
+            unit_of_work,
             password_service,
             email_verification_store,
             email_verification_mailer,
@@ -82,15 +64,7 @@ class AuthUseCaseProvider(Provider):
         email_verification_store: EmailVerificationStore,
         email_verification_mailer: EmailVerificationMailer,
     ) -> ResendEmailVerificationUseCase:
-        """Provide the resend email verification use case.
-
-        Args:
-            email_verification_store: Verification store.
-            email_verification_mailer: Verification mailer.
-
-        Returns:
-            ResendEmailVerificationUseCase: Configured use case.
-        """
+        """Создать сценарий повторной отправки кода подтверждения."""
         return ResendEmailVerificationUseCase(
             email_verification_store,
             email_verification_mailer,
@@ -99,40 +73,21 @@ class AuthUseCaseProvider(Provider):
     @provide(scope=Scope.REQUEST)
     async def verify_email(
         self,
-        user_repository: UserRepository,
-        email_verification_store: EmailVerificationStore,
         unit_of_work: UnitOfWorkInterface,
+        email_verification_store: EmailVerificationStore,
     ) -> VerifyEmailUseCase:
-        """Provide the verify email use case.
-
-        Args:
-            user_repository: User repository.
-            email_verification_store: Verification store.
-            unit_of_work: Transaction boundary.
-
-        Returns:
-            VerifyEmailUseCase: Configured use case.
-        """
-        return VerifyEmailUseCase(user_repository, email_verification_store, unit_of_work)
+        """Создать сценарий подтверждения почты."""
+        return VerifyEmailUseCase(unit_of_work, email_verification_store)
 
     @provide(scope=Scope.REQUEST)
     async def login_user(
         self,
-        user_repository: UserRepository,
+        unit_of_work: UnitOfWorkInterface,
         password_service: PasswordService,
         account_lock_service: AccountLockService,
     ) -> LoginUserUseCase:
-        """Provide the login user use case.
-
-        Args:
-            user_repository: User repository.
-            password_service: Password service.
-            account_lock_service: Account lockout service.
-
-        Returns:
-            LoginUserUseCase: Configured use case.
-        """
-        return LoginUserUseCase(user_repository, password_service, account_lock_service)
+        """Создать сценарий входа."""
+        return LoginUserUseCase(unit_of_work, password_service, account_lock_service)
 
     @provide(scope=Scope.REQUEST)
     async def logout_user(
@@ -140,15 +95,7 @@ class AuthUseCaseProvider(Provider):
         jwt_service: JWTService,
         token_blocklist: TokenBlocklist,
     ) -> LogoutUserUseCase:
-        """Provide the logout user use case.
-
-        Args:
-            jwt_service: JWT service.
-            token_blocklist: Token blocklist.
-
-        Returns:
-            LogoutUserUseCase: Configured use case.
-        """
+        """Создать сценарий выхода."""
         return LogoutUserUseCase(jwt_service, token_blocklist)
 
     @provide(scope=Scope.REQUEST)
@@ -156,81 +103,53 @@ class AuthUseCaseProvider(Provider):
         self,
         jwt_service: JWTService,
         token_blocklist: TokenBlocklist,
+        unit_of_work: UnitOfWorkInterface,
     ) -> RefreshSessionUseCase:
-        """Provide the refresh session use case.
-
-        Args:
-            jwt_service: JWT service.
-            token_blocklist: Token blocklist.
-
-        Returns:
-            RefreshSessionUseCase: Configured use case.
-        """
-        return RefreshSessionUseCase(jwt_service, token_blocklist)
+        """Создать сценарий продления сессии."""
+        return RefreshSessionUseCase(jwt_service, token_blocklist, unit_of_work)
 
     @provide(scope=Scope.REQUEST)
     async def update_user_profile(
         self,
-        user_repository: UserRepository,
         unit_of_work: UnitOfWorkInterface,
         profile_overview_cache: ProfileOverviewCache,
     ) -> UpdateUserProfileUseCase:
-        """Provide the update user profile use case.
-
-        Args:
-            user_repository: User repository.
-            unit_of_work: Transaction boundary.
-            profile_overview_cache: Profile overview cache.
-
-        Returns:
-            UpdateUserProfileUseCase: Configured use case.
-        """
-        return UpdateUserProfileUseCase(user_repository, unit_of_work, profile_overview_cache)
+        """Создать сценарий правки профиля."""
+        return UpdateUserProfileUseCase(unit_of_work, profile_overview_cache)
 
     @provide(scope=Scope.REQUEST)
     async def request_password_reset(
         self,
-        user_repository: UserRepository,
+        unit_of_work: UnitOfWorkInterface,
         jwt_service: JWTService,
         password_reset_mailer: PasswordResetMailer,
+        policy: PasswordResetPolicy,
     ) -> RequestPasswordResetUseCase:
-        """Provide the request password reset use case.
+        """Создать сценарий запроса сброса пароля.
 
         Args:
-            user_repository: User repository.
-            jwt_service: JWT service.
-            password_reset_mailer: Password reset mailer.
+            unit_of_work: Граница транзакции чтения пользователя.
+            jwt_service: Сервис JWT-токенов.
+            password_reset_mailer: Почтовый сервис ссылок восстановления.
+            policy: Узкая политика сброса пароля.
 
         Returns:
-            RequestPasswordResetUseCase: Configured use case.
+            RequestPasswordResetUseCase: Настроенный сценарий.
         """
         return RequestPasswordResetUseCase(
-            user_repository,
+            unit_of_work,
             jwt_service,
             password_reset_mailer,
+            policy,
         )
 
     @provide(scope=Scope.REQUEST)
     async def reset_password(
         self,
-        user_repository: UserRepository,
+        unit_of_work: UnitOfWorkInterface,
         jwt_service: JWTService,
         password_service: PasswordService,
         token_blocklist: TokenBlocklist,
-        unit_of_work: UnitOfWorkInterface,
     ) -> ResetPasswordUseCase:
-        """Provide the reset password use case.
-
-        Args:
-            user_repository: User repository.
-            jwt_service: JWT service.
-            password_service: Password service.
-            token_blocklist: Token blocklist.
-            unit_of_work: Transaction boundary.
-
-        Returns:
-            ResetPasswordUseCase: Configured use case.
-        """
-        return ResetPasswordUseCase(
-            user_repository, jwt_service, password_service, token_blocklist, unit_of_work
-        )
+        """Создать сценарий сброса пароля."""
+        return ResetPasswordUseCase(unit_of_work, jwt_service, password_service, token_blocklist)
