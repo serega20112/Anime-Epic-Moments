@@ -39,7 +39,7 @@ TOKEN_SOURCE_BEARER = "bearer"
 TOKEN_SOURCE_COOKIE = "cookie"
 STATIC_PATH_PREFIX = "/static/"
 MEDIA_PROXY_PATH = "/watch/proxy"
-API_AUTH_TOKEN_PREFIX = f"{API_PREFIX}/auth/token"
+API_AUTH_PREFIX = f"{API_PREFIX}/auth"
 CSRF_EXEMPT_PATHS = frozenset({MEDIA_PROXY_PATH})
 
 
@@ -261,7 +261,7 @@ async def is_csrf_exempt(request: Request) -> bool:
     path = request.url.path
     return (
         path.startswith(STATIC_PATH_PREFIX)
-        or path.startswith(API_AUTH_TOKEN_PREFIX)
+        or path.startswith(API_AUTH_PREFIX)
         or path in CSRF_EXEMPT_PATHS
     )
 

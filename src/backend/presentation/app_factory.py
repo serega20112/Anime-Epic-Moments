@@ -24,21 +24,21 @@ from backend.presentation.api.errors import (
     register_exception_handlers,
 )
 from backend.presentation.api.helpers import wants_json
-from backend.presentation.api.v1.anime_route import anime_router
-from backend.presentation.api.v1.api_auth_route import api_auth_router
-from backend.presentation.api.v1.api_config_route import api_config_router
-from backend.presentation.api.v1.auth import auth_router
-from backend.presentation.api.v1.collection_route import collection_router
-from backend.presentation.api.v1.favorite_route import favorite_router
-from backend.presentation.api.v1.health_route import health_router
-from backend.presentation.api.v1.highlight_route import highlight_router
-from backend.presentation.api.v1.index_route import index_router
-from backend.presentation.api.v1.moment_route import moment_router, watch_moment_router
-from backend.presentation.api.v1.rating_route import rating_router
-from backend.presentation.api.v1.reaction_route import reaction_router
-from backend.presentation.api.v1.recommendation_route import recommendation_router
-from backend.presentation.api.v1.support_route import support_router
-from backend.presentation.api.v1.user_route import user_router
+from backend.presentation.api.v1.anime import anime_router, api_anime_router
+from backend.presentation.api.v1.auth import api_auth_router, auth_router
+from backend.presentation.api.v1.collections import api_collections_router, collection_router
+from backend.presentation.api.v1.config import api_config_router
+from backend.presentation.api.v1.favorites import favorite_router
+from backend.presentation.api.v1.health import health_router
+from backend.presentation.api.v1.highlights import api_highlights_router, highlight_router
+from backend.presentation.api.v1.index import index_router
+from backend.presentation.api.v1.moments import moment_router, watch_moment_router
+from backend.presentation.api.v1.notifications import api_notifications_router
+from backend.presentation.api.v1.ratings import rating_router
+from backend.presentation.api.v1.reactions import reaction_router
+from backend.presentation.api.v1.recommendations import recommendation_router
+from backend.presentation.api.v1.support import support_router
+from backend.presentation.api.v1.users import api_users_router, user_router
 from backend.presentation.api.v1.watch_route import watch_router
 from backend.presentation.security_helpers import (
     apply_security_headers,
@@ -275,6 +275,11 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(api_auth_router)
     app.include_router(api_config_router)
+    app.include_router(api_anime_router)
+    app.include_router(api_users_router)
+    app.include_router(api_collections_router)
+    app.include_router(api_highlights_router)
+    app.include_router(api_notifications_router)
     app.include_router(highlight_router)
     app.include_router(favorite_router)
     app.include_router(collection_router)

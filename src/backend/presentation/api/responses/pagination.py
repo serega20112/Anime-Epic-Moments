@@ -32,3 +32,28 @@ class Page[T](BaseModel):
     total_pages: int
     has_next: bool
     has_previous: bool
+
+
+def as_single_page[T](items: list[T]) -> dict[str, object]:
+    """Обернуть всю выборку в единый конверт страницы.
+
+    Используется там, где сценарий возвращает список целиком и не поддерживает
+    нарезку: вся выборка идёт первой и единственной страницей, чтобы клиент
+    читал навигацию из общего контракта, а не по длине ``items``.
+
+    Args:
+        items: Элементы всей выборки.
+
+    Returns:
+        dict[str, object]: Поля конверта для конструктора ``Page``.
+    """
+    total = len(items)
+    return {
+        "items": items,
+        "page": 1,
+        "per_page": total or 1,
+        "total": total,
+        "total_pages": 1,
+        "has_next": False,
+        "has_previous": False,
+    }

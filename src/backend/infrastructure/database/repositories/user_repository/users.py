@@ -27,6 +27,8 @@ class UserRepository(UserRepositoryPort):
             status=user.status,
             show_watch_activity=user.show_watch_activity,
             show_recent_episodes=user.show_recent_episodes,
+            google_subject=user.google_subject,
+            email_verified=user.email_verified,
         )
         self.session.add(db_user)
         await self.session.flush()
@@ -43,6 +45,14 @@ class UserRepository(UserRepositoryPort):
     async def get_by_email(self, email: str) -> User | None:
         """Загрузить пользователя по адресу почты."""
         result = await self.session.execute(select(UserModel).where(UserModel.email == email))
+        db_user = result.scalar_one_or_none()
+        return await self._to_entity(db_user) if db_user else None
+
+    async def get_by_google_subject(self, google_subject: str) -> User | None:
+        """Загрузить пользователя по стабильному идентификатору аккаунта Google."""
+        result = await self.session.execute(
+            select(UserModel).where(UserModel.google_subject == google_subject)
+        )
         db_user = result.scalar_one_or_none()
         return await self._to_entity(db_user) if db_user else None
 
@@ -64,6 +74,8 @@ class UserRepository(UserRepositoryPort):
         db_user.status = user.status
         db_user.show_watch_activity = user.show_watch_activity
         db_user.show_recent_episodes = user.show_recent_episodes
+        db_user.google_subject = user.google_subject
+        db_user.email_verified = user.email_verified
         await self.session.flush()
         return user
 
@@ -76,6 +88,16 @@ class UserRepository(UserRepositoryPort):
         db_user.password_hash = password_hash
         await self.session.flush()
         return await self._to_entity(db_user)
+
+    async def delete(self, user_id: int) -> bool:
+        """Удалить пользователя; властные ему записи снимаются каскадом базы."""
+        result = await self.session.execute(select(UserModel).where(UserModel.id == user_id))
+        db_user = result.scalar_one_or_none()
+        if db_user is None:
+            return False
+        await self.session.delete(db_user)
+        await self.session.flush()
+        return True
 
     async def follow(self, follower_user_id: int, followed_user_id: int) -> bool:
         """Создать подписку, если её ещё нет."""
@@ -189,4 +211,6 @@ class UserRepository(UserRepositoryPort):
             show_watch_activity=db_user.show_watch_activity,
             show_recent_episodes=db_user.show_recent_episodes,
             created_at=db_user.created_at,
+            google_subject=db_user.google_subject,
+            email_verified=db_user.email_verified,
         )

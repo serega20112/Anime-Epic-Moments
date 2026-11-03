@@ -110,7 +110,11 @@ class FilterAnimeCatalogUseCase:
             page=query.page,
             per_page=per_page,
         )
-        items = [anime for anime in page.items if genre_filter.matches(anime.genres)]
+        items = [
+            anime
+            for anime in page.items
+            if genre_filter.matches(anime.genres) and self._is_visible(anime, query.include_adult)
+        ]
         return AnimeCatalogResult(
             items=tuple(items),
             page=page.page,
@@ -154,7 +158,11 @@ class FilterAnimeCatalogUseCase:
         )
         scanned = list(provider_page.items)
 
-        candidates = [anime for anime in scanned if genre_filter.matches(anime.genres)]
+        candidates = [
+            anime
+            for anime in scanned
+            if genre_filter.matches(anime.genres) and self._is_visible(anime, query.include_adult)
+        ]
         if query.has_dub is True and candidates:
             candidates = await self._keep_dubbed(candidates)
 
@@ -167,6 +175,23 @@ class FilterAnimeCatalogUseCase:
             total_is_exact=len(scanned) < window,
             genre_facets=build_facets(scanned),
         )
+
+    @staticmethod
+    def _is_visible(anime: Anime, include_adult: bool) -> bool:
+        """Проверить, показывать ли тайтл с учётом возрастной настройки.
+
+        Взрослые жанры (hentai и подобные) исключаются из выдачи, пока клиент
+        явно не запросил взрослый контент. Решение берётся из доменного признака
+        тайтла, чтобы правило возрастной границы жило в одном месте.
+
+        Args:
+            anime: Проверяемый тайтл.
+            include_adult: Разрешён ли взрослый контент в выдаче.
+
+        Returns:
+            bool: True, если тайтл можно показать.
+        """
+        return include_adult or not anime.is_adult
 
     @staticmethod
     def _per_page(value: int) -> int:

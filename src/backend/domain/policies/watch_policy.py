@@ -156,3 +156,25 @@ def source_type_priority(value: str | None) -> int:
     """
     normalized = str(value or "").strip().lower()
     return SOURCE_TYPE_PRIORITIES.get(normalized, UNKNOWN_SOURCE_TYPE_PRIORITY)
+
+
+EPISODE_WATCHED_THRESHOLD = 0.9
+
+
+def is_episode_watched(position_seconds: float | None, duration_seconds: float | None) -> bool:
+    """Проверяет, достигнута ли пороговая доля просмотра серии.
+
+    Порог «просмотрено» решает сервер: клиент сообщает только позицию и
+    длительность. Без известной длительности серия не считается просмотренной,
+    иначе ноль в длительности превращал бы любую позицию в завершённый просмотр.
+
+    Args:
+        position_seconds: Сохранённая позиция воспроизведения.
+        duration_seconds: Длительность серии либо None, если она неизвестна.
+
+    Returns:
+        bool: True, когда позиция покрывает не меньше 90 % серии.
+    """
+    if not duration_seconds or duration_seconds <= 0:
+        return False
+    return max(0.0, float(position_seconds or 0.0)) >= duration_seconds * EPISODE_WATCHED_THRESHOLD

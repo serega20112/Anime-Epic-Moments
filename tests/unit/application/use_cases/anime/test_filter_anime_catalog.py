@@ -186,3 +186,31 @@ class TestFilterAnimeCatalogUseCase:
         assert facets["Action"] == 2
         assert facets["Comedy"] == 1
         assert result.items[0].title == "A"
+
+    async def test_adult_titles_hidden_by_default(self):
+        """Что тестируем: выдачу каталога без явного согласия на 18+.
+        Что передаём: обычный тайтл и тайтл с жанром hentai.
+        Что ожидаем: взрослый тайтл исключён, ordinary остался.
+        """
+        items = [anime("1", "Safe", ["Action"]), anime("2", "Adult", ["Hentai"])]
+        target, _, _, _ = use_case(items)
+
+        result = await target.execute(
+            FilterAnimeCatalogQuery(genre_mode=GenreMatchMode.ANY, include_adult=False)
+        )
+
+        assert [item.title for item in result.items] == ["Safe"]
+
+    async def test_adult_titles_included_when_requested(self):
+        """Что тестируем: выдачу каталога с явным include_adult.
+        Что передаём: те же два тайтла и включённый флаг взрослого контента.
+        Что ожидаем: оба тайтла в выдаче.
+        """
+        items = [anime("1", "Safe", ["Action"]), anime("2", "Adult", ["Hentai"])]
+        target, _, _, _ = use_case(items)
+
+        result = await target.execute(
+            FilterAnimeCatalogQuery(genre_mode=GenreMatchMode.ANY, include_adult=True)
+        )
+
+        assert [item.title for item in result.items] == ["Safe", "Adult"]

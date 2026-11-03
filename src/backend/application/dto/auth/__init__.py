@@ -1,6 +1,11 @@
 """DTO аутентификации: вход, регистрация, восстановление пароля."""
 
 from backend.application.dto.auth.confirm_password_reset_command import ConfirmPasswordResetCommand
+from backend.application.dto.auth.google_commands import (
+    GoogleSignInCommand,
+    LinkGoogleAccountCommand,
+    UnlinkGoogleAccountCommand,
+)
 from backend.application.dto.auth.login_command import LoginCommand
 from backend.application.dto.auth.logout_command import LogoutCommand
 from backend.application.dto.auth.profile_overview_query import ProfileOverviewQuery
@@ -13,6 +18,8 @@ from backend.application.dto.auth.verify_email_command import VerifyEmailCommand
 
 __all__ = [
     "ConfirmPasswordResetCommand",
+    "GoogleSignInCommand",
+    "LinkGoogleAccountCommand",
     "LoginCommand",
     "LogoutCommand",
     "ProfileOverviewQuery",
@@ -20,6 +27,7 @@ __all__ = [
     "RegisterCommand",
     "RequestPasswordResetCommand",
     "ResendVerificationCommand",
+    "UnlinkGoogleAccountCommand",
     "UpdateProfileCommand",
     "VerifyEmailCommand",
 ]

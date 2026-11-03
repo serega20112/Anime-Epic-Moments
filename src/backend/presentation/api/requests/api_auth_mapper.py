@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
-from backend.application.dto import LoginCommand, LogoutCommand, RefreshSessionCommand
+from backend.application.dto import (
+    LoginCommand,
+    LogoutCommand,
+    RefreshSessionCommand,
+)
+from backend.application.dto.auth import GoogleSignInCommand, LinkGoogleAccountCommand
 from backend.domain import User
 from backend.domain.policies.user_credentials_policy import normalize_email
 from backend.presentation.api.auth_responses import IssuedTokens
 from backend.presentation.api.requests.api_auth_requests import (
     CredentialsRequest,
+    GoogleTokenRequest,
     RefreshTokenRequest,
     RevokeTokensRequest,
 )
@@ -36,6 +42,31 @@ def map_refresh_command(body: RefreshTokenRequest) -> RefreshSessionCommand:
         RefreshSessionCommand: Команда с обрезанным значением токена.
     """
     return RefreshSessionCommand(refresh_token=str(body.refresh_token or "").strip())
+
+
+def map_google_sign_in_command(body: GoogleTokenRequest) -> GoogleSignInCommand:
+    """Собрать команду входа через Google из проверенного тела.
+
+    Args:
+        body: Тело с ID-токеном Google.
+
+    Returns:
+        GoogleSignInCommand: Команда с обрезанным токеном.
+    """
+    return GoogleSignInCommand(id_token=str(body.id_token or "").strip())
+
+
+def map_link_google_command(body: GoogleTokenRequest, *, user_id: int) -> LinkGoogleAccountCommand:
+    """Собрать команду привязки Google к пользователю сессии.
+
+    Args:
+        body: Тело с ID-токеном Google.
+        user_id: Идентификатор пользователя сессии.
+
+    Returns:
+        LinkGoogleAccountCommand: Команда привязки.
+    """
+    return LinkGoogleAccountCommand(user_id=user_id, id_token=str(body.id_token or "").strip())
 
 
 def map_revoke_command(body: RevokeTokensRequest, *, access_token: str) -> LogoutCommand:

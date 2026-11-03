@@ -14,21 +14,29 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from backend.application.dto import LoginCommand, LogoutCommand, RefreshSessionCommand
+from backend.application.dto.auth import GoogleSignInCommand
 from backend.application.interface.services import JWTServiceInterface, RateLimiterInterface
 from backend.application.interface.services.token_blocklist import TokenBlocklistInterface
-from backend.application.policies import ApiFeatureFlags, CookiePolicy, ProxyTrustPolicy
+from backend.application.policies import (
+    ApiFeatureFlags,
+    AppReleaseInfo,
+    CookiePolicy,
+    ProxyTrustPolicy,
+)
 from backend.application.use_cases import (
+    GoogleSignInUseCase,
     LoginUserUseCase,
     LogoutUserUseCase,
     RefreshSessionUseCase,
 )
 from backend.application.use_cases.auth.result import AuthResult
+from backend.application.use_cases.result import UseCaseResult
 from backend.domain import User
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.security.rate_limiter import RateLimiter
 from backend.presentation.api.errors import register_exception_handlers
-from backend.presentation.api.v1.api_auth_route import api_auth_router
-from backend.presentation.api.v1.api_config_route import api_config_router
+from backend.presentation.api.v1.auth import api_auth_router
+from backend.presentation.api.v1.config import api_config_router
 
 USER_ID = 5
 REFRESH_TOKEN = "refresh-token-5-for-rotation"
@@ -96,6 +104,20 @@ class _FakeLogout(_RecordingUseCase):
         return self.result
 
 
+class _FakeGoogleSignIn:
+    """Заглушка сценария входа через Google с результатом прикладного слоя."""
+
+    def __init__(self, result: UseCaseResult) -> None:
+        """Сохранить подготовленный итог."""
+        self.result = result
+        self.calls: list[object] = []
+
+    async def execute(self, command: GoogleSignInCommand) -> UseCaseResult:
+        """Запомнить команду и вернуть подготовленный итог."""
+        self.calls.append(command)
+        return self.result
+
+
 class _FakeJWT:
     """Двойник JWT-сервиса с предсказуемыми значениями токенов."""
 
@@ -125,6 +147,7 @@ class _ApiProvider(Provider):
         login: _FakeLogin,
         refresh: _FakeRefresh,
         logout: _FakeLogout,
+        google_sign_in: _FakeGoogleSignIn,
         flags: ApiFeatureFlags,
     ) -> None:
         """Сохранить подготовленные двойники сценариев."""
@@ -132,6 +155,7 @@ class _ApiProvider(Provider):
         self._login = login
         self._refresh = refresh
         self._logout = logout
+        self._google_sign_in = google_sign_in
         self._flags = flags
 
     @provide(scope=Scope.APP)
@@ -160,6 +184,11 @@ class _ApiProvider(Provider):
         """Отдать подготовленный набор фиче-флагов."""
         return self._flags
 
+    @provide(scope=Scope.APP)
+    def app_release_info(self) -> AppReleaseInfo:
+        """Отдать релиз мобильного приложения по умолчанию."""
+        return AppReleaseInfo()
+
     @provide(scope=Scope.REQUEST)
     def jwt_service(self) -> JWTServiceInterface:
         """Отдать двойник сервиса токенов."""
@@ -185,12 +214,18 @@ class _ApiProvider(Provider):
         """Отдать заглушку сценария выхода."""
         return self._logout
 
+    @provide(scope=Scope.REQUEST)
+    def google_sign_in(self) -> GoogleSignInUseCase:
+        """Отдать заглушку сценария входа через Google."""
+        return self._google_sign_in
+
 
 def build_api_client(
     *,
     login: _FakeLogin | None = None,
     refresh: _FakeRefresh | None = None,
     logout: _FakeLogout | None = None,
+    google_sign_in: _FakeGoogleSignIn | None = None,
     flags: ApiFeatureFlags | None = None,
 ) -> tuple[TestClient, dict[str, object]]:
     """Собрать приложение с JSON-маршрутами аутентификации и конфигурации.
@@ -199,6 +234,7 @@ def build_api_client(
         login: Заглушка сценария входа.
         refresh: Заглушка сценария продления.
         logout: Заглушка сценария выхода.
+        google_sign_in: Заглушка сценария входа через Google.
         flags: Набор фиче-флагов для ``/api/v1/config``.
 
     Returns:
@@ -208,6 +244,10 @@ def build_api_client(
         "login": login or _FakeLogin(_result(False)),
         "refresh": refresh or _FakeRefresh(_result(False)),
         "logout": logout or _FakeLogout(_result(True)),
+        "google_sign_in": google_sign_in
+        or _FakeGoogleSignIn(
+            UseCaseResult.failure("Недействительный токен Google", status_code=401)
+        ),
     }
     app = FastAPI()
     container: AsyncContainer = make_async_container(
@@ -215,6 +255,7 @@ def build_api_client(
             login=doubles["login"],
             refresh=doubles["refresh"],
             logout=doubles["logout"],
+            google_sign_in=doubles["google_sign_in"],
             flags=flags or ApiFeatureFlags(),
         )
     )
@@ -367,8 +408,8 @@ class TestApiConfig:
 
     def test_reports_disabled_flags_by_default(self):
         """Что тестируем: GET /api/v1/config с флагами по умолчанию.
-        Что передаём: пустой набор флагов.
-        Что ожидаем: версия API и два выключенных разрешения.
+        Что передаём: пустые флаги и пустой релиз.
+        Что ожидаем: версия API, два выключенных разрешения и пустые поля релиза.
         """
         client, _doubles = build_api_client()
 
@@ -379,6 +420,12 @@ class TestApiConfig:
             "api_version": "v1",
             "adult_sources_enabled": False,
             "manual_source_creation_enabled": False,
+            "latest_app_version": "",
+            "min_app_version": "",
+            "apk_url": "",
+            "apk_sha256": "",
+            "changelog_url": "",
+            "maintenance_mode": False,
         }
 
     def test_reports_enabled_flags(self):
@@ -394,3 +441,59 @@ class TestApiConfig:
 
         assert payload["adult_sources_enabled"] is True
         assert payload["manual_source_creation_enabled"] is True
+
+
+@pytest.mark.integration
+class TestApiGoogleSignIn:
+    """Вход мобильного клиента через Google с выпуском пары токенов."""
+
+    def test_returns_token_pair_for_verified_identity(self):
+        """Что тестируем: POST /api/v1/auth/google при подтверждённой личности.
+        Что передаём: ID-токен, сценарий возвращает пользователя сессии.
+        Что ожидаем: 200 с парой токенов и данными пользователя.
+        """
+        client, doubles = build_api_client(
+            google_sign_in=_FakeGoogleSignIn(UseCaseResult.success(SESSION_USER))
+        )
+
+        response = client.post("/api/v1/auth/google", json={"id_token": "google-id-token-value"})
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["access_token"] == f"access-{USER_ID}"
+        assert payload["refresh_token"] == f"refresh-{USER_ID}"
+        assert payload["user_id"] == USER_ID
+        assert doubles["google_sign_in"].calls[0].id_token == "google-id-token-value"
+
+    def test_returns_unified_error_for_invalid_token(self):
+        """Что тестируем: отказ входа при непроверенном токене.
+        Что передаём: сценарий вернул отказ 401.
+        Что ожидаем: 401 с единым телом и текстом сценария.
+        """
+        client, _doubles = build_api_client(
+            google_sign_in=_FakeGoogleSignIn(
+                UseCaseResult.failure("Недействительный токен Google", status_code=401)
+            )
+        )
+
+        response = client.post("/api/v1/auth/google", json={"id_token": "google-id-token-value"})
+
+        assert response.status_code == 401
+        assert response.json() == {
+            "code": "unauthorized",
+            "message": "Недействительный токен Google",
+        }
+
+    def test_rejects_short_id_token_with_validation(self):
+        """Что тестируем: схему тела запроса Google.
+        Что передаём: id_token короче минимальной длины.
+        Что ожидаем: 422 и сценарий не вызван.
+        """
+        client, doubles = build_api_client(
+            google_sign_in=_FakeGoogleSignIn(UseCaseResult.success(SESSION_USER))
+        )
+
+        response = client.post("/api/v1/auth/google", json={"id_token": "short"})
+
+        assert response.status_code == 422
+        assert doubles["google_sign_in"].calls == []

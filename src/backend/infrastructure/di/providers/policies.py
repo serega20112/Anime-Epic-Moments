@@ -6,6 +6,7 @@ from dishka import Provider, Scope, provide
 
 from backend.application.policies import (
     ApiFeatureFlags,
+    AppReleaseInfo,
     CatalogLimitsPolicy,
     CookiePolicy,
     PasswordResetPolicy,
@@ -113,4 +114,23 @@ class PolicyProvidersMixin(Provider):
                 Settings.hanime_enabled or Settings.eporner_enabled or Settings.hentaigasm_enabled
             ),
             manual_source_creation_enabled=Settings.feature_manual_source_creation,
+        )
+
+    @provide(scope=Scope.APP)
+    async def app_release_info(self) -> AppReleaseInfo:
+        """Дать сведения о релизе мобильного приложения из конфигурации.
+
+        Значения берутся из переменных окружения окружения сборки и не зависят
+        от запроса, поэтому провайдер живёт в скоупе приложения.
+
+        Returns:
+            AppReleaseInfo: Версии, адрес пакета и режим обслуживания.
+        """
+        return AppReleaseInfo(
+            latest_app_version=Settings.mobile_latest_app_version,
+            min_app_version=Settings.mobile_min_app_version,
+            apk_url=Settings.mobile_apk_url,
+            apk_sha256=Settings.mobile_apk_sha256,
+            changelog_url=Settings.mobile_changelog_url,
+            maintenance_mode=Settings.mobile_maintenance_mode,
         )

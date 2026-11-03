@@ -124,8 +124,34 @@ class ApiFeatureFlags:
     manual_source_creation_enabled: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class AppReleaseInfo:
+    """Сведения о релизе мобильного приложения для контракта ``/config``.
+
+    Клиент сверяет ``latest_app_version`` и ``min_app_version`` с локальной
+    версией, чтобы показать баннер обновления или блокирующий экран, а
+    ``maintenance_mode`` включает превью техобслуживания.
+
+    Attributes:
+        latest_app_version: Последняя опубликованная версия либо пустая строка.
+        min_app_version: Минимальная рабочая версия либо пустая строка.
+        apk_url: Ссылка на установочный пакет либо пустая строка.
+        apk_sha256: Хеш пакета для проверки целостности либо пустая строка.
+        changelog_url: Ссылка на список изменений либо пустая строка.
+        maintenance_mode: Включён ли режим обслуживания.
+    """
+
+    latest_app_version: str = ""
+    min_app_version: str = ""
+    apk_url: str = ""
+    apk_sha256: str = ""
+    changelog_url: str = ""
+    maintenance_mode: bool = False
+
+
 __all__ = [
     "ApiFeatureFlags",
+    "AppReleaseInfo",
     "CatalogLimitsPolicy",
     "CookiePolicy",
     "PasswordResetPolicy",

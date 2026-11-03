@@ -55,6 +55,33 @@ class SaveViewingSessionRequest(BaseModel):
     is_paused: bool = False
 
 
+class SaveProgressRequest(BaseModel):
+    """Тело сохранения позиции просмотра мобильным плеером.
+
+    Повторяет состояние веб-плеера и добавляет длительность серии: по позиции
+    и длительности сервер сам решает, пересечён ли порог «просмотрено».
+
+    Attributes:
+        episode: Номер серии.
+        watch_source_id: Идентификатор источника воспроизведения.
+        position_seconds: Текущая позиция в секундах.
+        duration_seconds: Длительность серии либо None, если клиенту неизвестна.
+        volume: Уровень громкости.
+        quality_label: Выбранное качество.
+        is_paused: Приостановлено ли воспроизведение.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    episode: int | None = Field(default=None, ge=1)
+    watch_source_id: int | None = Field(default=None, ge=1)
+    position_seconds: float = Field(default=0.0, ge=0)
+    duration_seconds: float | None = Field(default=None, ge=0)
+    volume: float = Field(default=1.0, ge=0, le=1)
+    quality_label: str = Field(default="Auto", max_length=QUALITY_MAX_LENGTH)
+    is_paused: bool = False
+
+
 class CompleteEpisodeRequest(BaseModel):
     """Тело отметки просмотренной серии.
 

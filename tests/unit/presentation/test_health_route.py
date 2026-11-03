@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from backend.application.interface.services import HealthCheckPort
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.health.health_check import ApplicationHealthCheck
-from backend.presentation.api.v1 import health_route
+from backend.presentation.api.v1.health import health_router
 
 
 class _FakeSession:
@@ -121,7 +121,7 @@ def _build_client(health_check: HealthCheckPort) -> TestClient:
         TestClient: Клиент для обращения к пробам.
     """
     app = FastAPI()
-    app.include_router(health_route.health_router)
+    app.include_router(health_router)
     container: AsyncContainer = make_async_container(_HealthProvider(health_check))
     setup_dishka(container=container, app=app)
     return TestClient(app)

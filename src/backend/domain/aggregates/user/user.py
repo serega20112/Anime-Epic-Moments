@@ -29,6 +29,8 @@ class User:
         show_recent_episodes: bool = True,
         created_at: datetime | None = None,
         id: int | None = None,
+        google_subject: str | None = None,
+        email_verified: bool = False,
     ):
         """Создать пользователя с заданными учётными данными и профилем."""
         self._validate_email(email)
@@ -43,6 +45,8 @@ class User:
         self.show_recent_episodes = bool(show_recent_episodes)
         self.created_at = created_at or utc_now()
         self.password_hash = password_hash
+        self.google_subject = google_subject
+        self.email_verified = bool(email_verified)
 
     @staticmethod
     def _clean_status(status: str | None) -> str | None:
@@ -99,3 +103,16 @@ class User:
     def toggle_recent_episodes_visibility(self, visible: bool):
         """Переключить видимость недавних серий."""
         self.show_recent_episodes = bool(visible)
+
+    def link_google(self, google_subject: str) -> None:
+        """Привязать аккаунт к Google и отметить почту подтверждённой.
+
+        Args:
+            google_subject: Стабильный идентификатор аккаунта Google.
+        """
+        self.google_subject = google_subject
+        self.email_verified = True
+
+    def unlink_google(self) -> None:
+        """Отвязать аккаунт от Google."""
+        self.google_subject = None

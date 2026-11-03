@@ -35,6 +35,8 @@ from backend.infrastructure.database.models import (
                 "status",
                 "show_watch_activity",
                 "show_recent_episodes",
+                "google_subject",
+                "email_verified",
                 "created_at",
             },
         ),

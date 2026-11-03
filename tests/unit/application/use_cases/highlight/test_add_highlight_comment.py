@@ -13,12 +13,16 @@ from tests.support.fakes import FakeUnitOfWork
 
 
 def _use_case(repository: AsyncMock) -> tuple:
-    """Собрать сценарий комментария с двойниками репозитория и кэшей."""
+    """Собрать сценарий комментария с двойниками репозиториев и кэшей."""
     dashboard_cache = AsyncMock()
     profile_cache = AsyncMock()
-    uow = FakeUnitOfWork(HighlightRepository=repository)
+    notification_repository = AsyncMock()
+    uow = FakeUnitOfWork(
+        HighlightRepository=repository,
+        NotificationRepository=notification_repository,
+    )
     use_case = AddHighlightCommentUseCase(uow, dashboard_cache, profile_cache)
-    return use_case, uow, dashboard_cache, profile_cache
+    return use_case, uow, dashboard_cache, profile_cache, notification_repository
 
 
 @pytest.mark.unit
@@ -33,7 +37,7 @@ class TestAddHighlightCommentUseCase:
         repository = AsyncMock()
         repository.get_by_id.return_value = SimpleNamespace(user_id=7)
         repository.add_comment.return_value = SimpleNamespace(id=1)
-        use_case, uow, dashboard_cache, profile_cache = _use_case(repository)
+        use_case, uow, dashboard_cache, profile_cache, _notifications = _use_case(repository)
 
         result = await use_case.execute(
             AddHighlightCommentCommand(highlight_id=5, user_id=7, content="great scene")
@@ -54,7 +58,7 @@ class TestAddHighlightCommentUseCase:
         Что ожидаем: статус 400, комментарий не сохраняется.
         """
         repository = AsyncMock()
-        use_case, _uow, dashboard_cache, _profile_cache = _use_case(repository)
+        use_case, _uow, dashboard_cache, _profile_cache, _notifications = _use_case(repository)
 
         result = await use_case.execute(
             AddHighlightCommentCommand(highlight_id=5, user_id=7, content="   ")
@@ -71,7 +75,7 @@ class TestAddHighlightCommentUseCase:
         Что ожидаем: статус 400, комментарий не сохраняется.
         """
         repository = AsyncMock()
-        use_case, _uow, _dashboard_cache, _profile_cache = _use_case(repository)
+        use_case, _uow, _dashboard_cache, _profile_cache, _notifications = _use_case(repository)
 
         result = await use_case.execute(
             AddHighlightCommentCommand(highlight_id=5, user_id=7, content="a" * 601)
@@ -88,7 +92,7 @@ class TestAddHighlightCommentUseCase:
         """
         repository = AsyncMock()
         repository.get_by_id.return_value = None
-        use_case, _uow, dashboard_cache, profile_cache = _use_case(repository)
+        use_case, _uow, dashboard_cache, profile_cache, _notifications = _use_case(repository)
 
         result = await use_case.execute(
             AddHighlightCommentCommand(highlight_id=999, user_id=7, content="nice")
@@ -99,3 +103,21 @@ class TestAddHighlightCommentUseCase:
         repository.add_comment.assert_not_awaited()
         dashboard_cache.invalidate_public.assert_not_awaited()
         profile_cache.invalidate_user.assert_not_awaited()
+
+    async def test_notifies_owner_when_commenting_others_highlight(self):
+        """Что тестируем: уведомление владельцу при чужом комментарии.
+        Что передаём: хайлайт автора 7 и комментарий от зрителя 3.
+        Что ожидаем: уведомление создано для автора 7 от актора 3.
+        """
+        repository = AsyncMock()
+        repository.get_by_id.return_value = SimpleNamespace(user_id=7, anime_id=11, id=5)
+        repository.add_comment.return_value = SimpleNamespace(id=1)
+        use_case, _uow, _dashboard_cache, _profile_cache, notifications = _use_case(repository)
+
+        await use_case.execute(
+            AddHighlightCommentCommand(highlight_id=5, user_id=3, content="nice")
+        )
+
+        notifications.add.assert_awaited_once()
+        notified = notifications.add.await_args.args[0]
+        assert notified.user_id == 7 and notified.actor_user_id == 3

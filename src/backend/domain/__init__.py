@@ -8,6 +8,7 @@ from backend.domain.aggregates.highlight.highlight import Highlight
 from backend.domain.aggregates.user.user import User
 from backend.domain.entities.favorite.favorite import Favorite
 from backend.domain.entities.moment.viewing_moment import ViewingMoment
+from backend.domain.entities.notification.notification import Notification
 from backend.domain.entities.rating.anime_rating import UserAnimeRating
 from backend.domain.entities.reaction.episode_reaction import EpisodeReaction
 from backend.domain.entities.support.channel import is_support_channel, normalize_support_channel
@@ -26,10 +27,12 @@ from backend.domain.value_objects.highlight.cards import (
 )
 from backend.domain.value_objects.highlight.dashboard import HighlightDashboard
 from backend.domain.value_objects.highlight.feed import HighlightAnimeGroup, HighlightFeedPage
+from backend.domain.value_objects.highlight.mobile_feed import MobileHighlightFeedPage
 from backend.domain.value_objects.highlight.profile_summary import (
     HighlightActivityItem,
     HighlightProfileSummary,
 )
+from backend.domain.value_objects.notification.feed import NotificationFeedPage
 from backend.domain.value_objects.reaction.reaction_summary import (
     EpisodeReactionCount,
     EpisodeReactionSummary,
@@ -71,6 +74,9 @@ __all__ = [
     "HighlightPolicy",
     "HighlightProfileSummary",
     "HighlightStats",
+    "MobileHighlightFeedPage",
+    "Notification",
+    "NotificationFeedPage",
     "PendingEmailVerification",
     "ProfileOverview",
     "ProfileLevel",

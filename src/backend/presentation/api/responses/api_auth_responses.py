@@ -39,3 +39,13 @@ class TokenRevokedResponse(BaseModel):
     """
 
     revoked: bool
+
+
+class GoogleLinkStatusResponse(BaseModel):
+    """Итог привязки или отвязки аккаунта Google.
+
+    Attributes:
+        google_linked: Привязан ли аккаунт к Google после операции.
+    """
+
+    google_linked: bool

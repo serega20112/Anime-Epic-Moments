@@ -12,6 +12,9 @@ from backend.application.interface.repositories import (
     HighlightRepository as HighlightRepositoryPort,
 )
 from backend.application.interface.repositories import MomentRepository as MomentRepositoryPort
+from backend.application.interface.repositories import (
+    NotificationRepository as NotificationRepositoryPort,
+)
 from backend.application.interface.repositories import RatingRepository as RatingRepositoryPort
 from backend.application.interface.repositories import ReactionRepository as ReactionRepositoryPort
 from backend.application.interface.repositories import SupportRepository as SupportRepositoryPort
@@ -22,6 +25,9 @@ from backend.infrastructure.database.repositories.collection_repository import C
 from backend.infrastructure.database.repositories.favorite_repository import FavoriteRepository
 from backend.infrastructure.database.repositories.highlight_repository import HighlightRepository
 from backend.infrastructure.database.repositories.moment_repository import MomentRepository
+from backend.infrastructure.database.repositories.notification_repository import (
+    NotificationRepository,
+)
 from backend.infrastructure.database.repositories.rating_repository import RatingRepository
 from backend.infrastructure.database.repositories.reaction_repository import ReactionRepository
 from backend.infrastructure.database.repositories.support_repository import SupportRepository
@@ -33,6 +39,7 @@ _REPOSITORY_TYPES: dict[type, type] = {
     FavoriteRepositoryPort: FavoriteRepository,
     HighlightRepositoryPort: HighlightRepository,
     MomentRepositoryPort: MomentRepository,
+    NotificationRepositoryPort: NotificationRepository,
     RatingRepositoryPort: RatingRepository,
     ReactionRepositoryPort: ReactionRepository,
     SupportRepositoryPort: SupportRepository,

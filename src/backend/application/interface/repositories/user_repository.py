@@ -20,6 +20,10 @@ class UserRepository(ABC):
         """Получает пользователя по email"""
 
     @abstractmethod
+    async def get_by_google_subject(self, google_subject: str) -> User | None:
+        """Получает пользователя по стабильному идентификатору аккаунта Google"""
+
+    @abstractmethod
     async def get_by_id(self, user_id: int) -> User | None:
         """Получает пользователя по id"""
 
@@ -30,6 +34,10 @@ class UserRepository(ABC):
     @abstractmethod
     async def update_password(self, user_id: int, password_hash: str) -> User:
         """Обновляет пароль существующего пользователя"""
+
+    @abstractmethod
+    async def delete(self, user_id: int) -> bool:
+        """Удаляет пользователя; зависимые записи снимаются каскадом."""
 
     @abstractmethod
     async def get_by_ids(self, user_ids: list[int]) -> list[User]:

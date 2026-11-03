@@ -10,7 +10,11 @@ from backend.application.use_cases import (
     AddAnimeCommentUseCase,
     AddWatchSourceUseCase,
     CompleteEpisodeUseCase,
+    GetAnimeDetailUseCase,
     GetAnimeDiscussionUseCase,
+    GetFavoriteIdsUseCase,
+    GetUserAnimeLibraryUseCase,
+    GetUserViewingHistoryUseCase,
     GetWatchPageUseCase,
     SetAnimeCommentLikeUseCase,
     SyncWatchSourcesUseCase,
@@ -125,3 +129,31 @@ class WatchUseCaseProvider(Provider):
     ) -> CreateWatchHighlightUseCase:
         """Создать сценарий создания хайлайта из плеера."""
         return CreateWatchHighlightUseCase(unit_of_work, create_highlight)
+
+    @provide(scope=Scope.REQUEST)
+    async def get_user_anime_library(
+        self,
+        unit_of_work: UnitOfWorkInterface,
+        anime_api_client: AnimeApiClient,
+    ) -> GetUserAnimeLibraryUseCase:
+        """Создать сценарий чтения библиотеки просмотра."""
+        return GetUserAnimeLibraryUseCase(unit_of_work, anime_api_client)
+
+    @provide(scope=Scope.REQUEST)
+    async def get_user_viewing_history(
+        self,
+        unit_of_work: UnitOfWorkInterface,
+        anime_api_client: AnimeApiClient,
+    ) -> GetUserViewingHistoryUseCase:
+        """Создать сценарий чтения истории просмотров."""
+        return GetUserViewingHistoryUseCase(unit_of_work, anime_api_client)
+
+    @provide(scope=Scope.REQUEST)
+    async def get_anime_detail(
+        self,
+        unit_of_work: UnitOfWorkInterface,
+        watch_page_use_case: GetWatchPageUseCase,
+        favorite_ids_use_case: GetFavoriteIdsUseCase,
+    ) -> GetAnimeDetailUseCase:
+        """Создать сценарий карточки тайтла для мобильного клиента."""
+        return GetAnimeDetailUseCase(unit_of_work, watch_page_use_case, favorite_ids_use_case)

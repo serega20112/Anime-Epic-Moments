@@ -244,6 +244,7 @@ def build_filter_anime_catalog_query(request: Request) -> FilterAnimeCatalogQuer
         order=str(params.get("order", "desc")).strip().lower(),
         page=_clamp_int(params.get("page"), default=1, minimum=1, maximum=CATALOG_MAX_PAGE),
         per_page=_clamp_per_page(params.get("per_page")),
+        include_adult=_to_bool(params.get("include_adult")),
     )
 
 

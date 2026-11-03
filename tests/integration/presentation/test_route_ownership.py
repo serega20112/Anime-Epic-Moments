@@ -31,9 +31,9 @@ from backend.domain import RecommendationResult
 from backend.infrastructure.cache.key_value_store import KeyValueStore
 from backend.infrastructure.security.rate_limiter import RateLimiter
 from backend.presentation.api.errors import register_exception_handlers
-from backend.presentation.api.v1.favorite_route import favorite_router
-from backend.presentation.api.v1.recommendation_route import recommendation_router
-from backend.presentation.api.v1.user_route import user_router
+from backend.presentation.api.v1.favorites import favorite_router
+from backend.presentation.api.v1.recommendations import recommendation_router
+from backend.presentation.api.v1.users import user_router
 
 OWNER_ID = 5
 INTRUDER_ID = 6
@@ -353,6 +353,41 @@ class TestFavoritesOwnership:
         response = client.get(f"/favorites/{OWNER_ID}")
 
         assert response.status_code == 403
+
+    def test_guest_gets_401_on_favorite_cards(self):
+        """Что тестируем: GET /favorites/cards/{user_id} без сессии.
+        Что передаём: анонимный запрос.
+        Что ожидаем: 401, карточки чужого пользователя не отдаются.
+        """
+        favorites = _FakeFavorites()
+        client = build_client(None, favorites, _FakeRecommendations(), _FakeAskRecommendations())
+
+        response = client.get(f"/favorites/cards/{OWNER_ID}")
+
+        assert response.status_code == 401
+        assert favorites.calls == []
+
+    def test_owner_gets_favorite_cards_page(self):
+        """Что тестируем: GET /favorites/cards/{user_id} владельцем.
+        Что передаём: сессию пользователя 5 и тот же идентификатор в пути.
+        Что ожидаем: 200 с единым конвертом страницы и пустым списком карточек.
+        """
+        favorites = _FakeFavorites()
+        client = build_client(
+            SimpleNamespace(id=OWNER_ID),
+            favorites,
+            _FakeRecommendations(),
+            _FakeAskRecommendations(),
+        )
+
+        response = client.get(f"/favorites/cards/{OWNER_ID}")
+
+        assert response.status_code == 200
+        assert favorites.calls == [OWNER_ID]
+        payload = response.json()
+        assert payload["items"] == []
+        assert payload["page"] == 1
+        assert payload["total"] == 0
 
 
 @pytest.mark.integration

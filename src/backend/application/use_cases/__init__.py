@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from backend.application.use_cases.account.account import (
+    DeleteAccountUseCase,
+    ExportUserDataUseCase,
+)
 from backend.application.use_cases.anime.autocomplete_anime import AutocompleteAnimeUseCase
 from backend.application.use_cases.anime.filter_anime_catalog import FilterAnimeCatalogUseCase
 from backend.application.use_cases.anime.get_home_page import GetHomePageUseCase
@@ -9,6 +13,11 @@ from backend.application.use_cases.anime.get_season_popular import GetSeasonPopu
 from backend.application.use_cases.anime.search_anime import SearchAnimeUseCase
 from backend.application.use_cases.anime.search_anime_by_description import (
     SearchAnimeByDescriptionUseCase,
+)
+from backend.application.use_cases.auth.google.google_account import (
+    GoogleSignInUseCase,
+    LinkGoogleAccountUseCase,
+    UnlinkGoogleAccountUseCase,
 )
 from backend.application.use_cases.auth.login_register.login_user import LoginUserUseCase
 from backend.application.use_cases.auth.login_register.logout_user import LogoutUserUseCase
@@ -49,6 +58,9 @@ from backend.application.use_cases.highlight.feed.get_highlight_feed import GetH
 from backend.application.use_cases.highlight.feed.get_liked_highlights import (
     GetLikedHighlightsUseCase,
 )
+from backend.application.use_cases.highlight.feed.get_mobile_highlight_feed import (
+    GetMobileHighlightFeedUseCase,
+)
 from backend.application.use_cases.highlight.feed.get_public_top_highlights import (
     GetPublicTopHighlightsUseCase,
 )
@@ -85,6 +97,11 @@ from backend.application.use_cases.moment.get_user_viewing_moments import (
 )
 from backend.application.use_cases.moment.publish_viewing_moment import PublishViewingMomentUseCase
 from backend.application.use_cases.moment.save_viewing_moment import SaveViewingMomentUseCase
+from backend.application.use_cases.notification.notifications import (
+    GetUserNotificationsUseCase,
+    MarkAllNotificationsReadUseCase,
+    MarkNotificationReadUseCase,
+)
 from backend.application.use_cases.rating.get_user_ratings import GetUserRatingsUseCase
 from backend.application.use_cases.rating.set_user_anime_rating import SetUserAnimeRatingUseCase
 from backend.application.use_cases.reaction.get_episode_reactions import (
@@ -121,6 +138,13 @@ from backend.application.use_cases.watch.discussion.set_anime_comment_like impor
 from backend.application.use_cases.watch.highlight.create_watch_highlight import (
     CreateWatchHighlightUseCase,
 )
+from backend.application.use_cases.watch.library.get_user_anime_library import (
+    GetUserAnimeLibraryUseCase,
+)
+from backend.application.use_cases.watch.library.get_user_viewing_history import (
+    GetUserViewingHistoryUseCase,
+)
+from backend.application.use_cases.watch.page.get_anime_detail import GetAnimeDetailUseCase
 from backend.application.use_cases.watch.page.get_watch_page import GetWatchPageUseCase
 from backend.application.use_cases.watch.session.complete_episode import CompleteEpisodeUseCase
 from backend.application.use_cases.watch.session.save_viewing_session import (
@@ -145,12 +169,15 @@ __all__ = [
     "CreateHighlightUseCase",
     "CreateSupportTicketUseCase",
     "CreateWatchHighlightUseCase",
+    "DeleteAccountUseCase",
     "DeleteHighlightUseCase",
     "DeleteViewingMomentUseCase",
     "EditHighlightUseCase",
+    "ExportUserDataUseCase",
     "FilterAnimeCatalogUseCase",
     "GenerateRecommendationsUseCase",
     "GetAnimeDiscussionUseCase",
+    "GetAnimeDetailUseCase",
     "GetFavoriteIdsUseCase",
     "GetFavoritesUseCase",
     "GetFollowingHighlightsUseCase",
@@ -161,6 +188,7 @@ __all__ = [
     "GetHighlightNotificationsUseCase",
     "GetHomePageUseCase",
     "GetLikedHighlightsUseCase",
+    "GetMobileHighlightFeedUseCase",
     "GetProfileOverviewUseCase",
     "GetPublicProfileOverviewUseCase",
     "GetPublicTopHighlightsUseCase",
@@ -169,12 +197,19 @@ __all__ = [
     "GetSharedCollectionUseCase",
     "GetSharedHighlightUseCase",
     "GetUserCollectionsUseCase",
+    "GetUserAnimeLibraryUseCase",
     "GetUserHighlightsUseCase",
+    "GetUserNotificationsUseCase",
     "GetUserRatingsUseCase",
+    "GetUserViewingHistoryUseCase",
     "GetUserViewingMomentsUseCase",
     "GetWatchPageUseCase",
+    "GoogleSignInUseCase",
+    "LinkGoogleAccountUseCase",
     "LoginUserUseCase",
     "LogoutUserUseCase",
+    "MarkAllNotificationsReadUseCase",
+    "MarkNotificationReadUseCase",
     "PublishViewingMomentUseCase",
     "RefreshRecommendationsUseCase",
     "RefreshSessionUseCase",
@@ -196,6 +231,7 @@ __all__ = [
     "SetUserAnimeRatingUseCase",
     "SetUserFollowUseCase",
     "SyncWatchSourcesUseCase",
+    "UnlinkGoogleAccountUseCase",
     "UpdateUserProfileUseCase",
     "UpsertUserAnimeStatusUseCase",
     "UseCaseResult",

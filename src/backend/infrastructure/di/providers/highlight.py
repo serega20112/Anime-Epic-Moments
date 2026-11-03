@@ -13,6 +13,9 @@ from backend.application.use_cases.highlight.feed.get_highlight_feed import GetH
 from backend.application.use_cases.highlight.feed.get_liked_highlights import (
     GetLikedHighlightsUseCase,
 )
+from backend.application.use_cases.highlight.feed.get_mobile_highlight_feed import (
+    GetMobileHighlightFeedUseCase,
+)
 from backend.application.use_cases.highlight.feed.get_public_top_highlights import (
     GetPublicTopHighlightsUseCase,
 )
@@ -160,6 +163,15 @@ class HighlightUseCaseProvider(Provider):
     ) -> GetHighlightFeedUseCase:
         """Создать сценарий общей ленты хайлайтов."""
         return GetHighlightFeedUseCase(unit_of_work, anime_api_client)
+
+    @provide(scope=Scope.REQUEST)
+    async def get_mobile_highlight_feed(
+        self,
+        unit_of_work: UnitOfWorkInterface,
+        anime_api_client: AnimeApiClient,
+    ) -> GetMobileHighlightFeedUseCase:
+        """Создать сценарий мобильной ленты хайлайтов."""
+        return GetMobileHighlightFeedUseCase(unit_of_work, anime_api_client)
 
     @provide(scope=Scope.REQUEST)
     async def get_following_highlights(

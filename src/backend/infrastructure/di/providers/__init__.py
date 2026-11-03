@@ -7,6 +7,7 @@ from backend.infrastructure.di.providers.collection import CollectionUseCaseProv
 from backend.infrastructure.di.providers.favorite import FavoriteUseCaseProvider
 from backend.infrastructure.di.providers.highlight import HighlightUseCaseProvider
 from backend.infrastructure.di.providers.moment import MomentUseCaseProvider
+from backend.infrastructure.di.providers.notification import NotificationUseCaseProvider
 from backend.infrastructure.di.providers.rating import RatingUseCaseProvider
 from backend.infrastructure.di.providers.reaction import ReactionUseCaseProvider
 from backend.infrastructure.di.providers.request import RequestProvider
@@ -22,6 +23,7 @@ __all__ = [
     "FavoriteUseCaseProvider",
     "HighlightUseCaseProvider",
     "MomentUseCaseProvider",
+    "NotificationUseCaseProvider",
     "RatingUseCaseProvider",
     "ReactionUseCaseProvider",
     "RequestProvider",

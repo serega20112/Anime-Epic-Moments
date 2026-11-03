@@ -13,6 +13,7 @@ from backend.infrastructure.database.models.highlight import (
     SavedHighlightModel,
 )
 from backend.infrastructure.database.models.moment import ViewingMomentModel
+from backend.infrastructure.database.models.notification import NotificationModel
 from backend.infrastructure.database.models.rating import UserAnimeRatingModel
 from backend.infrastructure.database.models.reaction import EpisodeReactionModel
 from backend.infrastructure.database.models.support import SupportTicketModel
@@ -37,6 +38,7 @@ __all__ = [
     "HighlightContextModel",
     "HighlightLikeModel",
     "HighlightModel",
+    "NotificationModel",
     "SavedHighlightModel",
     "SupportTicketModel",
     "TranslationModel",

@@ -6,6 +6,7 @@ from backend.domain.policies.watch_policy import (
     PREFERRED_TRANSLATION_GROUPS,
     canonicalize_translation_name,
     get_translation_priority,
+    is_episode_watched,
     is_preferred_translation,
     normalize_translation_name,
 )
@@ -69,3 +70,34 @@ class TestTranslationPriorityPolicy:
             assert normalized != ""
         else:
             assert priority >= len(PREFERRED_TRANSLATION_GROUPS)
+
+
+class TestEpisodeWatchedPolicy:
+    """Юнит-тесты порога «серия просмотрена» по доле пройденной позиции."""
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize(
+        ("position", "duration", "expected"),
+        [
+            (54.0, 60.0, True),
+            (53.9, 60.0, False),
+            (60.0, 60.0, True),
+            (10.0, 0.0, False),
+            (10.0, None, False),
+            (None, 60.0, False),
+        ],
+    )
+    async def test_is_episode_watched_applies_ninety_percent_threshold(
+        self,
+        position,
+        duration,
+        expected,
+    ):
+        """Что тестируем: функцию is_episode_watched.
+
+        Что передаём: позиции и длительности серии, включая нулевую и отсутствующую
+        длительность.
+        Что ожидаем: True только когда позиция покрывает не меньше 90 % серии;
+        без известной длительности серия не считается просмотренной.
+        """
+        assert is_episode_watched(position, duration) is expected

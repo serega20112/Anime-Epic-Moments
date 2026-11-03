@@ -24,6 +24,7 @@ class FilterAnimeCatalogQuery:
         order: Направление сортировки.
         page: Номер запрошенной страницы.
         per_page: Размер страницы.
+        include_adult: Включать ли тайтлы с взрослыми (18+) жанрами.
     """
 
     genres: tuple[str, ...] = field(default_factory=tuple)
@@ -38,3 +39,4 @@ class FilterAnimeCatalogQuery:
     order: str = "desc"
     page: int = 1
     per_page: int = 25
+    include_adult: bool = False

@@ -5,6 +5,8 @@ from backend.application.dto.watch.add_watch_source_command import AddWatchSourc
 from backend.application.dto.watch.anime_discussion_query import AnimeDiscussionQuery
 from backend.application.dto.watch.complete_episode_command import CompleteEpisodeCommand
 from backend.application.dto.watch.create_watch_highlight_command import CreateWatchHighlightCommand
+from backend.application.dto.watch.get_user_history_query import GetUserHistoryQuery
+from backend.application.dto.watch.get_user_library_query import GetUserLibraryQuery
 from backend.application.dto.watch.save_viewing_session_command import SaveViewingSessionCommand
 from backend.application.dto.watch.set_anime_comment_like_command import SetAnimeCommentLikeCommand
 from backend.application.dto.watch.sync_watch_sources_query import SyncWatchSourcesQuery
@@ -19,6 +21,8 @@ __all__ = [
     "AnimeDiscussionQuery",
     "CompleteEpisodeCommand",
     "CreateWatchHighlightCommand",
+    "GetUserHistoryQuery",
+    "GetUserLibraryQuery",
     "SaveViewingSessionCommand",
     "SetAnimeCommentLikeCommand",
     "SyncWatchSourcesQuery",

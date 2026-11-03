@@ -45,3 +45,15 @@ class RevokeTokensRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     refresh_token: str = Field(min_length=10, max_length=TOKEN_MAX_LENGTH)
+
+
+class GoogleTokenRequest(BaseModel):
+    """Тело входа или привязки по ID-токену Google.
+
+    Attributes:
+        id_token: JWT-токен аккаунта Google, полученный мобильным клиентом.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    id_token: str = Field(min_length=10, max_length=TOKEN_MAX_LENGTH)

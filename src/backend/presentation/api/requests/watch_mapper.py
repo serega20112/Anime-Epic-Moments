@@ -28,6 +28,7 @@ from backend.presentation.api.requests.watch_requests import (
     CompleteEpisodeRequest,
     CreateWatchHighlightRequest,
     DiscoverSourcesRequest,
+    SaveProgressRequest,
     SaveViewingSessionRequest,
     UpdateWatchStatusRequest,
 )
@@ -118,6 +119,38 @@ def map_save_session_command(
 
     Args:
         body: Разобранное тело состояния плеера.
+        user_id: Идентификатор действующего пользователя.
+        anime_id: Идентификатор аниме из пути.
+
+    Returns:
+        SaveViewingSessionCommand: Команда сохранения сессии просмотра.
+    """
+    return SaveViewingSessionCommand(
+        user_id=user_id,
+        anime_id=anime_id,
+        episode=body.episode,
+        watch_source_id=body.watch_source_id,
+        position_seconds=body.position_seconds,
+        volume=body.volume,
+        quality_label=body.quality_label.strip() or "Auto",
+        is_paused=body.is_paused,
+    )
+
+
+def map_save_progress_command(
+    body: SaveProgressRequest,
+    *,
+    user_id: int,
+    anime_id: int,
+) -> SaveViewingSessionCommand:
+    """Собрать команду сохранения позиции из тела мобильного прогресса.
+
+    Длительность серии в команду не входит: она нужна лишь presentation-
+    решению о пороге «просмотрено», а сценарий сохраняет позицию и состояние
+    плеера.
+
+    Args:
+        body: Разобранное тело позиции мобильного плеера.
         user_id: Идентификатор действующего пользователя.
         anime_id: Идентификатор аниме из пути.
 

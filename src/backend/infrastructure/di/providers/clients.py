@@ -9,6 +9,7 @@ from dishka import Provider, Scope, provide
 
 from backend.application.interface.services import (
     AnimeApiClientInterface,
+    GoogleAuthClientInterface,
 )
 from backend.config import Settings
 from backend.infrastructure.cache.key_value_store import KeyValueStore
@@ -18,6 +19,7 @@ from backend.infrastructure.external import (
     JustWatchClient,
     KodikClient,
 )
+from backend.infrastructure.external.google import GoogleAuthClient
 from backend.infrastructure.external.llm import (
     FailoverLLMClient,
     GoogleGeminiLLMClient,
@@ -75,6 +77,16 @@ class ClientProvidersMixin(Provider):
     async def justwatch_client(self) -> AsyncIterator[JustWatchClient]:
         """Создать клиент JustWatch."""
         client = JustWatchClient()
+        yield client
+        await client.aclose()
+
+    @provide(scope=Scope.APP)
+    async def google_auth_client(self) -> AsyncIterator[GoogleAuthClientInterface]:
+        """Создать клиент проверки ID-токена Google."""
+        client = GoogleAuthClient(
+            client_id=Settings.google_client_id,
+            tokeninfo_url=Settings.google_tokeninfo_url,
+        )
         yield client
         await client.aclose()
 

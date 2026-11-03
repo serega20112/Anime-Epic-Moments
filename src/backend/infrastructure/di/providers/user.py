@@ -6,6 +6,10 @@ from dishka import Provider, Scope, provide
 
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.use_cases import GetPublicProfileOverviewUseCase, SetUserFollowUseCase
+from backend.application.use_cases.account.account import (
+    DeleteAccountUseCase,
+    ExportUserDataUseCase,
+)
 from backend.application.use_cases.auth.profile.get_profile_overview import (
     GetProfileOverviewUseCase,
 )
@@ -32,3 +36,17 @@ class UserUseCaseProvider(Provider):
     ) -> GetPublicProfileOverviewUseCase:
         """Создать сценарий обзора публичного профиля."""
         return GetPublicProfileOverviewUseCase(unit_of_work, get_profile_overview)
+
+    @provide(scope=Scope.REQUEST)
+    async def delete_account(
+        self,
+        unit_of_work: UnitOfWorkInterface,
+        profile_overview_cache: ProfileOverviewCache,
+    ) -> DeleteAccountUseCase:
+        """Создать сценарий удаления аккаунта."""
+        return DeleteAccountUseCase(unit_of_work, profile_overview_cache)
+
+    @provide(scope=Scope.REQUEST)
+    async def export_user_data(self, unit_of_work: UnitOfWorkInterface) -> ExportUserDataUseCase:
+        """Создать сценарий выгрузки данных пользователя."""
+        return ExportUserDataUseCase(unit_of_work)

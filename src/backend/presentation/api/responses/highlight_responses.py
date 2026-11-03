@@ -2,7 +2,74 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+from backend.presentation.api.responses.pagination import Page
+
+
+class MobileHighlightCardResponse(BaseModel):
+    """Карточка хайлайта в мобильной ленте.
+
+    Отражает доменную карточку :class:`HighlightCard` и принимает её напрямую
+    (``from_attributes``), поэтому маршрут не собирает словарь вручную.
+
+    Attributes:
+        id: Идентификатор хайлайта.
+        anime_id: Идентификатор аниме во внешнем каталоге.
+        anime_title: Название аниме.
+        anime_cover: Обложка аниме либо None.
+        title: Заголовок хайлайта.
+        category: Категория либо None.
+        episode: Номер серии.
+        start_timestamp: Начало фрагмента в тексте ``MM:SS``.
+        end_timestamp: Конец фрагмента в тексте ``MM:SS``.
+        duration_seconds: Длительность фрагмента в секундах.
+        description: Описание хайлайта.
+        is_spoiler: Помечен ли хайлайт спойлером.
+        emotion: Метка эмоции либо None.
+        created_at: Дата создания в тексте ``YYYY-MM-DD``.
+        likes_count: Число лайков.
+        views_count: Число просмотров.
+        comments_count: Число комментариев.
+        is_liked: Лайкнул ли текущий зритель.
+        is_saved: Сохранил ли текущий зритель.
+        watch_url: Ссылка на просмотр с начала фрагмента.
+        share_url: Публичная ссылка хайлайта.
+        owner_user_id: Идентификатор автора либо None.
+        owner_username: Имя автора либо None.
+        owner_avatar_url: Аватар автора либо None.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    anime_id: int
+    anime_title: str
+    anime_cover: str | None = None
+    title: str
+    category: str | None = None
+    episode: int
+    start_timestamp: str
+    end_timestamp: str
+    duration_seconds: float
+    description: str
+    is_spoiler: bool
+    emotion: str | None = None
+    created_at: str
+    likes_count: int
+    views_count: int
+    comments_count: int
+    is_liked: bool
+    is_saved: bool
+    watch_url: str
+    share_url: str
+    owner_user_id: int | None = None
+    owner_username: str | None = None
+    owner_avatar_url: str | None = None
+
+
+class HighlightFeedPageResponse(Page[MobileHighlightCardResponse]):
+    """Страница мобильной ленты хайлайтов."""
 
 
 class HighlightIdResponse(BaseModel):

@@ -4,15 +4,19 @@ from __future__ import annotations
 
 from dishka import Provider, Scope, provide
 
+from backend.application.interface.services import GoogleAuthClientInterface
 from backend.application.interface.unit_of_work import UnitOfWorkInterface
 from backend.application.policies import PasswordResetPolicy
 from backend.application.use_cases import (
+    GoogleSignInUseCase,
+    LinkGoogleAccountUseCase,
     LogoutUserUseCase,
     RefreshSessionUseCase,
     RegisterUserUseCase,
     RequestEmailVerificationUseCase,
     RequestPasswordResetUseCase,
     ResendEmailVerificationUseCase,
+    UnlinkGoogleAccountUseCase,
     UpdateUserProfileUseCase,
     VerifyEmailUseCase,
 )
@@ -153,3 +157,29 @@ class AuthUseCaseProvider(Provider):
     ) -> ResetPasswordUseCase:
         """Создать сценарий сброса пароля."""
         return ResetPasswordUseCase(unit_of_work, jwt_service, password_service, token_blocklist)
+
+    @provide(scope=Scope.REQUEST)
+    async def google_sign_in(
+        self,
+        unit_of_work: UnitOfWorkInterface,
+        google_client: GoogleAuthClientInterface,
+        password_service: PasswordService,
+    ) -> GoogleSignInUseCase:
+        """Создать сценарий входа через Google."""
+        return GoogleSignInUseCase(unit_of_work, google_client, password_service)
+
+    @provide(scope=Scope.REQUEST)
+    async def link_google_account(
+        self,
+        unit_of_work: UnitOfWorkInterface,
+        google_client: GoogleAuthClientInterface,
+    ) -> LinkGoogleAccountUseCase:
+        """Создать сценарий привязки аккаунта Google."""
+        return LinkGoogleAccountUseCase(unit_of_work, google_client)
+
+    @provide(scope=Scope.REQUEST)
+    async def unlink_google_account(
+        self, unit_of_work: UnitOfWorkInterface
+    ) -> UnlinkGoogleAccountUseCase:
+        """Создать сценарий отвязки аккаунта Google."""
+        return UnlinkGoogleAccountUseCase(unit_of_work)

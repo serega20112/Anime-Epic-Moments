@@ -85,7 +85,7 @@ uv run python scripts/check_imports.py
 
 Импорт `Settings` из `config` в presentation разрешён только там, где значение
 нужно до создания контейнера: `app_factory.py`, `api/v1/auth/session.py`,
-`api/v1/api_auth_route.py`, `api/v1/support_route.py`. В остальных местах
+`api/v1/auth/token.py`, `api/v1/auth/google.py`, `api/v1/support_route.py`. В остальных местах
 настройка приходит через порт или провайдер.
 
 ### Правила размещения кода
@@ -98,7 +98,7 @@ uv run python scripts/check_imports.py
 | Нужен доступ к данным | Порт в `application/interface/repositories/` | Порт описывает только методы, которые реально вызываются |
 | Нужен внешний сервис | Порт в `application/interface/services/` | Ни в сигнатурах, ни в типах нет типов фреймворков |
 | Реализация порта | `infrastructure/database/repositories/` или `infrastructure/external/` | Класс наследует порт и живёт в своей зоне |
-| Новый HTTP-маршрут | `presentation/api/v1/<зона>_route.py` | Тонкий: разобрать вход, вызвать сценарий, собрать ответ |
+| Новый HTTP-маршрут | `presentation/api/v1/<зона>_route.py` или пакет `presentation/api/v1/<зона>/` | Тонкий: разобрать вход, вызвать сценарий, собрать ответ; в пакете функции разнесены по сценариям, а роутер собран в `__init__.py` |
 | Новая схема ответа | `presentation/api/responses/` | Участвует в контракте OpenAPI |
 | Новая зависимость в контейнере | `infrastructure/di/providers/` | Скоуп соответствует времени жизни |
 

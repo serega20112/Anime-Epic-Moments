@@ -13,12 +13,16 @@ from tests.support.fakes import FakeUnitOfWork
 
 
 def _use_case(repository: AsyncMock) -> tuple:
-    """Собрать сценарий лайка с двойниками репозитория и кэшей."""
+    """Собрать сценарий лайка с двойниками репозиториев и кэшей."""
     dashboard_cache = AsyncMock()
     profile_cache = AsyncMock()
-    uow = FakeUnitOfWork(HighlightRepository=repository)
+    notification_repository = AsyncMock()
+    uow = FakeUnitOfWork(
+        HighlightRepository=repository,
+        NotificationRepository=notification_repository,
+    )
     use_case = SetHighlightLikeUseCase(uow, dashboard_cache, profile_cache)
-    return use_case, uow, dashboard_cache, profile_cache
+    return use_case, uow, dashboard_cache, profile_cache, notification_repository
 
 
 @pytest.mark.unit
@@ -32,8 +36,10 @@ class TestSetHighlightLikeUseCase:
         """
         repository = AsyncMock()
         repository.get_by_id.return_value = SimpleNamespace(user_id=8)
-        repository.set_like.return_value = SimpleNamespace(user_id=8, likes_count=4)
-        use_case, uow, dashboard_cache, profile_cache = _use_case(repository)
+        repository.set_like.return_value = SimpleNamespace(
+            user_id=8, likes_count=4, anime_id=11, id=4
+        )
+        use_case, uow, dashboard_cache, profile_cache, notifications = _use_case(repository)
 
         result = await use_case.execute(
             SetHighlightLikeCommand(highlight_id=4, user_id=3, liked=True)
@@ -46,6 +52,9 @@ class TestSetHighlightLikeUseCase:
         dashboard_cache.invalidate_public.assert_awaited_once()
         invalidated = [call.args[0] for call in profile_cache.invalidate_overview.await_args_list]
         assert invalidated == [3, 8]
+        notifications.add.assert_awaited_once()
+        notified = notifications.add.await_args.args[0]
+        assert notified.user_id == 8 and notified.actor_user_id == 3
 
     async def test_skips_author_invalidation_for_own_highlight(self):
         """Что тестируем: отсутствие двойной инвалидации своего хайлайта.
@@ -54,8 +63,10 @@ class TestSetHighlightLikeUseCase:
         """
         repository = AsyncMock()
         repository.get_by_id.return_value = SimpleNamespace(user_id=3)
-        repository.set_like.return_value = SimpleNamespace(user_id=3, likes_count=1)
-        use_case, _uow, _dashboard_cache, profile_cache = _use_case(repository)
+        repository.set_like.return_value = SimpleNamespace(
+            user_id=3, likes_count=1, anime_id=11, id=4
+        )
+        use_case, _uow, _dashboard_cache, profile_cache, notifications = _use_case(repository)
 
         result = await use_case.execute(
             SetHighlightLikeCommand(highlight_id=4, user_id=3, liked=True)
@@ -63,6 +74,7 @@ class TestSetHighlightLikeUseCase:
 
         assert result.ok is True
         assert len(profile_cache.invalidate_overview.await_args_list) == 1
+        notifications.add.assert_not_awaited()
 
     async def test_returns_failure_for_missing_item(self):
         """Что тестируем: отказ при отсутствующем хайлайте.
@@ -71,7 +83,7 @@ class TestSetHighlightLikeUseCase:
         """
         repository = AsyncMock()
         repository.get_by_id.return_value = None
-        use_case, _uow, dashboard_cache, profile_cache = _use_case(repository)
+        use_case, _uow, dashboard_cache, profile_cache, _notifications = _use_case(repository)
 
         result = await use_case.execute(
             SetHighlightLikeCommand(highlight_id=999, user_id=3, liked=True)

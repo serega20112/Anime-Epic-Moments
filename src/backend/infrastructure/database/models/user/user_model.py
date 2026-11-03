@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Index, Integer, String
 
 from backend.infrastructure.database.session import Base
 
@@ -11,6 +11,7 @@ class UserModel(Base):
     """Таблица ``users``: идентичность и профиль пользователя."""
 
     __tablename__ = "users"
+    __table_args__ = (Index("ix_users_google_subject", "google_subject", unique=True),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     email = Column(String, unique=True, nullable=False)
@@ -20,4 +21,6 @@ class UserModel(Base):
     status = Column(String(80), nullable=True)
     show_watch_activity = Column(Boolean, nullable=False, default=True)
     show_recent_episodes = Column(Boolean, nullable=False, default=True)
+    google_subject = Column(String(64), nullable=True)
+    email_verified = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)

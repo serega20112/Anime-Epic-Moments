@@ -1,6 +1,65 @@
 {
   "components": {
     "schemas": {
+      "AccountDeletedResponse": {
+        "description": "Итог удаления аккаунта.\n\nAttributes:\n    deleted: Флаг успешного удаления аккаунта.",
+        "properties": {
+          "deleted": {
+            "title": "Deleted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deleted"
+        ],
+        "title": "AccountDeletedResponse",
+        "type": "object"
+      },
+      "AccountExportResponse": {
+        "description": "Машиночитаемая копия данных пользователя.\n\nAttributes:\n    profile: Раздел профиля владельца.\n    favorites: Избранные работы.\n    statuses: Записи дневника просмотра.\n    highlights: Созданные хайлайты.\n    collections: Созданные коллекции.",
+        "properties": {
+          "collections": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExportCollectionResponse"
+            },
+            "title": "Collections",
+            "type": "array"
+          },
+          "favorites": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExportFavoriteResponse"
+            },
+            "title": "Favorites",
+            "type": "array"
+          },
+          "highlights": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExportHighlightResponse"
+            },
+            "title": "Highlights",
+            "type": "array"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ExportProfileResponse"
+          },
+          "statuses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExportStatusResponse"
+            },
+            "title": "Statuses",
+            "type": "array"
+          }
+        },
+        "required": [
+          "profile"
+        ],
+        "title": "AccountExportResponse",
+        "type": "object"
+      },
       "AddAnimeCommentRequest": {
         "description": "Тело комментария в обсуждение аниме.\n\nAttributes:\n    content: Текст комментария.",
         "properties": {
@@ -397,6 +456,83 @@
         "title": "AnimeCommentResponse",
         "type": "object"
       },
+      "AnimeDetailResponse": {
+        "description": "Карточка тайтла с сериями, источниками и состояниями зрителя.\n\nAttributes:\n    anime: Карточка тайтла из каталога.\n    episode: Текущая серия запроса.\n    episode_total: Общее число серий либо None.\n    episodes: Прогресс по доступным сериям.\n    sources: Источники текущей серии в порядке приоритета.\n    favorites: В избранном ли тайтл у зрителя.\n    user_rating: Оценка зрителя либо None.\n    watch_status: Статус просмотра в дневнике либо None.\n    last_position_seconds: Позиция продолжения текущей серии.",
+        "properties": {
+          "anime": {
+            "$ref": "#/components/schemas/AnimeCardResponse"
+          },
+          "episode": {
+            "title": "Episode",
+            "type": "integer"
+          },
+          "episode_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Total"
+          },
+          "episodes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/EpisodeProgressResponse"
+            },
+            "title": "Episodes",
+            "type": "array"
+          },
+          "favorites": {
+            "default": false,
+            "title": "Favorites",
+            "type": "boolean"
+          },
+          "last_position_seconds": {
+            "default": 0.0,
+            "title": "Last Position Seconds",
+            "type": "number"
+          },
+          "sources": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SourceResponse"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "user_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Rating"
+          },
+          "watch_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Watch Status"
+          }
+        },
+        "required": [
+          "anime",
+          "episode"
+        ],
+        "title": "AnimeDetailResponse",
+        "type": "object"
+      },
       "AnimeSearchResultResponse": {
         "description": "Выдача семантического поиска с признаком возрастной границы.\n\nAttributes:\n    items: Найденные тайтлы.\n    requires_age_confirmation: True, если требуется подтверждение возраста.\n    message: Пояснение для клиента либо None.",
         "properties": {
@@ -429,7 +565,7 @@
         "type": "object"
       },
       "ApiConfigResponse": {
-        "description": "Конфигурация возможностей, доступных клиенту.\n\nAttributes:\n    api_version: Версия JSON API, заявленная в префиксе путей.\n    adult_sources_enabled: Разрешены ли источники для взрослой аудитории.\n    manual_source_creation_enabled: Разрешено ли ручное добавление источников.",
+        "description": "Конфигурация возможностей и релиза, доступных клиенту.\n\nAttributes:\n    api_version: Версия JSON API, заявленная в префиксе путей.\n    adult_sources_enabled: Разрешены ли источники для взрослой аудитории.\n    manual_source_creation_enabled: Разрешено ли ручное добавление источников.\n    latest_app_version: Последняя опубликованная версия приложения.\n    min_app_version: Минимально допустимая версия приложения.\n    apk_url: Ссылка на установочный пакет либо пустая строка.\n    apk_sha256: Хеш пакета либо пустая строка.\n    changelog_url: Ссылка на список изменений либо пустая строка.\n    maintenance_mode: Включён ли режим обслуживания.",
         "properties": {
           "adult_sources_enabled": {
             "title": "Adult Sources Enabled",
@@ -439,9 +575,39 @@
             "title": "Api Version",
             "type": "string"
           },
+          "apk_sha256": {
+            "default": "",
+            "title": "Apk Sha256",
+            "type": "string"
+          },
+          "apk_url": {
+            "default": "",
+            "title": "Apk Url",
+            "type": "string"
+          },
+          "changelog_url": {
+            "default": "",
+            "title": "Changelog Url",
+            "type": "string"
+          },
+          "latest_app_version": {
+            "default": "",
+            "title": "Latest App Version",
+            "type": "string"
+          },
+          "maintenance_mode": {
+            "default": false,
+            "title": "Maintenance Mode",
+            "type": "boolean"
+          },
           "manual_source_creation_enabled": {
             "title": "Manual Source Creation Enabled",
             "type": "boolean"
+          },
+          "min_app_version": {
+            "default": "",
+            "title": "Min App Version",
+            "type": "string"
           }
         },
         "required": [
@@ -476,6 +642,30 @@
           }
         },
         "title": "AskAiRecommendationsRequest",
+        "type": "object"
+      },
+      "CollectionItemAddedResponse": {
+        "description": "Итог добавления аниме в коллекцию.\n\nAttributes:\n    collection_id: Идентификатор коллекции.\n    anime_id: Идентификатор добавленного аниме.\n    added: Признак успешного добавления.",
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "boolean"
+          },
+          "anime_id": {
+            "title": "Anime Id",
+            "type": "integer"
+          },
+          "collection_id": {
+            "title": "Collection Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "collection_id",
+          "anime_id",
+          "added"
+        ],
+        "title": "CollectionItemAddedResponse",
         "type": "object"
       },
       "CollectionSummaryResponse": {
@@ -882,6 +1072,52 @@
         "title": "EpisodeCompletionResponse",
         "type": "object"
       },
+      "EpisodeProgressResponse": {
+        "description": "Прогресс по одной серии тайтла для мобильного клиента.\n\nAttributes:\n    number: Номер серии.\n    title: Название серии либо None, когда каталог его не отдаёт.\n    duration_seconds: Длительность серии либо None, когда неизвестна.\n    watched: Просмотрена ли серия по позиции дневника зрителя.\n    position_seconds: Позиция продолжения просмотра.",
+        "properties": {
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "position_seconds": {
+            "default": 0.0,
+            "title": "Position Seconds",
+            "type": "number"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "watched": {
+            "default": false,
+            "title": "Watched",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "number"
+        ],
+        "title": "EpisodeProgressResponse",
+        "type": "object"
+      },
       "EpisodeReactionCountResponse": {
         "description": "Счётчик одной реакции на моменте серии.\n\nAttributes:\n    reaction_type: Тип реакции.\n    emoji: Эмодзи-представление реакции.\n    count: Число пользователей с такой реакцией.",
         "properties": {
@@ -1008,6 +1244,229 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "ExportCollectionResponse": {
+        "description": "Коллекция автора в выгрузке данных.\n\nAttributes:\n    id: Идентификатор коллекции.\n    title: Название коллекции.\n    is_public: Публична ли коллекция.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_public": {
+            "title": "Is Public",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "is_public"
+        ],
+        "title": "ExportCollectionResponse",
+        "type": "object"
+      },
+      "ExportFavoriteResponse": {
+        "description": "Избранная работа в выгрузке данных.\n\nAttributes:\n    anime_id: Идентификатор аниме.\n    title: Название на момент добавления.",
+        "properties": {
+          "anime_id": {
+            "title": "Anime Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "anime_id",
+          "title"
+        ],
+        "title": "ExportFavoriteResponse",
+        "type": "object"
+      },
+      "ExportHighlightResponse": {
+        "description": "Хайлайт автора в выгрузке данных.\n\nAttributes:\n    id: Идентификатор хайлайта.\n    anime_id: Идентификатор аниме.\n    episode: Номер серии.\n    title: Название момента.",
+        "properties": {
+          "anime_id": {
+            "title": "Anime Id",
+            "type": "integer"
+          },
+          "episode": {
+            "title": "Episode",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "anime_id",
+          "episode",
+          "title"
+        ],
+        "title": "ExportHighlightResponse",
+        "type": "object"
+      },
+      "ExportProfileResponse": {
+        "description": "Раздел профиля в выгрузке данных.\n\nAttributes:\n    id: Идентификатор пользователя.\n    email: Адрес почты владельца.\n    username: Отображаемое имя.\n    status: Статус профиля либо None.\n    created_at: Момент регистрации в ISO-формате либо None.",
+        "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "username"
+        ],
+        "title": "ExportProfileResponse",
+        "type": "object"
+      },
+      "ExportStatusResponse": {
+        "description": "Запись дневника просмотра в выгрузке данных.\n\nAttributes:\n    anime_id: Идентификатор аниме.\n    status: Статус просмотра.\n    current_episode: Текущая серия либо None.\n    rating: Оценка пользователя либо None.",
+        "properties": {
+          "anime_id": {
+            "title": "Anime Id",
+            "type": "integer"
+          },
+          "current_episode": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Episode"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "anime_id",
+          "status"
+        ],
+        "title": "ExportStatusResponse",
+        "type": "object"
+      },
+      "FavoriteAnimeCardResponse": {
+        "description": "Карточка избранного тайтла в JSON-представлении.\n\nОтражает доменную карточку :class:`FavoriteAnimeCard` и принимает её\nнапрямую (``from_attributes``), поэтому маршрут не собирает словарь вручную.\n\nAttributes:\n    anime_id: Идентификатор аниме.\n    title: Название тайтла.\n    description: Описание тайтла.\n    cover_url: Ссылка на обложку либо None.\n    genres: Жанры тайтла.\n    watch_url: Ссылка на страницу просмотра.\n    added_at: Дата добавления в текстовом виде.\n    original_title: Оригинальное название либо None.",
+        "properties": {
+          "added_at": {
+            "title": "Added At",
+            "type": "string"
+          },
+          "anime_id": {
+            "title": "Anime Id",
+            "type": "integer"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "genres": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Genres",
+            "type": "array"
+          },
+          "original_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Title"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "watch_url": {
+            "title": "Watch Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "anime_id",
+          "title",
+          "description",
+          "watch_url",
+          "added_at"
+        ],
+        "title": "FavoriteAnimeCardResponse",
+        "type": "object"
+      },
       "FavoriteIdsResponse": {
         "description": "Ответ со списком идентификаторов избранного.\n\nAttributes:\n    user_id: Идентификатор владельца избранного.\n    anime_ids: Идентификаторы избранных аниме.",
         "properties": {
@@ -1047,6 +1506,36 @@
           "count"
         ],
         "title": "GenreFacetResponse",
+        "type": "object"
+      },
+      "GoogleLinkStatusResponse": {
+        "description": "Итог привязки или отвязки аккаунта Google.\n\nAttributes:\n    google_linked: Привязан ли аккаунт к Google после операции.",
+        "properties": {
+          "google_linked": {
+            "title": "Google Linked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "google_linked"
+        ],
+        "title": "GoogleLinkStatusResponse",
+        "type": "object"
+      },
+      "GoogleTokenRequest": {
+        "description": "Тело входа или привязки по ID-токену Google.\n\nAttributes:\n    id_token: JWT-токен аккаунта Google, полученный мобильным клиентом.",
+        "properties": {
+          "id_token": {
+            "maxLength": 4096,
+            "minLength": 10,
+            "title": "Id Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id_token"
+        ],
+        "title": "GoogleTokenRequest",
         "type": "object"
       },
       "HighlightCommentResponse": {
@@ -1098,6 +1587,53 @@
           "items"
         ],
         "title": "HighlightCommentsResponse",
+        "type": "object"
+      },
+      "HighlightFeedPageResponse": {
+        "description": "Страница мобильной ленты хайлайтов.",
+        "properties": {
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MobileHighlightCardResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "per_page": {
+            "title": "Per Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "total_pages": {
+            "title": "Total Pages",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "per_page",
+          "total",
+          "total_pages",
+          "has_next",
+          "has_previous"
+        ],
+        "title": "HighlightFeedPageResponse",
         "type": "object"
       },
       "HighlightIdResponse": {
@@ -1202,6 +1738,179 @@
         "title": "HighlightSavedResponse",
         "type": "object"
       },
+      "HistoryEntryResponse": {
+        "description": "Карточка тайтла из истории просмотров в JSON-представлении.\n\nAttributes:\n    anime: Карточка тайтла из каталога.\n    episode: Номер серии последней сессии.\n    position_seconds: Сохранённая позиция в серии.\n    watched_at: Дата сессии в текстовом виде.",
+        "properties": {
+          "anime": {
+            "$ref": "#/components/schemas/AnimeCardResponse"
+          },
+          "episode": {
+            "title": "Episode",
+            "type": "integer"
+          },
+          "position_seconds": {
+            "title": "Position Seconds",
+            "type": "number"
+          },
+          "watched_at": {
+            "title": "Watched At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "anime",
+          "episode",
+          "position_seconds",
+          "watched_at"
+        ],
+        "title": "HistoryEntryResponse",
+        "type": "object"
+      },
+      "HistoryPageResponse": {
+        "description": "Страница истории просмотров пользователя.",
+        "properties": {
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntryResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "per_page": {
+            "title": "Per Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "total_pages": {
+            "title": "Total Pages",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "per_page",
+          "total",
+          "total_pages",
+          "has_next",
+          "has_previous"
+        ],
+        "title": "HistoryPageResponse",
+        "type": "object"
+      },
+      "LibraryEntryResponse": {
+        "description": "Карточка тайтла из дневника пользователя в JSON-представлении.\n\nAttributes:\n    anime: Карточка тайтла из каталога.\n    status: Статус просмотра в дневнике.\n    current_episode: Текущая серия прогресса либо None.\n    rating: Оценка пользователя либо None.\n    last_watched_at: Дата последнего просмотра либо None.",
+        "properties": {
+          "anime": {
+            "$ref": "#/components/schemas/AnimeCardResponse"
+          },
+          "current_episode": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Episode"
+          },
+          "last_watched_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Watched At"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "anime",
+          "status"
+        ],
+        "title": "LibraryEntryResponse",
+        "type": "object"
+      },
+      "LibraryPageResponse": {
+        "description": "Страница библиотеки просмотра пользователя.",
+        "properties": {
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryEntryResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "per_page": {
+            "title": "Per Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "total_pages": {
+            "title": "Total Pages",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "per_page",
+          "total",
+          "total_pages",
+          "has_next",
+          "has_previous"
+        ],
+        "title": "LibraryPageResponse",
+        "type": "object"
+      },
       "LivenessResponse": {
         "description": "Ответ пробы живости процесса.\n\nAttributes:\n    status: Метка ``ok``, подтверждающая, что процесс отвечает.",
         "properties": {
@@ -1212,6 +1921,343 @@
           }
         },
         "title": "LivenessResponse",
+        "type": "object"
+      },
+      "MobileCollectionResponse": {
+        "description": "Коллекция пользователя в мобильном представлении.\n\nAttributes:\n    id: Идентификатор коллекции.\n    title: Название коллекции.\n    is_public: Открыта ли коллекция другим пользователям.\n    item_count: Число аниме в коллекции.\n    cover_url: Ссылка на обложку либо None.\n    owner_id: Идентификатор владельца коллекции.",
+        "properties": {
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_public": {
+            "title": "Is Public",
+            "type": "boolean"
+          },
+          "item_count": {
+            "title": "Item Count",
+            "type": "integer"
+          },
+          "owner_id": {
+            "title": "Owner Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "is_public",
+          "item_count",
+          "owner_id"
+        ],
+        "title": "MobileCollectionResponse",
+        "type": "object"
+      },
+      "MobileCollectionsResponse": {
+        "description": "Список коллекций пользователя.\n\nAttributes:\n    items: Коллекции владельца в порядке создания.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MobileCollectionResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "MobileCollectionsResponse",
+        "type": "object"
+      },
+      "MobileCreateCollectionRequest": {
+        "description": "Тело создания коллекции мобильным клиентом.\n\nAttributes:\n    title: Название коллекции.\n    description: Описание коллекции.\n    is_public: Делать ли коллекцию публичной.\n    cover_url: Ссылка на обложку либо None.",
+        "properties": {
+          "cover_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Description",
+            "type": "string"
+          },
+          "is_public": {
+            "default": true,
+            "title": "Is Public",
+            "type": "boolean"
+          },
+          "title": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "MobileCreateCollectionRequest",
+        "type": "object"
+      },
+      "MobileHighlightCardResponse": {
+        "description": "Карточка хайлайта в мобильной ленте.\n\nОтражает доменную карточку :class:`HighlightCard` и принимает её напрямую\n(``from_attributes``), поэтому маршрут не собирает словарь вручную.\n\nAttributes:\n    id: Идентификатор хайлайта.\n    anime_id: Идентификатор аниме во внешнем каталоге.\n    anime_title: Название аниме.\n    anime_cover: Обложка аниме либо None.\n    title: Заголовок хайлайта.\n    category: Категория либо None.\n    episode: Номер серии.\n    start_timestamp: Начало фрагмента в тексте ``MM:SS``.\n    end_timestamp: Конец фрагмента в тексте ``MM:SS``.\n    duration_seconds: Длительность фрагмента в секундах.\n    description: Описание хайлайта.\n    is_spoiler: Помечен ли хайлайт спойлером.\n    emotion: Метка эмоции либо None.\n    created_at: Дата создания в тексте ``YYYY-MM-DD``.\n    likes_count: Число лайков.\n    views_count: Число просмотров.\n    comments_count: Число комментариев.\n    is_liked: Лайкнул ли текущий зритель.\n    is_saved: Сохранил ли текущий зритель.\n    watch_url: Ссылка на просмотр с начала фрагмента.\n    share_url: Публичная ссылка хайлайта.\n    owner_user_id: Идентификатор автора либо None.\n    owner_username: Имя автора либо None.\n    owner_avatar_url: Аватар автора либо None.",
+        "properties": {
+          "anime_cover": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anime Cover"
+          },
+          "anime_id": {
+            "title": "Anime Id",
+            "type": "integer"
+          },
+          "anime_title": {
+            "title": "Anime Title",
+            "type": "string"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "comments_count": {
+            "title": "Comments Count",
+            "type": "integer"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "title": "Duration Seconds",
+            "type": "number"
+          },
+          "emotion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emotion"
+          },
+          "end_timestamp": {
+            "title": "End Timestamp",
+            "type": "string"
+          },
+          "episode": {
+            "title": "Episode",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_liked": {
+            "title": "Is Liked",
+            "type": "boolean"
+          },
+          "is_saved": {
+            "title": "Is Saved",
+            "type": "boolean"
+          },
+          "is_spoiler": {
+            "title": "Is Spoiler",
+            "type": "boolean"
+          },
+          "likes_count": {
+            "title": "Likes Count",
+            "type": "integer"
+          },
+          "owner_avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Avatar Url"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          },
+          "owner_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Username"
+          },
+          "share_url": {
+            "title": "Share Url",
+            "type": "string"
+          },
+          "start_timestamp": {
+            "title": "Start Timestamp",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "views_count": {
+            "title": "Views Count",
+            "type": "integer"
+          },
+          "watch_url": {
+            "title": "Watch Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "anime_id",
+          "anime_title",
+          "title",
+          "episode",
+          "start_timestamp",
+          "end_timestamp",
+          "duration_seconds",
+          "description",
+          "is_spoiler",
+          "created_at",
+          "likes_count",
+          "views_count",
+          "comments_count",
+          "is_liked",
+          "is_saved",
+          "watch_url",
+          "share_url"
+        ],
+        "title": "MobileHighlightCardResponse",
+        "type": "object"
+      },
+      "MobileProfileResponse": {
+        "description": "Профиль пользователя для мобильного клиента.\n\nПочта в публичный профиль не входит: она приватна и доступна только\nвладельцу через отдельный маршрут. Поля ``google_linked`` и\n``email_verified`` отражают состояние учётной записи.\n\nAttributes:\n    id: Идентификатор пользователя.\n    username: Отображаемое имя.\n    avatar_url: Ссылка на аватар либо None.\n    bio: Статус-описание профиля либо None.\n    highlights_count: Число хайлайтов автора.\n    followers_count: Число подписчиков.\n    following_count: Число подписок.\n    is_followed: Подписан ли текущий зритель на владельца профиля.\n    google_linked: Привязан ли аккаунт к Google.\n    email_verified: Подтверждена ли почта.",
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "email_verified": {
+            "default": true,
+            "title": "Email Verified",
+            "type": "boolean"
+          },
+          "followers_count": {
+            "default": 0,
+            "title": "Followers Count",
+            "type": "integer"
+          },
+          "following_count": {
+            "default": 0,
+            "title": "Following Count",
+            "type": "integer"
+          },
+          "google_linked": {
+            "default": false,
+            "title": "Google Linked",
+            "type": "boolean"
+          },
+          "highlights_count": {
+            "default": 0,
+            "title": "Highlights Count",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_followed": {
+            "default": false,
+            "title": "Is Followed",
+            "type": "boolean"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username"
+        ],
+        "title": "MobileProfileResponse",
         "type": "object"
       },
       "MomentDeletedResponse": {
@@ -1243,6 +2289,222 @@
           "collections"
         ],
         "title": "MyCollectionsResponse",
+        "type": "object"
+      },
+      "NotificationResponse": {
+        "description": "Одно уведомление в JSON-представлении.\n\nAttributes:\n    id: Идентификатор уведомления.\n    kind: Тип события.\n    text: Текст для показа человеку.\n    actor_user_id: Идентификатор автора события либо None.\n    actor_name: Имя автора либо None, когда автор неизвестен.\n    anime_id: Идентификатор связанного тайтла либо None.\n    highlight_id: Идентификатор связанного хайлайта либо None.\n    is_read: Прочитано ли уведомление.\n    created_at: Время события.",
+        "properties": {
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "actor_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor User Id"
+          },
+          "anime_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anime Id"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "highlight_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highlight Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_read": {
+            "default": false,
+            "title": "Is Read",
+            "type": "boolean"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "text"
+        ],
+        "title": "NotificationResponse",
+        "type": "object"
+      },
+      "NotificationsMarkedResponse": {
+        "description": "Итог отметки уведомлений прочитанными.\n\nAttributes:\n    marked: Число уведомлений, помеченных прочитанными.",
+        "properties": {
+          "marked": {
+            "title": "Marked",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "marked"
+        ],
+        "title": "NotificationsMarkedResponse",
+        "type": "object"
+      },
+      "NotificationsPageResponse": {
+        "description": "Страница уведомлений с числом непрочитанных.\n\nAttributes:\n    unread_count: Число непрочитанных уведомлений получателя.",
+        "properties": {
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "per_page": {
+            "title": "Per Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "total_pages": {
+            "title": "Total Pages",
+            "type": "integer"
+          },
+          "unread_count": {
+            "default": 0,
+            "title": "Unread Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "per_page",
+          "total",
+          "total_pages",
+          "has_next",
+          "has_previous"
+        ],
+        "title": "NotificationsPageResponse",
+        "type": "object"
+      },
+      "Page_FavoriteAnimeCardResponse_": {
+        "properties": {
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FavoriteAnimeCardResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "per_page": {
+            "title": "Per Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "total_pages": {
+            "title": "Total Pages",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "per_page",
+          "total",
+          "total_pages",
+          "has_next",
+          "has_previous"
+        ],
+        "title": "Page[FavoriteAnimeCardResponse]",
+        "type": "object"
+      },
+      "ProgressSavedResponse": {
+        "description": "Ответ мобильного сохранения позиции просмотра.\n\nAttributes:\n    saved: Итог записи позиции.\n    watched: Пересечён ли серверный порог «просмотрено» для серии.",
+        "properties": {
+          "saved": {
+            "title": "Saved",
+            "type": "boolean"
+          },
+          "watched": {
+            "default": false,
+            "title": "Watched",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "saved"
+        ],
+        "title": "ProgressSavedResponse",
         "type": "object"
       },
       "PublishMomentResponse": {
@@ -1416,6 +2678,21 @@
         "title": "RefreshTokenRequest",
         "type": "object"
       },
+      "RemoveCollectionItemRequest": {
+        "description": "Тело запроса удаления аниме из коллекции.\n\nAttributes:\n    anime_id: Идентификатор удаляемого аниме.",
+        "properties": {
+          "anime_id": {
+            "exclusiveMinimum": 0.0,
+            "title": "Anime Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "anime_id"
+        ],
+        "title": "RemoveCollectionItemRequest",
+        "type": "object"
+      },
       "RemoveFavoriteRequest": {
         "description": "Тело запроса удаления аниме из избранного.\n\nAttributes:\n    anime_id: Идентификатор аниме.",
         "properties": {
@@ -1445,6 +2722,73 @@
           "refresh_token"
         ],
         "title": "RevokeTokensRequest",
+        "type": "object"
+      },
+      "SaveProgressRequest": {
+        "description": "Тело сохранения позиции просмотра мобильным плеером.\n\nПовторяет состояние веб-плеера и добавляет длительность серии: по позиции\nи длительности сервер сам решает, пересечён ли порог «просмотрено».\n\nAttributes:\n    episode: Номер серии.\n    watch_source_id: Идентификатор источника воспроизведения.\n    position_seconds: Текущая позиция в секундах.\n    duration_seconds: Длительность серии либо None, если клиенту неизвестна.\n    volume: Уровень громкости.\n    quality_label: Выбранное качество.\n    is_paused: Приостановлено ли воспроизведение.",
+        "properties": {
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "episode": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode"
+          },
+          "is_paused": {
+            "default": false,
+            "title": "Is Paused",
+            "type": "boolean"
+          },
+          "position_seconds": {
+            "default": 0.0,
+            "minimum": 0.0,
+            "title": "Position Seconds",
+            "type": "number"
+          },
+          "quality_label": {
+            "default": "Auto",
+            "maxLength": 40,
+            "title": "Quality Label",
+            "type": "string"
+          },
+          "volume": {
+            "default": 1.0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Volume",
+            "type": "number"
+          },
+          "watch_source_id": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Watch Source Id"
+          }
+        },
+        "title": "SaveProgressRequest",
         "type": "object"
       },
       "SaveViewingMomentRequest": {
@@ -1605,6 +2949,40 @@
           }
         },
         "title": "SetEpisodeReactionRequest",
+        "type": "object"
+      },
+      "SourceResponse": {
+        "description": "Источник просмотра серии для мобильного плеера.\n\nAttributes:\n    episode_number: Номер серии источника.\n    translation: Название озвучки или саба.\n    quality: Метка качества.\n    source_type: Тип источника (stream, embed, external).\n    url: Адрес потока или файла воспроизведения.",
+        "properties": {
+          "episode_number": {
+            "title": "Episode Number",
+            "type": "integer"
+          },
+          "quality": {
+            "title": "Quality",
+            "type": "string"
+          },
+          "source_type": {
+            "title": "Source Type",
+            "type": "string"
+          },
+          "translation": {
+            "title": "Translation",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "episode_number",
+          "translation",
+          "quality",
+          "source_type",
+          "url"
+        ],
+        "title": "SourceResponse",
         "type": "object"
       },
       "TokenPairResponse": {
@@ -2036,6 +3414,329 @@
         "summary": "Anime.Search By Description Page"
       }
     },
+    "/api/v1/anime/{anime_id}": {
+      "get": {
+        "description": "Отдать карточку тайтла с сериями, источниками и состояниями зрителя.\n\nГостю доступна та же карточка без персональных полей: сценарий различает\nзрителя по идентификатору сессии, а не по содержимому запроса.\n\nArgs:\n    request: Текущий HTTP-запрос с необязательными параметрами серии.\n    anime_id: Идентификатор аниме из пути.\n    use_case: Сценарий карточки тайтла.\n\nReturns:\n    AnimeDetailResponse: Карточка тайтла в мобильном представлении.",
+        "operationId": "api_anime_get_detail_api_v1_anime__anime_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anime_id",
+            "required": true,
+            "schema": {
+              "title": "Anime Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimeDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Api Anime.Get Detail"
+      }
+    },
+    "/api/v1/anime/{anime_id}/progress": {
+      "post": {
+        "description": "Сохранить позицию воспроизведения и вернуть признак «просмотрено».\n\nArgs:\n    request: Текущий HTTP-запрос с заголовком Authorization.\n    anime_id: Идентификатор аниме из пути.\n    body: Проверенное тело позиции мобильного плеера.\n    use_case: Сценарий сохранения сессии просмотра.\n\nReturns:\n    ProgressSavedResponse | Response: Итог сохранения либо тело отказа.",
+        "operationId": "api_anime_save_progress_api_v1_anime__anime_id__progress_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anime_id",
+            "required": true,
+            "schema": {
+              "title": "Anime Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveProgressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressSavedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Api Anime.Save Progress"
+      }
+    },
+    "/api/v1/auth/google": {
+      "post": {
+        "description": "Войти через Google и выдать пару токенов приложения.\n\nПользователь ищется по стабильному идентификатору Google либо по почте; при\nотсутствии аккаунта он создаётся с служебным паролем. Проверка подлинности\nID-токена и решение о создании аккаунта принадлежат сценарию.\n\nArgs:\n    request: Текущий HTTP-запрос.\n    body: Тело с ID-токеном Google.\n    use_case: Сценарий входа через Google.\n\nReturns:\n    TokenPairResponse | Response: Пара токенов либо единое тело отказа.",
+        "operationId": "api_auth_google_sign_in_api_v1_auth_google_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Api Auth.Google Sign In"
+      }
+    },
+    "/api/v1/auth/google/link": {
+      "post": {
+        "description": "Привязать подтверждённый аккаунт Google к пользователю сессии.\n\nArgs:\n    request: Текущий HTTP-запрос с заголовком Authorization.\n    body: Тело с ID-токеном Google.\n    use_case: Сценарий привязки Google.\n\nReturns:\n    GoogleLinkStatusResponse | Response: Признак привязки либо тело отказа.",
+        "operationId": "api_auth_google_link_api_v1_auth_google_link_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleLinkStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Api Auth.Google Link"
+      }
+    },
+    "/api/v1/auth/google/unlink": {
+      "post": {
+        "description": "Отвязать аккаунт Google от пользователя сессии.\n\nArgs:\n    request: Текущий HTTP-запрос с заголовком Authorization.\n    use_case: Сценарий отвязки Google.\n\nReturns:\n    GoogleLinkStatusResponse | Response: Признак привязки либо тело отказа.",
+        "operationId": "api_auth_google_unlink_api_v1_auth_google_unlink_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleLinkStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Api Auth.Google Unlink"
+      }
+    },
     "/api/v1/auth/token": {
       "post": {
         "description": "Выдать пару токенов по почте и паролю.\n\nArgs:\n    request: Текущий HTTP-запрос.\n    body: Проверенное тело учётных данных.\n    use_case: Сценарий входа, общий с браузерной формой.\n\nReturns:\n    TokenPairResponse | Response: Пара токенов либо единое тело отказа.",
@@ -2213,9 +3914,128 @@
         "summary": "Api Auth.Revoke Token"
       }
     },
+    "/api/v1/collections/{collection_id}/items": {
+      "post": {
+        "description": "Добавить аниме в коллекцию владельца сессии.\n\nArgs:\n    request: Текущий HTTP-запрос.\n    collection_id: Идентификатор коллекции из пути.\n    body: Тело запроса с идентификатором аниме.\n    use_case: Сценарий добавления элемента коллекции.\n\nReturns:\n    CollectionItemAddedResponse | Response: Итог добавления либо отказ\n        401/403 через общий обработчик.",
+        "operationId": "api_collections_add_item_api_v1_collections__collection_id__items_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "collection_id",
+            "required": true,
+            "schema": {
+              "title": "Collection Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCollectionItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionItemAddedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Api Collections.Add Item"
+      }
+    },
+    "/api/v1/collections/{collection_id}/items/remove": {
+      "post": {
+        "description": "Убрать аниме из коллекции владельца сессии.\n\nArgs:\n    request: Текущий HTTP-запрос.\n    collection_id: Идентификатор коллекции из пути.\n    body: Тело запроса с идентификатором аниме.\n    use_case: Сценарий удаления элемента коллекции.\n\nReturns:\n    Response: 204 при успехе либо отказ 401/403 через общий обработчик.",
+        "operationId": "api_collections_remove_item_api_v1_collections__collection_id__items_remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "collection_id",
+            "required": true,
+            "schema": {
+              "title": "Collection Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveCollectionItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Api Collections.Remove Item"
+      }
+    },
     "/api/v1/config": {
       "get": {
-        "description": "Отдать клиенту включённые возможности JSON API.\n\nArgs:\n    flags: Фиче-флаги, собранные из конфигурации приложения.\n\nReturns:\n    ApiConfigResponse: Версия API и состояние включённых возможностей.",
+        "description": "Отдать клиенту включённые возможности JSON API и сведения о релизе.\n\nArgs:\n    flags: Фиче-флаги, собранные из конфигурации приложения.\n    release: Сведения о релизе мобильного приложения из конфигурации.\n\nReturns:\n    ApiConfigResponse: Версия API, возможности и параметры релиза.",
         "operationId": "api_config_api_v1_config_get",
         "responses": {
           "200": {
@@ -2230,6 +4050,256 @@
           }
         },
         "summary": "Api.Config"
+      }
+    },
+    "/api/v1/highlights/feed": {
+      "get": {
+        "description": "Отдать страницу ленты хайлайтов в выбранном режиме.\n\nArgs:\n    request: Текущий HTTP-запрос с параметрами режима и пагинации.\n    use_case: Сценарий мобильной ленты хайлайтов.\n\nReturns:\n    HighlightFeedPageResponse: Страница карточек с метаданными навигации.",
+        "operationId": "api_highlights_feed_api_v1_highlights_feed_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HighlightFeedPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Api Highlights.Feed"
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "description": "Отдать страницу уведомлений пользователя сессии.\n\nArgs:\n    request: Текущий HTTP-запрос с параметрами страницы.\n    use_case: Сценарий чтения уведомлений.\n\nReturns:\n    NotificationsPageResponse | Response: Страница уведомлений либо отказ 401.",
+        "operationId": "api_notifications_list_api_v1_notifications_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Api Notifications.List"
+      }
+    },
+    "/api/v1/notifications/read-all": {
+      "post": {
+        "description": "Отметить все уведомления пользователя прочитанными.\n\nArgs:\n    request: Текущий HTTP-запрос с заголовком Authorization.\n    use_case: Сценарий массового прочтения.\n\nReturns:\n    NotificationsMarkedResponse | Response: Число изменений либо отказ 401.",
+        "operationId": "api_notifications_mark_all_read_api_v1_notifications_read_all_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsMarkedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Api Notifications.Mark All Read"
+      }
+    },
+    "/api/v1/notifications/{notification_id}/read": {
+      "post": {
+        "description": "Отметить одно уведомление прочитанным.\n\nArgs:\n    request: Текущий HTTP-запрос с заголовком Authorization.\n    notification_id: Идентификатор уведомления из пути.\n    use_case: Сценарий отметки прочтения.\n\nReturns:\n    NotificationsMarkedResponse | Response: Число изменений либо отказ 401.",
+        "operationId": "api_notifications_mark_read_api_v1_notifications__notification_id__read_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "title": "Notification Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsMarkedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Api Notifications.Mark Read"
       }
     },
     "/api/v1/recommendations/ask/{user_id}": {
@@ -2471,6 +4541,485 @@
           }
         },
         "summary": "Recommendation.Refresh Recommendations"
+      }
+    },
+    "/api/v1/users/{user_id}": {
+      "delete": {
+        "description": "Удалить аккаунт пользователя сессии вместе со всеми его данными.\n\nArgs:\n    user_id: Идентификатор пользователя из пути.\n    use_case: Сценарий удаления аккаунта.\n    session_user_id: Идентификатор пользователя сессии.\n\nReturns:\n    AccountDeletedResponse | Response: Признак удаления либо тело отказа.\n\nRaises:\n    HTTPException: 401 для анонимного запроса, 403 при чужом ``user_id``.",
+        "operationId": "api_users_delete_account_api_v1_users__user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Api Users.Delete Account"
+      },
+      "get": {
+        "description": "Вернуть публичный профиль пользователя.\n\nЗритель определяется по сессии или Bearer-токену: только он влияет на поле\n``is_followed``. Чужой профиль остаётся доступен гостю.\n\nArgs:\n    request: Текущий HTTP-запрос.\n    user_id: Идентификатор открываемого профиля.\n    use_case: Сценарий обзора публичного профиля.\n\nReturns:\n    MobileProfileResponse | Response: Профиль либо тело отказа 404.",
+        "operationId": "api_users_profile_api_v1_users__user_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Api Users.Profile"
+      }
+    },
+    "/api/v1/users/{user_id}/collections": {
+      "get": {
+        "description": "Вернуть коллекции пользователя сессии.\n\nArgs:\n    user_id: Идентификатор пользователя из пути.\n    use_case: Сценарий списка коллекций.\n    session_user_id: Идентификатор пользователя сессии.\n\nReturns:\n    MobileCollectionsResponse: Карточки коллекций владельца сессии.\n\nRaises:\n    HTTPException: 401 для анонимного запроса, 403 при чужом ``user_id``.",
+        "operationId": "api_collections_list_api_v1_users__user_id__collections_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileCollectionsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Api Collections.List"
+      },
+      "post": {
+        "description": "Создать коллекцию пользователя сессии.\n\nArgs:\n    user_id: Идентификатор пользователя из пути.\n    body: Проверенное тело новой коллекции.\n    use_case: Сценарий создания коллекции.\n    session_user_id: Идентификатор пользователя сессии.\n\nReturns:\n    MobileCollectionResponse: Карточка созданной коллекции.\n\nRaises:\n    HTTPException: 401 для анонимного запроса, 403 при чужом ``user_id``.",
+        "operationId": "api_collections_create_api_v1_users__user_id__collections_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MobileCreateCollectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileCollectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Api Collections.Create"
+      }
+    },
+    "/api/v1/users/{user_id}/export": {
+      "get": {
+        "description": "Вернуть машиночитаемую копию данных пользователя сессии.\n\nArgs:\n    user_id: Идентификатор пользователя из пути.\n    use_case: Сценарий выгрузки данных.\n    session_user_id: Идентификатор пользователя сессии.\n\nReturns:\n    dict | Response: Разделы выгрузки либо тело отказа.\n\nRaises:\n    HTTPException: 401 для анонимного запроса, 403 при чужом ``user_id``.",
+        "operationId": "api_users_export_data_api_v1_users__user_id__export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountExportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Api Users.Export Data"
+      }
+    },
+    "/api/v1/users/{user_id}/history": {
+      "get": {
+        "description": "Вернуть историю просмотров пользователя сессии.\n\nArgs:\n    user_id: Идентификатор пользователя из пути.\n    use_case: Сценарий чтения истории.\n    session_user_id: Идентификатор пользователя сессии.\n\nReturns:\n    HistoryPageResponse: Карточки последних сессий одной страницей.\n\nRaises:\n    HTTPException: 401 для анонимного запроса, 403 при чужом ``user_id``.",
+        "operationId": "api_users_get_history_api_v1_users__user_id__history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Api Users.Get History"
+      }
+    },
+    "/api/v1/users/{user_id}/library": {
+      "get": {
+        "description": "Вернуть весь дневник просмотра пользователя сессии.\n\nArgs:\n    user_id: Идентификатор пользователя из пути.\n    use_case: Сценарий чтения библиотеки.\n    session_user_id: Идентификатор пользователя сессии.\n\nReturns:\n    LibraryPageResponse: Карточки дневника одной страницей.\n\nRaises:\n    HTTPException: 401 для анонимного запроса, 403 при чужом ``user_id``.",
+        "operationId": "api_users_get_library_all_api_v1_users__user_id__library_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Api Users.Get Library All"
+      }
+    },
+    "/api/v1/users/{user_id}/library/{status}": {
+      "get": {
+        "description": "Вернуть дневник просмотра пользователя, отфильтрованный по статусу.\n\nArgs:\n    user_id: Идентификатор пользователя из пути.\n    status: Требуемый статус дневника из пути.\n    use_case: Сценарий чтения библиотеки.\n    session_user_id: Идентификатор пользователя сессии.\n\nReturns:\n    LibraryPageResponse: Карточки выбранного статуса одной страницей.\n\nRaises:\n    HTTPException: 401 для анонимного запроса, 403 при чужом ``user_id``.",
+        "operationId": "api_users_get_library_by_status_api_v1_users__user_id__library__status__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "status",
+            "required": true,
+            "schema": {
+              "title": "Status",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Api Users.Get Library By Status"
       }
     },
     "/auth/login": {
@@ -2992,6 +5541,59 @@
           }
         },
         "summary": "Favorite.Add Favorite"
+      }
+    },
+    "/favorites/cards/{user_id}": {
+      "get": {
+        "description": "Возвращает карточки избранного пользователя в формате JSON.\n\nИзбранное — приватные данные: идентификатор из пути сверяется с сессией.\nСписок берётся целиком существующим сценарием и лишь оборачивается в\nединый конверт постраничной выдачи; нарезку на страницы сценарий\nизбранного пока не поддерживает, поэтому вся выборка идёт одной страницей.\n\nArgs:\n    user_id: Идентификатор пользователя из пути.\n    use_case: Сценарий получения карточек избранного.\n    session_user_id: Идентификатор пользователя сессии.\n\nReturns:\n    Page[FavoriteAnimeCardResponse]: Карточки избранного владельца сессии.\n\nRaises:\n    HTTPException: 401 для анонимного запроса, 403 при чужом ``user_id``.",
+        "operationId": "favorite_get_favorite_cards_favorites_cards__user_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_FavoriteAnimeCardResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Favorite.Get Favorite Cards"
       }
     },
     "/favorites/ids/{user_id}": {

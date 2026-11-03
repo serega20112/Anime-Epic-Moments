@@ -53,3 +53,16 @@ def auth_window_seconds() -> int:
 def account_lock_duration_seconds() -> int:
     """Вернуть длительность блокировки аккаунта после серии неудач в секундах."""
     return int(os.getenv("ACCOUNT_LOCK_DURATION_SECONDS", "1800"))
+
+
+def google_client_id() -> str:
+    """Вернуть OAuth client ID мобильного приложения для проверки ID-токена Google."""
+    return os.getenv("GOOGLE_CLIENT_ID", "").strip()
+
+
+def google_tokeninfo_url() -> str:
+    """Вернуть адрес эндпоинта проверки ID-токена Google."""
+    return os.getenv(
+        "GOOGLE_TOKENINFO_URL",
+        "https://oauth2.googleapis.com/tokeninfo",
+    ).strip()

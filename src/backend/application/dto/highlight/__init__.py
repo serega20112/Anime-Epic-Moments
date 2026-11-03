@@ -14,6 +14,7 @@ from backend.application.dto.highlight.highlight_notifications_query import (
     HighlightNotificationsQuery,
 )
 from backend.application.dto.highlight.highlight_shared_query import HighlightSharedQuery
+from backend.application.dto.highlight.mobile_highlight_feed_query import MobileHighlightFeedQuery
 from backend.application.dto.highlight.set_highlight_like_command import SetHighlightLikeCommand
 from backend.application.dto.highlight.set_saved_highlight_command import SetSavedHighlightCommand
 
@@ -28,6 +29,7 @@ __all__ = [
     "HighlightLikersQuery",
     "HighlightNotificationsQuery",
     "HighlightSharedQuery",
+    "MobileHighlightFeedQuery",
     "SetHighlightLikeCommand",
     "SetSavedHighlightCommand",
 ]

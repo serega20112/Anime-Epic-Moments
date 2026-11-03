@@ -14,12 +14,19 @@ from tests.support.fakes import FakeUnitOfWork
 class TestSetUserFollowUseCase:
     """Юнит-тесты создания/удаления подписки пользователя."""
 
-    def _use_case(self, user_repo: AsyncMock, profile_cache: AsyncMock) -> SetUserFollowUseCase:
-        """Собрать сценарий с двойником транзакции и кэша обзоров."""
-        return SetUserFollowUseCase(
-            FakeUnitOfWork(UserRepository=user_repo),
+    def _use_case(
+        self, user_repo: AsyncMock, profile_cache: AsyncMock
+    ) -> tuple[SetUserFollowUseCase, AsyncMock]:
+        """Собрать сценарий с двойниками транзакции, кэша обзоров и уведомлений."""
+        notification_repository = AsyncMock()
+        use_case = SetUserFollowUseCase(
+            FakeUnitOfWork(
+                UserRepository=user_repo,
+                NotificationRepository=notification_repository,
+            ),
             profile_cache,
         )
+        return use_case, notification_repository
 
     @pytest.mark.parametrize(
         ("follow", "expected_method"),
@@ -37,7 +44,7 @@ class TestSetUserFollowUseCase:
         user_repo.get_by_id.return_value = SimpleNamespace(id=7)
         getattr(user_repo, expected_method).return_value = follow
         profile_cache = AsyncMock()
-        use_case = self._use_case(user_repo, profile_cache)
+        use_case, notifications = self._use_case(user_repo, profile_cache)
 
         result = await use_case.execute(
             SetUserFollowCommand(follower_user_id=3, followed_user_id=7, follow=follow)
@@ -48,6 +55,7 @@ class TestSetUserFollowUseCase:
         getattr(user_repo, expected_method).assert_awaited_once_with(3, 7)
         profile_cache.invalidate_overview.assert_any_await(3)
         profile_cache.invalidate_overview.assert_any_await(7)
+        assert notifications.add.await_count == (1 if follow else 0)
 
     async def test_keeps_cache_valid_without_changes(self):
         """Что тестируем: инвалидацию кэша только после успешной подписки.
@@ -57,7 +65,7 @@ class TestSetUserFollowUseCase:
         user_repo = AsyncMock()
         user_repo.get_by_id.return_value = None
         profile_cache = AsyncMock()
-        use_case = self._use_case(user_repo, profile_cache)
+        use_case, _notifications = self._use_case(user_repo, profile_cache)
 
         result = await use_case.execute(
             SetUserFollowCommand(follower_user_id=3, followed_user_id=99, follow=True)
@@ -73,7 +81,7 @@ class TestSetUserFollowUseCase:
         """
         user_repo = AsyncMock()
         user_repo.get_by_id.return_value = None
-        use_case = self._use_case(user_repo, AsyncMock())
+        use_case, _notifications = self._use_case(user_repo, AsyncMock())
 
         result = await use_case.execute(
             SetUserFollowCommand(follower_user_id=3, followed_user_id=99, follow=True)

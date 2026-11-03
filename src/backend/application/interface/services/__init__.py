@@ -9,6 +9,10 @@ from backend.application.interface.services.email_verification_mailer import (
 from backend.application.interface.services.email_verification_store import (
     EmailVerificationStoreInterface,
 )
+from backend.application.interface.services.google_auth_client import (
+    GoogleAuthClientInterface,
+    GoogleIdentity,
+)
 from backend.application.interface.services.health_check import HealthCheckPort, HealthStatus
 from backend.application.interface.services.highlight_dashboard_cache import (
     HighlightDashboardCacheInterface,
@@ -54,6 +58,8 @@ __all__ = [
     "CSRFToken",
     "EmailVerificationMailerInterface",
     "EmailVerificationStoreInterface",
+    "GoogleAuthClientInterface",
+    "GoogleIdentity",
     "HighlightDashboardCacheInterface",
     "HealthCheckPort",
     "HealthStatus",
