@@ -1,8 +1,8 @@
-"""JSON-маршруты аутентификации для мобильного клиента.
+"""JSON-маршруты выдачи, продления и отзыва токенов мобильного клиента.
 
 Поверхность отвечает только JSON и работает через заголовок
-``Authorization: Bearer``: куки не ставятся, CSRF-проверка к таким запросам
-не применяется. Сценарии те же, что и у браузерных форм, поэтому правила
+``Authorization: Bearer``: куки не ставятся, CSRF-проверка к таким запросам не
+применяется. Сценарии те же, что и у браузерных форм, поэтому правила
 блокировки перебора и отзыв токенов не дублируются.
 """
 
@@ -23,7 +23,6 @@ from backend.config import Settings
 from backend.presentation.api.auth_responses import mint_tokens
 from backend.presentation.api.errors import (
     ERROR_UNAUTHORIZED,
-    ErrorResponse,
     error_response,
     unauthorized_error,
 )
@@ -43,36 +42,18 @@ from backend.presentation.api.responses.api_auth_responses import (
     TokenPairResponse,
     TokenRevokedResponse,
 )
-from backend.presentation.api.version import API_PREFIX
+from backend.presentation.api.v1.auth.api_common import ERROR_RESPONSES, client_ip_key
 from backend.presentation.security_helpers import extract_bearer_token
 from backend.utils import log_security_event
 
-api_auth_router = APIRouter(prefix=f"{API_PREFIX}/auth", route_class=DishkaRoute)
+token_router = APIRouter(route_class=DishkaRoute)
 
 LOGIN_DENIED_MESSAGE = "Неверная почта или пароль"
 SESSION_EXPIRED_MESSAGE = "Сессия истекла"
-
-ERROR_RESPONSES = {
-    "401": {"model": ErrorResponse},
-    "422": {"model": ErrorResponse},
-    "429": {"model": ErrorResponse},
-}
 API_TOKEN_REQUIRED_MESSAGE = "Требуется Bearer-токен"
 
 
-async def _client_ip_key(request: Request) -> str:
-    """Собрать субъект ограничения частоты по адресу клиента.
-
-    Args:
-        request: Текущий HTTP-запрос.
-
-    Returns:
-        str: IP-адрес клиента.
-    """
-    return await client_ip(request)
-
-
-@api_auth_router.post(
+@token_router.post(
     "/token",
     name="api_auth.issue_token",
     response_model=TokenPairResponse,
@@ -82,7 +63,7 @@ async def _client_ip_key(request: Request) -> str:
     scope="auth_login",
     limit=Settings.auth_login_attempts_limit,
     window_seconds=Settings.auth_window_seconds,
-    key_builder=_client_ip_key,
+    key_builder=client_ip_key,
 )
 async def issue_token(
     request: Request,
@@ -115,7 +96,7 @@ async def issue_token(
     return map_token_pair(await mint_tokens(request, int(result.data.id)), result.data)
 
 
-@api_auth_router.post(
+@token_router.post(
     "/token/refresh",
     name="api_auth.refresh_token",
     response_model=TokenPairResponse,
@@ -125,7 +106,7 @@ async def issue_token(
     scope="api_auth_refresh",
     limit=Settings.auth_api_refresh_attempts_limit,
     window_seconds=Settings.auth_window_seconds,
-    key_builder=_client_ip_key,
+    key_builder=client_ip_key,
 )
 async def refresh_token(
     request: Request,
@@ -152,7 +133,7 @@ async def refresh_token(
     return map_token_pair(await mint_tokens(request, int(result.data.id)), result.data)
 
 
-@api_auth_router.post(
+@token_router.post(
     "/token/revoke",
     name="api_auth.revoke_token",
     response_model=TokenRevokedResponse,

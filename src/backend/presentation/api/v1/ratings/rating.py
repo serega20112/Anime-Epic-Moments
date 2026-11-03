@@ -1,4 +1,4 @@
-"""Маршруты выставления оценок аниме из веб-форм."""
+"""Маршрут выставления оценок аниме из веб-форм."""
 
 from __future__ import annotations
 
@@ -12,10 +12,10 @@ from backend.presentation.api.auth_responses import flash, redirect
 from backend.presentation.api.requests.form_models import read_form_model
 from backend.presentation.api.requests.rating_requests import RateAnimeRequest
 
-rating_router = APIRouter(prefix="/ratings", route_class=DishkaRoute)
+rating_form_router = APIRouter(route_class=DishkaRoute)
 
 
-@rating_router.post("/", name="rating.rate_anime")
+@rating_form_router.post("/", name="rating.rate_anime")
 async def rate_anime(request: Request, use_case: FromDishka[SetUserAnimeRatingUseCase]):
     """Сохранить или обновить оценку аниме из формы.
 

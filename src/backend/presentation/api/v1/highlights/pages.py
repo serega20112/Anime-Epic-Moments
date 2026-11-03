@@ -21,7 +21,7 @@ from backend.application.use_cases import (
 )
 from backend.presentation.api.helpers import get_current_user
 from backend.presentation.api.requests.highlight_mapper import map_dashboard_query, map_feed_query
-from backend.presentation.api.v1.highlight_route_helpers import read_limit, redirect_login
+from backend.presentation.api.v1.highlights.helpers import read_limit, redirect_login
 from backend.presentation.web import render_template
 
 highlight_pages_router = APIRouter(route_class=DishkaRoute)

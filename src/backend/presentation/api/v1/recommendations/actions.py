@@ -1,4 +1,9 @@
-"""Тонкие HTTP-маршруты рекомендаций аниме."""
+"""Тонкие HTTP-маршруты рекомендаций аниме.
+
+Три действия — генерация, обновление и платный AI-подбор — ограничены по
+частоте составным ключом (IP и пользователь из пути); доступ к чужому
+``user_id`` отсекает ``require_self``.
+"""
 
 from __future__ import annotations
 
@@ -18,10 +23,9 @@ from backend.presentation.api.rate_limit import client_ip, rate_limit
 from backend.presentation.api.requests.recommendation_mapper import map_ask_ai_command
 from backend.presentation.api.requests.recommendation_requests import AskAiRecommendationsRequest
 from backend.presentation.api.responses.recommendation_responses import RecommendationItemResponse
-from backend.presentation.api.version import API_PREFIX
 from backend.presentation.dependencies.auth import require_self
 
-recommendation_router = APIRouter(prefix=f"{API_PREFIX}/recommendations", route_class=DishkaRoute)
+recommendation_actions_router = APIRouter(route_class=DishkaRoute)
 
 ERROR_RESPONSES = {
     "400": {"model": ErrorResponse},
@@ -43,7 +47,7 @@ async def _recommendation_key(request: Request) -> str:
     return f"{await client_ip(request)}::{request.path_params.get('user_id')}"
 
 
-@recommendation_router.post(
+@recommendation_actions_router.post(
     "/generate/{user_id}",
     name="recommendation.generate_recommendations",
     response_model=list[RecommendationItemResponse],
@@ -78,7 +82,7 @@ async def generate_recommendations(
     return await use_case.execute(RecommendationsQuery(user_id=session_user_id))
 
 
-@recommendation_router.post(
+@recommendation_actions_router.post(
     "/refresh/{user_id}",
     name="recommendation.refresh_recommendations",
     response_model=list[RecommendationItemResponse],
@@ -113,7 +117,7 @@ async def refresh_recommendations(
     return await use_case.execute(RecommendationsQuery(user_id=session_user_id))
 
 
-@recommendation_router.post(
+@recommendation_actions_router.post(
     "/ask/{user_id}",
     name="recommendation.ask_ai_recommendations",
     response_model=list[RecommendationItemResponse],

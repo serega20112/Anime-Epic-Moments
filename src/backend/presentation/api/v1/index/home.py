@@ -10,10 +10,10 @@ from backend.application.dto.anime import HomePageQuery
 from backend.application.use_cases.anime.get_home_page import GetHomePageUseCase
 from backend.presentation.web import render_template
 
-index_router = APIRouter(route_class=DishkaRoute)
+home_router = APIRouter(route_class=DishkaRoute)
 
 
-@index_router.get("/", name="index.index")
+@home_router.get("/", name="index.index")
 async def index(request: Request, use_case: FromDishka[GetHomePageUseCase]):
     """Отрисовать главную страницу с сезоном текущего года.
 

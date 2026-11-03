@@ -1,4 +1,4 @@
-"""Проверки живости и готовности для оркестратора."""
+"""Проверки живости и готовности процесса для оркестратора."""
 
 from __future__ import annotations
 
@@ -12,12 +12,12 @@ from fastapi.responses import JSONResponse
 from backend.application.interface.services import HealthCheckPort
 from backend.presentation.api.responses.health_responses import LivenessResponse, ReadinessResponse
 
-health_router = APIRouter(route_class=DishkaRoute)
+probes_router = APIRouter(route_class=DishkaRoute)
 
 READY_RESPONSES = {"503": {"model": ReadinessResponse}}
 
 
-@health_router.get("/health", response_model=LivenessResponse)
+@probes_router.get("/health", response_model=LivenessResponse)
 async def health() -> LivenessResponse:
     """Сообщить, что процесс жив, не трогая зависимости.
 
@@ -27,7 +27,7 @@ async def health() -> LivenessResponse:
     return LivenessResponse()
 
 
-@health_router.get("/ready", response_model=ReadinessResponse, responses=READY_RESPONSES)
+@probes_router.get("/ready", response_model=ReadinessResponse, responses=READY_RESPONSES)
 async def ready(health_check: FromDishka[HealthCheckPort]) -> JSONResponse:
     """Сообщить готовность базы и дополнительных зависимостей.
 

@@ -24,7 +24,7 @@ from backend.presentation.api.requests.reaction_mapper import (
 from backend.presentation.api.requests.reaction_requests import SetEpisodeReactionRequest
 from backend.presentation.api.responses.reaction_responses import EpisodeReactionsResponse
 
-reaction_router = APIRouter(prefix="/watch", route_class=DishkaRoute)
+episode_reactions_router = APIRouter(route_class=DishkaRoute)
 
 DEFAULT_EPISODE = 1
 
@@ -35,7 +35,7 @@ _ERROR_RESPONSES = {
 }
 
 
-@reaction_router.get(
+@episode_reactions_router.get(
     "/{anime_id}/reactions",
     name="watch.get_episode_reactions",
     response_model=EpisodeReactionsResponse,
@@ -71,7 +71,7 @@ async def get_episode_reactions(
     return map_episode_reactions_response(result.data)
 
 
-@reaction_router.post(
+@episode_reactions_router.post(
     "/{anime_id}/reactions",
     name="watch.set_episode_reaction",
     response_model=EpisodeReactionsResponse,

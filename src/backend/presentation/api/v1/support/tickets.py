@@ -1,4 +1,8 @@
-"""Маршруты страницы поддержки и создания обращений."""
+"""Маршруты страницы поддержки и создания обращений.
+
+Префикс ``/support`` несёт сам модуль: корневая страница объявлена пустым путём,
+который FastAPI не допускает на роутере без префикса.
+"""
 
 from __future__ import annotations
 
@@ -22,7 +26,7 @@ from backend.presentation.dependencies.rate_limit_keys import support_ticket_sub
 from backend.presentation.web import flash, render_template
 from backend.utils import log_business_event
 
-support_router = APIRouter(prefix="/support", route_class=DishkaRoute)
+tickets_router = APIRouter(prefix="/support", route_class=DishkaRoute)
 
 SUPPORT_TEMPLATE = "support/create.html"
 CREATE_FAILURE_MESSAGE = "Не удалось создать тикет поддержки"
@@ -44,7 +48,7 @@ async def _support_ticket_subject(request: Request) -> str:
     )
 
 
-@support_router.get("", name="support.support_page")
+@tickets_router.get("", name="support.support_page")
 async def support_page(request: Request):
     """Отдать страницу создания обращения в поддержку.
 
@@ -57,7 +61,7 @@ async def support_page(request: Request):
     return await _render_support_page(request)
 
 
-@support_router.post("", name="support.create_support_ticket")
+@tickets_router.post("", name="support.create_support_ticket")
 @rate_limit(
     scope="support_ticket_create",
     limit=Settings.support_ticket_rate_limit,

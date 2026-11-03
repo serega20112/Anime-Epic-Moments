@@ -1,4 +1,8 @@
-"""Тонкие HTTP-маршруты моментов просмотра и их черновиков."""
+"""HTTP-маршруты черновиков моментов: список, публикация и удаление.
+
+Префикс ``/moments`` несёт сам модуль: список черновиков объявлен пустым путём,
+который FastAPI не допускает на роутере без префикса.
+"""
 
 from __future__ import annotations
 
@@ -10,27 +14,21 @@ from backend.application.dto import (
     DeleteViewingMomentCommand,
     GetUserViewingMomentsQuery,
     PublishViewingMomentCommand,
-    SaveViewingMomentCommand,
 )
 from backend.application.use_cases import (
     DeleteViewingMomentUseCase,
     GetUserViewingMomentsUseCase,
     PublishViewingMomentUseCase,
-    SaveViewingMomentUseCase,
 )
 from backend.presentation.api.errors import ErrorResponse, error_from_result, unauthorized_error
 from backend.presentation.api.helpers import get_current_user
-from backend.presentation.api.requests.moment_requests import (
-    PublishViewingMomentRequest,
-    SaveViewingMomentRequest,
-)
+from backend.presentation.api.requests.moment_requests import PublishViewingMomentRequest
 from backend.presentation.api.responses.moment_responses import (
     MomentDeletedResponse,
     PublishMomentResponse,
     ViewingMomentResponse,
 )
 
-watch_moment_router = APIRouter(prefix="/watch", route_class=DishkaRoute)
 moment_router = APIRouter(prefix="/moments", route_class=DishkaRoute)
 
 _ERROR_RESPONSES = {
@@ -38,50 +36,6 @@ _ERROR_RESPONSES = {
     "401": {"model": ErrorResponse},
     "404": {"model": ErrorResponse},
 }
-
-
-@watch_moment_router.post(
-    "/{anime_id}/moments",
-    name="watch.save_moment",
-    response_model=ViewingMomentResponse,
-    responses=_ERROR_RESPONSES,
-)
-async def save_moment(
-    request: Request,
-    anime_id: int,
-    body: SaveViewingMomentRequest,
-    use_case: FromDishka[SaveViewingMomentUseCase],
-):
-    """Создать или обновить черновик момента из плеера.
-
-    Args:
-        request: Текущий HTTP-запрос.
-        anime_id: Идентификатор аниме из пути.
-        body: Тело запроса с данными момента.
-        use_case: Сценарий сохранения черновика.
-
-    Returns:
-        ViewingMomentResponse: Сохранённый черновик либо тело ошибки.
-    """
-    user = await get_current_user(request)
-    if not user:
-        return unauthorized_error()
-    result = await use_case.execute(
-        SaveViewingMomentCommand(
-            user_id=user.id,
-            anime_id=anime_id,
-            episode=body.episode,
-            timestamp=body.timestamp,
-            watch_source_id=body.watch_source_id,
-            caption=body.caption,
-            sticker=body.sticker,
-            screenshot_url=body.screenshot_url,
-            moment_id=body.moment_id,
-        )
-    )
-    if not result.ok:
-        return error_from_result(result)
-    return ViewingMomentResponse.model_validate(result.data, from_attributes=True)
 
 
 @moment_router.get(

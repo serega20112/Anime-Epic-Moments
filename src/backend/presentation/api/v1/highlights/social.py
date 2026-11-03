@@ -33,7 +33,7 @@ from backend.presentation.api.responses.highlight_responses import (
     HighlightLikersResponse,
     HighlightSavedResponse,
 )
-from backend.presentation.api.v1.highlight_route_helpers import read_limit
+from backend.presentation.api.v1.highlights.helpers import read_limit
 
 highlight_social_router = APIRouter(route_class=DishkaRoute)
 

@@ -1,4 +1,8 @@
-"""Тонкие HTTP-маршруты поиска и каталога аниме."""
+"""Тонкие HTTP-маршруты поиска и каталога аниме (веб-страницы и JSON-API).
+
+Префикс ``/anime`` объявлен в фасадном ``__init__``: здесь только под-роутер с
+относительными путями страниц и эндпоинтов каталога.
+"""
 
 from __future__ import annotations
 
@@ -29,10 +33,10 @@ from backend.presentation.api.responses.anime_responses import (
 )
 from backend.presentation.web import render_template
 
-anime_router = APIRouter(prefix="/anime", route_class=DishkaRoute)
+web_router = APIRouter(route_class=DishkaRoute)
 
 
-@anime_router.get("/search", name="anime.search_anime_page")
+@web_router.get("/search", name="anime.search_anime_page")
 async def search_anime_page(request: Request):
     """Отдать страницу поиска аниме."""
     return await render_template(
@@ -42,13 +46,13 @@ async def search_anime_page(request: Request):
     )
 
 
-@anime_router.get("/search/description", name="anime.search_by_description_page")
+@web_router.get("/search/description", name="anime.search_by_description_page")
 async def search_by_description_page(request: Request):
     """Отдать страницу поиска по описанию."""
     return await render_template(request, "anime/search_by_description.html")
 
 
-@anime_router.get("/catalog", name="anime.catalog_page")
+@web_router.get("/catalog", name="anime.catalog_page")
 async def catalog_page(request: Request):
     """Отдать страницу каталога с фильтрами."""
     params = request.query_params
@@ -72,7 +76,7 @@ async def catalog_page(request: Request):
     )
 
 
-@anime_router.get("/api/search", name="anime.search_anime", response_model=list[AnimeCardResponse])
+@web_router.get("/api/search", name="anime.search_anime", response_model=list[AnimeCardResponse])
 @rate_limit(
     scope="anime_search",
     limit=60,
@@ -97,7 +101,7 @@ async def search_anime(
     return await use_case.execute(build_search_anime_query(request, policy))
 
 
-@anime_router.get(
+@web_router.get(
     "/api/search/description",
     name="anime.search_anime_by_description",
     response_model=AnimeSearchResultResponse,
@@ -128,7 +132,7 @@ async def search_anime_by_description(
     return await use_case.execute(query)
 
 
-@anime_router.get(
+@web_router.get(
     "/api/autocomplete", name="anime.autocomplete_anime", response_model=list[AnimeCardResponse]
 )
 @rate_limit(
@@ -155,9 +159,7 @@ async def autocomplete_anime(
     return await use_case.execute(build_autocomplete_anime_query(request, policy))
 
 
-@anime_router.get(
-    "/api/catalog", name="anime.filter_anime_catalog", response_model=AnimeCatalogPage
-)
+@web_router.get("/api/catalog", name="anime.filter_anime_catalog", response_model=AnimeCatalogPage)
 @rate_limit(
     scope="anime_catalog",
     limit=60,
@@ -180,7 +182,7 @@ async def filter_anime_catalog(
     return await use_case.execute(build_filter_anime_catalog_query(request))
 
 
-@anime_router.get(
+@web_router.get(
     "/api/season/popular",
     name="anime.get_season_popular",
     response_model=list[AnimeCardResponse],
